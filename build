@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# erlang's os:cmd does not return the exit code, 
+#therefore this is implemented as bash script
+
+cwd=$(pwd)
+errors=0
+for app in $(ls apps); do
+    echo $app
+    echo "####################################"
+    echo trying to build $app
+    cd apps/$app
+    ./build || errors=1
+    cd $cwd
+done
+
+exit $errors
