@@ -1,0 +1,12 @@
+#erlang
+*.beam
+*ebin*
+.eunit
+
+#latex
+*.aux
+*.nav
+*.out
+*.snm
+*.pdf
+*.toc
