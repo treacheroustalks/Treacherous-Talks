@@ -3,4 +3,4 @@
 -include_lib("eunit/include/eunit.hrl").
 
 dummy_app_test() ->
-    1 = 1.
+    erlang:error({error, no_tests}).
