@@ -5,13 +5,38 @@
 
 cwd=$(pwd)
 errors=0
-for app in $(ls apps); do
+
+rebar get-deps || errors=1
+
+#################################
+## build the global dependencies here (if they require, for instance, make-calls
+
+# RIAK CLIENT
+cd deps/riakc
+make all
+cd ../..
+
+##
+##################################
+
+cd $cwd/apps
+for app in $(ls); do
+    if [ ! -d $app ]; then
+	echo $app is not a dir
+	pwd
+	continue
+    fi
+
     echo $app
-    echo "####################################"
-    echo trying to build $app
-    cd apps/$app
-    ./build || errors=1
-    cd $cwd
+    cd $app
+    if [ -x build ]; then
+	echo "####################################"
+	echo trying to build $app
+	./build || errors=1
+    fi
+    cd ..
 done
+cd $cwd
+
 
 exit $errors

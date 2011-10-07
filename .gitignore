@@ -1,6 +1,5 @@
 #erlang
 *.beam
-*ebin*
 .eunit
 
 #latex
