@@ -9,13 +9,20 @@ errors=0
 rebar get-deps || errors=1
 
 #################################
-## build the global dependencies here (if they require, for instance, make-calls
+## build the global dependencies here (if they require, for instance, make-calls)
 
 # RIAK CLIENT
 cd deps/riakc
 make all
 cd ../..
 
+# YAWS WEB SERVER
+echo trying to build yaws
+cd deps/yaws
+autoconf
+./configure
+make
+cd ../..
 ##
 ##################################
 
@@ -38,5 +45,5 @@ for app in $(ls); do
 done
 cd $cwd
 
-
 exit $errors
+
