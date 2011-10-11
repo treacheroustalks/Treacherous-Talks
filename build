@@ -20,7 +20,7 @@ cd ../..
 echo trying to build yaws
 cd deps/yaws
 autoconf
-./configure
+./configure --disable-pam
 make
 cd ../..
 ##
