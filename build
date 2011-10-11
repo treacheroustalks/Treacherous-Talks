@@ -11,6 +11,11 @@ rebar get-deps || errors=1
 #################################
 ## build the global dependencies here (if they require, for instance, make-calls)
 
+#PROTOBUFFS
+cd deps/protobuffs
+make all
+cd ../..
+
 # RIAK CLIENT
 cd deps/riakc
 make all
