@@ -9,3 +9,9 @@
 *.snm
 *.pdf
 *.toc
+
+#dependencies
+deps/
+
+#releases
+ext_rel/web_frontend/rel/web_frontend/
