@@ -1,0 +1,25 @@
+{application, smtp_frontend,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {modules,
+   [
+    binstr,
+    smtp_frontend_app,
+    smtp_frontend_sup,
+	gen_smtp_server,
+    gen_smtp_client,
+    gen_smtp_server_session,
+    smtp_util,
+    socket,
+	smtp_core
+   ]
+  },
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { smtp_frontend_app, []}},
+  {env, []}
+ ]}.
