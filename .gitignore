@@ -1,6 +1,7 @@
 #erlang
 *.beam
 .eunit
+*.dump
 
 #latex
 *.aux
@@ -15,3 +16,4 @@ deps/
 
 #releases
 ext_rel/web_frontend/rel/web_frontend/
+system-release/

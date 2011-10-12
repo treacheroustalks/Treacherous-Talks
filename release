@@ -1,0 +1,119 @@
+#!/bin/bash 
+# This script will make releases of the main project in rel/ and all projects in
+# ext_rel/. It will optionally move the release files and tar them.
+
+# Default settings (can be changed with command line options)
+domove=1
+dotar=0
+
+# Internal variables
+cwd=$(pwd)
+sysrel=$cwd/system-release
+errors=0
+# Get the current git commit
+commit=`git rev-list --max-count=1 HEAD`
+# Check for non-committed staged changes or changes to tracked files
+# NOTE: Untracked files do not imply "dirty"
+git diff-index --quiet HEAD
+if [ "$?" -ne "0" ]; then
+    commit="dirty"
+fi
+# Get date
+date=`date +%Y%m%d-%H%M`
+
+# Get command-line arguments
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -nm) domove=0;;
+        -t)  dotar=1;;
+        -*)  echo >&2 "usage: $0 [-nm] [-t] [release_name]"
+             echo >&2 "       -nm          do not move release directories"
+             echo >&2 "       -t           also create tar.gz files of releases"
+             echo >&2 "       release_name name of specific project to release"
+             exit 1;;
+        *)   break;;
+    esac
+    shift
+done
+
+# Create a directory to hold the releases
+mkdir -p $sysrel || errors=1
+# Touch a file to record the time when the release started
+touch $sysrel/release_timestamp || errors=1
+
+
+# Release main system if no release name or the name is main.
+if [ -z "$1" -o "$1" == "main" ]; then
+    echo "####################################"
+    echo trying to release main
+    cd $cwd/rel
+    rebar generate || errors=1
+    # Move files to $sysrel if $domove is set to 1
+    if [ $domove -eq 1 ]; then
+        echo Deleting old release files in $sysrel/main...
+        rm -rf $sysrel/main || errors=1
+        mkdir -p $sysrel/main || errors=1
+        echo Moving release files into $sysrel...
+        find . -mindepth 2 -maxdepth 2 -newer $sysrel/release_timestamp \
+            -print0 | xargs -0 -I {} mv {} $sysrel/main || errors=1
+        # Remove the leftover directory (otherwise rebar will complain)
+        find . -mindepth 1 -maxdepth 2 -newer $sysrel/release_timestamp \
+            -print0 | xargs -0 -I {} rm -rf {} || errors=1
+    fi
+    cd $cwd
+fi
+
+# Release each directory in ext_rel if no release name set. Otherwise build the
+# named release.
+# NOTE: This script is built around the assumption of that directory names in
+# ext_rel is the same as the release name (in the rebar config).
+cd $cwd/ext_rel
+for release in $(ls); do
+    if [ ! -d $release ]; then
+        echo $release is not a dir
+        pwd
+        continue
+    fi
+
+    cd $release
+    if [ -z "$1" -o "$1" == $release ]; then
+        if [ -a Makefile ]; then
+            echo "####################################"
+            echo trying to release $release
+            make release || errors=1
+            # Move files to $sysrel if $domove is set to 1
+            if [ $domove -eq 1 ]; then
+                echo Deleting old release files in $sysrel/$release...
+                rm -rf $sysrel/$release || errors=1
+                echo Moving release files into $sysrel...
+                find . -mindepth 2 -maxdepth 2 -newer \
+                    $sysrel/release_timestamp -print0 | xargs -0 -I {} mv {} \
+                    $sysrel || errors=1
+            fi
+        fi
+    fi
+    cd ..
+done
+cd $cwd
+
+# Tar if $dotar is set to 1
+cd $sysrel
+for dir in $(ls); do
+    if [ -d $dir -a $dotar -eq 1 ]; then
+        echo Tarring release files...
+        tar -czf $dir-release-$date-$commit.tar.gz $dir || errors=1
+    fi
+done
+cd $cwd
+
+
+# Remove timestamp since it is not needed anymore
+rm -f $sysrel/release_timestamp
+# Remove the release directory if empty
+# (don't litter the tree if the release fails)
+rmdir --ignore-fail-on-non-empty $sysrel
+
+
+exit $errors
+
