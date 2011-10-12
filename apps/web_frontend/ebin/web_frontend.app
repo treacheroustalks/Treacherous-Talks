@@ -4,5 +4,4 @@
               {applications,[kernel,stdlib]},
               {registered,[]},
               {mod,{web_frontend_app,[]}},
-              {modules,[index,nitrogen_yaws,web_frontend_app,
-                        web_frontend_sup]}]}.
+              {modules,[web_frontend_app,web_frontend_sup]}]}.

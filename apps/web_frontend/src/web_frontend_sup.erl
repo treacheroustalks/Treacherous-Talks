@@ -21,9 +21,6 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    %% Start the Process Registry...
-    application:start(nprocreg),
-    
     %% Start Yaws
     application:start(yaws),
 
