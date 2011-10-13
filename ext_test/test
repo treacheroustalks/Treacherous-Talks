@@ -1,0 +1,24 @@
+#!/bin/bash
+# This script will setup an environment for running integration tests
+
+# Internal variables
+cwd="$( cd -P "$( dirname "$0" )" && pwd )"
+sysrel=$cwd/../system-release
+errors=0
+
+echo Running test script
+
+echo Starting web frontend
+$sysrel/web_frontend/bin/web_frontend start || errors=1
+
+# Sleep to make sure that the node is up
+sleep 3
+
+echo Running Selenium tests
+python $cwd/web_interface_test.py || errors=1
+
+echo Stopping web frontend
+$sysrel/web_frontend/bin/web_frontend stop || errors=1
+
+# Return any error codes
+exit $errors
