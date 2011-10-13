@@ -24,13 +24,17 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
+    {ok, Domain} = application:get_env(domain),
+    {ok, Address} = application:get_env(address),
+    {ok, Port} = application:get_env(port),
+    {ok, Protocol} = application:get_env(protocol),
+    {ok, Family} = application:get_env(family),
     ServerOptions=[[
-	{domain, "lin.pcs"}, 
-	{address, {0,0,0,0}},
-	{port, 25}, 
-	{protocol, tcp}, 
-	{family, inet}
-	]],
+    {domain, Domain},
+    {address, Address},
+    {port, Port},
+    {protocol, Protocol},
+    {family, Family}
+    ]],
     SMTPServer = ?CHILD(gen_smtp_server, [smtp_core, ServerOptions], worker),
     {ok, {{one_for_one, 5, 10}, [SMTPServer]}}.
-

@@ -1,15 +1,15 @@
-%%%-------------------------------------------------------------------                                                                                                                
-%%% @copyright                                                                                                                                                                        
-%%% COPYRIGHT                                                                                                                            
-%%% @end                                                                                                                                                                              
-%%%-------------------------------------------------------------------                                                                                                                
-%%% @module smtp_core @end                                                                                                                    
-%%%                                                                                                                                                                                   
+%%%-------------------------------------------------------------------
+%%% @copyright
+%%% COPYRIGHT
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @module smtp_core @end
+%%%
 %%% @doc A simple example callback module for `gen_smtp_server_session' that also serves as
-%%% documentation for the required callback API.                                                                                                                                                                                
-%%% @end                                                                                                                                                                              
-%%%                                                                                                                                                                                                                                                                                                                     
-%%%------------------------------------------------------------------- 
+%%% documentation for the required callback API.
+%%% @end
+%%%
+%%%-------------------------------------------------------------------
 -module(smtp_core).
 -behaviour(gen_smtp_server_session).
 
@@ -17,9 +17,7 @@
 -export([init/4, handle_HELO/2, handle_EHLO/3, handle_MAIL/2, handle_MAIL_extension/2,
     handle_RCPT/2, handle_RCPT_extension/2, handle_DATA/4, handle_RSET/1, handle_VRFY/2,
     handle_other/3, handle_AUTH/4, code_change/3, terminate/2]).
-% user interface
-%-export([]).
-    
+
 -define(RELAY, true).
 -define(ECHO, false). %set to false to disable echo_bot
 
@@ -48,9 +46,9 @@
 %% and send Message to the client.
 %%------------------------------------------------------------------------------------------------
 init(
-  Hostname, 
-  SessionCount, 
-  Address, 
+  Hostname,
+  SessionCount,
+  Address,
   Options) ->
     io:format("peer: ~p~n", [Address]),
     case SessionCount > 20 of
@@ -63,7 +61,7 @@ init(
             {stop, normal, ["421 ", Hostname, " is too busy to accept mail right now"]}
     end.
 
-    
+
 %%------------------------------------------------------------------------------------------------
 %% @function handle_HELO/2 @end
 %%
@@ -94,7 +92,7 @@ handle_HELO(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_EHLO/3 @end 
+%% @function handle_EHLO/3 @end
 %%
 %% @doc Handle the EHLO verb from the client. As with EHLO the hostname is provided as an argument,
 %% but in addition to that the list of ESMTP Extensions enabled in the session is passed. This list
@@ -127,7 +125,7 @@ handle_EHLO(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_MAIL/2 @end 
+%% @function handle_MAIL/2 @end
 %%
 %% @doc Handle the MAIL FROM verb. The From argument is the email address specified by the
 %% MAIL FROM command. Extensions to the MAIL verb are handled by the `handle_MAIL_extension'
@@ -148,7 +146,7 @@ handle_MAIL(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_MAIL_extension/3 @end 
+%% @function handle_MAIL_extension/3 @end
 %%
 %% @doc Handle an extension to the MAIL verb. Return either `{ok, State}' or `error' to reject
 %% the option.
@@ -165,9 +163,9 @@ handle_MAIL_extension(
     io:format("Unknown MAIL FROM extension ~s~n", [Extension]),
     error.
 
-    
+
 %%------------------------------------------------------------------------------------------------
-%% @function handle_RCPT/2 @end 
+%% @function handle_RCPT/2 @end
 %%
 %% @doc Handle RCPT verb to identify recipients
 %%------------------------------------------------------------------------------------------------
@@ -184,7 +182,7 @@ handle_RCPT(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_RCPT_extension/2 @end 
+%% @function handle_RCPT_extension/2 @end
 %%
 %% @doc Handle an extension to the RCPT verb
 %%------------------------------------------------------------------------------------------------
@@ -202,7 +200,7 @@ handle_RCPT_extension(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_DATA/4 @end 
+%% @function handle_DATA/4 @end
 %%
 %% @doc Handle email message here
 %%------------------------------------------------------------------------------------------------
@@ -232,7 +230,7 @@ handle_DATA(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_RSET/1 @end 
+%% @function handle_RSET/1 @end
 %%
 %% @doc Handle RSET verb.
 %%------------------------------------------------------------------------------------------------
@@ -243,7 +241,7 @@ handle_RSET(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_VRFY/2 @end 
+%% @function handle_VRFY/2 @end
 %%
 %% @doc Handle VRFY verb.
 %%------------------------------------------------------------------------------------------------
@@ -258,7 +256,7 @@ handle_VRFY(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function handle_other/3 @end 
+%% @function handle_other/3 @end
 %%
 %% @doc Handle unknown SMTP verb.
 %%------------------------------------------------------------------------------------------------
@@ -268,10 +266,10 @@ handle_other(
   State) ->
     % You can implement other SMTP verbs here, if you need to
     {["500 Error: command not recognized : '", Verb, "'"], State}.
-    
-    
+
+
 %%------------------------------------------------------------------------------------------------
-%% @function handle_AUTH/4 @end 
+%% @function handle_AUTH/4 @end
 %%
 %% @doc Handle AUTH verb.
 %%
@@ -304,7 +302,7 @@ handle_AUTH(
     error.
 
 %%------------------------------------------------------------------------------------------------
-%% @function code_change/3 @end 
+%% @function code_change/3 @end
 %%
 %% @doc Code update routine.
 %%------------------------------------------------------------------------------------------------
@@ -315,7 +313,7 @@ code_change(
     {ok, State}.
 
 %%------------------------------------------------------------------------------------------------
-%% @function terminate/2 @end 
+%% @function terminate/2 @end
 %%
 %% @doc Server termination routine.
 %%------------------------------------------------------------------------------------------------
@@ -330,7 +328,7 @@ terminate(
 
 %========Internal Functions========
 %%------------------------------------------------------------------------------------------------
-%% @function relay/3 @end 
+%% @function relay/3 @end
 %%
 %% @doc Relay a received email to a list of other email servers
 %%------------------------------------------------------------------------------------------------
@@ -350,7 +348,7 @@ relay(
     relay(From, Rest, Data).
 
 %%------------------------------------------------------------------------------------------------
-%% @function simple_relay/4 @end 
+%% @function simple_relay/4 @end
 %%
 %% @doc Relay a received email to a single recipent
 %%------------------------------------------------------------------------------------------------
@@ -364,7 +362,7 @@ simple_relay(
     Data = binary_to_list(BinData),
 
     [_User, ToHost] = string:tokens(To, "@"),
-    
+
     pnt([ToHost, MyHost]),
 
     case ToHost of
@@ -375,13 +373,14 @@ simple_relay(
             forward_mail(To, From, Data, FromHost),
             io:format("###Echo ~s to ~s sent~n", [MyHost, FromHost]);
         MyHost -> % when echo mode off
-            io:format("message from ~s to ~p ~n~n~s~n", 
+            io:format("message from ~s to ~p ~n~n~s~n",
                       [From, To, Data]);
         _Relay -> % this isn't the mail's destination, forward it to its recipent
             io:format("###Forwarding ~s to ~s...~n", [From, To]),
             forward_mail(From, To, Data, ToHost),
             io:format("###Forward ~s to ~s sent!~n", [MyHost, ToHost])
     end.
+
 
 forward_mail(
   From,
@@ -390,15 +389,13 @@ forward_mail(
   ToHost) ->
     gen_smtp_client:send(
     {
-        From, 
-        [To], 
+        From,
+        [To],
         Data
-    }, 
+    },
     [
         {relay, ToHost},
         {port,25}
     ]).
 
 pnt(M)->io:format("########: ~p~n", [M]).
-
-
