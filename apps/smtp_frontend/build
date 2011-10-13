@@ -1,3 +1,9 @@
 #!/bin/bash
 
-rebar clean eunit
+# This script is not set to executable right now since it interacts with with
+# gen_smtp (and give some small warnings). It is not automatically testable
+# right now since it needs another mail server to talk to...
+
+rebar clean;
+rebar compile;
+rebar eunit
