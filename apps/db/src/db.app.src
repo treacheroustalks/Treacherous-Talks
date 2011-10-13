@@ -1,0 +1,14 @@
+{application, db,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+          protobuffs,
+          riakc
+                 ]},
+  {mod, { db_app, []}},
+  {env, []}
+ ]}.
