@@ -22,6 +22,9 @@ start_link() ->
 
 init([]) ->
     %% Start Yaws
-    application:start(yaws),
+    application:load(yaws),
 
-    {ok, { {one_for_one, 5, 10}, []} }.
+    {ok, { {one_for_one, 5, 10}, 
+           [
+            ?CHILD(yaws_sup, supervisor)
+           ]} }.
