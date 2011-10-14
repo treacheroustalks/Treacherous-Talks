@@ -13,20 +13,20 @@ rebar get-deps || errors=1
 
 #PROTOBUFFS
 cd deps/protobuffs
-make all
+make all || errors=1
 cd ../..
 
 # RIAK CLIENT
 cd deps/riakc
-make all
+make all || errors=1
 cd ../..
 
 # YAWS WEB SERVER
 echo trying to build yaws
 cd deps/yaws
-autoconf
-./configure --disable-pam
-make
+autoconf || errors=1
+./configure --disable-pam || errors=1
+make || errors=1
 cd ../..
 ##
 ##################################
@@ -34,34 +34,43 @@ cd ../..
 cd $cwd/apps
 for app in $(ls); do
     if [ ! -d $app ]; then
-	echo $app is not a dir
-	pwd
-	continue
+        echo $app is not a dir
+        pwd
+        continue
     fi
 
-    echo $app
     cd $app
     if [ -x build ]; then
-	echo "####################################"
-	echo trying to build $app
+        echo "####################################"
         RACE_COND=".."
         while [ ! -z "$RACE_COND" ]; do
             echo "##### executing " $(pwd)"/build"
-            app_build_errors=0
-	    OUT=$(./build 2>&1 || app_build_errors=1)
-            echo -e "$OUT"
-            RACE_COND=$(echo $OUT  | grep ".bea#" | grep "no such file or directory")
+            # Run the build file, buffer the output and check the return code
+            if OUT=$(./build 2>&1); then
+                echo -e "$OUT"
+                echo -e "##### Exit status: success\n"
+                RACE_COND=""
+            else
+                echo -e "$OUT"
+                echo -e "##### Exit status: ERROR\n"
+                # Now we grep for bad rebar builds
+                RACE_COND=$(echo $OUT  | grep ".bea#" | grep "no such file or directory")
+                # If the grep returned nothing, this was a real error
+                if [ -z "$RACE_COND" ]; then
+                    errors=1
+                fi
+            fi
         done
-        if [ $app_build_errors != 0 ]; then
-            echo "############ ERROR "
-            errors=1
-        fi
     fi
     cd ..
 done
 cd $cwd
 
-echo "errors=$errors"
+if (( errors )); then
+    echo "##### Build was NOT successfull."
+else
+    echo "##### Build was successfull."
+fi
 
 exit $errors
 
