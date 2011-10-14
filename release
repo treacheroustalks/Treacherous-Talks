@@ -72,7 +72,7 @@ do_release () {
                     echo Deleting old release files in $sysrel/$release...
                     rm -rf $sysrel/$release || errors=1
                     echo Moving release files into $sysrel...
-                    find . -mindepth 2 -maxdepth 2 -newer \
+                    find rel -mindepth 1 -maxdepth 1 -newer \
                         $sysrel/release_timestamp -print0 | xargs -0 -I {} \
                         mv {} $sysrel || errors=1
                 fi
