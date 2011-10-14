@@ -11,6 +11,11 @@ rebar get-deps || errors=1
 #################################
 ## build the global dependencies here (if they require, for instance, make-calls)
 
+#PROTOBUFFS
+cd deps/protobuffs
+make all
+cd ../..
+
 # RIAK CLIENT
 cd deps/riakc
 make all
@@ -39,11 +44,24 @@ for app in $(ls); do
     if [ -x build ]; then
 	echo "####################################"
 	echo trying to build $app
-	./build || errors=1
+        RACE_COND=".."
+        while [ ! -z "$RACE_COND" ]; do
+            echo "##### executing " $(pwd)"/build"
+            app_build_errors=0
+	    OUT=$(./build 2>&1 || app_build_errors=1)
+            echo -e "$OUT"
+            RACE_COND=$(echo $OUT  | grep ".bea#" | grep "no such file or directory")
+        done
+        if [ $app_build_errors != 0 ]; then
+            echo "############ ERROR "
+            errors=1
+        fi
     fi
     cd ..
 done
 cd $cwd
+
+echo "errors=$errors"
 
 exit $errors
 
