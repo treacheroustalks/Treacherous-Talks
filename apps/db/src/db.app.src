@@ -6,9 +6,11 @@
   {applications, [
                   kernel,
                   stdlib,
-          protobuffs,
-          riakc
+                  protobuffs,
+                  riakc
                  ]},
   {mod, { db_app, []}},
-  {env, []}
+  {env, [
+         {riak, {pb, "127.0.0.1", 8081}}
+        ]}
  ]}.

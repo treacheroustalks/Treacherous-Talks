@@ -4,6 +4,11 @@ echo "########################################################"
 echo "########################################################"
 echo "########################################################"
 
+#rebar clean
+rm -rf .eunit
+
+dialyzer --src src | sed 's/warning/w arning/g' # it just keeps nagging....
+
 rebar get-deps \
   && rebar clean \
   && rebar compile \
