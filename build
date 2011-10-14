@@ -59,6 +59,13 @@ build_dep "make release"
 cd rel/xmpp_frontend
 build_dep "make install"
 cd $cwd
+
+echo Building xmpp_frontend tests
+cd ext_test/ejabberd_echo
+rebar compile
+#echo Running xmpp_frontend tests
+#rebar eunit
+cd ../..
 ##
 ##################################
 
