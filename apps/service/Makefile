@@ -1,6 +1,6 @@
 
 
-all: get_deps clean compile test
+all: get_deps clean compile tests docs
 
 
 get_deps:
@@ -15,5 +15,9 @@ compile:
 	rebar compile
 
 
-test:
+tests: test/*
 	rebar eunit
+
+docs:
+	erl -noshell -run edoc_run application "'$(APP_NAME)'" \
+               '"."' '[{def,{vsn,"$(VSN)"}}]'
