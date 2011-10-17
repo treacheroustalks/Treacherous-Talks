@@ -9,6 +9,7 @@ $(reldir): find-erts update-installation ejabberd-installation
 	mkdir -p $(reldir)
 	cp -r find-erts update-installation ejabberd-installation build_erts installation_prefix $(reldir)
 
+# TODO: remake this target if config files change.
 ejabberd-installation/: ejabberd expat-installation
 	./find-erts > build_erts
 	echo "$(CURDIR)/ejabberd-installation" > installation_prefix
@@ -17,6 +18,7 @@ ejabberd-installation/: ejabberd expat-installation
                                            --with-expat=$(CURDIR)/expat-installation \
                                            --with-erlang=`cat ../../build_erts`'
 	cd ejabberd/src && make install
+	cp config/* ejabberd-installation/etc/ejabberd/
 
 ejabberd/:
 	git clone git://git.process-one.net/ejabberd/mainline.git ejabberd
