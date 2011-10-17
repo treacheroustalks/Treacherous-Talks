@@ -6,35 +6,53 @@
 cwd=$(pwd)
 errors=0
 
+# Setup the shell to report errors even when piping commands. This allows sed
+# to operate on output while preserving the exit code from the previous
+# command. Warning! This is a bash specific feature.
+set -o pipefail
+
 rebar get-deps || errors=1
 
 #################################
 ## build the global dependencies here (if they require, for instance, make-calls)
 
+# This is a wrapper function that takes one argument, the command to run, and
+# executes it. It streams all output through sed to replace warnings so that
+# Buildbot won't pick them up. It also indicates if an error occured.
+function build_dep () {
+    local_error=0
+    $1 | sed s/Warning/ignore-warning/ || local_error=1
+    case "$local_error" in
+        0) echo "##### Exit status: success" ;;
+        *) echo "##### Exit status: ERROR" ;;
+    esac
+    errors=$local_error
+}
+
 #PROTOBUFFS
 cd deps/protobuffs
-make all || errors=1
+build_dep "make all"
 cd ../..
 
 # RIAK CLIENT
 cd deps/riakc
-make all || errors=1
+build_dep "make all"
 cd ../..
 
 # YAWS WEB SERVER
-echo trying to build yaws
+echo "##### trying to build yaws"
 cd deps/yaws
 autoconf || errors=1
 ./configure --disable-pam || errors=1
-make || errors=1
+build_dep "make"
 cd ../..
 
 # xmpp_frontend
-echo trying to build xmpp_frontend
+echo "##### trying to build xmpp_frontend"
 # ejabberd
 echo trying to build ejabberd
 cd ext_rel/xmpp_frontend
-make ejabberd-installation || errors=1
+build_dep "make ejabberd-installation"
 cd ../..
 ##
 ##################################
