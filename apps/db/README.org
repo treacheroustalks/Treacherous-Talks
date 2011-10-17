@@ -1,0 +1,12 @@
+* DB
+** Introduction
+This project adapts the [[https://bitbucket.org/basho/wriaki/src][wriaki-riak-client]] for our project.
+A few code changes have been made but they are really small.
+** How to use this
+make sure, that protobuffs, riakc, mochiweb and - of course - db
+are included in your ./rebar.config and ./src/{{appid}}.app.src
+
+If you need help, checkout the [[file:../db_user project][db_user]] which is nothing more
+than a working app using db.
+** I'm still like "???!?"
+..ask/blame Stephan!
