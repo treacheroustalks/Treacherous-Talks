@@ -16,6 +16,9 @@ rebar get-deps || errors=1
 #################################
 ## build the global dependencies here (if they require, for instance, make-calls)
 
+# Convenience function for echoing to stderr
+function echoerr() { echo -e "$@" 1>&2; }
+
 # This is a wrapper function that takes one argument, the command to run, and
 # executes it. It streams all output through sed to replace warnings so that
 # Buildbot won't pick them up. It also indicates if an error occured.
@@ -24,7 +27,7 @@ function build_dep () {
     $1 | sed s/Warning/ignore-warning/ || local_error=1
     case "$local_error" in
         0) echo "##### Exit status: success" ;;
-        *) echo "##### Exit status: ERROR" ;;
+        *) echoerr "##### Exit status: ERROR" ;;
     esac
     errors=$local_error
 }
@@ -68,24 +71,23 @@ for app in $(ls); do
     cd $app
     if [ -x build ]; then
         echo "####################################"
-        RACE_COND=".."
-        while [ ! -z "$RACE_COND" ]; do
+        race_cond=1
+        while [ "$race_cond" -ne 0 ]; do
             echo "##### executing " $(pwd)"/build"
-            # Run the build file, buffer the output and check the return code
-            if OUT=$(./build 2>&1); then
-                echo -e "$OUT"
-                echo -e "##### Exit status: success\n"
-                RACE_COND=""
-            else
-                echo -e "$OUT"
-                echo -e "##### Exit status: ERROR\n"
-                # Now we grep for bad rebar builds
-                RACE_COND=$(echo $OUT  | grep ".bea#" | grep "no such file or directory")
-                # If the grep returned nothing, this was a real error
-                if [ -z "$RACE_COND" ]; then
-                    errors=1
-                fi
-            fi
+            # Run the build file and pipe all output through a perl one-liner
+            # that detects rebar race conditions and returns a special error
+            # code in that case.
+            ./build 2>&1 | perl -pe 'END { print; exit $status } $status=100 
+                                     if /\.bea#.*: no such file or directory/;'
+            case $? in
+                0)   echo -e "##### Exit status: success\n"
+                     race_cond=0;;
+                100) echoerr "##### Exit status: ERROR (due to rebar)\n"
+                     race_cond=1;;
+                *)   echoerr "##### Exit status: ERROR\n"
+                     errors=1
+                     race_cond=0;;
+            esac
         done
     fi
     cd ..
@@ -93,7 +95,7 @@ done
 cd $cwd
 
 if (( errors )); then
-    echo "##### Build was NOT successfull."
+    echoerr "##### Build was NOT successfull."
 else
     echo "##### Build was successfull."
 fi
