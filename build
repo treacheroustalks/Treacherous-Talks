@@ -28,6 +28,14 @@ autoconf || errors=1
 ./configure --disable-pam || errors=1
 make || errors=1
 cd ../..
+
+# xmpp_frontend
+echo trying to build xmpp_frontend
+# ejabberd
+echo trying to build ejabberd
+cd ext_rel/xmpp_frontend
+make ejabberd-installation || errors=1
+cd ../..
 ##
 ##################################
 
