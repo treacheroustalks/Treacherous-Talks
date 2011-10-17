@@ -1,0 +1,29 @@
+xmpp_frontend Readme document
+#############################
+
+This is not an OTP release. It's just a "local" installation 
+of ejabberd, with scripts to try and fix its hardcoded paths.
+
+build (and make the releas)
+###########################
+
+    make release
+
+This produces a distributable (to the same architecture as it 
+was built on) directory containing ejabberd and our components
+in >>> rel/xmpp_frontend <<<
+
+install
+#######
+
+from the xmpp_frontend directory
+
+    ./update-installation
+
+Redo this step each time you move the location of xmpp_frontend
+or erlang in your filesystem.
+
+run
+###
+
+ejabberd-installation/sbin/ejabberdctl (start|stop)

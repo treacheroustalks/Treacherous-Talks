@@ -1,9 +1,13 @@
 expat = expat-1.95.8
+reldir = rel/xmpp_frontend
 
-release: rel/xmpp_frontend
+all: release
 
-rel/xmpp_frontend: update-installation ejabberd-installation rel/reltool.config
-	cd rel && rm -rf xmpp_frontend && rebar generate
+release: $(reldir)
+
+$(reldir): find-erts update-installation ejabberd-installation
+	mkdir -p $(reldir)
+	cp -r find-erts update-installation ejabberd-installation build_erts installation_prefix $(reldir)
 
 ejabberd-installation/: ejabberd expat-installation
 	./find-erts > build_erts
