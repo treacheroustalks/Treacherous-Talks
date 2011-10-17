@@ -1,0 +1,15 @@
+{application, db_user,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  protobuffs,
+                  riakc,
+                  db
+                 ]},
+  {mod, { db_user_app, []}},
+  {env, []}
+ ]}.
