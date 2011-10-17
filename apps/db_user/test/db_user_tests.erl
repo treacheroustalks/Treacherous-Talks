@@ -15,7 +15,11 @@ db_code_loaded_test() ->
 
 connect_setup () ->
     ?debugMsg ("connecting.."),
-    {ok, Client} = db_c:connect ({pb, {"127.0.0.1", 8081}}),
+    application:start (db_user), % this shouldn't be necessary. but it is.
+    ?debugVal (application:get_env (db_user,riak)),
+    {ok, Riak} = application:get_env (db_user,riak),
+
+    {ok, Client} = db_c:connect (Riak),
     Client.
 
 connect_teardown (Client) ->
@@ -29,7 +33,7 @@ db_connect_test_ () ->
      [fun () -> ?debugMsg ("connected") end]}.
 
 db_crud_test_ () ->
-    {"write,reade,delete-test",
+    {"write,read,delete-test",
      {setup,
       fun connect_setup/0,
       fun connect_teardown/1,
@@ -39,9 +43,12 @@ db_write_read_delete_instantiator (Client) ->
     fun () ->
             ?debugMsg ("message"),
             ?debugVal (Client),
-            Item="item", %{test, "string", <<"binary">>, 123},
+            Item={["item string!", item_atom, {item_tuple}], whoah},
             DBItem=db_obj:create (<<"bucket">>, <<"key">>, Item),
             ?debugVal (DBItem),
             db_c:put (Client,DBItem),
-            ?debugVal (db_c:get (Client, <<"bucket">>, <<"key">>))
+            {ok,ReadItem} = db_c:get (Client, <<"bucket">>, <<"key">>),
+            ?debugVal (ReadItem),
+            ?debugVal (db_obj:get_value (ReadItem)),
+            Item=db_obj:get_value (ReadItem)
     end.

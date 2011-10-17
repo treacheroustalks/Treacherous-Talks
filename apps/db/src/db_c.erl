@@ -23,7 +23,7 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 
--export([connect/1, connect/2,
+-export([connect/0, connect/1, connect/2,
          disconnect/1,
          ping/1,
          get_client_id/1, set_client_id/2,
@@ -59,6 +59,9 @@
 -define(PASS4(RC, Command, P1, P2, P3, P4),
         (RC#db_c.module):Command(RC#db_c.client,
                                       P1, P2, P3, P4)).
+
+connect() ->
+    connect (application:get_env (riak)).
 
 connect({Channel, {Host, Port}}) when is_list (Host), 
                                       is_integer (Port) ->

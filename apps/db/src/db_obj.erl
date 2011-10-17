@@ -45,12 +45,13 @@
 %-include_lib("riakc/include/riakc_obj.hrl").
 
 -define(CTYPE_JSON, "application/json").
-         
+-define(CTYPE_ERLANG_TERM, "application/x-erlang-term").
+
 -record(db_obj, {bucket,
                key,
                value,
                links=[],
-               ctype=?CTYPE_JSON,
+               ctype=?CTYPE_ERLANG_TERM,
                vclock}).
 -record(wsib, {bucket,
                key,
@@ -191,6 +192,10 @@ to_riakc_obj(WObj) ->
 
 decode_value(?CTYPE_JSON, V) ->
     mochijson2:decode(V);
+decode_value(?CTYPE_ERLANG_TERM, V) ->
+    {ok, Tokens, _} = erl_scan:string(binary_to_list (V)),
+    {ok, Term} = erl_parse:parse_term (Tokens),
+    Term;
 decode_value(_, V) when is_list(V) ->
     iolist_to_binary(V);
 decode_value(_, V) when is_binary(V) ->
@@ -198,6 +203,8 @@ decode_value(_, V) when is_binary(V) ->
 
 encode_value(?CTYPE_JSON, V) ->
     iolist_to_binary(mochijson2:encode(V));
+encode_value(?CTYPE_ERLANG_TERM, V) ->
+    iolist_to_binary(io_lib:format("~p.",[V]));
 encode_value(_, V) when is_list(V) ->
     iolist_to_binary(V);
 encode_value(_, V) when is_binary(V) ->

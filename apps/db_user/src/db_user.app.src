@@ -1,15 +1,13 @@
 {application, db_user,
  [
-  {description, ""},
+  {description, "a demo project for the db project"},
   {vsn, "1"},
-  {registered, []},
+  {registered, [db_user]},
   {applications, [
                   kernel,
                   stdlib,
-                  protobuffs,
-                  riakc,
-                  db
+                  db_user
                  ]},
   {mod, { db_user_app, []}},
-  {env, []}
+  {env, [{riak, {pb, {"127.0.0.1", 8081}}}]}
  ]}.
