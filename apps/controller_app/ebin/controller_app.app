@@ -1,0 +1,10 @@
+{application,controller_app,
+             [{description,[]},
+              {vsn,"1.0.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {mod,{controller_app_app,[]}},
+              {env,[]},
+              {modules,[controller,controller_app_app,controller_app_config,
+                        controller_app_sup,controller_app_worker,
+                        controller_app_worker_sup]}]}.
