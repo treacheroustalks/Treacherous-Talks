@@ -12,7 +12,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(controller).
--export([create/2]).
+-export([create/2, new_game/1]).
 -define(WORKER, controller_app_worker).
 
 %% ------------------------------------------------------------------
@@ -30,3 +30,14 @@
 create(Id, User) ->
     gen_server:call(service_worker:select_pid(?WORKER),
                     {create, Id, User}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for creation of a game
+%% @end
+%% [@spec create_game(#game{}) -> ok.
+%% @end]
+%%-------------------------------------------------------------------
+new_game(Game) ->
+    gen_server:call(service_worker:select_pid(?WORKER), {new_game, Game}).
