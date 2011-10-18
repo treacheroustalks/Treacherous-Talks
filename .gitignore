@@ -11,6 +11,10 @@
 *.pdf
 *.toc
 
+# emacs temp files
+*~
+\#*\#
+
 #dependencies
 deps/
 

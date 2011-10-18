@@ -5,6 +5,7 @@
 # Default settings (can be changed with command line options)
 domove=1
 dotar=0
+dodocs=1
 
 # Internal variables
 cwd=$(pwd)
@@ -26,8 +27,10 @@ while [ $# -gt 0 ]
 do
     case "$1" in
         -nm) domove=0;;
+        -nd) dodocs=0;;
         -t)  dotar=1;;
-        -*)  echo >&2 "usage: $0 [-nm] [-t] [release_name]"
+        -*)  echo >&2 "usage: $0 [-nd] [-nm] [-t] [release_name]"
+             echo >&2 "       -nd          do not copy edocs to release dir"
              echo >&2 "       -nm          do not move release directories"
              echo >&2 "       -t           also create tar.gz files of releases"
              echo >&2 "       release_name name of specific project to release"
@@ -110,6 +113,21 @@ for dir in $(ls); do
     fi
 done
 cd $cwd
+
+# Find and copy all edocs if $dodocs is set to 1
+if [ $dodocs -eq 1 ]; then
+    cd $cwd
+    echo Deleting old docs in $sysrel/docs...
+    rm -rf $sysrel/docs
+    mkdir -p $sysrel/docs
+    echo Copying edoc files to $sysrel/docs...
+    for dir in $(find . -path "*/doc/edoc-info" -printf "%h\n"); do
+    # Chop some names to only get the application name
+        name=$(dirname $dir)
+        name=$(basename $name)
+        cp -r $dir $sysrel/docs/$name
+    done
+fi
 
 
 # Remove timestamp since it is not needed anymore
