@@ -1,16 +1,27 @@
-expat = expat-1.95.8
+all: install
+
+reinstall: clean install
 
 # TODO: remake this target if config files change.
-install/: ejabberd $(expat) config
-	cd $(expat) && ./configure --prefix=$(CURDIR)/installation
-	cd $(expat) && make install
-	cd ejabberd/src; if [ -e Makefile ]; then make clean; fi
-	bash -x -c 'cd ejabberd/src && ./configure \
-                                           --prefix=$(CURDIR)/installation \
-                                           --with-expat=$(CURDIR)/installation'
-	cd ejabberd/src && make install
+install/: beams install-ejabberd config
 	sed -i '2cexport LD_LIBRARY_PATH=$(CURDIR)/installation/lib' installation/sbin/ejabberdctl
 	cp config/* installation/etc/ejabberd/
+	cp components/*.beam installation/lib/ejabberd/ebin
+
+beams: components/*.beam
+components/*.beam: make-ejabberd components/*.erl
+	cd components && erlc -I ../ejabberd/src -pa ../ejabberd/src *.erl
+
+install-ejabberd: installation/installed-ejabberd
+installation/installed-ejabberd: ejabberd/src/made
+	cd ejabberd/src && make install && (cd $(CURDIR) && touch installation/installed-ejabberd)
+
+make-ejabberd: ejabberd/src/made
+ejabberd/src/made:
+	cd ejabberd/src && ./configure --prefix=$(CURDIR)/installation
+	cd ejabberd/src && make && touch made
 
 clean:
+	rm -rf components/*.beam
+	cd ejabberd/src; if [ -e Makefile ]; then make clean; fi
 	rm -rf installation

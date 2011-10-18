@@ -5,6 +5,7 @@
 
 cwd=$(pwd)
 errors=0
+ejdctl=ext_rel/xmpp_frontend/rel/xmpp_frontend/installation/sbin/ejabberdctl
 
 # Setup the shell to report errors even when piping commands. This allows sed
 # to operate on output while preserving the exit code from the previous
@@ -64,10 +65,20 @@ cd $cwd
 echo "##### trying to build xmpp_frontend tests (including exmpp)"
 cd ext_test/ejabberd_echo
 build_dep "./build"
-#echo Running xmpp_frontend tests
-#rebar eunit
+
 # TODO: Tests should probably be run after the build has completed
+echo Running xmpp_frontend tests
+echo Starting ejabberd...
+$cwd/$ejdctl start
+sleep 5
+echo ejabberd status:
+$cwd/$ejdctl status
+rebar eunit skip_deps=true || errors=1
+echo Stopping ejabberd...
+$cwd/$ejdctl stop
 cd $cwd
+echo
+echo
 ##
 ##################################
 
