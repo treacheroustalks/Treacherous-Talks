@@ -29,6 +29,7 @@
          get_client_id/1, set_client_id/2,
          get_server_info/1,
          get/3, get/4,
+         get_unique_id/0,
          put/2, put/3,
          delete/3, delete/4,
          list_buckets/1,
@@ -160,6 +161,11 @@ mapred_bucket(RC, Bucket, Query, Timeout) ->
 
 mapred_bucket_stream(RC, Bucket, Query, ClientPid, Timeout) ->
     ?PASS4(RC, mapred_bucket_stream, Bucket, Query, ClientPid, Timeout).
+
+
+get_unique_id() ->
+    %TODO create some id ...
+    random_client_id().
 
 %% INTERNAL
 
