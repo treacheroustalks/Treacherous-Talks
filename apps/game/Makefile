@@ -1,4 +1,4 @@
-all: deps compile test
+all: deps compile
 
 
 deps:

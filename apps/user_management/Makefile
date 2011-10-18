@@ -1,6 +1,6 @@
 
 
-all: get_deps compile tests
+all: get_deps compile
 
 
 get_deps:

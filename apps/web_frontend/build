@@ -1,3 +1,8 @@
 #!/bin/bash
 
-rebar compile
+errors=0
+
+rebar clean || errors=1
+rebar compile || errors=1
+
+exit $errors

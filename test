@@ -1,0 +1,83 @@
+#!/bin/bash
+# This script will run local (unit/application) tests and/or integration tests.
+
+# Default settings (can be changed with command line options)
+dolocal=1
+dointegration=1
+
+# Internal variables
+cwd=$(pwd)
+errors=0
+
+# Get command-line arguments
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -ni) dointegration=0;;
+        -nl) dolocal=0;;
+        -*)  echo >&2 "usage: $0 [-ni] [-nl] [app_name]"
+             echo >&2 "       -ni      do not run integration tests"
+             echo >&2 "       -nl      do not run local (unit) tests"
+             echo >&2 "       app_name name of specific project to test"
+             exit 1;;
+        *)   break;;
+    esac
+    shift
+done
+
+# Set app_name
+app_name=$1
+
+# Convenience function for echoing to stderr
+function echoerr() { echo -e "$@" 1>&2; }
+
+# This function tests each subdirectory in directory $1 (the first argument). If
+# the script is called with a specific app_name, then it will only run tests in
+# that directory.
+do_test () {
+    cd $1
+    for app in $(ls); do
+        if [ ! -d $app ]; then
+            echo $app is not a dir
+            pwd
+            continue
+        fi
+
+        cd $app
+        if [ -z "$app_name" -o "$app_name" == $app ]; then
+            # Look for test script
+            if [ -x dotest ]; then
+                echo "####################################"
+                echo "##### executing " $(pwd)"/dotest"
+                ./dotest
+                case $? in
+                    0)   echo -e "##### Exit status: success\n";;
+                    *)   echoerr "##### Exit status: ERROR\n"
+                        errors=1;;
+                esac
+            fi
+        fi
+        cd ..
+    done
+    cd $cwd
+}
+
+# Do unit (local) tests
+if [ $dolocal -eq 1 ]; then
+    do_test $cwd/apps
+fi
+
+# Do integration tests
+# TODO: Should these be run when testing a single app?
+if [ $dointegration -eq 1 ]; then
+    echo "no integration tests defined"
+fi
+
+
+if (( errors )); then
+    echoerr "##### Test run was NOT successfull."
+else
+    echo "##### Test run was successfull."
+fi
+
+exit $errors

@@ -1,6 +1,6 @@
 
 
-all: get_deps clean compile tests docs
+all: get_deps clean compile docs
 
 
 get_deps:

@@ -1,7 +1,7 @@
 
 .PHONY: test
 
-all: get_deps clean compile test
+all: get_deps clean compile
 
 
 get_deps:

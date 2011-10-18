@@ -1,6 +1,9 @@
 #!/bin/bash
 
-rebar skip_deps=true clean
-rebar get-deps
-rebar compile
-rebar skip_deps=true eunit
+errors=0
+
+rebar skip_deps=true clean || errors=1
+rebar get-deps || errors=1
+rebar compile || errors=1
+
+exit $errors

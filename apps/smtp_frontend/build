@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# This script is not set to executable right now since it interacts with with
-# gen_smtp (and give some small warnings). It is not automatically testable
-# right now since it needs another mail server to talk to...
+errors=0
 
-rebar clean;
-rebar compile;
-rebar eunit
+rebar clean || errors=1
+rebar compile || errors=1
+
+exit $errors

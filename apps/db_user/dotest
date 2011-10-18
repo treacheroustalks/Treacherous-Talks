@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rebar skip_deps=true eunit
