@@ -4,8 +4,9 @@ errors=0
 
 # Get exmpp
 mkdir -p deps
-if [ ! -d deps/exmpp ]; then
+if [ ! -e deps/exmpp/ebin/exmpp.beam ]; then
     cd deps
+    rm -rf exmpp
     wget http://download.process-one.net/exmpp/exmpp-0.9.8.tar.gz
     tar -xzf exmpp*.tar.gz
     rm exmpp*.tar.gz
