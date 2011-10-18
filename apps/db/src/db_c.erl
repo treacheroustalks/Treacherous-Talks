@@ -163,12 +163,15 @@ mapred_bucket_stream(RC, Bucket, Query, ClientPid, Timeout) ->
 
 get_unique_id() ->
     %TODO create some id ...
-    random_client_id().
+    random_id().
 
 %% INTERNAL
 
-random_client_id() ->
+random_id() ->
     {{Y,Mo,D},{H,Mi,S}} = erlang:universaltime(),
     {_,_,NowPart} = now(),
-    Id = erlang:phash2([Y,Mo,D,H,Mi,S,node(),NowPart]),
+    erlang:phash2([Y,Mo,D,H,Mi,S,node(),NowPart]).
+
+random_client_id() ->
+    Id = random_id(),
     base64:encode(<<Id:32>>).

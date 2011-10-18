@@ -41,6 +41,10 @@ handle_call({create_user, Id, #user{} = User},
             _From, #state{db_conn = Conn} = State) ->
     Result = create_user(Conn, Id, User),
     {reply, Result, State};
+handle_call({is_valid, Nick, Password},
+            _From, #state{db_conn = Conn} = State) ->
+    Result = is_valid(Conn, Nick, Password),
+    {reply, Result, State};
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 handle_call(_Request, _From, State) ->
@@ -50,6 +54,11 @@ handle_call(_Request, _From, State) ->
 handle_cast({create_user, Client, Id, #user{} = User},
             #state{db_conn = Conn} = State) ->
     Result = create_user(Conn, Id, User),
+    gen_server:reply(Client, Result),
+    {noreply, State};
+handle_cast({is_valid, Client, Nick, Password},
+            #state{db_conn = Conn} = State) ->
+    Result = is_valid(Conn, Nick, Password),
     gen_server:reply(Client, Result),
     {noreply, State};
 handle_cast(_Msg, State) ->
@@ -72,9 +81,37 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 create_user(Conn, undefined, #user{} = User) ->
-    create_user(Conn, db_c:get_unique_id(), User);
+    Id = db_c:get_unique_id(),
+    create_user(Conn, Id, User#user{id = Id});
 create_user(Conn, Id, #user{} = User) ->
     DBVal = db_obj:create(<<?USER_BUCKET>>, <<Id>>, User),
     db_c:put(Conn, DBVal),
     {ok, ReadItem} = db_c:get(Conn, <<?USER_BUCKET>>, <<Id>>),
     db_obj:get_value(ReadItem).
+
+is_valid(Conn, Nick, Password) ->
+    % This is terrible, but map/reduce erlang code would need to be on the
+    % riak node. for now this is the solution...
+    % http://lists.basho.com/pipermail/riak-users_lists.basho.com/2010-April/000988.html
+    % https://gist.github.com/351659
+    % or add a load path to the riak node, where the code is:
+    % http://markmail.org/message/xvttgfnufojqbv7w#query:+page:1+mid:xvttgfnufojqbv7w+state:results
+    % or use javascript functions ...
+    {ok, Keys} = db_c:list_keys(Conn, <<?USER_BUCKET>>),
+    Result = lists:foldl(
+               fun(Key, Acc) ->
+                       {ok, Item} = db_c:get(Conn, <<?USER_BUCKET>>, Key),
+                       Val = db_obj:get_value(Item),
+                       case Val of
+                           #user{nick = Nick, password = Password} ->
+                               [Val | Acc];
+                           _ ->
+                               Acc
+                       end
+               end, [], Keys),
+    case Result of
+        [] ->
+            false;
+        [User | _] ->
+            User
+    end.

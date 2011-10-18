@@ -17,7 +17,7 @@
 -include_lib("datatypes/include/user.hrl").
 
 %% Public application interface
--export([create/2, create/3]).
+-export([create/2, create/3, is_valid/2, is_valid/3]).
 
 
 %%-------------------------------------------------------------------
@@ -31,3 +31,15 @@ create(Id, #user{} = User) ->
 create(Client, Id, #user{} = User) ->
     gen_server:cast(service_worker:select_pid(user_management_worker),
                     {create_user, Client, Id, User}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Verifies user authentication and returns the result to the Client.
+%% @end
+%%-------------------------------------------------------------------
+is_valid(Nick, Password) ->
+    gen_server:call(service_worker:select_pid(user_management_worker),
+                    {is_valid, Nick, Password}).
+is_valid(Client, Nick, Password) ->
+    gen_server:cast(service_worker:select_pid(user_management_worker),
+                    {is_valid, Client, Nick, Password}).
