@@ -78,11 +78,22 @@ handle_call(ping, _From, State) ->
 %% Handles call for creation of a user.
 %% @end
 %% [@spec handle_call({create::atom(), Id::Integer(), #user{}}, 
-%%                     From::pid(), #state{}) -> {reply, ok, #state{}}.]
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
 handle_call({create, Id, User}, From, State) ->
     user_management:create(From, Id, User),
+    {reply, ok, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for creating a new game
+%% @end
+%% [@spec handle_call({new_game::atom(), #game{}},
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({new_game, Game}, From, State) ->
+    game:new_game(From, Game),
     {reply, ok, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
