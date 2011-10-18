@@ -1,3 +1,25 @@
 #!/bin/bash
 
-rebar clean eunit
+errors=0
+
+# Get exmpp
+mkdir -p deps
+if [ ! -d deps/exmpp ]; then
+    cd deps
+    wget http://download.process-one.net/exmpp/exmpp-0.9.8.tar.gz
+    tar -xzf exmpp*.tar.gz
+    rm exmpp*.tar.gz
+    mv exmpp-* exmpp
+    cd exmpp
+    autoreconf -vif || errors=1
+    ./configure || errors=1
+    make || errors=1
+    cd ../..
+fi
+
+rebar clean skip_deps=true || errors=1
+rebar compile skip_deps=true || errors=1
+
+# For testing, run rebar eunit skip_deps=true
+
+exit $errors
