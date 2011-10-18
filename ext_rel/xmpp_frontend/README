@@ -1,0 +1,17 @@
+xmpp_frontend pre-release readme document
+#########################################
+
+This does NOT produce an OTP release. 
+
+build (and make the release)
+############################
+
+    make release
+
+This combines the files needed to build and install ejabberd
+in rel/xmpp_frontend, with a makefile to install ejabberd
+where it will be used. This can be re-run as needed, e.g.
+when the xmpp_frontend directory is moved.
+
+Config files in the config directory will be copied to
+rel/xmpp_frontend for the installation step to install them.

@@ -7,6 +7,7 @@ release: $(expat) ejabberd
 	mkdir -p $(reldir)
 	cp -r ejabberd $(expat) config $(reldir)
 	cp install_Makefile $(reldir)/Makefile
+	cp install_README $(reldir)/README
 	touch $(reldir)
 
 ejabberd/:
