@@ -32,15 +32,15 @@ function build_dep () {
     errors=$local_error
 }
 
-#PROTOBUFFS
+# PROTOBUFFS
 cd deps/protobuffs
 build_dep "make all"
-cd ../..
+cd $cwd
 
 # RIAK CLIENT
 cd deps/riakc
 build_dep "make all"
-cd ../..
+cd $cwd
 
 # YAWS WEB SERVER
 echo "##### trying to build yaws"
@@ -48,9 +48,9 @@ cd deps/yaws
 autoconf || errors=1
 ./configure --disable-pam || errors=1
 build_dep "make"
-cd ../..
+cd $cwd
 
-# xmpp_frontend
+# XMPP FRONTEND (ejabberd)
 echo "##### trying to build xmpp_frontend"
 # ejabberd
 echo trying to build ejabberd
@@ -60,12 +60,14 @@ cd rel/xmpp_frontend
 build_dep "make install"
 cd $cwd
 
-echo Building xmpp_frontend tests
+# XMPP FRONTEND TESTS
+echo "##### trying to build xmpp_frontend tests (including exmpp)"
 cd ext_test/ejabberd_echo
-rebar compile
+build_dep "./build"
 #echo Running xmpp_frontend tests
 #rebar eunit
-cd ../..
+# TODO: Tests should probably be run after the build has completed
+cd $cwd
 ##
 ##################################
 
