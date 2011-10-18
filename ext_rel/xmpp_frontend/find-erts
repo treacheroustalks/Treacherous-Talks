@@ -1,6 +1,0 @@
-#!/usr/bin/env escript
-%% -*- erlang -*-
-
-main(_) ->
-    ErtsPath = code:root_dir() ++ "/erts-" ++ erlang:system_info(version),
-    io:format(ErtsPath).

@@ -55,8 +55,10 @@ echo "##### trying to build xmpp_frontend"
 # ejabberd
 echo trying to build ejabberd
 cd ext_rel/xmpp_frontend
-build_dep "make ejabberd-installation"
-cd ../..
+build_dep "make release"
+cd rel/xmpp_frontend
+build_dep "make install"
+cd $cwd
 ##
 ##################################
 
