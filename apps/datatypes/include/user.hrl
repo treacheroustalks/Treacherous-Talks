@@ -1,5 +1,4 @@
--type date() :: {{integer (), integer (), integer ()},
-                 {integer (), integer (), integer ()}}.
+-include_lib ("datatypes/include/date.hrl").
 
 -record (user, {id :: integer(),
                 nick :: nonempty_string (),

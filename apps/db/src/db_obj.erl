@@ -58,7 +58,7 @@
                vclock,
                sibs}).
 
-create(Bucket, Key, Value) when is_binary(Bucket), is_binary(Key) ->
+create(Bucket, Key, Value) when is_binary(Bucket) ->
     #db_obj{bucket=Bucket, key=Key, value=Value}.
 
 create_siblings(Bucket, Key, Vclock, Siblings)

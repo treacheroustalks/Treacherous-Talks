@@ -1,7 +1,9 @@
 #erlang
 *.beam
 .eunit
+ebin/
 *.dump
+doc/
 
 #latex
 *.aux

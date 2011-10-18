@@ -118,8 +118,6 @@ to_db_obj(Error) ->
     Error.
 
 put(RC, Obj) ->
-    ?debugVal (RC),
-    ?debugVal (Obj),
     ?PASS1(RC, put, db_obj:to_riakc_obj(Obj)).
 put(RC, Obj, Options) ->
     ?PASS2(RC, put, db_obj:to_riakc_obj(Obj), Options).

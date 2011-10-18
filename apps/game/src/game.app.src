@@ -1,0 +1,14 @@
+{application, game,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  db
+                 ]},
+  {mod, { game_app, []}},
+  {env, [{game_workers, 5},
+         {riak, {pb, {"127.0.0.1", 8081}}}]}
+ ]}.
