@@ -3,34 +3,22 @@ reldir = rel/xmpp_frontend
 
 all: release
 
-release: $(reldir)
-
-$(reldir): find-erts update-installation ejabberd-installation
+release: $(expat) ejabberd
 	mkdir -p $(reldir)
-	cp -r find-erts update-installation ejabberd-installation build_erts installation_prefix $(reldir)
-
-# TODO: remake this target if config files change.
-ejabberd-installation/: ejabberd expat-installation
-	./find-erts > build_erts
-	echo "$(CURDIR)/ejabberd-installation" > installation_prefix
-	bash -x -c 'cd ejabberd/src && ./configure \
-                                           --prefix=`cat ../../installation_prefix` \
-                                           --with-expat=$(CURDIR)/expat-installation \
-                                           --with-erlang=`cat ../../build_erts`'
-	cd ejabberd/src && make install
-	cp config/* ejabberd-installation/etc/ejabberd/
+	cp -r ejabberd $(expat) config $(reldir)
+	cp install_Makefile $(reldir)/Makefile
+	touch $(reldir)
 
 ejabberd/:
-	git clone git://git.process-one.net/ejabberd/mainline.git ejabberd
-	cd ejabberd && git checkout "v2.1.9"
+	wget -O ejabberd-2.1.9.tar.gz 'https://github.com/processone/ejabberd/tarball/v2.1.9'
+	tar -xf ejabberd-2.1.9.tar.gz
+	mv processone-ejabberd-4ca3c33 ejabberd
 
-expat-installation/:
+$(expat):
 	wget "http://downloads.sourceforge.net/project/expat/expat/1.95.8/expat-1.95.8.tar.gz"
 	tar -xf $(expat).tar.gz
-	cd $(expat) && ./configure --prefix=$(CURDIR)/expat-installation
-	cd $(expat) && make install
 
 clean:
-	rm -rf ejabberd ejabberd-installation installation_prefix build_erts
-	rm -rf $(expat) $(expat).tar.gz expat-installation
-	cd rel && rm -rf ejabberd-installation update-installation xmpp_frontend
+	rm -rf ejabberd ejabberd-2.1.9.tar.gz
+	rm -rf $(expat) $(expat).tar.gz 
+	if [ -e $(reldir) ]; then cd $(reldir) && rm -rf ejabberd $(expat) config; fi
