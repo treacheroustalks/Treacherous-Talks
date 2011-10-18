@@ -3,21 +3,25 @@
 -type press () :: any ().
 -type password () :: string () | undefined.
 
+-define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
+-define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
+%-define (REQUIRED, undefined).
+
 -record (game, {id :: integer (),
-                creator_id :: integer (),
-                name :: string (),
+                ?REQUIRED (creator_id) :: integer (),
+                ?REQUIRED (name) :: string (),
                 description :: string (),
-                status :: waiting | ongoing | stopped | finished,
-                press :: press (),
-                order_phase :: pos_integer (),
-                retreat_phase :: pos_integer (),
-                build_phase :: pos_integer (),
-                num_players :: pos_integer (),
-                password :: password (),
-                result :: none | won | draw,
-                waiting_time :: pos_integer (),
-                date_created :: date (),
-                date_completed :: date ()}).
+                status = waiting :: waiting | ongoing | stopped | finished,
+                ?REQUIRED (press) :: press (),
+                ?REQUIRED (order_phase) :: pos_integer (),
+                ?REQUIRED (retreat_phase) :: pos_integer (),
+                ?REQUIRED (build_phase) :: pos_integer (),
+                num_players = 0 :: pos_integer (),
+                password = undefined :: password (),
+                result = none :: none | won | draw,
+                ?REQUIRED (waiting_time) :: pos_integer (),
+                date_created = {date (), time ()} :: date (),
+                date_completed = undefined :: date ()}).
 
 -define (GAME_BUCKET, <<"game">>).
 
