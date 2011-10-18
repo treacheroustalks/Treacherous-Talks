@@ -19,8 +19,6 @@
 %% -------------------------------------------------------------------
 -module(db_obj).
 
--include_lib("deps/riakc/include/riakc_obj.hrl").
-
 -export([create/3,
          create_siblings/4,
          get_vclock/1,
@@ -42,7 +40,7 @@
          from_riakc_obj/1,
          to_riakc_obj/1]).
 
-%-include_lib("riakc/include/riakc_obj.hrl").
+-include_lib("riakc/include/riakc_obj.hrl").
 
 -define(CTYPE_JSON, "application/json").
 -define(CTYPE_ERLANG_TERM, "application/x-erlang-term").
@@ -149,7 +147,7 @@ set_json_field(RecObj, Field, Value) ->
     NewProps = [{Field, Value}
                 | [ {F, V} || {F, V} <- Props, F =/= Field ]],
     db_obj:set_value(RecObj, {struct, NewProps}).
-    
+
 from_riakc_obj(RCObj) ->
     case riakc_obj:get_contents(RCObj) of
         [{MD, V}] -> % lone value

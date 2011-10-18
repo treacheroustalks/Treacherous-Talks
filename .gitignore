@@ -7,6 +7,7 @@ ebin/
 *doc/*.css
 *doc/*.png
 *doc/edoc-info
+doc/
 
 #latex
 *.aux
@@ -19,6 +20,10 @@ ebin/
 # emacs temp files
 *~
 \#*\#
+
+#eclipse
+.project
+.settings/
 
 #dependencies
 deps/

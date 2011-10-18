@@ -12,7 +12,11 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(controller).
--export([create/2, new_game/1]).
+
+-export([create_user/2,
+         login_user/1,
+         new_game/1]).
+
 -define(WORKER, controller_app_worker).
 
 %% ------------------------------------------------------------------
@@ -23,13 +27,25 @@
 %% @doc
 %% API for creation of a user.
 %% @end
-%% [@spec create(#request{}, Id::Integer(), #user{}) -> ok.
+%% [@spec create_user(Id::Integer(), #user{}) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
-%-spec create(#request{}, Integer(), #user{}) -> ok.
-create(Id, User) ->
+%-spec create_user(Integer(), #user{}) -> ok.
+create_user(Id, User) ->
     gen_server:call(service_worker:select_pid(?WORKER),
-                    {create, Id, User}).
+                    {create_user, Id, User}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for logging in a user.
+%% @end
+%% [@spec login_user(#user{}) -> ok.
+%% @end]
+%%-------------------------------------------------------------------
+%-spec login_user(#user{}) -> ok.
+login_user(User) ->
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {login_user, User}).
 
 
 %%-------------------------------------------------------------------

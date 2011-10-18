@@ -15,6 +15,10 @@
 -module(controller_app_worker).
 -behaviour(gen_server).
 
+-include_lib("datatypes/include/user.hrl").
+
+-define(APP, controller_app).
+
 %% ------------------------------------------------------------------
 %% Internal API Function Exports
 %% ------------------------------------------------------------------
@@ -27,7 +31,7 @@
          code_change/3]).
 
 %% server state
--record(state, {}).
+-record(state, {db_conn}).
 
 
 %% ------------------------------------------------------------------
@@ -69,7 +73,9 @@ ping() ->
 -spec init(atom()) -> {ok, #state{}}.
 init(no_arg) ->
     service_worker:join_group(?MODULE),
-    {ok, #state{}}.
+    {ok, Riak} = application:get_env(?APP, riak),
+    {ok, Conn} = db_c:connect(Riak),
+    {ok, #state{db_conn = Conn}}.
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
@@ -77,13 +83,36 @@ handle_call(ping, _From, State) ->
 %% @doc
 %% Handles call for creation of a user.
 %% @end
-%% [@spec handle_call({create::atom(), Id::Integer(), #user{}}, 
+%% [@spec handle_call({create_user::atom(), Id::Integer(), #user{}},
 %%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({create, Id, User}, From, State) ->
+handle_call({create_user, Id, User}, From, State) ->
     user_management:create(From, Id, User),
-    {reply, ok, State};
+    {noreply, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for logging in a user.
+%% The function checks the credentials of the user by making a call to
+%% user_management and if valid, adds the user to the session and returns the
+%% session id.
+%% On fail, it returns the atom invalid
+%% @end
+%% [@spec handle_call({login_user::atom(), #user{}},
+%%                     From::{pid(), Tag}, #state{}) ->
+%%%         {reply, interger(), #state{}} | {reply, invalid, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({login_user, User}, _From, #state{db_conn = Conn} = State) ->
+    case user_management:is_valid(User#user.nick, User#user.password) of
+        false ->
+            {reply, invalid, State};
+        UserNew = #user{} ->
+            SessionId = session:add_user(Conn, UserNew),
+            {reply, SessionId, State}
+    end;
+
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for creating a new game
@@ -94,9 +123,9 @@ handle_call({create, Id, User}, From, State) ->
 %%-------------------------------------------------------------------
 handle_call({new_game, Game}, From, State) ->
     game:new_game(From, Game),
-    {reply, ok, State};
-handle_call(_Request, _From, State) ->
-    io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
+    {noreply, State};
+handle_call(Request, From, State) ->
+    io:format("Received unhandled call: ~p~n", [{Request, From, State}]),
     {noreply, ok, State}.
 
 

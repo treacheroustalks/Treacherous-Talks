@@ -5,8 +5,12 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  service,
+                  datatypes,
+                  db
                  ]},
   {mod, { controller_app_app, []}},
-  {env, []}
+  {env, [{riak, {pb, {"127.0.0.1", 8081}}},
+         {controller_app_workers, 10}]}
  ]}.
