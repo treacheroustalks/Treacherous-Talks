@@ -1,0 +1,11 @@
+{application,user_management,
+             [{description,"CRU users"},
+              {vsn,"1.0.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib,datatypes,service,db]},
+              {mod,{user_management_app,[]}},
+              {env,[{user_management_workers,50},
+                    {riak,{pb,{"127.0.0.1",8081}}}]},
+              {modules,[user_management,user_management_app,
+                        user_management_config,user_management_sup,
+                        user_management_worker,user_management_worker_sup]}]}.
