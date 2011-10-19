@@ -15,3 +15,27 @@ when the xmpp_frontend directory is moved.
 
 Config files in the config directory will be copied to
 rel/xmpp_frontend for the installation step to install them.
+
+development workflow
+####################
+
+One suggested workflow for development of component modules:
+
+1. make release 
+    make a release of the xmpp_frontend
+2. cd rel/xmpp_frontend
+3. make install
+    make a local installation of ejabberd and our modules and configs
+4. edit the modules e.g. ../../components/*.erl
+5. cp ../../components/*.erl components/
+    copy the component source here
+6. make -B components
+    rebuild the component source here
+7. make install
+    reinstall the components
+8. ./installation/sbin/ejabberdctl live
+    Run an interactive instance of ejabberd to see what's going on 
+    while you test your modifications.
+
+Yes, this is clunky. If you can improve on it, do so and inform 
+people of the better workflow, here perhaps!
