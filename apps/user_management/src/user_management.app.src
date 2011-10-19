@@ -8,6 +8,8 @@
                   stdlib,
                   datatypes,
                   service,
+                  riakc,
+                  protobuffs,
                   db
                  ]},
   {mod, { user_management_app, []}},
