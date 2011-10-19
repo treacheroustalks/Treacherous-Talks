@@ -1,7 +1,7 @@
 all: deps compile doc
 
 doc:
-	rebar doc
+	rebar skip_deps=true doc
 
 deps:
 	rebar get-deps

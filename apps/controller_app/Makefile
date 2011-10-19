@@ -1,7 +1,7 @@
 
 .PHONY: test
 
-all: get_deps clean compile
+all: get_deps clean compile doc
 
 
 get_deps:
@@ -14,6 +14,10 @@ clean:
 
 compile:
 	rebar compile
+
+
+doc:
+	rebar skip_deps=true doc
 
 
 test:
