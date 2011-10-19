@@ -20,7 +20,7 @@
   {env, [
     {domain, "andre.pcs"},
     {address, {0,0,0,0}},
-    {port, 250},
+    {port, 25},
     {protocol, tcp},
     {family, inet}
   ]}

@@ -1,14 +1,11 @@
 -module(smtp_core_tests).
 
 -include_lib("eunit/include/eunit.hrl").
--import(smtp_core, [simple_relay/4, forward_mail/4]).
-
-% Export for manual test
--export([display/0]).
-
 -include_lib("datatypes/include/user.hrl").% -record(user,{})
 -include("include/user_command.hrl").% -record(reg_info,{})
 -include("include/test_utils.hrl"). % ?SAMPLE_EMAIL
+
+-import(smtp_core, [simple_relay/4, forward_mail/4]).
 
 % EUnit auto test------------------------------------------------------
 smtp_core_test_()->
@@ -18,7 +15,7 @@ smtp_core_test_()->
                        undefined,undefined,undefined,0,undefined,undefined},
     ExpectedRegInfo = {reg_info,<<"Lin">>,<<"QWER">>,<<"ss@pcs">>,<<"Agner Erlang">>},
     ExpectedUserInfo = {user,undefined,<<"Lin">>,<<"ss@pcs">>,<<"QWER">>,<<"Agner Erlang">>,
-                        user,undefined,undefined,undefined,0,undefined,undefined},
+                        user,smtp,undefined,undefined,0,undefined,undefined},
     UserRec = #user{},
     RegRec = #reg_info{},
     {ok,RegInfo} = user_command:get_reg_info(BinStr),
@@ -54,32 +51,14 @@ simple_relay_test_()->
     % Use SMTP server as game frontend-------------------------------------
     ReceivingNonCmdMail = simple_relay(User, [Game], NonCmdMail, GameHost),
     ReceivingRegCmdMail = simple_relay(User, [Game], RegCmdMail, GameHost),
-    ?debugVal(ReceivingNonCmdMail),
-    ?debugVal(ReceivingRegCmdMail),
 
     % clean mockers
     meck:unload(controller),
     meck:unload(gen_smtp_client),
+    application:stop(datatypes),
     [
       ?_assert(ForwardUserMail == {ok,{forward,{"user@user.pcs","game@game.pcs"}}}),
       ?_assert(UsersInTheSameDomain == {ok,{mail_stored,<<"hello">>}}),
       ?_assert(ReceivingNonCmdMail == {ok,{cmd_parsed,[{error,no_reg_start}]}}),
       ?_assert(ReceivingRegCmdMail == {ok,{cmd_parsed,[{ok,{reg_request_sent, #user{}}}]}})
     ].
-
-smtp_user_register_test_()->
-    ?_assert(true).
-
-% Manual test------------------------------------------------------
-pnt(M) ->
-    io:format("########: ~p~n", [M]).
-
-display()->
-    User  = <<"user@user.pcs">>,
-    User2 = <<"user2@user.pcs">>,
-    Game  = <<"game@game.pcs">>,
-    RegCmdMail = ?SAMPLE_EMAIL,
-    NonCmdMail = <<"hello">>,
-    UserHost = "user.pcs",
-    GameHost= "game.pcs",
-    pnt(simple_relay(User, [Game], NonCmdMail, GameHost)).

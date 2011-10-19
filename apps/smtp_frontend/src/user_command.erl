@@ -3,10 +3,10 @@
 %%% COPYRIGHT
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @module user_command @end
+%%% @doc user_command
 %%%
-%%% @doc A module for recognizing user command in email body
-%%% 
+%%% A module for recognizing user command in email body
+%%%
 %%% @end
 %%%
 %%%-------------------------------------------------------------------
@@ -22,12 +22,12 @@
 -include("include/user_command.hrl").% -record(reg_info,{})
 
 %%------------------------------------------------------------------------------------------------
-%% @function get_reg_info/1 @end
+%% @doc get_reg_info/1
 %%
-%% @doc Convert reg_info record to user record.
+%% Convert reg_info record to user record.
+%% @end
 %%------------------------------------------------------------------------------------------------
-get_reg_info(
-  BinStr) ->
+get_reg_info(BinStr) ->
     HeadPos = binary:match(BinStr, <<"REGISTER\r\n">>),
     case HeadPos of
         {_,_} ->
@@ -46,17 +46,14 @@ get_reg_info(
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function reg_info_refine/1 @end
+%% @doc reg_info_refine/1
 %%
-%% @doc Convert reg_info record to user record.
+%% Convert reg_info record to user record.
+%% @end
 %%------------------------------------------------------------------------------------------------
-reg_info_refine(
-  [],
-  OutputRecord) ->
+reg_info_refine([], OutputRecord) ->
     {ok, OutputRecord};
-reg_info_refine(
-  [H|Rest],
-  OutputRecord) ->
+reg_info_refine([H|Rest], OutputRecord) ->
     case binary:split(H, <<":">>) of
         [Field, Value]
           when H =/= <<>> -> % if current line has ":", proceed further syntax analysis
@@ -103,21 +100,21 @@ reg_info_refine(
         _ -> % if current line doen't have ":", skip this line
             reg_info_refine(Rest, OutputRecord)
     end.
-reg_info_refine(
-  InfoList) ->
+reg_info_refine(InfoList) ->
     reg_info_refine(InfoList, #reg_info{}).
 
 
 %%------------------------------------------------------------------------------------------------
-%% @function new_user_record/1 @end
+%% @doc new_user_record/1
 %%
-%% @doc Convert reg_info record to user record.
+%% Convert reg_info record to user record.
+%% @end
 %%------------------------------------------------------------------------------------------------
-new_user_record(
-  RegInfo) ->
+new_user_record(RegInfo) ->
     #user{
         nick     = RegInfo#reg_info.nick,
         password = RegInfo#reg_info.password,
         email    = RegInfo#reg_info.email,
-        name     = RegInfo#reg_info.name
+        name     = RegInfo#reg_info.name,
+        channel  = smtp
     }.

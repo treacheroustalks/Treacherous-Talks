@@ -5,68 +5,63 @@
 -export([bin_rm_trailing_spaces/1, bin_reverse/1]).
 
 %%------------------------------------------------------------------------------------------------
-%% @function tailstr/1 @end
+%% @doc tailstr/1
 %%
-%% @doc Split a bin string into two parts, return the right part.
-%%------------------------------------------------------------------------------------------------
-tailstr(
-  BinStr,
-  {Head, Len}) ->
+%% Split a bin string into two parts, return the right part.
+%% @end
+%------------------------------------------------------------------------------------------------
+tailstr(BinStr, {Head, Len}) ->
     N = Head + Len,
     tailstr(BinStr, N);
-tailstr(
-  BinStr,
-  N) ->
+tailstr(BinStr, N) ->
     StrSize = byte_size(BinStr),
     binary:part(BinStr, N, StrSize - N).
 
-%%------------------------------------------------------------------------------------------------
-%% @function headstr/1 @end
-%%
-%% @doc Split a bin string into two parts, return the left part.
-%%------------------------------------------------------------------------------------------------
-headstr(
-  BinStr,
-  {N, _}) ->
-    headstr(BinStr, N);
-headstr(
-  BinStr,
-  N) ->
-    binary:part(BinStr, 0, N).
 
 %%------------------------------------------------------------------------------------------------
-%% @function strip/1 @end
+%% @doc headstr/1
 %%
-%% @doc Remove leading and trailing spaces of a binary string.
+%% Split a bin string into two parts, return the left part.
+%% @end
 %%------------------------------------------------------------------------------------------------
-strip(
-  <<" ",Rest/binary>>) ->
+headstr(BinStr, {N, _}) ->
+    headstr(BinStr, N);
+headstr(BinStr, N) ->
+    binary:part(BinStr, 0, N).
+
+
+%%------------------------------------------------------------------------------------------------
+%% @doc strip/1
+%%
+%% Remove leading and trailing spaces of a binary string.
+%% @end
+%%------------------------------------------------------------------------------------------------
+strip(<<" ",Rest/binary>>) ->
     strip(Rest);
-strip(
-  WithoutLeadingSpaces) ->
+strip(WithoutLeadingSpaces) ->
     bin_rm_trailing_spaces(bin_reverse(WithoutLeadingSpaces)).
 
 
 %=======Internal Functions===============================================
 %%------------------------------------------------------------------------------------------------
-%% @function bin_rm_trailing_spaces/1 @end
+%% @doc bin_rm_trailing_spaces/1
 %%
-%% @doc Remove trailing spaces of a bin string then reverse it
+%% Remove trailing spaces of a bin string then reverse it
+%% @end
 %%------------------------------------------------------------------------------------------------
-bin_rm_trailing_spaces(
-  <<" ",Rest/binary>>) ->
+bin_rm_trailing_spaces(<<" ",Rest/binary>>) ->
     bin_rm_trailing_spaces(Rest);
-bin_rm_trailing_spaces(
-  WithoutTrailing) ->
+bin_rm_trailing_spaces(WithoutTrailing) ->
     bin_reverse(WithoutTrailing).
 
+
 %%------------------------------------------------------------------------------------------------
-%% @function bin_reverse/1 @end
+%% @doc bin_reverse/1
 %%
-%% @doc Reverse a binary string.
+%% Reverse a binary string.
+%% @end
 %%------------------------------------------------------------------------------------------------
-bin_reverse(
-  Bin) -> 
-    Size = bit_size(Bin), 
-    <<T:Size/integer-little>> = Bin, 
+bin_reverse(Bin) ->
+    Size = bit_size(Bin),
+    <<T:Size/integer-little>> = Bin,
     <<T:Size/integer-big>>.
