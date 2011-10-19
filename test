@@ -9,6 +9,11 @@ dointegration=1
 cwd=$(pwd)
 errors=0
 
+# Setup the shell to report errors even when piping commands. This allows sed
+# to operate on output while preserving the exit code from the previous
+# command. Warning! This is a bash specific feature.
+set -o pipefail
+
 # Get command-line arguments
 while [ $# -gt 0 ]
 do
@@ -48,13 +53,24 @@ do_test () {
             # Look for test script
             if [ -x dotest ]; then
                 echo "####################################"
-                echo "##### executing " $(pwd)"/dotest"
-                ./dotest
-                case $? in
-                    0)   echo -e "##### Exit status: success\n";;
-                    *)   echoerr "##### Exit status: ERROR\n"
-                        errors=1;;
-                esac
+                race_cond=1
+                while [ "$race_cond" -ne 0 ]; do
+                    echo "##### executing " $(pwd)"/dotest"
+                    # Run the build file and pipe all output through a perl
+                    # one-liner that detects rebar race conditions and returns a
+                    # special error code in that case.
+                    ./dotest 2>&1 | perl -pe 'END { print; exit $status }
+                        $status=100 if /\.bea#.*: no such file or directory/;'
+                    case $? in
+                        0)   echo -e "##### Exit status: success\n"
+                             race_cond=0;;
+                        100) echoerr "##### Exit status: ERROR (due to rebar)\n"
+                             race_cond=1;;
+                        *)   echoerr "##### Exit status: ERROR\n"
+                             errors=1
+                             race_cond=0;;
+                    esac
+                done
             fi
         fi
         cd ..
