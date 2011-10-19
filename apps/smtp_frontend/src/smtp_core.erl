@@ -13,13 +13,19 @@
 -module(smtp_core).
 -behaviour(gen_smtp_server_session).
 
-% intermodule interface
+%Export for gen_smtp_server_session callback
 -export([init/4, handle_HELO/2, handle_EHLO/3, handle_MAIL/2, handle_MAIL_extension/2,
     handle_RCPT/2, handle_RCPT_extension/2, handle_DATA/4, handle_RSET/1, handle_VRFY/2,
     handle_other/3, handle_AUTH/4, code_change/3, terminate/2]).
 
 -define(RELAY, true).
 -define(ECHO_DISABLED, true). %set to false to enable echo_bot
+
+%Export for eunit test
+-export([simple_relay/4, forward_mail/4]).
+
+-include_lib("datatypes/include/user.hrl").% -record(user,{})
+-include("include/user_command.hrl").% -record(reg_info,{})
 
 -record(state,
     {
@@ -324,8 +330,6 @@ terminate(
 
 
 
-
-
 %========Internal Functions========
 %%------------------------------------------------------------------------------------------------
 %% @function relay/3 @end
@@ -358,44 +362,52 @@ simple_relay(
   BinData,
   MyHost) ->
     From = binary_to_list(BinFrom),
-    To = binary_to_list(BinTo),
+    To   = binary_to_list(BinTo),
     Data = binary_to_list(BinData),
 
-    [_User, ToHost] = string:tokens(To, "@"),
-
-    pnt([ToHost, MyHost]),
+    [_, ToHost] = string:tokens(To, "@"),
+    [_, FromHost] = string:tokens(From, "@"),
 
     case ToHost of
-        MyHost % when a mail arrives its destination
-          when false /= ?ECHO_DISABLED -> % when echo mode on
-            io:format("###Echo back ~s to ~s~n", [To, From]),
-            [_User2, FromHost] = string:tokens(From, "@"),
-            forward_mail(To, From, Data, FromHost),
-            io:format("###Echo ~s to ~s sent~n", [MyHost, FromHost]);
+        FromHost
+          when FromHost == MyHost -> % when sender and receipent are on our server
+            {ok, {mail_stored, BinData}};
+%        MyHost % when a mail arrives its destination
+%          when false /= ?ECHO_DISABLED -> % when echo mode on
+%            io:format("###Echo back ~s to ~s~n", [To, From]),
+%            forward_mail(To, From, Data, FromHost),
+%            io:format("###Echo ~s to ~s sent~n", [MyHost, FromHost]),
+%            {ok, {echo, {To, From}}};
         MyHost -> % when echo mode off
-            io:format("message from ~s to ~p ~n~n~s~n",
-                      [From, To, Data]);
-        _Relay -> % this isn't the mail's destination, forward it to its recipent
+            io:format("message from ~s to ~p ~n~n~s~n", [From, To, Data]),
+            % parse registration command from email body
+            RegInfoRecord = user_command:get_reg_info(BinData),
+            RegReport = case RegInfoRecord of
+                {ok, RegInfo} -> % if there is register command
+                    % convert #reg_info{name, password...} to #user{name, password...}
+                    UserInfo = user_command:new_user_record(RegInfo),
+                    % call controller API to register user at backend
+                    UserRec = controller:create_user(undefined, UserInfo),
+                    {ok, {reg_request_sent, UserRec}};
+                Other -> % if there is no register command or invalid register command
+                    Other
+            end,
+            {ok, {cmd_parsed, [RegReport]}};
+        _ -> % this isn't the mail's destination, forward it to its recipent
             io:format("###Forwarding ~s to ~s...~n", [From, To]),
             forward_mail(From, To, Data, ToHost),
-            io:format("###Forward ~s to ~s sent!~n", [MyHost, ToHost])
+            io:format("###Forward ~s to ~s sent!~n", [MyHost, ToHost]),
+            {ok, {forward, {From, To}}}
     end.
 
-
+%%------------------------------------------------------------------------------------------------
+%% @function forward_mail/4 @end
+%%
+%% @doc Use gen_smtp_client to send email
+%%------------------------------------------------------------------------------------------------
 forward_mail(
   From,
   To,
   Data,
   ToHost) ->
-    gen_smtp_client:send(
-    {
-        From,
-        [To],
-        Data
-    },
-    [
-        {relay, ToHost},
-        {port,25}
-    ]).
-
-pnt(M)->io:format("########: ~p~n", [M]).
+    gen_smtp_client:send({From, [To], Data}, [{relay, ToHost}, {port,25}]).

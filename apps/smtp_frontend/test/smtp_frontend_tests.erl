@@ -1,8 +1,11 @@
 -module(smtp_frontend_tests).
 
 -include_lib("eunit/include/eunit.hrl").
--export([smtp_frontend_test/0]).
-smtp_frontend_test() ->
+
+%For manual test
+-export([smtp_frontend_testcase1/0]).
+
+smtp_frontend_testcase1() ->
     %% replace lin.pcs with your domain name
     gen_smtp_server:start(smtp_core,[[{port, 25}, {domain, "lin.pcs"}]]),
 
@@ -11,7 +14,6 @@ smtp_frontend_test() ->
     gen_smtp_client:send({"mike@lin.pcs",
                          ["joe@smtp_echo.pcs"],
                          "hello mike\r\nhello joe\r\nhello robert"},
-                         [{relay, "lin.pcs"}, {port, 25}]),
-    ok.
+                         [{relay, "lin.pcs"}, {port, 25}]).
 
 % if success, it will print out echo message "hello mike\r\nhello joe\r\nhello robert" in our terminal
