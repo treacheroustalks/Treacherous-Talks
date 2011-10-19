@@ -12,6 +12,7 @@ dialyzer --src src | sed 's/warning/w arning/g' # it just keeps nagging....
 rebar get-deps \
   && rebar clean \
   && rebar compile \
+  && rebar skip_deps=true doc \
   && exit 0
 
 exit 1

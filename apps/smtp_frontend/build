@@ -5,5 +5,6 @@ errors=0
 rebar get-deps
 rebar clean || errors=1
 rebar compile || errors=1
+rebar skip_deps=true doc || errors=1
 
 exit $errors
