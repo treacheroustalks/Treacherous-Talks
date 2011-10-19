@@ -4,27 +4,23 @@
   {vsn, "1"},
   {modules,
    [
-    binstr,
     smtp_frontend_app,
     smtp_frontend_sup,
-	gen_smtp_server,
-    gen_smtp_client,
-    gen_smtp_server_session,
-    smtp_util,
-    socket,
-	smtp_core
+    smtp_core
    ]
   },
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  iconv,
+                  gen_smtp
                  ]},
   {mod, { smtp_frontend_app, []}},
   {env, [
-    {domain, "lin.pcs"},
+    {domain, "andre.pcs"},
     {address, {0,0,0,0}},
-    {port, 25},
+    {port, 250},
     {protocol, tcp},
     {family, inet}
   ]}

@@ -2,6 +2,7 @@
 
 errors=0
 
+rebar get-deps
 rebar clean || errors=1
 rebar compile || errors=1
 
