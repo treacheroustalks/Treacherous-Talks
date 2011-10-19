@@ -9,11 +9,13 @@ apps() ->
     [datatypes, service, protobuffs, riakc, db, user_management].
 
 app_start() ->
-    [ ?debugVal(application:start(App)) || App <- apps()].
+    [ ?assertEqual(ok, application:start(App)) || App <- apps()],
+    error_logger:tty(false).
 
 %% teardown
 app_stop(_Client) ->
-    [ ?debugVal(application:stop(App)) || App <- lists:reverse(apps())].
+    [ ?assertEqual(ok, application:stop(App)) || App <- lists:reverse(apps())],
+    error_logger:tty(true).
 
 %% main test
 create_user_without_key_test_() ->
