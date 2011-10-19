@@ -7,6 +7,10 @@ cwd=$(pwd)
 errors=0
 ejdctl=ext_rel/xmpp_frontend/rel/xmpp_frontend/installation/sbin/ejabberdctl
 
+# Set manual build order for apps/ dir (note that anything in that directory not
+# mentioned here will still get built; but after the ones defined here).
+apps_to_build_first="datatypes service db"
+
 # Setup the shell to report errors even when piping commands. This allows sed
 # to operate on output while preserving the exit code from the previous
 # command. Warning! This is a bash specific feature.
@@ -83,7 +87,16 @@ echo
 ##################################
 
 cd $cwd/apps
-for app in $(ls); do
+# Get all subdirectories
+app_dirs=$(ls)
+# Create a variable storing only the directories in $app_dirs that is not in the
+# $apps variable (basically the complement in set theory, $app_dirs \ $apps)
+rest_of_apps=$(echo -e $app_dirs $apps_to_build_first | sed 's/ /\n/g' \
+               | sort | uniq -u)
+# Concatenate the two variables to create the correct build order
+app_build_order="$apps_to_build_first $rest_of_apps"
+# Do actual build loop
+for app in ${app_build_order[@]}; do
     if [ ! -d $app ]; then
         echo $app is not a dir
         pwd
