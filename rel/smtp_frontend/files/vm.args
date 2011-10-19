@@ -2,7 +2,7 @@
 -name smtp_frontend@127.0.0.1
 
 ## Cookie for distributed erlang
--setcookie smtp_frontend
+-setcookie treacherous_talks
 
 ## Heartbeat management; auto-restarts VM if it dies or becomes unresponsive
 ## (Disabled by default..use with caution!)
