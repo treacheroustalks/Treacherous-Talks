@@ -19,7 +19,7 @@
     handle_other/3, handle_AUTH/4, code_change/3, terminate/2]).
 
 -define(RELAY, true).
--define(ECHO, false). %set to false to disable echo_bot
+-define(ECHO_DISABLED, true). %set to false to enable echo_bot
 
 -record(state,
     {
@@ -367,7 +367,7 @@ simple_relay(
 
     case ToHost of
         MyHost % when a mail arrives its destination
-          when ?ECHO -> % when echo mode on
+          when false /= ?ECHO_DISABLED -> % when echo mode on
             io:format("###Echo back ~s to ~s~n", [To, From]),
             [_User2, FromHost] = string:tokens(From, "@"),
             forward_mail(To, From, Data, FromHost),
