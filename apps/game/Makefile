@@ -1,5 +1,7 @@
-all: deps compile
+all: deps compile doc
 
+doc:
+	rebar doc
 
 deps:
 	rebar get-deps

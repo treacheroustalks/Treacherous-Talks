@@ -39,11 +39,6 @@ init(no_arg) ->
     {ok, Client} = db_c:connect (Riak),
     {ok, #state{client=Client}}.
 
-%% @doc reply to a caller process after a cast.
-%% Message format: {TagFromRequest, AnswerToRequest, WorkerProcessPID}
-direct_reply (_To={Pid, Tag}, Message) when is_pid (Pid) ->
-    Pid ! {Tag, Message}.
-
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 handle_call(_Request, _From, State) ->
@@ -55,12 +50,25 @@ handle_cast({new_game, From, Game=#game{id=ID}}, State) ->
     DBReply = db_c:put (get_client (State), DBObj),
     case DBReply of
         ok ->
-            direct_reply (From, {ok, ID}),
+            gen_server:reply (From, {ok, ID}),
             {noreply, State};
         {ok, AssignedID} ->
-            direct_reply (From, {ok, AssignedID}),
+            gen_server:reply (From, {ok, AssignedID}),
             {noreply, State}
     end;
+handle_cast ({get_game, From, Key}, State) ->
+    DBReply = db_c:get (get_client (State), ?GAME_BUCKET, Key),
+    case DBReply of 
+        {ok, DBObj} -> 
+            gen_server:reply (From, 
+                              {ok, db_obj:get_value (DBObj)});
+        Other ->
+            gen_server:reply (From, Other)
+    end,
+    {noreply, State};
+handle_cast ({delete_game, From, Key}, State) ->
+    gen_server:reply (From, db_c:delete (get_client (State), ?GAME_BUCKET, Key)),
+    {noreply, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.

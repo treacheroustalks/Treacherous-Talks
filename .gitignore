@@ -3,7 +3,10 @@
 .eunit
 ebin/
 *.dump
-doc/
+*doc/*.html
+*doc/*.css
+*doc/*.png
+*doc/edoc-info
 
 #latex
 *.aux
