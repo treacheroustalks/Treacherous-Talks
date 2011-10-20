@@ -3,17 +3,12 @@
 %%% COPYRIGHT
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @module session @end
+%%% @doc Session
 %%%
-%%% @doc
-%%% Module to handle user and other sessions
-%%% @end
+%%% Module to handle user sessions
 %%%
 %%% @author Sukumar Yethadka <sbhat7@gmail.com>
-%%%
-%%% @since : 17 Oct 2011 by Bermuda Triangle
 %%% @end
-%%%
 %%%-------------------------------------------------------------------
 -module(session).
 
@@ -28,11 +23,10 @@
 -include_lib("datatypes/include/user.hrl").
 
 %%------------------------------------------------------------------------------
-%% @function add_user/2 @end
-%%
-%% @doc Adds a user to the session
+%% @doc add_user/2
 %%
 %% The function adds the user to the session and returns the session id
+%% @end
 %%------------------------------------------------------------------------------
 add_user(Conn, User) ->
     %% We use the user's id as session id for now
@@ -45,9 +39,10 @@ add_user(Conn, User) ->
 
 
 %%------------------------------------------------------------------------------
-%% @function update_user/2 @end
+%% @doc update_user/2
 %%
-%% @doc Updates the user's data in the session
+%% Updates the user's data in the session
+%% @end
 %%------------------------------------------------------------------------------
 update_user(Conn, Id, User) ->
     Key = term_to_binary(Id),
@@ -57,9 +52,10 @@ update_user(Conn, Id, User) ->
 
 
 %%------------------------------------------------------------------------------
-%% @function get_user/2 @end
+%% @doc get_user/2
 %%
-%% @doc Returns the user's data from the session
+%% Returns the user's data from the session
+%% @end
 %%------------------------------------------------------------------------------
 get_user(Conn, Id) ->
     Key = term_to_binary(Id),
@@ -68,9 +64,10 @@ get_user(Conn, Id) ->
 
 
 %%------------------------------------------------------------------------------
-%% @function is_online/2 @end
+%% @doc is_online/2
 %%
-%% @doc Checks if the given user has an active session
+%% Checks if the given user has an active session
+%% @end
 %%------------------------------------------------------------------------------
 is_online(Conn, Id) ->
     case get_user(Conn, Id) of
@@ -82,12 +79,11 @@ is_online(Conn, Id) ->
 
 
 %%------------------------------------------------------------------------------
-%% @function has_access/2 @end
-%%
-%% @doc Checks if the user has access
+%% @doc has_access/2
 %%
 %% The function checks if the user has the required role (Role) needed to access
 %% the resource
+%% @end
 %%------------------------------------------------------------------------------
 has_access(Conn, Id, Role) ->
     case get_user(Conn, Id) of
@@ -99,9 +95,10 @@ has_access(Conn, Id, Role) ->
 
 
 %%------------------------------------------------------------------------------
-%% @function remove_user/2 @end
+%% @doc remove_user/2
 %%
-%% @doc Removes the user from the session
+%% Removes the user from the session
+%% @end
 %%------------------------------------------------------------------------------
 remove_user(Conn, Id) ->
     Key = term_to_binary(Id),
