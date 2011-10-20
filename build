@@ -54,40 +54,6 @@ autoconf || errors=1
 ./configure --disable-pam || errors=1
 build_dep "make"
 cd $cwd
-
-# XMPP FRONTEND (ejabberd)
-echo "##### trying to build xmpp_frontend"
-# ejabberd
-echo trying to build ejabberd
-cd ext_rel/xmpp_frontend
-build_dep "make release"
-
-echo
-echo "##### installing xmpp_frontend for frontend tests"
-# TODO: This step is only needed for frontend tests
-# and can be moved with those.
-cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
-build_dep "make install"
-cd $cwd
-
-# XMPP FRONTEND TESTS
-echo "##### trying to build xmpp_frontend tests (including exmpp)"
-cd ext_test/ejabberd_echo
-build_dep "./build"
-
-# TODO: Tests should probably be run after the build has completed
-echo Running xmpp_frontend tests
-echo Starting ejabberd...
-$cwd/$ejdctl start
-sleep 5
-echo ejabberd status:
-$cwd/$ejdctl status
-rebar eunit skip_deps=true || errors=1
-echo Stopping ejabberd...
-$cwd/$ejdctl stop
-cd $cwd
-echo
-echo
 ##
 ##################################
 
@@ -133,6 +99,43 @@ for app in ${app_build_order[@]}; do
     cd ..
 done
 cd $cwd
+
+
+# XMPP FRONTEND (ejabberd)
+echo "##### trying to build xmpp_frontend"
+# ejabberd
+echo trying to build ejabberd
+cd ext_rel/xmpp_frontend
+build_dep "make release"
+
+echo
+echo "##### installing xmpp_frontend for frontend tests"
+# TODO: This step is only needed for frontend tests
+# and can be moved with those.
+cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
+build_dep "make install"
+cd $cwd
+
+# XMPP FRONTEND TESTS
+echo "##### trying to build xmpp_frontend tests (including exmpp)"
+cd ext_test/ejabberd_echo
+build_dep "./build"
+
+# TODO: Tests should probably be run after the build has completed
+echo Running xmpp_frontend tests
+echo Starting ejabberd...
+$cwd/$ejdctl start
+sleep 5
+echo ejabberd status:
+$cwd/$ejdctl status
+rebar eunit skip_deps=true || errors=1
+echo Stopping ejabberd...
+$cwd/$ejdctl stop
+cd $cwd
+echo
+echo
+
+
 
 if (( errors )); then
     echoerr "##### Build was NOT successfull."
