@@ -2,6 +2,7 @@
 -behaviour(gen_server).
 
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/bucket.hrl").
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -17,7 +18,6 @@
 %% server state
 -record(state, {db_conn}).
 
--define(USER_BUCKET, "user").
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
@@ -84,9 +84,10 @@ create_user(Conn, undefined, #user{} = User) ->
     Id = db_c:get_unique_id(),
     create_user(Conn, Id, User#user{id = Id});
 create_user(Conn, Id, #user{} = User) ->
-    DBVal = db_obj:create(<<?USER_BUCKET>>, <<Id>>, User),
+    BinId = list_to_binary(integer_to_list(Id)),
+    DBVal = db_obj:create(?B_USER, BinId, User),
     db_c:put(Conn, DBVal),
-    {ok, ReadItem} = db_c:get(Conn, <<?USER_BUCKET>>, <<Id>>),
+    {ok, ReadItem} = db_c:get(Conn, ?B_USER, BinId),
     db_obj:get_value(ReadItem).
 
 is_valid(Conn, Nick, Password) ->
@@ -97,10 +98,10 @@ is_valid(Conn, Nick, Password) ->
     % or add a load path to the riak node, where the code is:
     % http://markmail.org/message/xvttgfnufojqbv7w#query:+page:1+mid:xvttgfnufojqbv7w+state:results
     % or use javascript functions ...
-    {ok, Keys} = db_c:list_keys(Conn, <<?USER_BUCKET>>),
+    {ok, Keys} = db_c:list_keys(Conn, ?B_USER),
     Result = lists:foldl(
                fun(Key, Acc) ->
-                       {ok, Item} = db_c:get(Conn, <<?USER_BUCKET>>, Key),
+                       {ok, Item} = db_c:get(Conn, ?B_USER, Key),
                        Val = db_obj:get_value(Item),
                        case Val of
                            #user{nick = Nick, password = Password} ->
