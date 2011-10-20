@@ -1,0 +1,87 @@
+#!/bin/bash
+# This script will either get all dependencies and tar them to a file or load
+# dependencies from such a tar file (the default).
+
+# Internal variables
+cwd=$(pwd)
+errors=0
+dotar=0
+dountar=1
+
+# Convenience function for echoing to stderr
+function echoerr() { echo -e "$@" 1>&2; }
+
+# Get command-line arguments
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -c)  dotar=1
+             dountar=0;;
+        -*)  echo >&2 "usage: $0 [-c]"
+             echo >&2 "       -c get all deps and create a tar.gz of them"
+             echo >&2 "       if no argument, download and untar dependencies"
+             exit 1;;
+        *)   break;;
+    esac
+    shift
+done
+
+if [ $dotar -eq 1 ]; then
+    echo "##### Getting dependencies and creating a tar.gz file"
+    # Touch a file to record the time when the get-deps script started
+    touch $cwd/getdeps_timestamp || errors=1
+
+    # Get global deps
+    echo "##### Getting global dependencies"
+    rebar get-deps || errors=1
+
+    do_rebar () {
+        echo "##### Entering $1"
+        cd $1
+        rebar get-deps || errors=1
+        cd ..
+    }
+
+    # Get deps for each app
+    cd $cwd/apps
+    for app in $(ls); do
+        do_rebar $app
+    done
+
+    cd $cwd/deps
+    for app in $(ls); do
+        do_rebar $app
+    done
+
+    # Find & tar files
+    cd $cwd
+    find . -mindepth 2 -newer $cwd/getdeps_timestamp \
+        -print > depfiles.txt || errors=1
+    tar --no-recursion -czf dependencies.tar.gz -T depfiles.txt || errors=1
+
+    rm $cwd/getdeps_timestamp || errors=1
+    rm $cwd/depfiles.txt || errors=1
+fi
+
+
+if [ $dountar -eq 1 ]; then
+    cd $cwd
+    echo "##### Downloading dependency file and untarring it"
+    wget -nv 'http://buildbot.pcs/mirror/dependencies.tar.gz' || errors=1
+
+    # If no errors, untar
+    if [ $errors -eq 0 ]; then
+        echo "##### Untarring..."
+        tar -xf dependencies.tar.gz || errors=1
+        echo "##### Deleting tar file"
+        rm dependencies.tar.gz || errors=1
+    fi
+fi
+
+
+echo
+if (( errors )); then
+    echoerr "##### Get-deps was NOT successfull."
+else
+    echo "##### Get-deps was successfull."
+fi
