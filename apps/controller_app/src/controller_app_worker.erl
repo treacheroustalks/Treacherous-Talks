@@ -81,18 +81,30 @@ handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 %%-------------------------------------------------------------------
 %% @doc
-%% Handles call for creation of a user.
+%% Handles call for creation of a user
 %% @end
 %% [@spec handle_call({create_user::atom(), Id::Integer(), #user{}},
-%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
+%%                     From::{pid(), Tag}, #state{}) -> {noreply, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({create_user, Id, User}, From, State) ->
-    user_management:create(From, Id, User),
+handle_call({create_user, User}, From, State) ->
+    user_management:create(From, User),
     {noreply, State};
 %%-------------------------------------------------------------------
 %% @doc
-%% Handles call for logging in a user.
+%% Handles call for updating a user
+%% @end
+%% [@spec handle_call({create_user::atom(), #user{}},
+%%                     From::{pid(), Tag}, #state{}) -> {noreply, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({update_user, User}, From, State) ->
+    user_management:update(From, User),
+    {noreply, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for logging in a user
+%%
 %% The function checks the credentials of the user by making a call to
 %% user_management and if valid, adds the user to the session and returns the
 %% session id.
@@ -111,8 +123,18 @@ handle_call({login_user, User}, _From, #state{db_conn = Conn} = State) ->
             SessionId = session:add_user(Conn, UserNew),
             {reply, SessionId, State}
     end;
-
-
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for getting a user
+%% @end
+%% [@spec handle_call({get_user::atom(), atom(),
+%%                     integer()|string()}, From::{pid(), Tag}, #state{}) ->
+%%%         {noreply, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({get_user, Type, Key}, From, State) ->
+    user_management:get(From, Type, Key),
+    {noreply, State};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for creating a new game

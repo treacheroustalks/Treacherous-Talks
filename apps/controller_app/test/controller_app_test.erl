@@ -26,6 +26,8 @@ controller_test_() ->
      fun setup/0,
      fun controller_create_user/0,
      fun controller_login_user/0,
+     fun controller_update_user/0,
+     fun controller_get_user/0,
      fun controller_new_game/0,
      fun teardown/0
     ].
@@ -33,21 +35,22 @@ controller_test_() ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Tests the create functionality in the controller
+%% Tests the create_user functionality in the controller
+%%
 %% The user_management_app_worker is a mocked module
 %% @end
 %%-------------------------------------------------------------------
 controller_create_user() ->
     ?debugVal("Testing creation of a user"),
     setup_meck(),
-    {Key, User} = get_test_data(create),
+    {Key, User} = get_test_data(create_user),
     meck:expect(user_management, create,
-                fun(_From, _Key, _User) -> ok end),
+                fun(_From, _User) -> ok end),
     meck:expect(controller_app_worker, handle_call,
-                fun({create_user, Id, Usr}, From, State) ->
-                        user_management:create(From, Id, Usr),
+                fun({create_user, Usr}, From, State) ->
+                        user_management:create(From, Usr),
                         {reply, From, State} end),
-    {From, _Ref} = controller:create_user(Key, User),
+    {From, _Ref} = controller:create_user(User),
     ?assertEqual(self(), From),
     teardown_meck(),
     ?debugVal("Completed user creation test").
@@ -55,7 +58,52 @@ controller_create_user() ->
 
 %%-------------------------------------------------------------------
 %% @doc
+%% Tests the update_user functionality in the controller
+%%
+%% The user_management_app_worker is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_update_user() ->
+    ?debugVal("Testing updating a user"),
+    setup_meck(),
+    {User} = get_test_data(update_user),
+    meck:expect(user_management, update,
+                fun(_From, _User) -> ok end),
+    meck:expect(controller_app_worker, handle_call,
+                fun({update_user, Usr}, From, State) ->
+                        user_management:update(From, Usr),
+                        {reply, From, State} end),
+    {From, _Ref} = controller:update_user(User),
+    ?assertEqual(self(), From),
+    teardown_meck(),
+    ?debugVal("Completed update user test").
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests the get_user functionality in the controller
+%% @end
+%%-------------------------------------------------------------------
+controller_get_user() ->
+    ?debugVal("Testing geting a user"),
+    setup_meck(),
+    {Type, Key, User} = get_test_data(get_user),
+    meck:expect(user_management, get,
+                fun(_From, _Type, _Key) -> ok end),
+    meck:expect(controller_app_worker, handle_call,
+                fun({get_user, Type1, Key1}, From, State) ->
+                        user_management:get(From, Type1, Key1),
+                        {reply, From, State} end),
+    {From, _Ref} = controller:get_user(Type, Key),
+    ?assertEqual(self(), From),
+    teardown_meck(),
+    ?debugVal("Completed getting user test").
+
+
+%%-------------------------------------------------------------------
+%% @doc
 %% Tests the user login functionality in the controller
+%%
 %% The session is a mocked module
 %% @end
 %%-------------------------------------------------------------------
@@ -74,6 +122,7 @@ controller_login_user() ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Tests creation of new game
+%%
 %% The session is a mocked module
 %% @end
 %%-------------------------------------------------------------------
@@ -176,7 +225,11 @@ initReturn(Module) ->
 
 
 %% Test data
-get_test_data(create) ->
+get_test_data(create_user) ->
     {1234, "user"};
+get_test_data(get_user) ->
+    {id, 1234, #user{}};
+get_test_data(update_user) ->
+    {#user{}};
 get_test_data(login) ->
     {#user{id=5527647785738502144}, 5527647785738502144}.
