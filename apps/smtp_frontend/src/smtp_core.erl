@@ -305,7 +305,6 @@ relay(From, [To|Rest], Data) ->
 simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
     From = binary_to_list(BinFrom),
     To   = binary_to_list(BinTo),
-    Data = binary_to_list(BinData),
 
     [_, ToHost] = string:tokens(To, "@"),
     [_, FromHost] = string:tokens(From, "@"),
@@ -317,11 +316,26 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
         MyHost -> % when a mail reach its destination
             case command_parser:parse(BinData) of
                 {register, {ok, UserInfo}} ->
-                    io:format("message from ~s to ~p ~n~n~s~n", [From, To, Data]),
-                    UserRec = controller:create_user(undefined, UserInfo),
+                    UserRec = controller:create_user(UserInfo),
+                    io:format("[SMTP][register success] ~p", [UserRec]),
                     {ok, {reg_request_sent, UserRec}};
+                {register, Error} ->
+                    io:format("[SMTP][register error] ~p", [Error]);
+                {login, {ok, UserInfo}} ->
+                    case controller:login_user(UserInfo) of
+                        invalid ->
+                            io:format("[SMTP][login invalid] ~p", [UserInfo]),
+                            forward_mail(To, From, "Invalid login data", FromHost);
+                        Session ->
+                            io:format("[SMTP][login successful] session: ~p", [Session]),
+                            forward_mail(To, From,
+                                         "Loggedn in, session id: " ++ Session,
+                                         FromHost)
+                    end;
+                {login, Error} ->
+                    io:format("[SMTP][register error] ~p", [Error]);
                 unknown_command ->
-                    % TODO how handle errors?
+                    io:format("[SMTP][unknown_command]"),
                     {ok, unknown_command}
             end
     end.
