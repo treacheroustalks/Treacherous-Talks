@@ -190,7 +190,7 @@ handle_DATA(_From, _To, <<>>, State) ->
     {error, "552 Message too small", State};
 handle_DATA(From, To, Data, State) ->
     % some kind of unique id
-    Reference = lists:flatten([io_lib:format("~2.16.0b", [X]) || <<X>> <= 
+    Reference = lists:flatten([io_lib:format("~2.16.0b", [X]) || <<X>> <=
                                erlang:md5(term_to_binary(erlang:now()))]),
     % if RELAY is true, then relay email to email address, else send email data to console
     case proplists:get_value(relay, State#state.options, false) of
@@ -333,7 +333,13 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
                                          FromHost)
                     end;
                 {login, Error} ->
-                    io:format("[SMTP][register error] ~p", [Error]);
+                    io:format("[SMTP][login error] ~p", [Error]);
+                {update, {ok, UserInfo}} ->
+                    UserRec = controller:update_user(UserInfo),
+                    io:format("[SMTP][register success] ~p", [UserRec]),
+                    {ok, {reg_request_sent, UserRec}};
+                {update, Error} ->
+                    io:format("[SMTP][update error] ~p", [Error]);
                 unknown_command ->
                     io:format("[SMTP][unknown_command]"),
                     {ok, unknown_command}
@@ -348,4 +354,5 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
 %% @end
 %%------------------------------------------------------------------------------------------------
 forward_mail(From, To, Data, ToHost) ->
-    gen_smtp_client:send({From, [To], Data}, [{relay, ToHost}, {port,25}]).
+    gen_smtp_client:send({From, [To], Data}, [{relay, ToHost}, {port,25}]),
+    ok.
