@@ -1,6 +1,6 @@
 
 
-all: get_deps clean compile doc
+all: get_deps compile doc
 
 
 get_deps:

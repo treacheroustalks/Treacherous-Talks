@@ -17,7 +17,7 @@
 -include_lib("datatypes/include/user.hrl").
 
 %% Public application interface
--export([create/2, create/3, is_valid/2, is_valid/3]).
+-export([create/1, create/2, update/1, update/2, is_valid/2, is_valid/3]).
 
 
 %%-------------------------------------------------------------------
@@ -25,12 +25,25 @@
 %% Creates a new user and returns the result to the Client.
 %% @end
 %%-------------------------------------------------------------------
-create(Id, #user{} = User) ->
+create(#user{id = Id} = User) ->
     gen_server:call(service_worker:select_pid(user_management_worker),
                     {create_user, Id, User}).
-create(Client, Id, #user{} = User) ->
+create(Client, #user{id = Id} = User) ->
     gen_server:cast(service_worker:select_pid(user_management_worker),
                     {create_user, Client, Id, User}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates an existing user and returns the result to the Client.
+%% @end
+%%-------------------------------------------------------------------
+update(#user{id = Id} = NewUser) when is_integer(Id) ->
+    gen_server:call(service_worker:select_pid(user_management_worker),
+                    {create_user, Id, NewUser}).
+update(Client, #user{id = Id} = User) when is_integer(Id) ->
+    gen_server:cast(service_worker:select_pid(user_management_worker),
+                    {create_user, Client, Id, User}).
+    
 
 %%-------------------------------------------------------------------
 %% @doc

@@ -23,7 +23,7 @@ create_user_without_key_test_() ->
       {setup,
        fun () ->
                app_start(),
-               {undefined, create_user()}
+               (create_user())#user{id = undefined}
        end,
        fun app_stop/1,
        fun create_user_t/1
@@ -34,7 +34,7 @@ create_user_with_key_test_() ->
       {setup,
        fun () ->
                app_start(),
-               {12345, create_user()}
+               (create_user())#user{id=12345}
        end,
        fun app_stop/1,
        fun create_user_t/1
@@ -46,7 +46,7 @@ authenticate_user_success_test_() ->
        fun () ->
                app_start(),
                User = create_user(),
-               User1 = user_management:create(undefined, User),
+               User1 = user_management:create(User),
                {User1, User1#user.password, User1}
        end,
        fun app_stop/1,
@@ -59,20 +59,35 @@ authenticate_user_failure_test_() ->
        fun () ->
                app_start(),
                User = create_user(),
-               user_management:create(undefined, User),
+               user_management:create(User),
                {User, "S0m3_rand0m_passw0rd", false}
        end,
        fun app_stop/1,
        fun authenticate_user/1
       }}.
 
+update_user_test_() ->
+    {"update a user",
+     {setup,
+      fun app_start/0,
+      fun app_stop/1,
+      update_user()
+      }}.
 
 %% tests generators
-create_user_t({Id, #user{} = User}) ->
-    Result = user_management:create(Id, User),
+create_user_t(#user{} = User) ->
+    Result = user_management:create(User),
     ?debugVal(User),
     ?debugVal(Result),
     ?_assert(User#user{id = Result#user.id} == Result).
+
+update_user() ->
+    fun() ->
+            User = user_management:create(create_user()),
+            UpdatedUser = User#user{name = "Updated Name"},
+            ?assertEqual(UpdatedUser,
+                         user_management:update(UpdatedUser))
+    end.
 
 authenticate_user({#user{nick = Nick}, Pw, Expected}) ->
     ?debugVal(Expected),
