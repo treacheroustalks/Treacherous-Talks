@@ -61,7 +61,12 @@ echo "##### trying to build xmpp_frontend"
 echo trying to build ejabberd
 cd ext_rel/xmpp_frontend
 build_dep "make release"
-cd rel/xmpp_frontend
+
+echo
+echo "##### installing xmpp_frontend for frontend tests"
+# TODO: This step is only needed for frontend tests
+# and can be moved with those.
+cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
 build_dep "make install"
 cd $cwd
 
