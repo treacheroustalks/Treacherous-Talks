@@ -8,6 +8,7 @@
 get_types_test_() ->
     [
      ?_test(check_type(?SAMPLE_REGISTER, register)),
+     ?_test(check_type(?SAMPLE_UPDATE, update)),
      ?_test(check_type(?SAMPLE_LOGIN, login))
     ].
 
@@ -23,11 +24,15 @@ parse_test_() ->
                         {register, {ok, #user{nick = "Lin", password = "QWER",
                                               email = "ss@pcs", name = "Agner Erlang"}}
                         })),
+     ?_test(check_parse(?SAMPLE_UPDATE,
+                        {update, {ok, #user{nick = "Lin", password = "QWER",
+                                              name = "Agner Erlang"}}
+                        })),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}}))
     ].
 
 check_parse(Sample, Expected) ->
-    ?debugVal(Expected),
+    ?debugVal(command_parser:parse(Sample)),
     ?assertEqual(Expected, command_parser:parse(Sample)).
-    
+

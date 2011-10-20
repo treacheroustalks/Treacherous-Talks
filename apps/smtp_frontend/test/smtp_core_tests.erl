@@ -21,31 +21,26 @@ app_stop(_Client) ->
     [ ?assertEqual(ok, application:stop(App)) || App <- lists:reverse(apps())],
     error_logger:tty(true).
 
-smtp_core_test_() ->
-    {setup,
-     fun app_start/0,
-     fun app_stop/1,
-     fun smtp_core/0}.
-
-simple_relay_test_() ->
-    {setup,
-     fun app_start/0,
-     fun app_stop/1,
-     fun simple_relay/0}.
-
 % EUnit auto test------------------------------------------------------
-smtp_core()->
+smtp_core_test_() ->
+    app_start(),
+
     BinStr = ?SAMPLE_REGISTER,
-    ExpectedUserInfo = {user,undefined,<<"Lin">>,<<"ss@pcs">>,<<"QWER">>,<<"Agner Erlang">>,
-                        user,smtp,undefined,undefined,0,undefined,undefined},
+    ExpectedUserInfo = #user{nick = "Lin", email = "ss@pcs", password = "QWER",
+                             name = "Agner Erlang"},
     Output = command_parser:parse(BinStr),
+    app_stop(some_client),
     ?_test(?assertEqual({register, {ok, ExpectedUserInfo}}, Output)).
 
-simple_relay()->
+simple_relay_test_() ->
+    app_start(),
+
     User  = <<"user@user.pcs">>,
     User2 = <<"user2@user.pcs">>,
     Game  = <<"game@game.pcs">>,
     RegCmdMail = ?SAMPLE_REGISTER,
+    UpdCmdMail = ?SAMPLE_UPDATE,
+    LoginCmdMail = ?SAMPLE_LOGIN,
     NonCmdMail = <<"hello">>,
     UserHost = "user.pcs",
     GameHost= "game.pcs",
@@ -55,6 +50,8 @@ simple_relay()->
     meck:expect(gen_smtp_client, send, fun({_, [_], _}, [_|_]) -> {ok, self()} end),
     meck:new(controller),% mock controller
     meck:expect(controller, create_user, fun(_User) -> #user{} end),
+    meck:expect(controller, update_user, fun(_User) -> #user{name = "lin"} end),
+    meck:expect(controller, login_user, fun(_User) -> #user{name = "andre"} end),
 
     % Use SMTP server on user side-----------------------------------------
     UsersInTheSameDomain = simple_relay(User, [User2], NonCmdMail, UserHost),
@@ -62,15 +59,23 @@ simple_relay()->
     % Use SMTP server as game frontend-------------------------------------
     ReceivingNonCmdMail = simple_relay(User, [Game], NonCmdMail, GameHost),
     ReceivingRegCmdMail = simple_relay(User, [Game], RegCmdMail, GameHost),
+    ReceivingUpdCmdMail = simple_relay(User, [Game], UpdCmdMail, GameHost),
+    ReceivingLoginCmdMail = simple_relay(User, [Game], LoginCmdMail, GameHost),
 
     % clean mockers
     meck:unload(controller),
     meck:unload(gen_smtp_client),
+
+    app_stop(some_client),
     [
-      ?_test(?assertEqual({ok,{mail_stored,<<"hello">>}},
-                          UsersInTheSameDomain)),
-      ?_test(?assertEqual({ok, unknown_command},
-                          ReceivingNonCmdMail)),
-      ?_test(?assertEqual({ok,{reg_request_sent, #user{} }},
-                          ReceivingRegCmdMail))
+      ?_test(?assertEqual(UsersInTheSameDomain,
+                          {ok,{mail_stored,<<"hello">>}})),
+      ?_test(?assertEqual(ReceivingNonCmdMail,
+                          {ok, unknown_command})),
+      ?_test(?assertEqual(ReceivingRegCmdMail,
+                          {ok,{reg_request_sent, #user{} }})),
+      ?_test(?assertEqual(ReceivingUpdCmdMail,
+                          {ok,{reg_request_sent, #user{name = "lin"} }})),
+      ?_test(?assertEqual(ReceivingLoginCmdMail,
+                          ok))
     ].
