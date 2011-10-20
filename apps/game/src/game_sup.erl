@@ -26,6 +26,7 @@ init(no_arg) ->
     {ok, { {one_for_one, 5, 10},
            [
             ?CHILD(game_worker_sup, supervisor),
-            ?CHILD(game_config, worker)
+            ?CHILD(game_config, worker),
+            ?CHILD(game_timer_sup, supervisor)
            ]} }.
 
