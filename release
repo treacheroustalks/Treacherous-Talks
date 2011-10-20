@@ -11,6 +11,7 @@ dodocs=1
 cwd=$(pwd)
 sysrel=$cwd/system-release
 errors=0
+
 # Get the current git commit
 commit=`git rev-list --max-count=1 HEAD`
 # Check for non-committed staged changes or changes to tracked files
@@ -21,6 +22,9 @@ if [ "$?" -ne "0" ]; then
 fi
 # Get date
 date=`date +%Y%m%d-%H%M`
+
+# Convenience function for echoing to stderr
+function echoerr() { echo -e "$@" 1>&2; }
 
 # Get command-line arguments
 while [ $# -gt 0 ]
@@ -65,34 +69,36 @@ do_release () {
 
         cd $release
         if [ -z "$release_name" -o "$release_name" == $release ]; then
-            # Look for Makefile
+            relcommand=""
+            # Look for Makefile or reltool.config
             if [ -a Makefile ]; then
-                echo "####################################"
-                echo trying to release $release
-                make release || errors=1
-                # Move files to $sysrel if $domove is set to 1
-                if [ $domove -eq 1 ]; then
-                    echo Deleting old release files in $sysrel/$release...
-                    rm -rf $sysrel/$release || errors=1
-                    echo Moving release files into $sysrel...
-                    find rel -mindepth 1 -maxdepth 1 -newer \
-                        $sysrel/release_timestamp -print0 | xargs -0 -I {} \
-                        mv {} $sysrel || errors=1
-                fi
-            # Look for a reltool which indicates to use rebar
+                relcommand="make release"
+                finddir="rel"
             elif [ -a reltool.config ]; then
+                relcommand="rebar generate"
+                finddir="."
+            fi
+            # If such a file was found, then do the release
+            if [ relcommand ]; then
+                localerror=0
                 echo "####################################"
-                echo trying to release $release
-                rebar generate || errors=1
-                # Move files to $sysrel if $domove is set to 1
-                if [ $domove -eq 1 ]; then
+                echo "##### releasing" $release
+                $relcommand || localerror=1
+                # Move files to $sysrel if $domove is set to 1 and no errors in
+                # release
+                if [[ $domove -eq 1 && $localerror -eq 0 ]]; then
                     echo Deleting old release files in $sysrel/$release...
-                    rm -rf $sysrel/$release || errors=1
-                    echo Moving release files into $sysrel...
-                    find . -mindepth 1 -maxdepth 1 -newer \
+                    rm -rf $sysrel/$release || localerror=1
+                    echo -e "Moving release files into $sysrel..."
+                    find $finddir -mindepth 1 -maxdepth 1 -newer \
                         $sysrel/release_timestamp -print0 | xargs -0 -I {} \
-                        mv {} $sysrel || errors=1
+                        mv {} $sysrel || localerror=1
                 fi
+                case $localerror in
+                    0) echo -e "##### Exit status: success\n";;
+                    *) echoerr "##### Exit status: ERROR\n"
+                       errors=1;;
+                esac
             fi
         fi
         cd ..
@@ -108,7 +114,7 @@ do_release $cwd/ext_rel
 cd $sysrel
 for dir in $(ls); do
     if [ -d $dir -a $dotar -eq 1 ]; then
-        echo Tarring release files...
+        echo "Tarring release files in $dir..."
         tar -czf $dir-release-$date-$commit.tar.gz $dir || errors=1
     fi
 done
@@ -116,6 +122,7 @@ cd $cwd
 
 # Find and copy all edocs if $dodocs is set to 1
 if [ $dodocs -eq 1 ]; then
+    echo -e "\n##### Finding and copying edocs"
     cd $cwd
     echo Deleting old docs in $sysrel/docs...
     rm -rf $sysrel/docs
@@ -136,6 +143,13 @@ rm -f $sysrel/release_timestamp
 # (don't litter the tree if the release fails)
 rmdir --ignore-fail-on-non-empty $sysrel
 
+
+echo
+if (( errors )); then
+    echoerr "##### Release was NOT successfull."
+else
+    echo "##### Release was successfull."
+fi
 
 exit $errors
 
