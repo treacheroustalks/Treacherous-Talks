@@ -13,7 +13,9 @@
 %%%-------------------------------------------------------------------
 -module(controller).
 
--export([create_user/2,
+-export([create_user/1,
+         get_user/2,
+         update_user/1,
          login_user/1,
          new_game/1]).
 
@@ -24,36 +26,58 @@
 %% ------------------------------------------------------------------
 
 %%-------------------------------------------------------------------
-%% @doc
-%% API for creation of a user.
+%% @doc create_user/2
+%%
+%% API for creation of a user
 %% @end
-%% [@spec create_user(Id::Integer(), #user{}) -> ok.
-%% @end]
+%% [@spec create_user(Id::Integer(), #user{}) @end]
 %%-------------------------------------------------------------------
-%-spec create_user(Integer(), #user{}) -> ok.
-create_user(Id, User) ->
+create_user(User) ->
     gen_server:call(service_worker:select_pid(?WORKER),
-                    {create_user, Id, User}).
+                    {create_user, User}).
+
 
 %%-------------------------------------------------------------------
-%% @doc
-%% API for logging in a user.
+%% @doc update_user/1
+%%
+%% API for updating a user
 %% @end
-%% [@spec login_user(#user{}) -> ok.
-%% @end]
+%% [@spec create_user(#user{}) @end]
 %%-------------------------------------------------------------------
-%-spec login_user(#user{}) -> ok.
+update_user(User) ->
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {update_user, User}).
+
+
+%%-------------------------------------------------------------------
+%% @doc login_user/1
+%%
+%% API for logging in a user
+%% @end
+%% [@spec login_user(#user{}) @end]
+%%-------------------------------------------------------------------
 login_user(User) ->
     gen_server:call(service_worker:select_pid(?WORKER),
                     {login_user, User}).
 
 
 %%-------------------------------------------------------------------
+%% @doc get_user/2
+%%
+%% API for getting a user
+%% @end
+%% [@spec get_user(atom(), integer()|string()) @end]
+%%-------------------------------------------------------------------
+get_user(Type, Key) ->
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {get_user, Type, Key}).
+
+
+%%-------------------------------------------------------------------
 %% @doc
 %% API for creation of a game
 %% @end
-%% [@spec create_game(#game{}) -> ok.
-%% @end]
+%% [@spec create_game(#game{}) @end]
 %%-------------------------------------------------------------------
 new_game(Game) ->
     gen_server:call(service_worker:select_pid(?WORKER), {new_game, Game}).
