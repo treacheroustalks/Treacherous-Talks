@@ -27,7 +27,8 @@ controller_test_() ->
      fun controller_create_user/0,
      fun controller_login_user/0,
      fun controller_update_user/0,
-     fun controller_get_user/0,
+     fun controller_get_user1/0,
+     fun controller_get_user2/0,
      fun controller_new_game/0,
      fun teardown/0
     ].
@@ -43,7 +44,7 @@ controller_test_() ->
 controller_create_user() ->
     ?debugVal("Testing creation of a user"),
     setup_meck(),
-    {Key, User} = get_test_data(create_user),
+    {_Key, User} = get_test_data(create_user),
     meck:expect(user_management, create,
                 fun(_From, _User) -> ok end),
     meck:expect(controller_app_worker, handle_call,
@@ -79,25 +80,48 @@ controller_update_user() ->
     ?debugVal("Completed update user test").
 
 
-%%-------------------------------------------------------------------
+
 %% @doc
 %% Tests the get_user functionality in the controller
 %% @end
 %%-------------------------------------------------------------------
-controller_get_user() ->
-    ?debugVal("Testing geting a user"),
-    setup_meck(),
-    {Type, Key, User} = get_test_data(get_user),
-    meck:expect(user_management, get,
-                fun(_From, _Type, _Key) -> ok end),
-    meck:expect(controller_app_worker, handle_call,
-                fun({get_user, Type1, Key1}, From, State) ->
-                        user_management:get(From, Type1, Key1),
-                        {reply, From, State} end),
-    {From, _Ref} = controller:get_user(Type, Key),
-    ?assertEqual(self(), From),
-    teardown_meck(),
-    ?debugVal("Completed getting user test").
+controller_get_user1() ->
+    fun () ->
+            ?debugMsg("Testing getting a user with key"),
+            setup_meck(),
+            {_Type, Key, _User} = get_test_data(get_user),
+            meck:expect(user_management, get,
+                        fun(_From, _Key) -> ok end),
+            meck:expect(controller_app_worker, handle_call,
+                        fun({get_user, _Type1, Key1}, From, State) ->
+                                user_management:get(From, Key1),
+                                {reply, From, State} end),
+            {From, _Ref} = controller:get_user(Key),
+            ?assertEqual(self(), From),
+            teardown_meck(),
+            ?debugVal("Completed getting user/1 test")
+    end.
+
+%% @doc
+%% Tests the get_user functionality in the controller
+%% @end
+%%-------------------------------------------------------------------
+controller_get_user2() ->
+    fun () ->
+            ?debugMsg("Testing getting a user"),
+            setup_meck(),
+            {Type, Key, User} = get_test_data(get_user),
+            meck:expect(user_management, get,
+                        fun(_From, _Type, _Key) -> ok end),
+            meck:expect(controller_app_worker, handle_call,
+                        fun({get_user, Type1, Key1}, From, State) ->
+                                user_management:get(From, Type1, Key1),
+                                {reply, From, State} end),
+            {From, _Ref} = controller:get_user(Type, Key),
+            ?assertEqual(self(), From),
+            teardown_meck(),
+            ?debugVal("Completed getting user/2 test")
+    end.
 
 
 %%-------------------------------------------------------------------
@@ -181,7 +205,6 @@ setup_meck() ->
                 fun(_No_Arg) ->
                         initReturn(controller_app_worker) end).
 
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Unloads the controller_app_worker_sup
@@ -191,7 +214,6 @@ teardown_meck() ->
     meck:unload(controller_app_worker_sup),
     meck:unload(controller_app_worker),
     meck:unload(user_management).
-
 
 fake_game_setup() ->
     meck:new(game),

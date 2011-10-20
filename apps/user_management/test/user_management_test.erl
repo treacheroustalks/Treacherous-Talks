@@ -3,6 +3,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
+-define(TIMEOUT, 3000).
 
 %% startup
 apps() ->
@@ -73,6 +74,65 @@ update_user_test_() ->
       fun app_stop/1,
       update_user()
       }}.
+
+get_user_test_() ->
+    {"create and re-read a user",
+     {setup,
+      fun app_start/0,
+      fun app_stop/1,
+      [get_user_t(),
+       get_user_fail_t(),
+       get_user_key_t()]
+      }}.
+
+get_user_t() ->
+    fun() ->
+            User = user_management:create(create_user()),
+            ok = user_management:get({self(), Tag = make_ref()},
+                                     User#user.id),
+            receive
+                {Tag, User} ->
+                    ok;
+                Unhandled ->
+                    erlang:error({error,
+                                  {expected, {Tag, {ok, User}},
+                                   got, Unhandled}})
+            after ?TIMEOUT ->
+                    erlang:error({error, no_asynch_reply})
+            end
+    end.
+
+get_user_key_t () ->
+    fun () ->
+            User = user_management:create(create_user ()),
+            ok = user_management:get ({self (), Tag = make_ref ()},
+                                     #user.nick,
+                                     User#user.nick),
+            receive
+                {Tag, Users} when is_list (Users) ->
+                    ?debugVal (Users),
+                    ok;
+                Unhandled ->
+                    ?debugVal (Unhandled),
+                    erlang:error ({error, unhandled_msg})
+            after ?TIMEOUT ->
+                    erlang:error ({error, no_asynch_reply})
+            end
+    end.
+
+get_user_fail_t() ->
+    fun() ->
+            ok = user_management:get({self(), Tag = make_ref()},
+                                     db_c:get_unique_id()),
+            receive
+                {Tag, {error, notfound}} ->
+                    ok;
+                Unhandled ->
+                    erlang:error({error,
+                                  {expected, {Tag, something},
+                                   got, Unhandled}})
+            end
+    end.
 
 %% tests generators
 create_user_t(#user{} = User) ->

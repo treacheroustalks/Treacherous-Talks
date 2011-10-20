@@ -132,6 +132,9 @@ handle_call({login_user, User}, _From, #state{db_conn = Conn} = State) ->
 %%%         {noreply, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
+handle_call({get_user, Id}, From, State) ->
+    user_management:get(From, Id),
+    {noreply, State};
 handle_call({get_user, Type, Key}, From, State) ->
     user_management:get(From, Type, Key),
     {noreply, State};

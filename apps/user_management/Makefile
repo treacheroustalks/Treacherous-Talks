@@ -11,11 +11,11 @@ clean:
 	rebar clean
 
 
-compile:
+compile: src
 	rebar compile
 
 
-doc:
+doc: compile
 	rebar skip_deps=true doc
 
 

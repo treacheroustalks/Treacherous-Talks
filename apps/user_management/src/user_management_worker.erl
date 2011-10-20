@@ -56,6 +56,16 @@ handle_cast({create_user, Client, Id, #user{} = User},
     Result = create_user(Conn, Id, User),
     gen_server:reply(Client, Result),
     {noreply, State};
+handle_cast({get_user, Client, Id},
+            #state{db_conn = Conn} = State) ->
+    Result = get_user(Conn, Id),
+    gen_server:reply(Client, Result),
+    {noreply, State};
+handle_cast({get_user, Client, Type, Key},
+            #state{db_conn = Conn} = State) ->
+    Result = get_user(Conn, Type, Key),
+    gen_server:reply(Client, Result),
+    {noreply, State};
 handle_cast({is_valid, Client, Nick, Password},
             #state{db_conn = Conn} = State) ->
     Result = is_valid(Conn, Nick, Password),
@@ -80,6 +90,33 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+get_user(Conn, Id) ->
+    BinId = list_to_binary(integer_to_list(Id)),
+    case db_c:get(Conn, ?B_USER, BinId) of
+        {ok, RiakObj} ->
+            db_obj:get_value(RiakObj);
+        {error, Error} ->
+            {error, Error};
+        Other ->
+            erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
+    end.
+
+get_user(Conn, Type, Key) ->
+    {ok, Keys} = db_c:list_keys(Conn, ?B_USER),
+    lists:foldl(
+      fun(Id, Acc) ->
+              {ok, Item} = db_c:get(Conn, ?B_USER, Id),
+              Value = db_obj:get_value (Item),
+              if
+                  Key == '_' ->
+                      [db_obj:get_value(Item) | Acc];
+                  element (Type, Value) == Key ->
+                      [db_obj:get_value(Item) | Acc];
+                  true -> Acc
+              end
+      end,
+      [], Keys).
+
 create_user(Conn, undefined, #user{} = User) ->
     Id = db_c:get_unique_id(),
     create_user(Conn, Id, User#user{id = Id});

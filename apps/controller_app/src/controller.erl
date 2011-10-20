@@ -14,7 +14,7 @@
 -module(controller).
 
 -export([create_user/1,
-         get_user/2,
+         get_user/1, get_user/2,
          update_user/1,
          login_user/1,
          new_game/1]).
@@ -66,11 +66,15 @@ login_user(User) ->
 %%
 %% API for getting a user
 %% @end
-%% [@spec get_user(atom(), integer()|string()) @end]
+%% [@spec get_user(integer()|string()) @end]
 %%-------------------------------------------------------------------
 get_user(Type, Key) ->
     gen_server:call(service_worker:select_pid(?WORKER),
-                    {get_user, Type, Key}).
+                   {get_user, Type, Key}).
+get_user(Id) ->
+    io:format ("get_user/2 :)~n"),
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {get_user, Id}).
 
 
 %%-------------------------------------------------------------------
