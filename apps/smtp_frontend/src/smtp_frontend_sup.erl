@@ -30,11 +30,12 @@ init([]) ->
     {ok, Protocol} = application:get_env(protocol),
     {ok, Family} = application:get_env(family),
     ServerOptions = [[
-                    {domain, Domain},
-                    {address, Address},
-                    {port, Port},
-                    {protocol, Protocol},
-                    {family, Family}
+                      {domain, Domain},
+                      {address, Address},
+                      {port, Port},
+                      {protocol, Protocol},
+                      {family, Family},
+                      {sessionoptions, [{allow_bare_newlines, fix}]}
                    ]],
     SMTPServer = ?CHILD(gen_smtp_server, [smtp_core, ServerOptions], worker),
     {ok, {{one_for_one, 5, 10}, [SMTPServer]}}.

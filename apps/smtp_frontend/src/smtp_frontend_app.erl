@@ -10,6 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
+    pg2:start_link(),
     smtp_frontend_sup:start_link().
 
 stop(_State) ->
