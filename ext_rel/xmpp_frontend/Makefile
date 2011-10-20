@@ -12,7 +12,8 @@ release: ejabberd components
 	touch $(reldir)
 
 ejabberd/:
-	wget -nv -O ejabberd-2.1.9.tar.gz 'https://github.com/processone/ejabberd/tarball/v2.1.9'
+	# wget -nv -O ejabberd-2.1.9.tar.gz 'https://github.com/processone/ejabberd/tarball/v2.1.9'
+	wget -nv 'http://buildbot.pcs/mirror/ejabberd-2.1.9.tar.gz'
 	tar -xf ejabberd-2.1.9.tar.gz
 	mv processone-ejabberd-4ca3c33 ejabberd
 

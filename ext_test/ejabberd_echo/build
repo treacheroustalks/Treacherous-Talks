@@ -7,7 +7,8 @@ mkdir -p deps
 if [ ! -e deps/exmpp/ebin/exmpp.beam ]; then
     cd deps
     rm -rf exmpp
-    wget http://download.process-one.net/exmpp/exmpp-0.9.8.tar.gz
+    #wget -nv http://download.process-one.net/exmpp/exmpp-0.9.8.tar.gz
+    wget -nv http://buildbot.pcs/mirror/exmpp-0.9.8.tar.gz
     tar -xzf exmpp*.tar.gz
     rm exmpp*.tar.gz
     mv exmpp-* exmpp
