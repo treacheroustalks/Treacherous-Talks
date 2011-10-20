@@ -8,7 +8,7 @@ get_deps:
 
 
 clean:
-	rebar clean; rm -rf doc
+	rebar clean; rm -rf doc/
 
 
 compile:
@@ -16,7 +16,7 @@ compile:
 
 
 tests: test/*
-	rebar eunit
+	rebar eunit skip_deps=true
 
 docs:
 	erl -noshell -run edoc_run application "'$(APP_NAME)'" \

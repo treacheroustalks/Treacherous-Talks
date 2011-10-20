@@ -14,7 +14,8 @@
                   kernel,
                   stdlib,
                   iconv,
-                  gen_smtp
+                  gen_smtp,
+                  command_parser
                  ]},
   {mod, { smtp_frontend_app, []}},
   {env, [

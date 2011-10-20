@@ -1,4 +1,4 @@
--define(SAMPLE_EMAIL,
+-define(SAMPLE_REGISTER,
 <<"sddfaadfaff\r
 REGISTER\r
 NICKNAME: Lin\r

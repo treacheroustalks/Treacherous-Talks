@@ -10,23 +10,40 @@
 %%% @end
 %%%
 %%%-------------------------------------------------------------------
--module(user_command).
+-module(user_commands).
 
 %Export for API
--export([get_reg_info/1, new_user_record/1]).
+-export([parse_register/1, parse_login/1]).
 
 %Export for eunit test
--export([reg_info_refine/1]).
+-export([reg_info_refine/1, new_user_record/1, get_reg_info/1]).
 
 -include_lib("datatypes/include/user.hrl").% -record(user,{})
--include("include/user_command.hrl").% -record(reg_info,{})
+-include("include/records.hrl").% -record(reg_info,{})
 
-%%------------------------------------------------------------------------------------------------
-%% @doc get_reg_info/1
+
+%%------------------------------------------------------------------------------
+%% @doc parse_login/1
 %%
-%% Convert reg_info record to user record.
+%% Parses a login string into {Nick, Password}
 %% @end
-%%------------------------------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
+parse_login(_BinStr) ->
+    {error, not_yet_implemented}.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_register/1
+%%
+%% Parses a register string into a user record.
+%% @end
+%%------------------------------------------------------------------------------
+parse_register(BinStr) ->
+    case get_reg_info(BinStr) of
+        {ok, RegInfo} ->
+            {ok, new_user_record(RegInfo)};
+        Error ->
+            Error
+    end.
 get_reg_info(BinStr) ->
     HeadPos = binary:match(BinStr, <<"REGISTER\r\n">>),
     case HeadPos of
@@ -45,12 +62,12 @@ get_reg_info(BinStr) ->
     end.
 
 
-%%------------------------------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 %% @doc reg_info_refine/1
 %%
 %% Convert reg_info record to user record.
 %% @end
-%%------------------------------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 reg_info_refine([], OutputRecord) ->
     {ok, OutputRecord};
 reg_info_refine([H|Rest], OutputRecord) ->
@@ -104,12 +121,12 @@ reg_info_refine(InfoList) ->
     reg_info_refine(InfoList, #reg_info{}).
 
 
-%%------------------------------------------------------------------------------------------------
+%%--------------------------------------------------------------------------
 %% @doc new_user_record/1
 %%
 %% Convert reg_info record to user record.
 %% @end
-%%------------------------------------------------------------------------------------------------
+%%--------------------------------------------------------------------------
 new_user_record(RegInfo) ->
     #user{
         nick     = RegInfo#reg_info.nick,

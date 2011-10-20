@@ -25,7 +25,6 @@
 -export([simple_relay/4, forward_mail/4]).
 
 -include_lib("datatypes/include/user.hrl").% -record(user,{})
--include("include/user_command.hrl").% -record(reg_info,{})
 
 -record(state,
     {
@@ -316,25 +315,15 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
           when FromHost == MyHost -> % when sender and receipent are on our server
             {ok, {mail_stored, BinData}};
         MyHost -> % when a mail reach its destination
-            io:format("message from ~s to ~p ~n~n~s~n", [From, To, Data]),
-            % parse registration command from email body
-            RegInfoRecord = user_command:get_reg_info(BinData),
-            RegReport = case RegInfoRecord of
-                {ok, RegInfo} -> % if there is register command
-                    % convert #reg_info{name, password...} to #user{name, password...}
-                    UserInfo = user_command:new_user_record(RegInfo),
-                    % call controller API to register user at backend
+            case command_parser:parse(BinData) of
+                {register, {ok, UserInfo}} ->
+                    io:format("message from ~s to ~p ~n~n~s~n", [From, To, Data]),
                     UserRec = controller:create_user(undefined, UserInfo),
                     {ok, {reg_request_sent, UserRec}};
-                Other -> % if there is no register command or invalid register command
-                    Other
-            end,
-            {ok, {cmd_parsed, [RegReport]}};
-        _ -> % this isn't the mail's destination, forward it to its recipent
-            io:format("###Forwarding ~s to ~s...~n", [From, To]),
-            forward_mail(From, To, Data, ToHost),
-            io:format("###Forward ~s to ~s sent!~n", [MyHost, ToHost]),
-            {ok, {forward, {From, To}}}
+                unknown_command ->
+                    % TODO how handle errors?
+                    {ok, unknown_command}
+            end
     end.
 
 

@@ -1,0 +1,14 @@
+{application, command_parser,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {modules, []},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  datatypes
+                 ]},
+  {env, []}
+ ]}.
+
