@@ -101,40 +101,26 @@ done
 cd $cwd
 
 
-# XMPP FRONTEND (ejabberd)
-echo "##### trying to build xmpp_frontend"
-# ejabberd
-echo trying to build ejabberd
-cd ext_rel/xmpp_frontend
-build_dep "make release"
 
-echo
-echo "##### installing xmpp_frontend for frontend tests"
-# TODO: This step is only needed for frontend tests
-# and can be moved with those.
-cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
-build_dep "make install"
-cd $cwd
+    # XMPP FRONTEND (ejabberd)
+    # Ideally build xmpp_frontend after building the rest since
+    # so that rebar's intermittent failures don't break the entire
+    # build. xmpp_frontend's makefile runs rebar build scripts in
+    # without the above loop.
+    echo "##### trying to build xmpp_frontend"
+    # ejabberd
+    echo trying to build ejabberd
+    cd ext_rel/xmpp_frontend
+    build_dep "make release"
+    cd $cwd
+    echo
+    echo
 
-# XMPP FRONTEND TESTS
-echo "##### trying to build xmpp_frontend tests (including exmpp)"
-cd ext_test/ejabberd_echo
-build_dep "./build"
-
-# TODO: Tests should probably be run after the build has completed
-echo Running xmpp_frontend tests
-echo Starting ejabberd...
-$cwd/$ejdctl start
-sleep 5
-echo ejabberd status:
-$cwd/$ejdctl status
-rebar eunit skip_deps=true || errors=1
-echo Stopping ejabberd...
-$cwd/$ejdctl stop
-cd $cwd
-echo
-echo
-
+    # XMPP FRONTEND TESTS
+    echo "##### trying to build xmpp_frontend tests (including exmpp)"
+    cd ext_test/ejabberd_echo
+    build_dep "./build"
+    cd $cwd
 
 
 if (( errors )); then

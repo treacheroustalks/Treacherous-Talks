@@ -86,7 +86,28 @@ fi
 # Do integration tests
 # TODO: Should these be run when testing a single app?
 if [ $dointegration -eq 1 ]; then
-    echo "no integration tests defined"
+
+    echo
+    echo "##### installing xmpp_frontend for frontend tests"
+    cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
+    make install || errors=1
+    ejdctl=ext_rel/xmpp_frontend/rel/xmpp_frontend/installation/sbin/ejabberdctl
+    cd $cwd
+
+
+    echo Running xmpp_frontend tests
+    echo Starting ejabberd...
+    $cwd/$ejdctl start || errors=1
+    sleep 5
+    echo ejabberd status:
+    $cwd/$ejdctl status || errors=1
+    rebar eunit skip_deps=true || errors=1
+    echo Stopping ejabberd...
+    $cwd/$ejdctl stop || errors=1
+    cd $cwd
+    echo
+    echo
+
 fi
 
 
