@@ -1,7 +1,9 @@
 -module(command_parser_test).
 -include_lib("eunit/include/eunit.hrl").
 
--include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/user.hrl").% #user{}
+-include_lib("datatypes/include/game.hrl").% #game{}
+
 -include("test_utils.hrl").
 
 
@@ -9,7 +11,8 @@ get_types_test_() ->
     [
      ?_test(check_type(?SAMPLE_REGISTER, register)),
      ?_test(check_type(?SAMPLE_UPDATE, update)),
-     ?_test(check_type(?SAMPLE_LOGIN, login))
+     ?_test(check_type(?SAMPLE_LOGIN, login)),
+     ?_test(check_type(?SAMPLE_CREATE, create))
     ].
 
 check_type(Sample, Expected) ->
@@ -28,11 +31,16 @@ parse_test_() ->
                         {update, {ok, #user{nick = "Lin", password = "QWER",
                                               name = "Agner Erlang"}}
                         })),
+     ?_test(check_parse(?SAMPLE_CREATE, {create, {ok, #game{
+                       name = "awesome_game", press = "white",
+                       order_phase = "4H", retreat_phase = "3H30M",
+                       build_phase = "2H40M", waiting_time = "2D5H20M",
+                       creator_id = undefined}}})),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}}))
     ].
 
 check_parse(Sample, Expected) ->
-    ?debugVal(command_parser:parse(Sample)),
+    ?debugVal(Expected),
     ?assertEqual(Expected, command_parser:parse(Sample)).
 
