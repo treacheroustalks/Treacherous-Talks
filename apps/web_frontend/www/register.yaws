@@ -86,6 +86,9 @@ html_body(WebSocketLocation) ->
                         },
             _onmessage: function(m) {
                             if (m.data) {
+                                if (m.data == \'client-registered\') {
+                                  document.write(\"<p>it worked!</p>\");
+                                }
                                 alert(m.data);
                             }
                         },
@@ -118,6 +121,7 @@ html_body(WebSocketLocation) ->
                 <p><label align=\"left\">Confirm Password: <input id=\"cnfrmPwd\" type=\"password\"></label></p>
                 <p><input type=submit id='sendForm' class='button' name='connect' value='Register'>
             </fieldset>
+            <p id=\"confirmation_text\"></p>
         </form>
     </div>
 

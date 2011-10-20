@@ -77,12 +77,11 @@ user_record_gen([], OutputRecord) ->
     OutputRecord;
 user_record_gen([H|Rest], OutputRecord) ->
     {Key, Value} = H,
-    io:format("~p~n",[OutputRecord]),
     case Key of
         email ->
                    user_record_gen(Rest,
                    #user {
-                        email    = term_to_binary(Value),
+                        email    = Value,
                         nick     = OutputRecord#user.nick,
                         password = OutputRecord#user.password,
                         name     = OutputRecord#user.name
@@ -93,13 +92,13 @@ user_record_gen([H|Rest], OutputRecord) ->
                         email    = OutputRecord#user.email,
                         nick     = OutputRecord#user.nick,
                         password = OutputRecord#user.password,
-                        name     = term_to_binary(Value)
+                        name     = Value
                    });
         nick ->
                    user_record_gen(Rest,
                    #user {
                         email    = OutputRecord#user.email,
-                        nick     = term_to_binary(Value),
+                        nick     = Value,
                         password = OutputRecord#user.password,
                         name     = OutputRecord#user.name
                    });
@@ -108,7 +107,7 @@ user_record_gen([H|Rest], OutputRecord) ->
                    #user {
                         email    = OutputRecord#user.email,
                         nick     = OutputRecord#user.nick,
-                        password = term_to_binary(Value),
+                        password = Value,
                         name     = OutputRecord#user.name
                    })
     end.
@@ -132,14 +131,12 @@ registration_server(WebSocket, ProtocolVersion) ->
             {ok, Struct} = json:decode_string(binary_to_list(Data)),
             {struct, User} = Struct,
 
-
             %% Create a record
             UserRecord = user_record_gen(User),
-
+            io:format("User-Record=~p~n", [UserRecord]),
             %% Send the record to controller
-            Reply = controller:create_user(undefined, UserRecord),
+            Reply = controller:create_user(UserRecord),
             io:format("Received ~p from controller~n",[Reply]),
-
             %% Reply to the client(browser)
             ReplyMsg = <<"client-registered">>,
             yaws_api:websocket_send(WebSocket, ProtocolVersion, ReplyMsg),
