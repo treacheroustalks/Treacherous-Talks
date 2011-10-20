@@ -87,6 +87,14 @@ fi
 # TODO: Should these be run when testing a single app?
 if [ $dointegration -eq 1 ]; then
 
+    cd $cwd
+    echo "## releasing backend..."
+    ./release backend || errors=1
+    backend=system-release/backend/bin/backend
+    echo "## starting backend and waiting 5 seconds ... "
+    $backend start || errors=1
+    sleep 5
+    
     echo
     echo "##### installing xmpp_frontend for frontend tests"
     cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
@@ -95,8 +103,8 @@ if [ $dointegration -eq 1 ]; then
     cd $cwd
 
 
-    echo Running xmpp_frontend tests
-    echo Starting ejabberd...
+    echo "##### Running xmpp_frontend tests"
+    echo Starting ejabberd and waiting 5 seconds...
     $cwd/$ejdctl start || errors=1
     sleep 5
     echo ejabberd status:
@@ -108,6 +116,9 @@ if [ $dointegration -eq 1 ]; then
     cd $cwd
     echo
     echo
+
+    echo "## stop backend ..."
+    $backend stop || errors=1
 
 fi
 

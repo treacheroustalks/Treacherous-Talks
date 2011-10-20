@@ -7,7 +7,7 @@ reinstall: clean install
 # TODO: remake this target if config files change.
 install/: $(beams) install-ejabberd config
 	cp config/* installation/etc/ejabberd/
-	cp -n ebin/* installation/lib/ejabberd/ebin
+	cp ebin/* installation/lib/ejabberd/ebin
 	rm -f $(cookiefile)
 	echo "treacherous_talks" > $(cookiefile)
 	chmod 700 $(cookiefile)

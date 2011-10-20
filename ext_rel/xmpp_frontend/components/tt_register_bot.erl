@@ -39,13 +39,12 @@
 -define(WRONG_MSG_STYLE, "Please send registration request as below it start
  with REGISTER and finish with END and enter keywords with capital letters").
 -define(MSG_STYLE, "
-REGISTER, 
+REGISTER,
 NICKNAME: your nick,
 PASSWORD: pass,
 FULLNAME: full name,
 EMAIL: sth@sth
 END").
-
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -63,10 +62,13 @@ start_link(Host, Opts) ->
 %%-------------------------------------------------------------------
 %% @doc
 %%  start function that called by ejabberd when start this component
-%%  it initialize a child
+%%  it initialize a child. To connect ejabberd and our backend we do ping
+%%  here. So we need to start backend before ejabberd.
+%%  @end
 %%-------------------------------------------------------------------
 start(Host, Opts) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+    pong = net_adm:ping('backend@127.0.0.1'),
     ChildSpec = {Proc,
                  {?MODULE, start_link, [Host, Opts]},
                  temporary,
@@ -265,12 +267,12 @@ handle_command(From, To, Body, _Ip) ->
         {register, {ok, UserInfo}} ->
             UserRec = controller:create_user(UserInfo),
             send_chat(To, From,
-		      io_lib:format("Registration result: ~p",
-				    [UserRec]));
+              io_lib:format("Registration result: ~p",
+                    [UserRec]));
         {register, Error} ->
             io:format("wrong format from user ~p~n",[Error]),
             send_chat(To, From, strip_bom(?WRONG_MSG_STYLE ++ ?MSG_STYLE));
-	{login, {ok, UserInfo}} ->
+    {login, {ok, UserInfo}} ->
             case controller:login_user(UserInfo) of
                 invalid ->
                     io:format("[login invalid] ~p", [UserInfo]),
@@ -278,27 +280,27 @@ handle_command(From, To, Body, _Ip) ->
                 Session ->
                     io:format("[login successful] session: ~p", [Session]),
                     send_chat(To, From,
-			       strip_bom("Loggedn in, session id: " 
-					 ++ integer_to_list(Session)))
+                   strip_bom("Loggedn in, session id: "
+                     ++ integer_to_list(Session)))
             end;
         {login, Error} ->
             send_chat(To, From,  strip_bom("login error")),
             io:format("[login error] ~p", [Error]);
-	{update, {ok, ParsedUser}} ->
-	    [OldUser|_] = controller:get_user(#user.nick, ParsedUser#user.nick),
-	    NewUser = OldUser#user{password = ParsedUser#user.password,
-				   name = ParsedUser#user.name},
-	    UserRec = controller:update_user(NewUser),
-	    send_chat(To, From, 
-		       strip_bom(io_lib:format("update success: ~p", 
-					       [UserRec]))),
-	    io:format("[update success] ~p~n", [UserRec]);
+    {update, {ok, ParsedUser}} ->
+        [OldUser|_] = controller:get_user(#user.nick, ParsedUser#user.nick),
+        NewUser = OldUser#user{password = ParsedUser#user.password,
+                   name = ParsedUser#user.name},
+        UserRec = controller:update_user(NewUser),
+        send_chat(To, From,
+               strip_bom(io_lib:format("update success: ~p",
+                           [UserRec]))),
+        io:format("[update success] ~p~n", [UserRec]);
         {update, Error} ->
             io:format("[update error] ~p", [Error]),
-	    send_chat(To, From, 
-		       strip_bom(io_lib:format("[update error] ~p", [Error])));
+        send_chat(To, From,
+               strip_bom(io_lib:format("[update error] ~p", [Error])));
         Unhandled ->
             io:format("Unhandled result: ~p~n",[Unhandled]),
-            send_chat(To, From, 
-		       strip_bom("Unhandled parse result."))
+            send_chat(To, From,
+               strip_bom("Unhandled parse result."))
     end.
