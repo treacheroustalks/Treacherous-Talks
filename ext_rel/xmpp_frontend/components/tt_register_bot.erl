@@ -31,6 +31,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include("datatypes/include/user.hrl").
 
 -define(PROCNAME, tt_register_bot).
 %% @doc the name for virtual domain
@@ -195,7 +196,7 @@ route(From, To = #jid{user="register"},
                                                      From#jid.server,
                                                      From#jid.resource),
                     {ip, {Ip, _Port}} = lists:keyfind(ip, 1, Info),
-                    make_user_record(From, To, Body, Ip);
+                    handle_command(From, To, Body, Ip);
                 _ ->
                     send_chat(To, From, strip_bom(?WRONG_MSG_STYLE
                                              ++ "undifined message type"))
@@ -259,17 +260,45 @@ send_message(From, To, TypeStr, BodyStr) ->
 %%   if the user's information is not correct it will send an
 %%   error message to the user.
 %%------------------------------------------------------------------
-make_user_record(From, To, Body, _Ip) ->
+handle_command(From, To, Body, _Ip) ->
     case command_parser:parse(list_to_binary(Body)) of
         {register, {ok, UserInfo}} ->
             UserRec = controller:create_user(UserInfo),
             send_chat(To, From,
-                 strip_bom(io_lib:format("Registration result: ~p",
-                                         [UserRec])));
+		      io_lib:format("Registration result: ~p",
+				    [UserRec]));
         {register, Error} ->
             io:format("wrong format from user ~p~n",[Error]),
             send_chat(To, From, strip_bom(?WRONG_MSG_STYLE ++ ?MSG_STYLE));
+	{login, {ok, UserInfo}} ->
+            case controller:login_user(UserInfo) of
+                invalid ->
+                    io:format("[login invalid] ~p", [UserInfo]),
+                    send_chat(To, From,  strip_bom("Invalid login data"));
+                Session ->
+                    io:format("[login successful] session: ~p", [Session]),
+                    send_chat(To, From,
+			       strip_bom("Loggedn in, session id: " 
+					 ++ integer_to_list(Session)))
+            end;
+        {login, Error} ->
+            send_chat(To, From,  strip_bom("login error")),
+            io:format("[login error] ~p", [Error]);
+	{update, {ok, ParsedUser}} ->
+	    [OldUser|_] = controller:get_user(#user.nick, ParsedUser#user.nick),
+	    NewUser = OldUser#user{password = ParsedUser#user.password,
+				   name = ParsedUser#user.name},
+	    UserRec = controller:update_user(NewUser),
+	    send_chat(To, From, 
+		       strip_bom(io_lib:format("update success: ~p", 
+					       [UserRec]))),
+	    io:format("[update success] ~p~n", [UserRec]);
+        {update, Error} ->
+            io:format("[update error] ~p", [Error]),
+	    send_chat(To, From, 
+		       strip_bom(io_lib:format("[update error] ~p", [Error])));
         Unhandled ->
             io:format("Unhandled result: ~p~n",[Unhandled]),
-            send_chat(To, From, strip_bom(?WRONG_MSG_STYLE ++ ?MSG_STYLE))
+            send_chat(To, From, 
+		       strip_bom("Unhandled parse result."))
     end.
