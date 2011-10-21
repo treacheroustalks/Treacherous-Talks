@@ -317,40 +317,40 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
             case command_parser:parse(BinData) of
                 {register, {ok, UserInfo}} ->
                     UserRec = controller:create_user(UserInfo),
-                    io:format("[SMTP][register success] ~p", [UserRec]),
+                    io:format("[SMTP][register success] ~p~n", [UserRec]),
                     {ok, {reg_request_sent, UserRec}};
                 {register, Error} ->
-                    io:format("[SMTP][register error] ~p", [Error]);
+                    io:format("[SMTP][register error] ~p~n", [Error]);
                 {login, {ok, UserInfo}} ->
                     case controller:login_user(UserInfo) of
                         invalid ->
-                            io:format("[SMTP][login invalid] ~p", [UserInfo]),
+                            io:format("[SMTP][login invalid] ~p~n", [UserInfo]),
                             forward_mail(To, From, "Invalid login data", FromHost);
                         Session ->
-                            io:format("[SMTP][login successful] session: ~p", [Session]),
+                            io:format("[SMTP][login successful] session: ~p~n", [Session]),
                             forward_mail(To, From,
                                          "Loggedn in, session id: " ++ Session,
                                          FromHost)
                     end;
                 {login, Error} ->
-                    io:format("[SMTP][login error] ~p", [Error]);
+                    io:format("[SMTP][login error] ~p~n", [Error]);
                 {create, {ok, GameInfo}} ->
                     GameRec = controller:new_game(GameInfo),
-                    io:format("[SMTP][create game success] ~p", [GameRec]),
+                    io:format("[SMTP][create game success] ~p~n", [GameRec]),
                     {ok, {reg_request_sent, GameRec}};
                 {create, Error} ->
-                    io:format("[SMTP][create game error] ~p", [Error]);
+                    io:format("[SMTP][create game error] ~p~n", [Error]);
                 {update, {ok, ParsedUser}} ->
-                    OldUser = controller:get_user(#user.nick, ParsedUser#user.nick),
-                    NewUser = OldUser#user{password = OldUser#user.password,
-                                           name = OldUser#user.name},
+                    [OldUser|_] = controller:get_user(#user.nick, ParsedUser#user.nick),
+                    NewUser = OldUser#user{password = ParsedUser#user.password,
+                                           name = ParsedUser#user.name},
                     UserRec = controller:update_user(NewUser),
-                    io:format("[SMTP][register success] ~p", [UserRec]),
+                    io:format("[SMTP][update success] ~p~n", [UserRec]),
                     {ok, {reg_request_sent, UserRec}};
                 {update, Error} ->
-                    io:format("[SMTP][update error] ~p", [Error]);
+                    io:format("[SMTP][update error] ~p~n", [Error]);
                 unknown_command ->
-                    io:format("[SMTP][unknown_command]"),
+                    io:format("[SMTP][unknown_command]~n"),
                     {ok, unknown_command}
             end
     end.
