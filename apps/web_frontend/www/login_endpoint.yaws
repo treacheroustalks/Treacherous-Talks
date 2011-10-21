@@ -2,7 +2,7 @@
 %% ----------------------------------------------------------------------------
 %% @edoc register_endpoint
 %% This module establishes websocket connection between user and client
-%% during user registration and handles user data which later sent to
+%% during user login and handles user data which later sent to
 %% controller
 %%
 %% Websocket connection, handshake, receiving and sending messages to/from
@@ -59,7 +59,7 @@ websocket_owner() ->
                     case Messages of
                         [<<"client-connected">>] ->
                             yaws_api:websocket_setopts(WebSocket, [{active, true}]),
-                            registration_server(WebSocket, ProtocolVersion);
+                            login_server(WebSocket, ProtocolVersion);
                         Other ->
                             io:format("websocket_owner got: ~p. Terminating~n", [Other])
                     end
@@ -78,77 +78,59 @@ user_record_gen([], OutputRecord) ->
 user_record_gen([H|Rest], OutputRecord) ->
     {Key, Value} = H,
     case Key of
-        email ->
-                   user_record_gen(Rest,
-                   #user {
-                        email    = Value,
-                        nick     = OutputRecord#user.nick,
-                        password = OutputRecord#user.password,
-                        name     = OutputRecord#user.name
-                   });
-        name ->
-                   user_record_gen(Rest,
-                   #user {
-                        email    = OutputRecord#user.email,
-                        nick     = OutputRecord#user.nick,
-                        password = OutputRecord#user.password,
-                        name     = Value
-                   });
         nick ->
                    user_record_gen(Rest,
                    #user {
-                        email    = OutputRecord#user.email,
                         nick     = Value,
-                        password = OutputRecord#user.password,
-                        name     = OutputRecord#user.name
+                        password = OutputRecord#user.password
                    });
         password ->
                    user_record_gen(Rest,
                    #user {
-                        email    = OutputRecord#user.email,
                         nick     = OutputRecord#user.nick,
-                        password = Value,
-                        name     = OutputRecord#user.name
+                        password = Value
                    })
     end.
 user_record_gen(ListofTuples)->
     user_record_gen(ListofTuples, #user{}).
 
 %% ----------------------------------------------------------------------------
-%% @edoc registration_server/2
+%% @edoc login_server/2
 %% This function sends the user record (#user{}) to 'controller', and
-%% receives message from 'user_management': User | Error;
-%% then replies to the client.
+%% receives message containing login info: invalid | SessionId integer();
+%% and then replies to the client.
 %% @end
 %% ----------------------------------------------------------------------------
-registration_server(WebSocket, ProtocolVersion) ->
+login_server(WebSocket, ProtocolVersion) ->
     receive
         {tcp, WebSocket, DataFrame} ->
             %% Data from a client(browser)
             Data = yaws_api:websocket_unframe_data(ProtocolVersion, DataFrame),
-
             %% Handling the client's data
             {ok, Struct} = json:decode_string(binary_to_list(Data)),
             {struct, User} = Struct,
-
             %% Create a record
             UserRecord = user_record_gen(User),
             io:format("User-Record=~p~n", [UserRecord]),
             %% Send the record to controller
-            Reply = controller:create_user(UserRecord),
+            Reply = controller:login_user(UserRecord),
             io:format("Received ~p from controller~n",[Reply]),
+            % Check response
+            case Reply of
+                invalid ->
+                    ReplyMsg = <<"log-in-fail">>;
+                SessionId when is_integer(SessionId) ->
+                ReplyMsg = <<"client-logged-in">>
+            end,
             %% Reply to the client(browser)
-            ReplyMsg = <<"client-registered">>,
-            RegUserEmail = list_to_binary(Reply#user.email),
-%% TODO: Create Wrapper function for sending several strings to client
-            yaws_api:websocket_send(WebSocket, ProtocolVersion, RegUserEmail),
-            registration_server(WebSocket, ProtocolVersion);
+            yaws_api:websocket_send(WebSocket, ProtocolVersion, ReplyMsg),
+            login_server(WebSocket, ProtocolVersion);
 
         {tcp_closed, WebSocket} ->
-            io:format("Websocket closed. Terminating registration_server...~n");
+            io:format("Websocket closed. Terminating login_server...~n");
         Any ->
-            io:format("registration_server received unhandled msg:~p~n", [Any]),
-            registration_server(WebSocket, ProtocolVersion)
+            io:format("login_server received unhandled msg:~p~n", [Any]),
+            login_server(WebSocket, ProtocolVersion)
     end.
 
 %% ----------------------------------------------------------------------------
