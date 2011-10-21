@@ -101,6 +101,7 @@ if [ $dointegration -eq 1 ]; then
     sleep 5
     echo ejabberd status:
     $cwd/$ejdctl status || errors=1
+    cd ext_test/ejabberd_echo || errors=1
     rebar eunit skip_deps=true || errors=1
     echo Stopping ejabberd...
     $cwd/$ejdctl stop || errors=1
