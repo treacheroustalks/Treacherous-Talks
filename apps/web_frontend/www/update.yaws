@@ -1,0 +1,124 @@
+<erl>
+
+out(A) ->
+    Host = (A#arg.headers)#headers.host,
+    {abs_path, Path} = (A#arg.req)#http_request.path,
+    EndpointPath = filename:dirname(Path)
+        ++ "update_endpoint.yaws",
+    WebSocketLocation = Host ++ EndpointPath,
+    Body = html_body(WebSocketLocation),
+    {content, "text/html", Body}.
+
+%%User Registration Form - html, js part
+%%---------------------------------------
+html_body(WebSocketLocation) ->
+"<html>
+<head>
+    <title>Treacherous Talks: Registration</title>
+    <script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js\"></script>
+    <script type=\"text/javascript\">
+        if (!window.WebSocket) {
+            alert(\"WebSocket is not supported by this browser.\");
+            var msg=$('msgs');
+            document.write(\"<p>You need a browser which supports websocket protocol version hybi-10. (Suggested one: Google Chrome 14)</p>\");
+        }
+
+        // Get an Element
+        function $() { return document.getElementById(arguments[0]); }
+
+        // Get the data from the form
+        function $Form() {
+            var nickField = document.getElementById('nick');
+            var pwdField = document.getElementById('pwd');
+
+            if(nickField.value == ''){
+                alert(\"You need to enter a nickname to update\");
+            }
+            else {
+                var form = {
+                    \"email\":document.getElementById(\"email\").value,
+                    \"nick\":document.getElementById(\"nick\").value,
+                    \"name\":document.getElementById(\"name\").value,
+                    \"password\":document.getElementById(\"password\").value,
+                };
+                var filter = new Array();
+                filter[0] = \"email\";
+                filter[1] = \"nick\";
+                filter[2] = \"name\";
+                filter[3] = \"password\";
+                var jsonText = JSON.stringify(form, filter);
+                return jsonText;
+            }
+        }
+        var client = {
+            connect:    function() {
+                            this._ws=new WebSocket(\"ws://" ++ WebSocketLocation ++ "\");
+                            this._ws.onopen=this._onopen;
+                            this._ws.onmessage=this._onmessage;
+                            this._ws.onclose=this._onclose;
+                        },
+            _onopen:    function() {
+                            $('connected').className='';
+                            $('input_form').focus();
+                            client._send('client-connected');
+                        },
+            _send:      function(message) {
+                            if (this._ws)
+                                this._ws.send(message);
+                        },
+            toServer:   function(form) {
+                            if (form != null && form.length>0 )
+                            client._send(form);
+                        },
+            _onmessage: function(m) {
+                           if (m.data) {
+                                if (m.data == \'client-updated\') {
+                                  document.write(\"<p>Your user information has been updated!</p>\");
+                                }else if (m.data == \'client-does-not-exist\'){
+                                  document.write(\"<p>Nickname does not exist</p>\");
+                                }else{
+                                  document.write(\"<p>Could not handle request</p>\");
+                                }
+                                alert(m.data);
+                            }
+                        },
+            _onclose: function(m) {
+                          this._ws=null;
+                          $('connected').className='hidden';
+                          $('msg').innerHTML='';
+                          //alert(\"No data from server...\");
+                      }
+        };
+    </script>
+    <style type='text/css'>
+        div.hidden { display: none; }
+    </style>
+
+</head>
+
+<body>
+    <div id=\"connected\" class=\"hidden\" style=\"padding-left:150px; padding-top:30px;\">
+        <h1>Treacherous Talks: Account Updating</h1>
+        <div id=\"msgs\" style=\"color:red;\"></div><br>
+        <form id=\"input_form\">
+            <fieldset style=\"width:550px;\">
+                <legend><label>Update your account</label></legend>
+                <p><label align=\"left\">Nick-name to update: <input id=\"nick\" type=\"text\"></label></p>
+                <p style=><label align=\"left\">Enter data to change</label></p>
+                <p><label align=\"left\">E-mail address: <input placeholder=\"example@example.com\" id=\"email\" type=\"email\"></label></p>
+                <p><label align=\"left\">Full Name: <input id=\"name\" type=\"text\"></label></p>
+                <p><label align=\"left\">Password: <input id=\"password\" type=\"password\"></label></p>
+                <p><input type=submit id='sendForm' class='button' name='connect' value='Update'>
+            </fieldset>
+        </form>
+    </div>
+
+    <script type='text/javascript'>
+        window.onload = function(event) { client.connect(); return false; };
+        $('sendForm').onclick = function(event) {client.toServer($Form()); $('input_form').value=''; return false; };
+    </script>
+
+</body>
+</html>".
+
+</erl>
