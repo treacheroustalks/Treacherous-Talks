@@ -1,4 +1,3 @@
-beams = components/echo_bot.beam components/controller.beam components/tt_register_bot.beam components/user_command.beam components/bin_utils.beam components/service_worker.beam
 cookiefile = installation/var/lib/ejabberd/.erlang.cookie
 
 all: install
@@ -8,7 +7,7 @@ reinstall: clean install
 # TODO: remake this target if config files change.
 install/: $(beams) install-ejabberd config
 	cp config/* installation/etc/ejabberd/
-	cp $(beams) installation/lib/ejabberd/ebin	
+	cp -n ebin/* installation/lib/ejabberd/ebin
 	rm -f $(cookiefile)
 	echo "treacherous_talks" > $(cookiefile)
 	chmod 700 $(cookiefile)

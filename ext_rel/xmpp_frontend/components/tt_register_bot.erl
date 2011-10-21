@@ -37,8 +37,13 @@
 -define(BOTNAME, service).
 -define(WRONG_MSG_STYLE, "Please send registration request as below it start
  with REGISTER and finish with END and enter keywords with capital letters").
--define(MSG_STYLE, " REGISTER, NICKNAME: your nick, PASSWORD: pass,
-FULLNAME: full name, EMAIL: sth@sth, END").
+-define(MSG_STYLE, "
+REGISTER, 
+NICKNAME: your nick,
+PASSWORD: pass,
+FULLNAME: full name,
+EMAIL: sth@sth
+END").
 
 
 %%-------------------------------------------------------------------
@@ -254,16 +259,17 @@ send_message(From, To, TypeStr, BodyStr) ->
 %%   if the user's information is not correct it will send an
 %%   error message to the user.
 %%------------------------------------------------------------------
-make_user_record(From, To, Body, Ip) ->
-    case  user_command:get_reg_info_xmpp(list_to_binary(Body)) of
-        {ok, RegInfo} ->
-            UserRecord = user_command:new_user_record(RegInfo,Ip),
+make_user_record(From, To, Body, _Ip) ->
+    case command_parser:parse(list_to_binary(Body)) of
+        {register, {ok, UserInfo}} ->
+            UserRec = controller:create_user(UserInfo),
             send_chat(To, From,
-                 strip_bom("Welcome, You are succesfully registered")),
-        RegisterdUser = controller:create_user(UserRecord),
-            ?INFO_MSG("The registerd User ~p~n ",[RegisterdUser]);
-        {error, invalid_email_address} ->
-            send_chat(To, From, strip_bom("Your email address is invalid"));
-        {error, _} ->
+                 strip_bom(io_lib:format("Registration result: ~p",
+                                         [UserRec])));
+        {register, Error} ->
+            io:format("wrong format from user ~p~n",[Error]),
+            send_chat(To, From, strip_bom(?WRONG_MSG_STYLE ++ ?MSG_STYLE));
+        Unhandled ->
+            io:format("Unhandled result: ~p~n",[Unhandled]),
             send_chat(To, From, strip_bom(?WRONG_MSG_STYLE ++ ?MSG_STYLE))
     end.
