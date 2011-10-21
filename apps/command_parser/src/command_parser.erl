@@ -33,6 +33,10 @@
 %% {register, Error} |
 %% {login, {ok, #user{}}} |
 %% {login, Error} |
+%% {update, {ok, #user{}}} |
+%% {update, Error} |
+%% {create, {ok, #user{}}} |
+%% {create, Error} |
 %% unknown_command
 %% @end]
 %%-------------------------------------------------------------------
@@ -40,6 +44,8 @@ parse(BinString) when is_binary(BinString) ->
     case get_type(BinString) of
         {login, Data} ->
             {login, user_commands:parse_login(Data)};
+        {create, Data} ->
+            {create, user_commands:parse_create(Data)};
         {register, Data} ->
             {register, user_commands:parse_register(Data)};
         {update, Data} ->
@@ -51,7 +57,7 @@ parse(BinString) when is_binary(BinString) ->
 
 %% Internal function
 get_type(BinString) ->
-    Commands = "(LOGIN|REGISTER|UPDATE)",
+    Commands = "(LOGIN|CREATE|REGISTER|UPDATE)",
     TypeReg = Commands ++ "(.*)END",
     {ok, MP} = re:compile(TypeReg, [dotall]),
     case re:run(BinString, MP, [{capture, all_but_first, binary}]) of
@@ -59,6 +65,8 @@ get_type(BinString) ->
             case Cmd of
                 <<"LOGIN">> ->
                     {login, Input};
+                <<"CREATE">> ->
+                    {create, Input};
                 <<"REGISTER">> ->
                     {register, Input};
                 <<"UPDATE">> ->

@@ -30,3 +30,20 @@ FULLNAME: Agner Erlang\r
 END\r
 adfadfasdfaldfad">>
 ).
+
+-define(SAMPLE_CREATE,
+<<"sddfaadfaff\r
+CREATE\r
+----Required Fields---------\r
+GAMENAME: awesome_game\r
+PRESSTYPE: white\r
+ORDERCIRCLE: 4H\r
+RETREATCIRCLE: 3H30M\r
+GAINLOSTCIRCLE: 2H40M\r
+WAITTIME: 2D5H20M\r
+----Optional Fields---------\r
+PASSWORD: 1234
+\r
+END\r
+adfadfasdfaldfad">>
+).

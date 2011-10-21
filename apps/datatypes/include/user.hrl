@@ -1,4 +1,7 @@
--include_lib ("datatypes/include/date.hrl").
+-ifndef(USER_DATAMODEL).
+-define(USER_DATAMODEL, true).
+
+-include_lib("datatypes/include/date.hrl").
 
 -record (user, {id :: integer(),
                 nick :: nonempty_string (),
@@ -14,3 +17,5 @@
                 date_updated :: date ()
                }).
 
+
+-endif.

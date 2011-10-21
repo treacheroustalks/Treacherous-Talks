@@ -24,8 +24,8 @@
 %Export for eunit test
 -export([simple_relay/4, forward_mail/4]).
 
--include_lib("datatypes/include/user.hrl").% -record(user,{})
-
+-include_lib("datatypes/include/user.hrl").% #user{}
+-include_lib("datatypes/include/game.hrl").% #game{}
 -record(state,
     {
         options = [] :: list(),
@@ -334,8 +334,17 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
                     end;
                 {login, Error} ->
                     io:format("[SMTP][login error] ~p", [Error]);
-                {update, {ok, UserInfo}} ->
-                    UserRec = controller:update_user(UserInfo),
+                {create, {ok, GameInfo}} ->
+                    GameRec = controller:new_game(GameInfo),
+                    io:format("[SMTP][create game success] ~p", [GameRec]),
+                    {ok, {reg_request_sent, GameRec}};
+                {create, Error} ->
+                    io:format("[SMTP][create game error] ~p", [Error]);
+                {update, {ok, ParsedUser}} ->
+                    OldUser = controller:get_user(#user.nick, ParsedUser#user.nick),
+                    NewUser = OldUser#user{password = OldUser#user.password,
+                                           name = OldUser#user.name},
+                    UserRec = controller:update_user(NewUser),
                     io:format("[SMTP][register success] ~p", [UserRec]),
                     {ok, {reg_request_sent, UserRec}};
                 {update, Error} ->

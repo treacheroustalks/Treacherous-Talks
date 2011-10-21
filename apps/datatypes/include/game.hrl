@@ -1,4 +1,7 @@
--include_lib ("datatypes/include/date.hrl").
+-ifndef(GAME_DATAMODEL).
+-define(GAME_DATAMODEL, true).
+
+-include_lib("datatypes/include/date.hrl").
 
 -type press () :: any ().
 -type password () :: string () | undefined.
@@ -25,6 +28,8 @@
 
 -define (GAME_BUCKET, <<"game">>).
 
+
+-endif.
 %INDEX
 %status
 %press
