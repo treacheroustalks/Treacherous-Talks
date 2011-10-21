@@ -1,0 +1,156 @@
+<erl>
+%% ----------------------------------------------------------------------------
+%% @edoc register_endpoint
+%% This module establishes websocket connection between user and client
+%% during user registration and handles user data which later sent to
+%% controller
+%%
+%% Websocket connection, handshake, receiving and sending messages to/from
+%% websocket parts are taken from 'web sockets in yaws' example:
+%% (http://yaws.hyber.org/websockets.yaws)
+%% @end
+%% ----------------------------------------------------------------------------
+
+-include_lib("datatypes/include/user.hrl").
+
+%% ----------------------------------------------------------------------------
+%% @edoc out/1
+%% Output of this function is inserted into the HTML document dynamically.
+%% Its argument A is the actual socket which leads to the www client.
+%% @end
+%% ----------------------------------------------------------------------------
+out(A) ->
+    case get_upgrade_header(A#arg.headers) of
+        undefined ->
+            {content, "text/plain", "You're not a web sockets client!"};
+        "WebSocket" ->
+            spawn_ws_owner();
+        "websocket" ->
+            spawn_ws_owner()
+    end.
+
+%% ----------------------------------------------------------------------------
+%% @edoc spawn_ws_owner/0
+%% This function is taken from 'web sockets in yaws' example.
+%% Spawns a web socket owner.
+%% @end
+%% ----------------------------------------------------------------------------
+spawn_ws_owner() ->
+    WebSocketOwner = spawn(fun() -> websocket_owner() end),
+    {websocket, WebSocketOwner, passive}.
+
+%% ----------------------------------------------------------------------------
+%% @edoc websocket_owner/0
+%% This function is taken from 'web sockets in yaws' example.
+%% Partially updated.
+%% Reads messages coming from the websocket.
+%% @end
+%% ----------------------------------------------------------------------------
+websocket_owner() ->
+    receive
+        {ok, WebSocket, ProtocolVersion} ->
+            %% This is how we read messages from websockets on passive mode
+            case yaws_api:websocket_receive(WebSocket, ProtocolVersion) of
+                {error,closed} ->
+                    io:format("The websocket got disconnected right from the start. "
+                              "This wasn't supposed to happen!!~n");
+                {ok, Messages} ->
+                    case Messages of
+                        [<<"client-connected">>] ->
+                            yaws_api:websocket_setopts(WebSocket, [{active, true}]),
+                            update_server(WebSocket, ProtocolVersion);
+                        Other ->
+                            io:format("websocket_owner got: ~p. Terminating~n", [Other])
+                    end
+                end;
+        _ -> ok
+    end.
+
+%% ----------------------------------------------------------------------------
+%% @edoc user_record_gen/2
+%% This function is used for user record generation.
+%% Takes list of tuples from user data and updates values in the #user{} record
+%% @end
+%% ----------------------------------------------------------------------------
+user_record_gen([], OutputRecord) ->
+    OutputRecord;
+user_record_gen([H|Rest], OutputRecord) ->
+    {Key, Value} = H,
+    case Key of
+        email when length(Value) > 0 ->
+            user_record_gen(Rest,OutputRecord#user{email = Value});
+        name when length(Value) > 0 ->
+            user_record_gen(Rest, OutputRecord#user{name = Value});
+        password when length(Value) > 0 ->
+            user_record_gen(Rest, OutputRecord#user{password = Value});
+        _ ->
+            user_record_gen(Rest, OutputRecord)
+    end.
+
+%% ----------------------------------------------------------------------------
+%% @edoc registration_server/2
+%% This function gets a users record and updates it if it exists, and then
+%% sends the user record (#user{}) to 'controller'; It then replies to the
+%% client if it could find a record to update or not.
+%% @end
+%% ----------------------------------------------------------------------------
+update_server(WebSocket, ProtocolVersion) ->
+    receive
+        {tcp, WebSocket, DataFrame} ->
+            %% Data from a client(browser)
+            Data = yaws_api:websocket_unframe_data(ProtocolVersion, DataFrame),
+            %% Handling the client's data
+            {ok, Struct} = json:decode_string(binary_to_list(Data)),
+            {struct, User} = Struct,
+            {nick, NickName} = lists:keyfind(nick, 1, User),
+            %% Get the users record
+            case controller:get_user(#user.nick, NickName) of
+                [OldUser] ->
+                    %% Create a record
+                    UpdatedUser = user_record_gen(User, OldUser),
+                    UserRecord = controller:update_user(UpdatedUser),
+                    %% Reply to the client(browser)
+                    ReplyMsg = <<"client-updated">>;
+                [] ->
+                    ReplyMsg = <<"client-does-not-exist">>;
+                _ ->
+                    ReplyMsg = <<"client-error">>
+            end,
+            yaws_api:websocket_send(WebSocket, ProtocolVersion, ReplyMsg),
+            update_server(WebSocket, ProtocolVersion);
+
+        {tcp_closed, WebSocket} ->
+            io:format("Websocket closed. Terminating registration_server...~n");
+        Any ->
+            io:format("registration_server received unhandled msg:~p~n", [Any]),
+            update_server(WebSocket, ProtocolVersion)
+    end.
+
+%% ----------------------------------------------------------------------------
+%% @edoc get_upgrade_header/1
+%% This function is taken from 'web sockets in yaws' example.
+%% Returns the value of the HTTP header "Upgrade:"
+%% e.g. Upgrade: websocket
+%% See for more info:
+%% http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-08#section-1.2
+%% @end
+%% ----------------------------------------------------------------------------
+get_upgrade_header(#headers{other=L}) ->
+    lists:foldl(fun({http_header,_,K0,_,V}, undefined) ->
+                        K = case is_atom(K0) of
+                                true ->
+                                    atom_to_list(K0);
+                                false ->
+                                    K0
+                            end,
+                        case string:to_lower(K) of
+                            "upgrade" ->
+                                V;
+                            _ ->
+                                undefined
+                        end;
+                   (_, Acc) ->
+                        Acc
+                end, undefined, L).
+
+</erl>
