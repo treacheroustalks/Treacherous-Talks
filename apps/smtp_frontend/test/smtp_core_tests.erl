@@ -59,8 +59,8 @@ simple_relay_test_() ->
     meck:new(controller),% mock controller
     meck:expect(controller, create_user, fun(_User) -> #user{} end),
     meck:expect(controller, update_user, fun(_User) -> #user{name = "lin"} end),
-    meck:expect(controller, get_user, fun(_Type, _Key) -> #user{id = 12345,
-                                                                name = "lin"} end),
+    meck:expect(controller, get_user, fun(_Type, _Key) -> [#user{id = 12345,
+                                                                name = "lin"}] end),
     meck:expect(controller, login_user, fun(_User) -> #user{name = "andre"} end),
     meck:expect(controller, new_game, fun(_Game) -> ExpectedGame end),
 
