@@ -10,9 +10,9 @@
 get_types_test_() ->
     [
      ?_test(check_type(?SAMPLE_REGISTER, register)),
-     ?_test(check_type(?SAMPLE_UPDATE, update)),
+     ?_test(check_type(?SAMPLE_UPDATE, update_user)),
      ?_test(check_type(?SAMPLE_LOGIN, login)),
-     ?_test(check_type(?SAMPLE_CREATE, create))
+     ?_test(check_type(?SAMPLE_CREATE, create_game))
     ].
 
 check_type(Sample, Expected) ->
@@ -28,14 +28,15 @@ parse_test_() ->
                                               email = "ss@pcs", name = "Agner Erlang"}}
                         })),
      ?_test(check_parse(?SAMPLE_UPDATE,
-                        {update, {ok, #user{nick = "Lin", password = "QWER",
+                        {update_user, {ok, #user{nick = "Lin", password = "QWER",
                                               name = "Agner Erlang"}}
                         })),
-     ?_test(check_parse(?SAMPLE_CREATE, {create, {ok, #game{
-                       name = "awesome_game", press = "white",
-                       order_phase = "4H", retreat_phase = "3H30M",
-                       build_phase = "2H40M", waiting_time = "2D5H20M",
-                       creator_id = undefined}}})),
+     ?_test(check_parse(?SAMPLE_CREATE, 
+                        {create_game, {ok, #game{
+                                         name = "awesome_game", press = "white",
+                                         order_phase = "4H", retreat_phase = "3H30M",
+                                         build_phase = "2H40M", waiting_time = "2D5H20M",
+                                         creator_id = undefined}}})),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}}))
     ].

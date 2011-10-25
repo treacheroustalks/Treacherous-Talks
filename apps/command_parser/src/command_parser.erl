@@ -44,12 +44,12 @@ parse(BinString) when is_binary(BinString) ->
     case get_type(BinString) of
         {login, Data} ->
             {login, user_commands:parse_login(Data)};
-        {create, Data} ->
-            {create, user_commands:parse_create(Data)};
+        {create_game, Data} ->
+            {create_game, user_commands:parse_create(Data)};
         {register, Data} ->
             {register, user_commands:parse_register(Data)};
-        {update, Data} ->
-            {update, user_commands:parse_update(Data)};
+        {update_user, Data} ->
+            {update_user, user_commands:parse_update(Data)};
         unknown_command ->
             unknown_command
     end.
@@ -66,11 +66,11 @@ get_type(BinString) ->
                 <<"LOGIN">> ->
                     {login, Input};
                 <<"CREATE">> ->
-                    {create, Input};
+                    {create_game, Input};
                 <<"REGISTER">> ->
                     {register, Input};
                 <<"UPDATE">> ->
-                    {update, Input}
+                    {update_user, Input}
             end;
          nomatch ->
                 unknown_command

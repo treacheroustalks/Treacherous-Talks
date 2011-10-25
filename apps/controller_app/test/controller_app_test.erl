@@ -15,6 +15,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/game.hrl").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -22,16 +23,29 @@
 %% @end
 %%-------------------------------------------------------------------
 controller_test_() ->
-    [
-     fun setup/0,
-     fun controller_create_user/0,
-     fun controller_login_user/0,
-     fun controller_update_user/0,
-     fun controller_get_user1/0,
-     fun controller_get_user2/0,
-     fun controller_new_game/0,
-     fun teardown/0
-    ].
+    {inorder,
+     [
+      fun setup/0,
+      fun controller_create_user/0,
+      fun controller_login_user/0,
+      fun controller_update_user/0,
+      fun controller_get_user1/0,
+      fun controller_get_user2/0,
+      fun controller_new_game/0,
+      fun controller_handle_action_register_success/0,
+      fun controller_handle_action_register_invalid/0,
+      fun controller_handle_action_register_error/0,
+      fun controller_handle_action_login_success/0,
+      fun controller_handle_action_login_invalid/0,
+      fun controller_handle_action_login_error/0,
+      fun controller_handle_action_update_user_success/0,
+      fun controller_handle_action_update_user_invalid/0,
+      fun controller_handle_action_update_user_error/0,
+      fun controller_handle_action_create_game_success/0,
+      fun controller_handle_action_create_game_error/0,
+      fun controller_handle_action_unknown_command/0,
+      fun teardown/0
+     ]}.
 
 
 %%-------------------------------------------------------------------
@@ -107,21 +121,247 @@ controller_get_user1() ->
 %% @end
 %%-------------------------------------------------------------------
 controller_get_user2() ->
-    fun () ->
-            ?debugMsg("Testing getting a user"),
-            setup_meck(),
-            {Type, Key, User} = get_test_data(get_user),
-            meck:expect(user_management, get,
-                        fun(_From, _Type, _Key) -> ok end),
-            meck:expect(controller_app_worker, handle_call,
-                        fun({get_user, Type1, Key1}, From, State) ->
-                                user_management:get(From, Type1, Key1),
-                                {reply, From, State} end),
-            {From, _Ref} = controller:get_user(Type, Key),
-            ?assertEqual(self(), From),
-            teardown_meck(),
-            ?debugVal("Completed getting user/2 test")
-    end.
+    ?debugMsg("Testing getting a user"),
+    setup_meck(),
+    {Type, Key, _User} = get_test_data(get_user),
+    meck:expect(user_management, get,
+                fun(_From, _Type, _Key) -> ok end),
+    meck:expect(controller_app_worker, handle_call,
+                fun({get_user, Type1, Key1}, From, State) ->
+                        user_management:get(From, Type1, Key1),
+                        {reply, From, State} end),
+    {From, _Ref} = controller:get_user(Type, Key),
+    ?assertEqual(self(), From),
+    teardown_meck(),
+    ?debugVal("Completed getting user/2 test").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% successful registration.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_register_success() ->
+    ?debugMsg("Testing handle_action: register success"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, create_user, 1, return_value),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, return_value} = controller:handle_action(
+                               {register, {ok, user_data}},
+                               {Callback, []}),
+    ?assertEqual({register, success}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: register success").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% invalid registration.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_register_invalid() ->
+    ?debugMsg("Testing handle_action: register invalid"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, create_user, 1, error),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {register, {ok, user_data}},
+                               {Callback, []}),
+    ?assertEqual({register, invalid_data}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: register invalid").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% parse_error during registration.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_register_error() ->
+    ?debugMsg("Testing handle_action: register parse error"),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {register, error},
+                               {Callback, []}),
+    ?assertEqual({register, parse_error}, Result),
+
+    ?debugVal("Completed handle_action: register parse error").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% successful registration.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_login_success() ->
+    ?debugMsg("Testing handle_action: login success"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, login_user, 1, a_session_id),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, a_session_id} = controller:handle_action(
+                               {login, {ok, user_data}},
+                               {Callback, []}),
+    ?assertEqual({login, success}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: login success").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% invalid login data.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_login_invalid() ->
+    ?debugMsg("Testing handle_action: login invalid"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, login_user, 1, invalid),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, user_data} = controller:handle_action(
+                               {login, {ok, user_data}},
+                               {Callback, []}),
+    ?assertEqual({login, invalid_data}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: login invalid").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% parse_error during registration.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_login_error() ->
+    ?debugMsg("Testing handle_action: login parse error"),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {login, error},
+                               {Callback, []}),
+    ?assertEqual({login, parse_error}, Result),
+
+    ?debugMsg("Completed handle_action: login parse error").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% successful user update.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_update_user_success() ->
+    ?debugMsg("Testing handle_action: update_user success"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_user, 2, [#user{}]),
+    meck:expect(controller, update_user, 1, return_value),
+
+    ParsedUser = #user{password = "Pw", nick = "nick"},
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, return_value} = controller:handle_action(
+                               {update_user, {ok, ParsedUser}},
+                               {Callback, []}),
+    ?assertEqual({update_user, success}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: update_user success").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% invalid user update.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_update_user_invalid() ->
+    ?debugMsg("Testing handle_action: update_user invalid"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_user, 2, []),
+
+    ParsedUser = #user{password = "Pw", nick = "nick"},
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, ParsedUser} = controller:handle_action(
+                             {update_user, {ok, ParsedUser}},
+                             {Callback, []}),
+    ?assertEqual({update_user, invalid_data}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: update_user invalid").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% parse_error during user_update.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_update_user_error() ->
+    ?debugMsg("Testing handle_action: update_user parse error"),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {update_user, error},
+                               {Callback, []}),
+    ?assertEqual({update_user, parse_error}, Result),
+
+    ?debugVal("Completed handle_action: update_user parse error").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% successful game creation.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_create_game_success() ->
+    ?debugMsg("Testing handle_action: create_game success"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, new_game, 1, return_value),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, return_value} = controller:handle_action(
+                               {create_game, {ok, a_game}},
+                               {Callback, []}),
+    ?assertEqual({create_game, success}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: create_game success").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% parse_error during game_create.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_create_game_error() ->
+    ?debugMsg("Testing handle_action: create_game parse error"),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {create_game, error},
+                               {Callback, []}),
+    ?assertEqual({create_game, parse_error}, Result),
+
+    ?debugVal("Completed handle_action: create_game parse error").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% unknown commands.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_unknown_command() ->
+    ?debugMsg("Testing handle_action: unknown_command"),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, []} = controller:handle_action(
+                               unknown_command,
+                               {Callback, []}),
+    ?assertEqual(unknown_command, Result),
+
+    ?debugVal("Completed handle_action: create_game parse error").
 
 
 %%-------------------------------------------------------------------
