@@ -15,11 +15,11 @@
 -define(WRONG_MSG_STYLE, "Please send registration request as below it start
  with REGISTER and finish with END and enter keywords with capital letters").
 -define(MSG_STYLE, "
-REGISTER,
-NICKNAME: your nick,
-PASSWORD: pass,
-FULLNAME: full name,
-EMAIL: sth@sth
+REGISTER
+NICKNAME: yournick
+PASSWORD: pass
+FULLNAME: fullname
+EMAIL: sth@lin.sth
 END").
 -define(UNHANDLED_MSG, "Unhandled parse result.").
 -define(SUCCESSFUL_REGISTR_MSG, "Welcome, You are succesfully registered").

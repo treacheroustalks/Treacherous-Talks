@@ -24,8 +24,8 @@
          login_user/1,
          new_game/1,
          update_game/1,
-         get_game/1
-        ]).
+         get_game/1,
+         update_old_user/2]).
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
@@ -78,14 +78,13 @@ handle_action({login, {ok, UserInfo}}, {CallbackFun, Args}) ->
 handle_action({login, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {login, parse_error}, Error);
 
-handle_action({update_user, {ok, ParsedUser}}, {CallbackFun, Args}) ->
-    case controller:get_user(#user.nick, ParsedUser#user.nick) of
+handle_action({update_user, {ok, Nick, UpdateUserProplist}}, {CallbackFun, Args}) ->
+    case controller:get_user(#user.nick, Nick) of
         [] ->
-            CallbackFun(Args, {update_user, invalid_data}, ParsedUser);
+            CallbackFun(Args, {update_user, invalid_data}, UpdateUserProplist);
         [OldUser | _] ->
-            NewUser = OldUser#user{password = ParsedUser#user.password,
-                                   name = ParsedUser#user.name},
-            UserRec = controller:update_user(NewUser),
+            UpdatedUser = update_old_user(OldUser, UpdateUserProplist),
+            UserRec = controller:update_user(UpdatedUser),
             CallbackFun(Args, {update_user, success}, UserRec)
     end;
 handle_action({update_user, Error}, {CallbackFun, Args}) ->
@@ -111,7 +110,7 @@ handle_action({update_game, Error}, {CallbackFun, Args}) ->
 
 handle_action({create_game, {ok, GameInfo}}, {CallbackFun, Args}) ->
     GameRec = controller:new_game(GameInfo),
-    % @todo no invalid register create_game case yet ?
+    % @TODO no invalid register create_game case yet ?
     CallbackFun(Args, {create_game, success}, GameRec);
 handle_action({create_game, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {create_game, parse_error}, Error);
@@ -120,6 +119,23 @@ handle_action(unknown_command, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, []);
 handle_action(Cmd, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, Cmd).
+
+
+%%------------------------------------------------------------------------------
+%% @doc update user record via a proplist
+%%  Input: Arg1: OldUser#user
+%%         Arg2: [{#user.name, "username"}, {#user.password, "xxxx"}]
+%%
+%%  Output: #user{name="username", password="xxxx"}
+%% @end
+%%------------------------------------------------------------------------------
+update_old_user(OldUser, [{_, field_missing}|Rest]) ->
+    update_old_user(OldUser, Rest);
+update_old_user(OldUser, [{Field, Value}|Rest]) ->
+    update_old_user(setelement(Field, OldUser, Value), Rest);
+update_old_user(UpdatedUser, []) ->
+    UpdatedUser.
+
 
 %%-------------------------------------------------------------------
 %% @doc create_user/2

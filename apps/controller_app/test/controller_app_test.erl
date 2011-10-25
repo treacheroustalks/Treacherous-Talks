@@ -264,10 +264,10 @@ controller_handle_action_update_user_success() ->
     meck:expect(controller, get_user, 2, [#user{}]),
     meck:expect(controller, update_user, 1, return_value),
 
-    ParsedUser = #user{password = "Pw", nick = "nick"},
+    ParsedUser = [{#user.name, "asdf"}],
     Callback = fun ([], Result, Data) -> {Result, Data} end,
     {Result, return_value} = controller:handle_action(
-                               {update_user, {ok, ParsedUser}},
+                               {update_user, {ok, "Nickname" ,ParsedUser}},
                                {Callback, []}),
     ?assertEqual({update_user, success}, Result),
 
@@ -285,10 +285,10 @@ controller_handle_action_update_user_invalid() ->
     meck:new(controller, [passthrough]),
     meck:expect(controller, get_user, 2, []),
 
-    ParsedUser = #user{password = "Pw", nick = "nick"},
+    ParsedUser = [],
     Callback = fun ([], Result, Data) -> {Result, Data} end,
     {Result, ParsedUser} = controller:handle_action(
-                             {update_user, {ok, ParsedUser}},
+                             {update_user, {ok, "NickKey", ParsedUser}},
                              {Callback, []}),
     ?assertEqual({update_user, invalid_data}, Result),
 
@@ -570,3 +570,13 @@ get_test_game () ->
           build_phase = 12*60,
           password="pass",
           waiting_time = 48*60}.
+
+update_old_user_test_() ->
+    [
+       ?_assertEqual(
+          #user{nick="lin", name="agner"},
+          controller:update_old_user(
+              #user{nick="lin"},
+              [{#user.password, field_missing}, {#user.name, "agner"}]
+       )
+     )].

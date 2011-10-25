@@ -18,59 +18,52 @@
 %% Public interface
 -export([parse/1]).
 
-%% Exports for eunit
--export([get_type/1]).
-
+-include("command_parser.hrl").
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Gets a binary string and parses it into a command and the
 %% correspondig value.
-%% @end
+%%
 %%
 %% [@spec parse(BinString:binary()) ->
 %% {register, {ok, #user{}}} |
 %% {register, Error} |
 %% {login, {ok, #user{}}} |
 %% {login, Error} |
-%% {update, {ok, #user{}}} |
+%% {update, {ok, UserNick,[{#user.field, Value}]}} |
 %% {update, Error} |
-%% {create, {ok, #user{}}} |
-%% {create, Error} |
-%% unknown_command
-%% @end]
+%% {create_game, {ok, #user{}}} |
+%% {create_game, Error} |
+%% {reconfig_game, {ok, gameid, #game{}}|
+%% {reconfig_game, {error, {required_fields, RequiredFields}}}|
+%% {reconfig_game,{error, {invalid_input, ErrorList}}}|
+%% unknown_command]
+%% @end
 %%-------------------------------------------------------------------
+% if no matched input, let it crash to detect the bug earlier
 parse(BinString) when is_binary(BinString) ->
-    case get_type(BinString) of
-        {login, Data} ->
-            {login, user_commands:parse_login(Data)};
-        {create_game, Data} ->
-            {create_game, user_commands:parse_create(Data)};
-        {register, Data} ->
-            {register, user_commands:parse_register(Data)};
-        {update_user, Data} ->
-            {update_user, user_commands:parse_update(Data)};
-        unknown_command ->
-            unknown_command
-    end.
+    Commands =   "(" ++ ?LOGIN
+               ++"|" ++ ?CREATE
+               ++"|" ++ ?RECONFIG
+               ++ "|" ++ ?REGISTER
+               ++ "|" ++ ?UPDATE
+               ++ ")(.*)END",
 
-
-%% Internal function
-get_type(BinString) ->
-    Commands = "(LOGIN|CREATE|REGISTER|UPDATE)",
-    TypeReg = Commands ++ "(.*)END",
-    {ok, MP} = re:compile(TypeReg, [dotall]),
+    {ok, MP} = re:compile(Commands, [dotall]),
     case re:run(BinString, MP, [{capture, all_but_first, binary}]) of
-        {match, [Cmd, Input]} ->
+        {match, [Cmd, Data]} ->
             case Cmd of
-                <<"LOGIN">> ->
-                    {login, Input};
-                <<"CREATE">> ->
-                    {create_game, Input};
-                <<"REGISTER">> ->
-                    {register, Input};
-                <<"UPDATE">> ->
-                    {update_user, Input}
+                <<?LOGIN>> ->
+                    {login, user_commands:parse_login(Data)};
+                <<?CREATE>> ->
+                    {create_game, user_commands:parse_create(Data)};
+                <<?RECONFIG>> ->
+                    {reconfig_game, user_commands:parse_reconfig(Data)};
+                <<?REGISTER>> ->
+                    {register, user_commands:parse_register(Data)};
+                <<?UPDATE>> ->
+                    {update_user, user_commands:parse_update(Data)}
             end;
          nomatch ->
                 unknown_command

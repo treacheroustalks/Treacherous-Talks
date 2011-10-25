@@ -1,0 +1,24 @@
+-define(REGISTER, "REGISTER").
+-define(UPDATE, "UPDATE").
+-define(LOGIN, "LOGIN").
+-define(RECONFIG, "RECONFIG").
+-define(CREATE, "CREATE").
+-define(END, "END").
+
+
+-define(NICKNAME, "NICKNAME").
+-define(PASSWORD, "PASSWORD").
+-define(FULLNAME, "FULLNAME").
+-define(EMAIL, "EMAIL").
+
+
+-define(GAMEID, "GAMEID").
+-define(GAMENAME, "GAMENAME").
+-define(PRESSTYPE, "PRESSTYPE").
+-define(DESCRIPTION, "DESCRIPTION").
+-define(NUMBEROFPLAYERS, "NUMBEROFPLAYERS").
+-define(ORDERCIRCLE, "ORDERCIRCLE").
+-define(RETREATCIRCLE, "RETREATCIRCLE").
+-define(GAINLOSTCIRCLE, "GAINLOSTCIRCLE").
+-define(WAITTIME, "WAITTIME").
+

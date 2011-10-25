@@ -316,7 +316,9 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
         MyHost -> % when a mail reach its destination
             ParsedCmd = command_parser:parse(BinData),
             controller:handle_action(ParsedCmd, {fun smtp_output:reply/3,
-                                                 [From, To, FromHost]})
+                                                 [From, To, FromHost]});
+        _ -> % when this game server is misused as a relay server
+            {ok, relay_denied}
     end.
 
 

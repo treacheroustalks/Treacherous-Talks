@@ -7,41 +7,31 @@
 -include("test_utils.hrl").
 
 
-get_types_test_() ->
-    [
-     ?_test(check_type(?SAMPLE_REGISTER, register)),
-     ?_test(check_type(?SAMPLE_UPDATE, update_user)),
-     ?_test(check_type(?SAMPLE_LOGIN, login)),
-     ?_test(check_type(?SAMPLE_CREATE, create_game))
-    ].
-
-check_type(Sample, Expected) ->
-    ?debugVal(Expected),
-    {Result, _} = command_parser:get_type(Sample),
-    ?assertEqual(Expected, Result).
-
-
 parse_test_() ->
     [
      ?_test(check_parse(?SAMPLE_REGISTER,
                         {register, {ok, #user{nick = "Lin", password = "QWER",
-                                              email = "ss@pcs", name = "Agner Erlang"}}
+                                              email = "ss@lin.pcs", name = "Agner Erlang"}}
                         })),
      ?_test(check_parse(?SAMPLE_UPDATE,
-                        {update_user, {ok, #user{nick = "Lin", password = "QWER",
-                                              name = "Agner Erlang"}}
+                        {update_user, {ok, "Lin", [{5,"QWER"},{4,field_missing},
+                                            {6,"Agner Erlang"}]}
                         })),
-     ?_test(check_parse(?SAMPLE_CREATE, 
-                        {create_game, {ok, #game{
-                                         name = "awesome_game", press = "white",
-                                         order_phase = "4H", retreat_phase = "3H30M",
-                                         build_phase = "2H40M", waiting_time = "2D5H20M",
-                                         creator_id = undefined}}})),
+     ?_test(check_parse(?SAMPLE_CREATE,
+                        {create_game, {ok, #game{name = "awesome_game", press = "white",
+                           order_phase = 240, retreat_phase = 210,
+                           build_phase = 160, waiting_time = 3200,
+                           description = field_missing,
+                           password = "1234",
+                           num_players = field_missing,
+                           creator_id = undefined}}
+                        })),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}}))
     ].
 
 check_parse(Sample, Expected) ->
-    ?debugVal(Expected),
+    %io:format(user, "val=~p~n Exp: ~p~n", [command_parser:parse(Sample), Expected]),
+    %?debugVal(Expected),
     ?assertEqual(Expected, command_parser:parse(Sample)).
 

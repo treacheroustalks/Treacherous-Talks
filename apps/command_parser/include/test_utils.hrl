@@ -4,7 +4,7 @@ REGISTER\r
 NICKNAME: Lin\r
 PASSWORD: QWER\r
 \r
-EMAIL: ss@pcs\r
+EMAIL: ss@lin.pcs\r
 asdfasdlfadf\r
 \r
 FULLNAME: Agner Erlang\r
@@ -35,6 +35,59 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 CREATE\r
 ----Required Fields---------\r
+GAMENAME: awesome_game\r
+PRESSTYPE: white\r
+ORDERCIRCLE: 4H\r
+RETREATCIRCLE: 3H30M\r
+GAINLOSTCIRCLE: 2H40M\r
+WAITTIME: 2D5H20M\r
+----Optional Fields---------\r
+PASSWORD: 1234
+\r
+END\r
+adfadfasdfaldfad">>
+).
+
+-define(SAMPLE_RECONFIG_WITHOUT_GAMEID,
+<<"sddfaadfaff\r
+RECONFIG\r
+----Required Fields---------\r
+GAMENAME: awesome_game\r
+PRESSTYPE: white\r
+ORDERCIRCLE: 4H\r
+RETREATCIRCLE: 3H30M\r
+GAINLOSTCIRCLE: 2H40M\r
+WAITTIME: 2D5H20M\r
+----Optional Fields---------\r
+PASSWORD: 1234
+\r
+END\r
+adfadfasdfaldfad">>
+).
+
+-define(SAMPLE_RECONFIG,
+<<"sddfaadfaff\r
+RECONFIG\r
+----Required Fields---------\r
+GAMEID: 111222  \r
+GAMENAME: awesome_game\r
+PRESSTYPE: white\r
+ORDERCIRCLE: 4H\r
+RETREATCIRCLE: 3H30M\r
+GAINLOSTCIRCLE: 2H40M\r
+WAITTIME: 2D5H20M\r
+----Optional Fields---------\r
+PASSWORD: 1234
+\r
+END\r
+adfadfasdfaldfad">>
+).
+
+-define(SAMPLE_RECONFIG_WITH_CHARGID,
+<<"sddfaadfaff\r
+RECONFIG\r
+----Required Fields---------\r
+GAMEID: aws \r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r
 ORDERCIRCLE: 4H\r
