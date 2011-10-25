@@ -1,5 +1,5 @@
 
-.PHONY: test
+.PHONY: all get_deps clean compile test doc
 
 all: get_deps clean compile doc
 

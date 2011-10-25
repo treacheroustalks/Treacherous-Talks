@@ -13,17 +13,92 @@
 %%%-------------------------------------------------------------------
 -module(controller).
 
+%% Public API
+-export([handle_action/2]).
+
+
+%% Internal functions, exported for eUnit, do not use!
 -export([create_user/1,
          get_user/1, get_user/2,
          update_user/1,
          login_user/1,
          new_game/1]).
 
+-include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/game.hrl").
+
 -define(WORKER, controller_app_worker).
 
 %% ------------------------------------------------------------------
 %% External API Function Definitions
 %% ------------------------------------------------------------------
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Main controller function. Expects a command from the frontend,
+%% a callback function, and its arguments. The callback is called
+%% with the results of the given command. The callback function
+%% must be of arity 3:
+%%
+%% CallbackFun(Args, {Type::command(), Result::result()}, ResultData::any()) -> ok.
+%%
+%% command() :: register |
+%%              login |
+%%              create_user |
+%%              update_user |
+%%              unkown_command.
+%%
+%% result() :: success | parse_error | invalid_data.
+%% @end
+%%
+%% [@spec
+%% handle_action(ParsedData::{command(), any()}, {CallbackFun::Fun, Args::[any()]) -> ok.
+%% @end]
+%%-------------------------------------------------------------------
+handle_action({register, {ok, UserInfo}}, {CallbackFun, Args}) ->
+    case controller:create_user(UserInfo) of
+        error ->
+            CallbackFun(Args, {register, invalid_data}, error);
+        UserRec ->
+            CallbackFun(Args, {register, success}, UserRec)
+    end;
+handle_action({register, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {register, parse_error}, Error);
+
+handle_action({login, {ok, UserInfo}}, {CallbackFun, Args}) ->
+    case controller:login_user(UserInfo) of
+        invalid ->
+            CallbackFun(Args, {login, invalid_data}, UserInfo);
+        Session ->
+            CallbackFun(Args, {login, success}, Session)
+    end;
+handle_action({login, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {login, parse_error}, Error);
+
+handle_action({update_user, {ok, ParsedUser}}, {CallbackFun, Args}) ->
+    case controller:get_user(#user.nick, ParsedUser#user.nick) of
+        [] ->
+            CallbackFun(Args, {update_user, invalid_data}, ParsedUser);
+        [OldUser | _] ->
+            NewUser = OldUser#user{password = ParsedUser#user.password,
+                                   name = ParsedUser#user.name},
+            UserRec = controller:update_user(NewUser),
+            CallbackFun(Args, {update_user, success}, UserRec)
+    end;
+handle_action({update_user, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {update_user, parse_error}, Error);
+
+handle_action({create_game, {ok, GameInfo}}, {CallbackFun, Args}) ->
+    GameRec = controller:new_game(GameInfo),
+    % @todo no invalid register create_game case yet ?
+    CallbackFun(Args, {create_game, success}, GameRec);
+handle_action({create_game, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {create_game, parse_error}, Error);
+
+handle_action(unknown_command, {CallbackFun, Args}) ->
+    CallbackFun(Args, unknown_command, []);
+handle_action(Cmd, {CallbackFun, Args}) ->
+    CallbackFun(Args, unknown_command, Cmd).
 
 %%-------------------------------------------------------------------
 %% @doc create_user/2
