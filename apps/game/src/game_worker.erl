@@ -33,6 +33,8 @@ ping() ->
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
+
+-spec init (no_arg) -> no_return ().
 init(no_arg) ->
     service_worker:join_group(?MODULE),
     {ok, Riak} = (application:get_env (game, riak)),
