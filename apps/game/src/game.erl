@@ -4,15 +4,17 @@
 
 -export ([new_game/2,
           get_game/2,
-          delete_game/2]).
+          delete_game/2,
+          update_game/2
+         ]).
 
 -include_lib ("datatypes/include/game.hrl").
 
 %% -----------------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  creates a new game asynchronously.
 %%
-%%  will reply {tag (), {ok, GameKey :: binary ()}} to the calling process 
+%%  will reply {tag (), {ok, GameKey :: Integer()}} to the calling process
 %%  in case of success
 %% @end
 %% -----------------------------------------------------------------------------
@@ -22,7 +24,7 @@ new_game (From, Game=#game{}) ->
                      {new_game, From, Game}).
 
 %% -----------------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  gets a game from the database and returns it asynchronously
 %%
 %%  will reply {tag (), {ok, #game{}}} to the calling process in case of success
@@ -42,3 +44,14 @@ get_game (From, Key) ->
 delete_game (From, Key) ->
     gen_server:cast (service_worker:select_pid (game_worker),
                      {delete_game, From, Key}).
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  updates a game from the database asynchronously
+%%
+%%  will reply {tag (), {ok, GameKey :: Integer()}} to the calling process
+%% in case of success
+%% @end
+%% -----------------------------------------------------------------------------
+update_game(From, Game = #game{}) ->
+    gen_server:cast(service_worker:select_pid(game_worker),
+                    {new_game, From, Game}).

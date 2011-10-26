@@ -22,7 +22,10 @@
          get_user/1, get_user/2,
          update_user/1,
          login_user/1,
-         new_game/1]).
+         new_game/1,
+         update_game/1,
+         get_game/1
+        ]).
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
@@ -87,6 +90,24 @@ handle_action({update_user, {ok, ParsedUser}}, {CallbackFun, Args}) ->
     end;
 handle_action({update_user, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {update_user, parse_error}, Error);
+
+handle_action({update_game, {ok, ParsedGame}}, {CallbackFun, Args}) ->
+    case controller:get_game(ParsedGame#game.id) of
+        {ok, #game{status = waiting} = OldGame} ->
+            % it is only possible to update when status is waiting
+            NewGame = OldGame#game{name = ParsedGame#game.name,
+                                   description = ParsedGame#game.description,
+                                   press = ParsedGame#game.press,
+                                   order_phase = ParsedGame#game.order_phase,
+                                   retreat_phase = ParsedGame#game.retreat_phase,
+                                   build_phase = ParsedGame#game.build_phase},
+            {ok, _Id} = controller:update_game(NewGame),
+            CallbackFun(Args, {update_game, success}, NewGame);
+        _ ->
+            CallbackFun(Args, {update_game, invalid_data}, ParsedGame)
+    end;
+handle_action({update_game, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {update_game, parse_error}, Error);
 
 handle_action({create_game, {ok, GameInfo}}, {CallbackFun, Args}) ->
     GameRec = controller:new_game(GameInfo),
@@ -159,4 +180,25 @@ get_user(Id) ->
 %% [@spec create_game(#game{}) @end]
 %%-------------------------------------------------------------------
 new_game(Game) ->
-    gen_server:call(service_worker:select_pid(?WORKER), {new_game, Game}).
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {new_game, Game}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for updating a game
+%% @end
+%% [@spec update_game(#game{}) @end]
+%%-------------------------------------------------------------------
+update_game(Game) ->
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {update_game, Game}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for getting a game
+%% @end
+%% [@spec get_game(Id::Integer()) @end]
+%%-------------------------------------------------------------------
+get_game(Id) ->
+    gen_server:call(service_worker:select_pid(?WORKER),
+                    {get_game, Id}).

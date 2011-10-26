@@ -149,6 +149,28 @@ handle_call({get_user, Type, Key}, From, State) ->
 handle_call({new_game, Game}, From, State) ->
     game:new_game(From, Game),
     {noreply, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for updating a game
+%% @end
+%% [@spec handle_call({update_game::atom(), #game{}},
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({update_game, Game}, From, State) ->
+    game:update_game(From, Game),
+    {noreply, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for updating a game
+%% @end
+%% [@spec handle_call({get_game::atom(), Id::Integer()},
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({get_game, Id}, From, State) ->
+    game:get_game(From, Id),
+    {noreply, State};
 handle_call(Request, From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, From, State}]),
     {noreply, ok, State}.

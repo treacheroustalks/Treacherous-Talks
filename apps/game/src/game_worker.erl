@@ -45,29 +45,24 @@ handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
-handle_cast({new_game, From, Game=#game{id=ID}}, State) ->
-    DBObj=db_obj:create (?GAME_BUCKET, ID, Game),
-    DBReply = db_c:put (get_client (State), DBObj),
-    case DBReply of
-        ok ->
-            gen_server:reply (From, {ok, ID}),
-            {noreply, State};
-        {ok, AssignedID} ->
-            gen_server:reply (From, {ok, AssignedID}),
-            {noreply, State}
-    end;
-handle_cast ({get_game, From, Key}, State) ->
-    DBReply = db_c:get (get_client (State), ?GAME_BUCKET, Key),
+handle_cast({new_game, From, Game=#game{id = ID}}, State) ->
+    Reply = new_game(State, ID, Game),
+    gen_server:reply(From, Reply),
+    {noreply, State};
+handle_cast ({get_game, From, ID}, State) ->
+    BinID = list_to_binary(integer_to_list(ID)),
+    DBReply = db_c:get (get_client (State), ?GAME_BUCKET, BinID),
     case DBReply of 
         {ok, DBObj} -> 
-            gen_server:reply (From, 
+            gen_server:reply (From,
                               {ok, db_obj:get_value (DBObj)});
         Other ->
             gen_server:reply (From, Other)
     end,
     {noreply, State};
 handle_cast ({delete_game, From, Key}, State) ->
-    gen_server:reply (From, db_c:delete (get_client (State), ?GAME_BUCKET, Key)),
+    BinKey = list_to_binary(integer_to_list(Key)),
+    gen_server:reply (From, db_c:delete (get_client (State), ?GAME_BUCKET, BinKey)),
     {noreply, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
@@ -88,3 +83,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+new_game(State, undefined, #game{} = Game) ->
+    ID = db_c:get_unique_id(),
+    new_game(State, ID, Game#game{id = ID});
+new_game(State, ID, #game{} = Game) ->
+    BinID = list_to_binary(integer_to_list(ID)),
+    DBObj=db_obj:create (?GAME_BUCKET, BinID, Game),
+    db_c:put (get_client (State), DBObj),
+    {ok, ID}.

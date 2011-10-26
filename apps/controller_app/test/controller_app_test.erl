@@ -44,6 +44,9 @@ controller_test_() ->
       fun controller_handle_action_create_game_success/0,
       fun controller_handle_action_create_game_error/0,
       fun controller_handle_action_unknown_command/0,
+      fun controller_handle_update_game_success/0,
+      fun controller_handle_update_game_invalid/0,
+      fun controller_handle_update_game_error/0,
       fun teardown/0
      ]}.
 
@@ -363,6 +366,68 @@ controller_handle_action_unknown_command() ->
 
     ?debugVal("Completed handle_action: create_game parse error").
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests updating of new game
+%%
+%% The session is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_update_game_success() ->
+    ?debugMsg("Testing handle_action: update_game success"),
+    meck:new(controller, [passthrough]),
+    Game = get_test_game(),
+    meck:expect(controller, get_game, 1, {ok, Game}),
+    meck:expect(controller, update_game, 1, {ok, 666}),
+    ParsedGame = Game#game{name = "NEW NAME"},
+    Callback = fun([], Result, Data) -> {Result, Data} end,
+    {Result, ParsedGame} = controller:handle_action(
+                            {update_game, {ok, ParsedGame}},
+                            {Callback, []}),
+    ?assertEqual({update_game, success}, Result),
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: update_game success").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests updating of new game, when it is invalid
+%% example of invalid update is when the game does not have
+%% status =:= waiting
+%%
+%% The session is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_update_game_invalid() ->
+    ?debugMsg("Testing handle_action: update_game invalid"),
+    meck:new(controller, [passthrough]),
+    Game = get_test_game(),
+    NotInWaitingGame = Game#game{status = finished},
+    meck:expect(controller, get_game, 1, {ok, NotInWaitingGame}),
+    meck:expect(controller, update_game, 1, {ok, 666}),
+    ParsedGame = Game#game{name = "NEW NAME"},
+    Callback = fun([], Result, Data) -> {Result, Data} end,
+    {Result, ParsedGame} = controller:handle_action(
+                            {update_game, {ok, ParsedGame}},
+                            {Callback, []}),
+    ?assertEqual({update_game, invalid_data}, Result),
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: update_game invalid").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests updating of new game, for the parse_error case
+%%
+%% The session is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_update_game_error() ->
+    ?debugMsg("Testing handle_action: update_game parse error"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {update_game, error},
+                               {Callback, []}),
+    ?assertEqual({update_game, parse_error}, Result),
+    ?debugMsg("Completed handle_actio: update_game parse error").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -495,3 +560,13 @@ get_test_data(update_user) ->
     {#user{}};
 get_test_data(login) ->
     {#user{id=5527647785738502144}, 5527647785738502144}.
+get_test_game () ->
+    #game{creator_id=123,
+          name="game name",
+          description="lorem ipsum dolor sit amet",
+          press = black_press,
+          order_phase = 12*60,
+          retreat_phase = 12*60,
+          build_phase = 12*60,
+          password="pass",
+          waiting_time = 48*60}.

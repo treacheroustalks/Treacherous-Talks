@@ -47,7 +47,9 @@ game_test_ () ->
       new_get_game_tst_ (),
       delete_game_tst_ (),
       game_timer_create_tst_(),
-      game_timer_state_tst_()]}.
+      game_timer_state_tst_(),
+      game_update_tst_()
+     ]}.
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -67,7 +69,9 @@ new_get_game_tst_ () ->
     [fun () ->
              OrigGame = test_game (),
              Key = sync_new (OrigGame),
-             OrigGame = sync_get (Key),
+             % OrigGame is actually updated with an ID
+             OrigGameWithId = OrigGame#game{id = Key},
+             OrigGameWithId = sync_get (Key),
              Key
      end].
 
@@ -112,10 +116,28 @@ game_timer_state_tst_ () ->
      end].
 
 %%------------------------------------------------------------------------------
+%% Tests the game update functionality
+%%------------------------------------------------------------------------------
+game_update_tst_() ->
+     [fun() ->
+              ?debugMsg("Update game test"),
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % Create a copy of Game with a new description
+              UpdatedGame = Game#game{description = "Updated game"},
+              % Update the game with the same id as Game to UpdatedGame
+              game:update_game({self(), update_test}, UpdatedGame),
+              timer:sleep(50),
+              ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
+              ?debugMsg("Update game test end")
+      end].
+
+%%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
 sync_new (Game=#game{}) ->
-    game:new_game ({self (), new_game}, test_game ()),
+    game:new_game ({self (), new_game}, Game),
     receive
         {new_game, {ok, Key}} ->
             ?debugMsg (io_lib:format ("~p",[{created_new, Key}])),
