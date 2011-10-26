@@ -29,6 +29,7 @@
          get_client_id/1, set_client_id/2,
          get_server_info/1,
          get/3, get/4,
+         get_index/3,
          get_unique_id/0,
          put/2, put/3,
          delete/3, delete/4,
@@ -111,6 +112,9 @@ get(RC, Bucket, Key) ->
     to_db_obj(?PASS2(RC, get, Bucket, Key)).
 get(RC, Bucket, Key, Options) ->
     to_db_obj(?PASS3(RC, get, Bucket, Key, Options)).
+
+get_index(RC, Bucket, {Index, IndexKey}) ->
+    ?PASS3(RC, get_index, Bucket, Index, IndexKey).
 
 to_db_obj({ok, RCObj}) ->
     {ok, db_obj:from_riakc_obj(RCObj)};
