@@ -64,22 +64,6 @@ do_process (Phase, Map, Order) ->
                    {unhandled_case, {?MODULE, ?LINE},
                     [Phase,Map,Order]}}).
 
--spec unit_can_go_there (map (), unit_type (), province ()) -> boolean ().
-unit_can_go_there (Map, army, Province) ->
-    case map_utils:get_province_type (Map, Province) of
-        sea ->
-            false;
-        _ ->
-            true
-    end;
-unit_can_go_there (Map, fleet, Province) ->
-    case map_utils:get_province_type (Map, Province) of
-        land ->
-            false;
-        _ ->
-            true
-    end.
-
 %% -----------------------------------------------------------------------------
 %% @doc
 %% checks, whether an order is valid
@@ -92,13 +76,17 @@ is_legal (Map, Order) ->
         {hold, _} ->
             true;
         {move, {UType, UPlace}, Province} ->
-            unit_can_go_there (Map, UType, Province) and
-                lists:member (Province, map_utils:get_reachable (Map, UPlace));
+            lists:member (Province, 
+                          map_utils:get_reachable (Map, UPlace, UType));
         {support, _Unit, Order} ->
             is_legal (Map, Order);
-        {convoy, _, _, _} ->
+        {convoy, _Unit, _From, _To} ->
             %% a convoy order is always legal if seen alone.
-            %%(Think of chained convoys)
+            %% (Think of chained convoys, they only work when a full ensemble 
+            %% of convoy orders fit together.
+%            map_utils:unit_exists (Map, Unit) and 
+%                is_province (Map, From) and
+%                is_province (Map, To).
             true
     end.
 
@@ -126,12 +114,14 @@ do_process_move_test () ->
     ok.
 
 legal_move_test () ->
-    Map = map_utils:test_map (),
+    ?debugMsg ("legal_move_test"),
+    Map = map_utils:create_map (standard_game),
     %% legal orders:
     ?assertEqual (true, is_legal (Map, {move, {army, vienna}, galicia})),
     ?assertEqual (true, is_legal (Map, {move, {fleet, helgoland}, baltic_sea})),
     ?assertEqual (true, is_legal (Map, {move, {fleet, baltic_sea}, prussia})),
     ?assertEqual (true, is_legal (Map, {move, {fleet, berlin}, kiel})),
+    ?assertEqual (true, is_legal (Map, {move, {army, roma}, apulia})),
     %% illegal orders:
     % too far:
     ?assertEqual (false, is_legal (Map, {move, {army, vienna}, munich})),
@@ -139,4 +129,7 @@ legal_move_test () ->
     ?assertEqual (false, is_legal (Map, {move, {army, kiel}, helgoland})),
     % can't walk:
     ?assertEqual (false, is_legal (Map, {move, {fleet, kiel}, ruhr})),
+    % not on same coast:
+    ?assertEqual (false, is_legal (Map, {move, {fleet, roma}, apulia})),
+    ?debugMsg ("legal_move_test: done"),
     map_utils:delete (Map).
