@@ -24,22 +24,16 @@ add_province_test () ->
     ?assertEqual ([munich], digraph:vertices (Map)),
     map_teardown (Map).
 
-set_get_province_type_test () ->
-    Map = empty_map_setup (),
-    map_utils:add_province (Map, center_munich),
-    map_utils:set_province_type (Map, center_munich, center),
-    ?assertEqual (center, map_utils:get_province_type (Map, center_munich)),
-    map_teardown (Map).
-
 get_reachable_test () ->
     Map = test_map_setup (),
     ?assert (set_equiv ([galicia,
                          bohemia,
                          budapest,
                          trieste,
-                         tyrolia],
-                        map_utils:get_reachable (Map, vienna))),
-%    ?debugVal (map_utils:get_reachable (Map, kiel, 2)),
+                         tyrolia,
+                         vienna],
+                        map_utils:get_reachable (Map, vienna, army))),
+    ?assertEqual ([vienna], map_utils:get_reachable (Map, vienna, fleet)),
     ?assert (set_equiv ([kiel,
                          ruhr,
                          munich,
@@ -47,10 +41,19 @@ get_reachable_test () ->
                          prussia,
                          silesia,
                          bohemia,
-                         tyrolia,
-                         helgoland,
-                         baltic_sea],
-                        map_utils:get_reachable (Map, kiel, 2))),
+                         tyrolia],
+                        map_utils:get_reachable (Map, kiel, army, 2))),
+    ?assert (set_equiv ([helgoland,
+                         baltic_sea, 
+                         berlin,
+                         prussia,
+                         kiel],
+                        map_utils:get_reachable (Map, kiel, fleet, 2))),
+    map_teardown (Map).
+
+vienna_is_center_test () ->
+    Map = test_map_setup (),
+    ?assert (map_utils:get_province_info (Map, vienna, center)),
     map_teardown (Map).
 
 %% -----------------------------------------------------------------------------
@@ -97,8 +100,9 @@ serialization_test () ->
                            map_utils:get_units (DeserializedMap, vienna)),
                         ?assert (
                            set_equiv (
-                             [bohemia, galicia, tyrolia, trieste, budapest], 
-                             map_utils:get_reachable (Map, vienna))),
+                             [bohemia, galicia, tyrolia, 
+                              trieste, budapest, vienna], 
+                             map_utils:get_reachable (Map, vienna, army))),
                         Self ! test_done
                 end),
     receive test_done -> ok end,

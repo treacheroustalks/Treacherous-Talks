@@ -26,7 +26,7 @@ to_erlang_term (Digraph) ->
              edges = Edges}.
 
 from_erlang_term (#digraph{vertices=Vertices, edges=Edges}) ->
-    Digraph = digraph:new (), %% todo: use new/1!
+    Digraph = digraph:new (),
     lists:foreach (fun ({Vertex, Label}) ->
                            digraph:add_vertex (Digraph, Vertex, Label)
                    end,
