@@ -16,6 +16,7 @@
           add_province/2,
           connect_provinces/4,
           add_unit/3,
+          unit_exists/3,
           remove_unit/3,
           move_unit/4,
           get_units/2,
@@ -24,10 +25,10 @@
           get_reachable/3,
           get_reachable/4]).
 
--type prov_id () :: atom ().
+-type prov_id () :: any ().
 
--type unit_type () :: atom ().
--type unit () :: {unit_type (), Owner :: atom ()}.
+-type unit_type () :: any ().
+-type unit () :: {unit_type (), Owner :: any ()}.
 
 -type map () :: digraph ().
 %-record (province_info, {owner :: any (),
@@ -60,13 +61,13 @@ create_province_info () ->
     Dict = dict:new (),
     dict:store (units, [], Dict).
 
--spec set_province_info (map (), prov_id (), term (), term ()) -> ok.
+-spec set_province_info (map (), prov_id (), any (), any ()) -> ok.
 set_province_info (Map, Id, Key, Value) ->
     {Id, Dict} = digraph:vertex (Map, Id),
     digraph:add_vertex (Map, Id, dict:store (Key, Value, Dict)),
     ok.
 
--spec get_province_info (map (), prov_id (), term ()) -> term ().
+-spec get_province_info (map (), prov_id (), any ()) -> any ().
 get_province_info (Map, Id, Key) ->
     case digraph:vertex (Map, Id) of
         {Id, Dict} ->
@@ -91,6 +92,20 @@ get_province_info (Map, Id, Key) ->
 add_unit (Map, Unit, To) ->
     Units = get_province_info (Map, To, units),
     set_province_info (Map, To, units, [Unit | Units]).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%% Checks for a certain unit in a given province
+%% @end
+%% -----------------------------------------------------------------------------
+
+-spec unit_exists (Map, Id, Unit) -> boolean () when
+      Map :: map (),
+      Id :: prov_id (),
+      Unit :: unit ().
+unit_exists (Map, Id, Unit) ->
+    Units = get_province_info (Map, Id, units),
+    lists:member (Unit, Units).
 
 %% -----------------------------------------------------------------------------
 %% @doc

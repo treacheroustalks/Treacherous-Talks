@@ -11,26 +11,38 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 
+-type nation () :: russia
+                   | turkey
+                   | austria
+                   | italy
+                   | germany
+                   | france
+                   | england.
+
 -type province () :: atom ().
 
 -type unit_type () :: army | fleet.
 
--type unit () :: {unit_type (), province ()}.
+-type unit () :: {unit_type (), nation ()}.
 
 -type phase () :: order_phase | retreat_phase | build_phase.
 
 %% e.g.:
-%% {move, {army, munich}, tyrolia}
-%% {support, {army, bohemia}, {move, {army, munich}, tyrolia}}
+%% {move, {army, austria}, vienna, galicia}
+%% {support, {army, austria}, {move, {army, germany}, munich, silesia}}
 -type hold_order () :: {hold, unit ()}.
--type move_order () :: {move, unit (), province ()}.
--type support_order () :: {support, unit (), order ()}.
+-type move_order () :: {move, unit (), province (), province ()}.
+-type support_order () :: {support, unit (), province (), order ()}.
 -type convoy_order () :: {convoy, unit (), province (), province ()}.
 
 -type order () :: hold_order () |
                   move_order () |
                   support_order () |
                   convoy_order ().
+
+-type order_return () :: executed | unit_does_not_exist.
+
+-type order_status () :: {order_return () | order ()}.
 
 -type map () :: digraph ().
 
@@ -40,30 +52,37 @@
 %% updated map.
 %% @end
 %% -----------------------------------------------------------------------------
--spec process (phase (), map (), [order ()]) -> ok.
-process (Phase, Map, [Order | Orders]) ->
-    do_process (Phase, Map, Order),
-    process (Phase,
-             Map,
-             Orders);
-process (_Phase, Map, []) ->
-    ok.
+-spec process (phase (), map (), [order ()]) -> [order_status ()].
+process (Phase, Map, Orders) ->
+    lists:map (fun (O) ->
+                       do_process (Phase, Map, O)
+               end,
+               Orders).
 
 -spec do_process (phase (), map (), order ()) -> ok | no_return ().
-do_process (_Phase, Map, {hold, _}) ->
+do_process (_Phase, _Map, {hold, _}) ->
     ok;
 do_process (_Phase,
             Map,
-            Order={move, _Unit, _Province}) ->
-    case is_legal (Map,Order) of
+            Order={move, Unit, From, To}) ->
+    case is_legal (Map, Order) of
         true ->
-            ok
+            case map_utils:unit_exists (Map, From, Unit) of
+                true ->
+                    map_utils:move_unit (Map, Unit, From, To),
+                    {executed, Order};
+                false ->
+                    {unit_does_not_exist, Order}
+                end;
+        false ->
+            {illegal_order, Order}
     end;
 do_process (Phase, Map, Order) ->
     is_legal (Map, Order),
     erlang:error ({error,
                    {unhandled_case, {?MODULE, ?LINE},
                     [Phase,Map,Order]}}).
+
 
 %% -----------------------------------------------------------------------------
 %% @doc
@@ -73,15 +92,15 @@ do_process (Phase, Map, Order) ->
 %% -----------------------------------------------------------------------------
 -spec is_legal (map (), order ()) -> boolean ().
 is_legal (Map, Order) ->
-%    ?debugVal (Order),
     case Order of
         {hold, _} ->
             true;
-        {move, {UType, UPlace}, Province} ->
-%            ?debugVal (map_utils:get_reachable (Map, UPlace, UType)),
-            lists:member (Province, 
-                          map_utils:get_reachable (Map, UPlace, UType));
-        {support, _Unit, Order} ->
+        {move, {Type, _Nation}, From, To} ->
+            lists:member (To, 
+                          map_utils:get_reachable (Map, From, Type));
+        {support, _Unit, _Province, Order} ->
+            %% todo: check, if it is neighboring 
+            %% (case Order of {move..} | {hold..}
             is_legal (Map, Order);
         {convoy, _Unit, _From, _To} ->
             %% a convoy order is always legal if seen alone.
@@ -117,16 +136,16 @@ do_process_move_test () ->
     ok.
 
 legal_orders () ->
-    [{move, {army, vienna}, galicia},
-     {move, {fleet, berlin}, prussia},
-     {move, {fleet, kiel}, berlin},
-     {move, {army, roma}, apulia}].
+    [{move, {army, austria}, vienna, galicia},
+     {move, {fleet, germany}, berlin, prussia},
+     {move, {fleet, germany}, kiel, berlin},
+     {move, {army, italy}, roma, apulia}].
 
 illegal_orders () ->
-    [{move, {army, vienna}, munich}, % too far!
-     {move, {army, kiel}, helgoland},% can't swim!
-     {move, {fleet, kiel}, ruhr},    % can't walk!
-     {move, {fleet, roma}, apulia}]. % not on same coast!
+    [{move, {army, austria}, vienna, munich}, % too far!
+     {move, {army, germany}, kiel, helgoland},% can't swim!
+     {move, {fleet, germany}, kiel, ruhr},    % can't walk!
+     {move, {fleet, italy}, roma, apulia}].   % not on same coast!
 
 legal_move_test () ->
     ?debugMsg ("legal_move_test"),
