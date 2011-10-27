@@ -148,7 +148,8 @@ unit_exists (Map, Id, Unit) ->
 %% exist.
 %% @end
 %% -----------------------------------------------------------------------------
--spec pop_stored_unit (Map, Unit, From) -> #stored_unit{} | no_return () when
+-spec pop_stored_unit (Map, Unit, From) ->
+                              #stored_unit{} | unit_does_not_exist when
       Map :: map (),
       Unit :: unit (),
       From :: prov_id ().
@@ -156,9 +157,7 @@ pop_stored_unit (Map, Unit, From) ->
     Units = get_province_info (Map, From, units),
     case lists:keyfind (Unit, #stored_unit.unit, Units) of
         false ->
-            erlang:error ({error,
-                           {pop_stored_unit, [Map, Unit, From], 
-                            unit_not_there}});
+            unit_does_not_exist;
         StoredUnit ->
             set_province_info (Map, From,
                                units,
@@ -178,7 +177,12 @@ pop_stored_unit (Map, Unit, From) ->
       From :: prov_id (),
       To :: prov_id ().
 move_unit (Map, Unit, From, To) ->
-    add_stored_unit (Map, pop_stored_unit (Map, Unit, From), To).
+    case pop_stored_unit (Map, Unit, From) of
+        SUnit = #stored_unit{} ->
+            add_stored_unit (Map, SUnit, To);
+        Other ->
+            Other
+    end.
 
 get_units (Map, Id) ->
     lists:map (fun (#stored_unit{unit=Unit}) ->
