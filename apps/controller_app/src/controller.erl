@@ -25,7 +25,7 @@
          new_game/1,
          update_game/1,
          get_game/1,
-         update_old_user/2]).
+         update_rec_by_proplist/2]).
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
@@ -83,27 +83,22 @@ handle_action({update_user, {ok, Nick, UpdateUserProplist}}, {CallbackFun, Args}
         [] ->
             CallbackFun(Args, {update_user, invalid_data}, UpdateUserProplist);
         [OldUser | _] ->
-            UpdatedUser = update_old_user(OldUser, UpdateUserProplist),
+            UpdatedUser = update_rec_by_proplist(OldUser, UpdateUserProplist),
             UserRec = controller:update_user(UpdatedUser),
             CallbackFun(Args, {update_user, success}, UserRec)
     end;
 handle_action({update_user, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {update_user, parse_error}, Error);
 
-handle_action({update_game, {ok, ParsedGame}}, {CallbackFun, Args}) ->
-    case controller:get_game(ParsedGame#game.id) of
+handle_action({update_game, {ok, GameId, GamePropList}}, {CallbackFun, Args}) ->
+    case controller:get_game(GameId) of
         {ok, #game{status = waiting} = OldGame} ->
             % it is only possible to update when status is waiting
-            NewGame = OldGame#game{name = ParsedGame#game.name,
-                                   description = ParsedGame#game.description,
-                                   press = ParsedGame#game.press,
-                                   order_phase = ParsedGame#game.order_phase,
-                                   retreat_phase = ParsedGame#game.retreat_phase,
-                                   build_phase = ParsedGame#game.build_phase},
+            NewGame = update_rec_by_proplist(OldGame, GamePropList),
             {ok, _Id} = controller:update_game(NewGame),
             CallbackFun(Args, {update_game, success}, NewGame);
         _ ->
-            CallbackFun(Args, {update_game, invalid_data}, ParsedGame)
+            CallbackFun(Args, {update_game, invalid_data}, GamePropList)
     end;
 handle_action({update_game, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {update_game, parse_error}, Error);
@@ -122,18 +117,18 @@ handle_action(Cmd, {CallbackFun, Args}) ->
 
 
 %%------------------------------------------------------------------------------
-%% @doc update user record via a proplist
+%% @doc update record via a proplist
 %%  Input: Arg1: OldUser#user
 %%         Arg2: [{#user.name, "username"}, {#user.password, "xxxx"}]
 %%
 %%  Output: #user{name="username", password="xxxx"}
 %% @end
 %%------------------------------------------------------------------------------
-update_old_user(OldUser, [{_, field_missing}|Rest]) ->
-    update_old_user(OldUser, Rest);
-update_old_user(OldUser, [{Field, Value}|Rest]) ->
-    update_old_user(setelement(Field, OldUser, Value), Rest);
-update_old_user(UpdatedUser, []) ->
+update_rec_by_proplist(OldUser, [{_, field_missing}|Rest]) ->
+    update_rec_by_proplist(OldUser, Rest);
+update_rec_by_proplist(OldUser, [{Field, Value}|Rest]) ->
+    update_rec_by_proplist(setelement(Field, OldUser, Value), Rest);
+update_rec_by_proplist(UpdatedUser, []) ->
     UpdatedUser.
 
 

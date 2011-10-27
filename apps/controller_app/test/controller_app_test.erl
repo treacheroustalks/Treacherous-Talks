@@ -379,10 +379,11 @@ controller_handle_update_game_success() ->
     Game = get_test_game(),
     meck:expect(controller, get_game, 1, {ok, Game}),
     meck:expect(controller, update_game, 1, {ok, 666}),
-    ParsedGame = Game#game{name = "NEW NAME"},
+    GameProplist = [{#game.name, "NEW NAME"}],
+    NewGame = Game#game{name = "NEW NAME"},
     Callback = fun([], Result, Data) -> {Result, Data} end,
-    {Result, ParsedGame} = controller:handle_action(
-                            {update_game, {ok, ParsedGame}},
+    {Result, NewGame} = controller:handle_action(
+                            {update_game, {ok, 1, GameProplist}},
                             {Callback, []}),
     ?assertEqual({update_game, success}, Result),
     meck:unload(controller),
@@ -404,10 +405,10 @@ controller_handle_update_game_invalid() ->
     NotInWaitingGame = Game#game{status = finished},
     meck:expect(controller, get_game, 1, {ok, NotInWaitingGame}),
     meck:expect(controller, update_game, 1, {ok, 666}),
-    ParsedGame = Game#game{name = "NEW NAME"},
+    PropListGame = [{#game.name, "NEW NAME"}],
     Callback = fun([], Result, Data) -> {Result, Data} end,
-    {Result, ParsedGame} = controller:handle_action(
-                            {update_game, {ok, ParsedGame}},
+    {Result, PropListGame} = controller:handle_action(
+                            {update_game, {ok, 1, PropListGame}},
                             {Callback, []}),
     ?assertEqual({update_game, invalid_data}, Result),
     meck:unload(controller),
@@ -571,11 +572,11 @@ get_test_game () ->
           password="pass",
           waiting_time = 48*60}.
 
-update_old_user_test_() ->
+update_rec_by_proplist_test_() ->
     [
        ?_assertEqual(
           #user{nick="lin", name="agner"},
-          controller:update_old_user(
+          controller:update_rec_by_proplist(
               #user{nick="lin"},
               [{#user.password, field_missing}, {#user.name, "agner"}]
        )
