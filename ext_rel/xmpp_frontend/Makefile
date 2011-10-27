@@ -1,7 +1,7 @@
 reldir = rel/xmpp_frontend
 configs = config/ejabberd.cfg config/ejabberdctl.cfg config/inetrc
-beams = components/echo_bot.beam components/tt_register_bot.beam
-erls = components/echo_bot.erl components/tt_register_bot.erl
+beams = components/echo_bot.beam components/tt_bot.beam components/tt_xmpp_output.beam
+erls = components/echo_bot.erl components/tt_bot.erl components/tt_xmpp_output.erl
 deps-ext = ../../apps/controller_app ../../apps/command_parser ../../apps/service ../../apps/datatypes
 deps = components/controller_app components/command_parser components/service components/datatypes
 

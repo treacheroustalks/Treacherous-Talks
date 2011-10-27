@@ -18,7 +18,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 % API
--export([start_link/0,start_link/2,send_message/2, stop/0, last_received_msg/0]).
+-export([start_link/0, start_link/2, send_message/2, stop/0,
+	 last_received_msg/0, clear_last_received/0]).
 
 % gen_server callbacks
 -export([init/1, init/2, login/3, handle_call/3, handle_cast/2, handle_info/2,
@@ -69,6 +70,8 @@ stop() ->
 last_received_msg() ->
     gen_server:call(?MODULE, last_received_msg).
 
+clear_last_received() ->
+    gen_server:call(?MODULE, clear_last_received).
 
 %%====================================================================
 %% gen_server callbacks
@@ -135,6 +138,9 @@ handle_call({send_message, To, SendMsg}, _From, State) ->
     {reply, ok, State#state{msg = SendMsg}};
 handle_call(last_received_msg, _From, State) ->
     {reply, State#state.last_received_msg, State};
+handle_call(clear_last_received, _From, State) ->
+    NewState = State#state{last_received_msg = undefined},
+    {reply, ok, NewState};
 handle_call(_Request, _From, State) ->
     Reply = no_support,
     {reply, Reply, State}.
