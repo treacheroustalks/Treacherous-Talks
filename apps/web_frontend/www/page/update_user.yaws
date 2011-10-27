@@ -1,0 +1,29 @@
+<!-- User update page -->
+<div class="span-11">
+    <h2>Update account information</h2>
+    <fieldset>
+        <legend>Update</legend>
+        <form id="update">
+            <p><label>All fields are mandatory</label></p>
+            <p>
+                <label>E-mail</label><br/>
+                <input id="email" type="text" class="title">
+            </p>
+            <p>
+                <label>Full Name</label><br/>
+                <input id="fullname" type="text" class="title" placeholder="John Doe">
+            </p>
+            <p>
+                <label>Password</label><br/>
+                <input id="password" type="password" class="title">
+            </p>
+            <p>
+                <label>Confirm Password</label><br/>
+                <input id="confirm_password" type="password" class="title">
+            </p>
+            <p>
+                <button type="button" onclick="validate();">Update</button>
+            </p>
+        </form>
+    </fieldset>
+</div>

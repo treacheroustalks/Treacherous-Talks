@@ -1,0 +1,16 @@
+#header {
+    height: 50px;
+    padding: 20px 0;
+}
+
+#message {
+    height: 60px;
+}
+
+a h2 {
+    color: #06c;
+}
+
+.debug {
+    border: 1px solid red;
+}

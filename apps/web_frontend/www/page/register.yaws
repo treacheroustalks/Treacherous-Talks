@@ -1,0 +1,36 @@
+<!-- User registration page -->
+<div class="span-11">
+    <h2>New user? Register!</h2>
+    <fieldset>
+        <legend>Register</legend>
+        <form id="register">
+            <p><label>All fields are mandatory</label></p>
+            <p>
+                <label>E-mail</label><br/>
+                <input id="reg_email" type="text" class="title" placeholder="example@example.com">
+            </p>
+            <p>
+                <label>Full Name</label><br/>
+                <input id="reg_fullname" type="text" class="title" placeholder="John Doe">
+            </p>
+            <p>
+                <label>Nick</label><br/>
+                <input id="reg_nick" type="text" class="title" placeholder="john_doe">
+            </p>
+            <p>
+                <label>Password</label><br/>
+                <input id="reg_password" type="password" class="title">
+            </p>
+            <p>
+                <label>Confirm Password</label><br/>
+                <input id="reg_confirm_password" type="password" class="title">
+            </p>
+            <p>
+                <button type="button" onclick="validate();">Register</button>
+            </p>
+        </form>
+    </fieldset>
+</div>
+<div class="span-11 last">
+    <a href="javascript:void(0);" onclick="load_login_page();"><h2>Already have an account? Login!</h2></a>
+</div

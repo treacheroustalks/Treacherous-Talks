@@ -1,0 +1,24 @@
+<!-- User login page -->
+<div class="span-11">
+    <h2>Already have an account? Login!</h2>
+    <fieldset>
+        <legend>Login</legend>
+        <form id="login">
+            <p><label>All fields are mandatory</label></p>
+            <p>
+                <label>Nick</label><br/>
+                <input id="login_nick" type="text" class="title" placeholder="john_doe">
+            </p>
+            <p>
+                <label>Password</label><br/>
+                <input id="login_password" type="password" class="title">
+            </p>
+            <p>
+                <button id="submit" type="button" onclick="validate(); return false;">Login</button>
+            </p>
+        </form>
+    </fieldset>
+</div>
+<div class="span-11 last">
+    <a href="javascript:void(0);" onclick="load_register_page();"><h2>Don't have an account? Register!</h2></a>
+</div

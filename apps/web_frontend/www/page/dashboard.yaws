@@ -1,0 +1,10 @@
+<!-- User home page after logging in -->
+<h2>Welcome to the game</h2>
+<p>Your options</p>
+<ul>
+    <li> <a href="javascript:void(0);" onclick="load_update_user_page();">Update user</a></li>
+
+    <li><a href="javascript:void(0);">Create a new game</a></li>
+    <li><a href="javascript:void(0);">Join a game</a></li>
+    <li><a href="javascript:void(0);">Search games</a></li>
+</ul>
