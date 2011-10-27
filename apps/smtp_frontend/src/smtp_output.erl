@@ -62,6 +62,16 @@ reply([From, To, ToHost], {create_game, invalid_data}, Info) ->
               "Invalid game creation data.~n~p~n",
               [Info]);
 
+reply([From, To, ToHost], {reconfig_game, success}, Game) ->
+    send_mail(To, From, ToHost,
+              "Game information was successfully updated.~n~p~n",
+              [Game]);
+reply([From, To, ToHost], {reconfig_game, invalid_data}, Info) ->
+    send_mail(To, From, ToHost,
+              "Invalid game update information.~n~p~n",
+              [Info]);
+
+
 reply([From, To, ToHost], {Cmd, parse_error}, Error) ->
     send_mail(To, From, ToHost,
               "The command[~p] could not be interpreted correctly:~n~p~n",
@@ -70,6 +80,7 @@ reply([From, To, ToHost], unknown_command, Data) ->
     send_mail(To, From, ToHost,
               "The provided command is unknown~n~p~n",
               [Data]).
+
 
 
 %% internal function

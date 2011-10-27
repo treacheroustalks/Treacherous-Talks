@@ -44,9 +44,9 @@ controller_test_() ->
       fun controller_handle_action_create_game_success/0,
       fun controller_handle_action_create_game_error/0,
       fun controller_handle_action_unknown_command/0,
-      fun controller_handle_update_game_success/0,
-      fun controller_handle_update_game_invalid/0,
-      fun controller_handle_update_game_error/0,
+      fun controller_handle_reconfig_game_success/0,
+      fun controller_handle_reconfig_game_invalid/0,
+      fun controller_handle_reconfig_game_error/0,
       fun teardown/0
      ]}.
 
@@ -373,21 +373,21 @@ controller_handle_action_unknown_command() ->
 %% The session is a mocked module
 %% @end
 %%-------------------------------------------------------------------
-controller_handle_update_game_success() ->
-    ?debugMsg("Testing handle_action: update_game success"),
+controller_handle_reconfig_game_success() ->
+    ?debugMsg("Testing handle_action: reconfig_game success"),
     meck:new(controller, [passthrough]),
     Game = get_test_game(),
     meck:expect(controller, get_game, 1, {ok, Game}),
-    meck:expect(controller, update_game, 1, {ok, 666}),
+    meck:expect(controller, reconfig_game, 1, {ok, 666}),
     GameProplist = [{#game.name, "NEW NAME"}],
     NewGame = Game#game{name = "NEW NAME"},
     Callback = fun([], Result, Data) -> {Result, Data} end,
     {Result, NewGame} = controller:handle_action(
-                            {update_game, {ok, 1, GameProplist}},
+                            {reconfig_game, {ok, 1, GameProplist}},
                             {Callback, []}),
-    ?assertEqual({update_game, success}, Result),
+    ?assertEqual({reconfig_game, success}, Result),
     meck:unload(controller),
-    ?debugVal("Completed handle_action: update_game success").
+    ?debugVal("Completed handle_action: reconfig_game success").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -398,21 +398,21 @@ controller_handle_update_game_success() ->
 %% The session is a mocked module
 %% @end
 %%-------------------------------------------------------------------
-controller_handle_update_game_invalid() ->
-    ?debugMsg("Testing handle_action: update_game invalid"),
+controller_handle_reconfig_game_invalid() ->
+    ?debugMsg("Testing handle_action: reconfig_game invalid"),
     meck:new(controller, [passthrough]),
     Game = get_test_game(),
     NotInWaitingGame = Game#game{status = finished},
     meck:expect(controller, get_game, 1, {ok, NotInWaitingGame}),
-    meck:expect(controller, update_game, 1, {ok, 666}),
+    meck:expect(controller, reconfig_game, 1, {ok, 666}),
     PropListGame = [{#game.name, "NEW NAME"}],
     Callback = fun([], Result, Data) -> {Result, Data} end,
     {Result, PropListGame} = controller:handle_action(
-                            {update_game, {ok, 1, PropListGame}},
+                            {reconfig_game, {ok, 1, PropListGame}},
                             {Callback, []}),
-    ?assertEqual({update_game, invalid_data}, Result),
+    ?assertEqual({reconfig_game, invalid_data}, Result),
     meck:unload(controller),
-    ?debugVal("Completed handle_action: update_game invalid").
+    ?debugVal("Completed handle_action: reconfig_game invalid").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -421,14 +421,14 @@ controller_handle_update_game_invalid() ->
 %% The session is a mocked module
 %% @end
 %%-------------------------------------------------------------------
-controller_handle_update_game_error() ->
-    ?debugMsg("Testing handle_action: update_game parse error"),
+controller_handle_reconfig_game_error() ->
+    ?debugMsg("Testing handle_action: reconfig_game parse error"),
     Callback = fun ([], Result, Data) -> {Result, Data} end,
     {Result, error} = controller:handle_action(
-                               {update_game, error},
+                               {reconfig_game, error},
                                {Callback, []}),
-    ?assertEqual({update_game, parse_error}, Result),
-    ?debugMsg("Completed handle_actio: update_game parse error").
+    ?assertEqual({reconfig_game, parse_error}, Result),
+    ?debugMsg("Completed handle_actio: reconfig_game parse error").
 
 %%-------------------------------------------------------------------
 %% @doc
