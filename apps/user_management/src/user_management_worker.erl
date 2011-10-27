@@ -16,7 +16,7 @@
          code_change/3]).
 
 %% server state
--record(state, {db_conn}).
+-record(state, {}).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -33,17 +33,13 @@ ping() ->
 %% ------------------------------------------------------------------
 init(no_arg) ->
     service_worker:join_group(?MODULE),
-    {ok, Riak} = application:get_env(riak),
-    {ok, Conn} = db_c:connect(Riak),
-    {ok, #state{db_conn = Conn}}.
+    {ok, #state{}}.
 
-handle_call({create_user, Id, #user{} = User},
-            _From, #state{db_conn = Conn} = State) ->
-    Result = create_user(Conn, Id, User),
+handle_call({create_user, Id, #user{} = User}, _From, State) ->
+    Result = create_user(Id, User),
     {reply, Result, State};
-handle_call({is_valid, Nick, Password},
-            _From, #state{db_conn = Conn} = State) ->
-    Result = is_valid(Conn, Nick, Password),
+handle_call({is_valid, Nick, Password}, _From, State) ->
+    Result = is_valid(Nick, Password),
     {reply, Result, State};
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
@@ -51,24 +47,20 @@ handle_call(_Request, _From, State) ->
     io:format ("[~p] received unhandled call: ~p~n",[?MODULE, {_Request, _From, State}]),
     {noreply, ok, State}.
 
-handle_cast({create_user, Client, Id, #user{} = User},
-            #state{db_conn = Conn} = State) ->
-    Result = create_user(Conn, Id, User),
+handle_cast({create_user, Client, Id, #user{} = User}, State) ->
+    Result = create_user(Id, User),
     gen_server:reply(Client, Result),
     {noreply, State};
-handle_cast({get_user, Client, Id},
-            #state{db_conn = Conn} = State) ->
-    Result = get_user(Conn, Id),
+handle_cast({get_user, Client, Id}, State) ->
+    Result = get_user(Id),
     gen_server:reply(Client, Result),
     {noreply, State};
-handle_cast({get_user, Client, Type, Key},
-            #state{db_conn = Conn} = State) ->
-    Result = get_user(Conn, Type, Key),
+handle_cast({get_user, Client, Type, Key}, State) ->
+    Result = get_user(Type, Key),
     gen_server:reply(Client, Result),
     {noreply, State};
-handle_cast({is_valid, Client, Nick, Password},
-            #state{db_conn = Conn} = State) ->
-    Result = is_valid(Conn, Nick, Password),
+handle_cast({is_valid, Client, Nick, Password}, State) ->
+    Result = is_valid(Nick, Password),
     gen_server:reply(Client, Result),
     {noreply, State};
 handle_cast(_Msg, State) ->
@@ -90,9 +82,9 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-get_user(Conn, Id) ->
+get_user(Id) ->
     BinId = list_to_binary(integer_to_list(Id)),
-    case db_c:get(Conn, ?B_USER, BinId) of
+    case db:get(?B_USER, BinId) of
         {ok, RiakObj} ->
             db_obj:get_value(RiakObj);
         {error, Error} ->
@@ -101,11 +93,11 @@ get_user(Conn, Id) ->
             erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
     end.
 
-get_user(Conn, Type, Key) ->
-    {ok, Keys} = db_c:list_keys(Conn, ?B_USER),
+get_user(Type, Key) ->
+    {ok, Keys} = db:list_keys(?B_USER),
     lists:foldl(
       fun(Id, Acc) ->
-              {ok, Item} = db_c:get(Conn, ?B_USER, Id),
+              {ok, Item} = db:get(?B_USER, Id),
               Value = db_obj:get_value (Item),
               if
                   Key == '_' ->
@@ -117,17 +109,17 @@ get_user(Conn, Type, Key) ->
       end,
       [], Keys).
 
-create_user(Conn, undefined, #user{} = User) ->
-    Id = db_c:get_unique_id(),
-    create_user(Conn, Id, User#user{id = Id});
-create_user(Conn, Id, #user{} = User) ->
+create_user(undefined, #user{} = User) ->
+    Id = db:get_unique_id(),
+    create_user(Id, User#user{id = Id});
+create_user(Id, #user{} = User) ->
     BinId = list_to_binary(integer_to_list(Id)),
     DBVal = db_obj:create(?B_USER, BinId, User),
-    db_c:put(Conn, DBVal),
-    {ok, ReadItem} = db_c:get(Conn, ?B_USER, BinId),
+    db:put(DBVal),
+    {ok, ReadItem} = db:get(?B_USER, BinId),
     db_obj:get_value(ReadItem).
 
-is_valid(Conn, Nick, Password) ->
+is_valid(Nick, Password) ->
     % This is terrible, but map/reduce erlang code would need to be on the
     % riak node. for now this is the solution...
     % http://lists.basho.com/pipermail/riak-users_lists.basho.com/2010-April/000988.html
@@ -135,10 +127,10 @@ is_valid(Conn, Nick, Password) ->
     % or add a load path to the riak node, where the code is:
     % http://markmail.org/message/xvttgfnufojqbv7w#query:+page:1+mid:xvttgfnufojqbv7w+state:results
     % or use javascript functions ...
-    {ok, Keys} = db_c:list_keys(Conn, ?B_USER),
+    {ok, Keys} = db:list_keys(?B_USER),
     Result = lists:foldl(
                fun(Key, Acc) ->
-                       {ok, Item} = db_c:get(Conn, ?B_USER, Key),
+                       {ok, Item} = db:get(?B_USER, Key),
                        Val = db_obj:get_value(Item),
                        case Val of
                            #user{nick = Nick, password = Password} ->

@@ -11,6 +11,6 @@
                   db
                  ]},
   {mod, { controller_app_app, []}},
-  {env, [{riak, {pb, {"127.0.0.1", 8081}}},
-         {controller_app_workers, 10}]}
+  {env, [{controller_app_workers, 10}
+        ]}
  ]}.

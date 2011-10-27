@@ -485,6 +485,9 @@ setup() ->
     ?debugVal("Starting ALL tests"),
     % Application has to be loaded to get env variables
     application:load(controller_app),
+%    ?debugVal(application:start(protobuffs)),
+%    ?debugVal(application:start(riakc)),
+%    ?debugVal(application:start(db)),
     ?debugVal(controller_app_sup:start_link()).
 
 
@@ -506,9 +509,12 @@ setup_meck() ->
     meck:new(controller_app_worker_sup, [passthrough]),
     meck:new(controller_app_worker, [passthrough]),
     meck:new(user_management),
+    meck:new(db),
     meck:expect(controller_app_worker_sup, init,
                 fun(_No_Arg) ->
-                        initReturn(controller_app_worker) end).
+                        initReturn(controller_app_worker) end),
+    meck:expect(db, get, 2, {ok, a_value}),
+    meck:expect(db, put, 1, ok).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -518,7 +524,8 @@ setup_meck() ->
 teardown_meck() ->
     meck:unload(controller_app_worker_sup),
     meck:unload(controller_app_worker),
-    meck:unload(user_management).
+    meck:unload(user_management),
+    meck:unload(db).
 
 fake_game_setup() ->
     meck:new(game),
