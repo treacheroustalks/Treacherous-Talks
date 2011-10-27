@@ -23,7 +23,7 @@
          update_user/1,
          login_user/1,
          new_game/1,
-         update_game/1,
+         reconfig_game/1,
          get_game/1,
          update_rec_by_proplist/2]).
 
@@ -90,18 +90,18 @@ handle_action({update_user, {ok, Nick, UpdateUserProplist}}, {CallbackFun, Args}
 handle_action({update_user, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {update_user, parse_error}, Error);
 
-handle_action({update_game, {ok, GameId, GamePropList}}, {CallbackFun, Args}) ->
+handle_action({reconfig_game, {ok, GameId, GamePropList}}, {CallbackFun, Args}) ->
     case controller:get_game(GameId) of
         {ok, #game{status = waiting} = OldGame} ->
             % it is only possible to update when status is waiting
             NewGame = update_rec_by_proplist(OldGame, GamePropList),
-            {ok, _Id} = controller:update_game(NewGame),
-            CallbackFun(Args, {update_game, success}, NewGame);
+            {ok, _Id} = controller:reconfig_game(NewGame),
+            CallbackFun(Args, {reconfig_game, success}, NewGame);
         _ ->
-            CallbackFun(Args, {update_game, invalid_data}, GamePropList)
+            CallbackFun(Args, {reconfig_game, invalid_data}, GamePropList)
     end;
-handle_action({update_game, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {update_game, parse_error}, Error);
+handle_action({reconfig_game, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {reconfig_game, parse_error}, Error);
 
 handle_action({create_game, {ok, GameInfo}}, {CallbackFun, Args}) ->
     GameRec = controller:new_game(GameInfo),
@@ -198,11 +198,11 @@ new_game(Game) ->
 %% @doc
 %% API for updating a game
 %% @end
-%% [@spec update_game(#game{}) @end]
+%% [@spec reconfig_game(#game{}) @end]
 %%-------------------------------------------------------------------
-update_game(Game) ->
+reconfig_game(Game) ->
     gen_server:call(service_worker:select_pid(?WORKER),
-                    {update_game, Game}).
+                    {reconfig_game, Game}).
 
 %%-------------------------------------------------------------------
 %% @doc

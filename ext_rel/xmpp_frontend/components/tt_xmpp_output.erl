@@ -68,6 +68,17 @@ reply([From, To], {create_game, invalid_data}, Info) ->
               "Invalid game creation data.~n~p~n",
               [Info]);
 
+reply([From, To], {reconfig_game, success}, Game) ->
+    send_chat(To, From,
+              "Game information was successfully updated.~n~p~n",
+              [Game]);
+reply([From, To], {reconfig_game, invalid_data}, Info) ->
+    send_chat(To, From,
+              "Invalid game update information.~n~p~n",
+              [Info]);
+
+
+
 reply([From, To], {Cmd, parse_error}, Error) ->
     send_chat(From, To,
               "The command [~p] could not be interpreted correctly:~n~s~n",
