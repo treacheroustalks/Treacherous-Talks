@@ -90,7 +90,9 @@ parse_create(Data) ->
 %%------------------------------------------------------------------------------
 %% @doc parse_reconfig/1
 %%
-%% Parses a reconfig string into a game record.
+%% Parses a reconfig string into a game proplist.
+%%  Note: this function instead of record it return a prop list which each
+%%   member of the is tuple of field name in game record and its value.
 %%
 %% @end
 %%------------------------------------------------------------------------------
@@ -115,13 +117,15 @@ parse_reconfig(Data) ->
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
                     {ok, list_to_integer(GameIdStr),
-                     #game{name = Name, press = Press,
-                       order_phase = parse_time_format(OrdPhase),
-                       retreat_phase = parse_time_format(RetPhase),
-                       build_phase = parse_time_format(BldPhase),
-                       waiting_time = parse_time_format(WaitTime),
-                       description = Description, num_players = NumPlayers,
-                       password = Pw, creator_id = undefined}};
+                      [{#game.name, Name}, {#game.press,  Press},
+                       {#game.order_phase, parse_time_format(OrdPhase)},
+                       {#game.retreat_phase, parse_time_format(RetPhase)},
+                       {#game.build_phase, parse_time_format(BldPhase)},
+                       {#game.waiting_time, parse_time_format(WaitTime)},
+                       {#game.description, Description},
+                       {#game.num_players, NumPlayers},
+                       {#game.password, Pw},
+                       {#game.creator_id, undefined}]};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end

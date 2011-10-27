@@ -171,13 +171,17 @@ parse_reconfig_test_() ->
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_WITH_CHARGID)
      ),
      ?_assertEqual(
-            {ok, 111222, #game{name = "awesome_game", press = "white",
-                       order_phase = 240, retreat_phase = 210,
-                       build_phase = 160, waiting_time = 3200,
-                     description = field_missing,
-                       password = "1234",
-                        num_players = field_missing,
-                       creator_id = undefined}},
+            {ok,111222,
+            [{4,"awesome_game"},
+             {7,"white"},
+             {8,240},
+             {9,210},
+             {10,160},
+             {14,3200},
+             {5,field_missing},
+             {11,field_missing},
+             {12,"1234"},
+             {3,undefined}]},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG)
      )
      ].
