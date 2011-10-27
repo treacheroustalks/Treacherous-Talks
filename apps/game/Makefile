@@ -1,22 +1,22 @@
-all: deps compile doc
+all: deps compile docs
 
-doc:
+docs:
 	rebar skip_deps=true doc
 
 deps:
 	rebar get-deps
 
-
 clean:
 	rebar clean
-
 
 compile:
 	rm -rf .eunit
 	rebar compile
 
-
 test:
 	rebar skip_deps=true eunit
 
-.PHONY: all clean compile test
+dia: 
+	dialyzer -Wno_return -I ../ ebin
+
+.PHONY: all clean compile test docs
