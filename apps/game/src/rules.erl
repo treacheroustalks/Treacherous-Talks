@@ -40,23 +40,24 @@
 %% updated map.
 %% @end
 %% -----------------------------------------------------------------------------
--spec process (phase (), map (), [order ()]) -> map ().
+-spec process (phase (), map (), [order ()]) -> ok.
 process (Phase, Map, [Order | Orders]) ->
+    do_process (Phase, Map, Order),
     process (Phase,
-             do_process (Phase, Map, Order),
+             Map,
              Orders);
 process (_Phase, Map, []) ->
-    Map.
+    ok.
 
--spec do_process (phase (), map (), order ()) -> map () | none ().
+-spec do_process (phase (), map (), order ()) -> ok | no_return ().
 do_process (_Phase, Map, {hold, _}) ->
-    Map;
+    ok;
 do_process (_Phase,
             Map,
             Order={move, _Unit, _Province}) ->
     case is_legal (Map,Order) of
         true ->
-            Map
+            ok
     end;
 do_process (Phase, Map, Order) ->
     is_legal (Map, Order),
@@ -67,15 +68,17 @@ do_process (Phase, Map, Order) ->
 %% -----------------------------------------------------------------------------
 %% @doc
 %% checks, whether an order is valid
-%% @todo: check for unit-existence
+%% does ONLY check the map, does not consider whether units actually exist!
 %% @end
 %% -----------------------------------------------------------------------------
 -spec is_legal (map (), order ()) -> boolean ().
 is_legal (Map, Order) ->
+%    ?debugVal (Order),
     case Order of
         {hold, _} ->
             true;
         {move, {UType, UPlace}, Province} ->
+%            ?debugVal (map_utils:get_reachable (Map, UPlace, UType)),
             lists:member (Province, 
                           map_utils:get_reachable (Map, UPlace, UType));
         {support, _Unit, Order} ->
@@ -113,23 +116,24 @@ replace_element_test () ->
 do_process_move_test () ->
     ok.
 
+legal_orders () ->
+    [{move, {army, vienna}, galicia},
+     {move, {fleet, berlin}, prussia},
+     {move, {fleet, kiel}, berlin},
+     {move, {army, roma}, apulia}].
+
+illegal_orders () ->
+    [{move, {army, vienna}, munich}, % too far!
+     {move, {army, kiel}, helgoland},% can't swim!
+     {move, {fleet, kiel}, ruhr},    % can't walk!
+     {move, {fleet, roma}, apulia}]. % not on same coast!
+
 legal_move_test () ->
     ?debugMsg ("legal_move_test"),
     Map = map_utils:create_map (standard_game),
     %% legal orders:
-    ?assertEqual (true, is_legal (Map, {move, {army, vienna}, galicia})),
-    ?assertEqual (true, is_legal (Map, {move, {fleet, helgoland}, baltic_sea})),
-    ?assertEqual (true, is_legal (Map, {move, {fleet, baltic_sea}, prussia})),
-    ?assertEqual (true, is_legal (Map, {move, {fleet, berlin}, kiel})),
-    ?assertEqual (true, is_legal (Map, {move, {army, roma}, apulia})),
+    [?assertEqual (true, is_legal (Map, Order)) || Order <- legal_orders ()],
     %% illegal orders:
-    % too far:
-    ?assertEqual (false, is_legal (Map, {move, {army, vienna}, munich})),
-    % can't swim:
-    ?assertEqual (false, is_legal (Map, {move, {army, kiel}, helgoland})),
-    % can't walk:
-    ?assertEqual (false, is_legal (Map, {move, {fleet, kiel}, ruhr})),
-    % not on same coast:
-    ?assertEqual (false, is_legal (Map, {move, {fleet, roma}, apulia})),
+    [?assertEqual (false, is_legal (Map, Order)) || Order <- illegal_orders ()],
     ?debugMsg ("legal_move_test: done"),
     map_utils:delete (Map).

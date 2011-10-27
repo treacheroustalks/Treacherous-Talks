@@ -289,7 +289,7 @@ create_map (standard_game) ->
                                                 {trieste, {fleet, austria}},
                                                 {munich, {army, germany}},
                                                 {berlin, {army, germany}},
-                                                {kiel, {army, germany}},
+                                                {kiel, {fleet, germany}},
                                                 {roma, {army, italy}},
                                                 {napoli, {fleet, italy}},
                                                 {venezia, {army, italy}}]],
