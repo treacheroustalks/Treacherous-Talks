@@ -15,17 +15,21 @@
 
 -include_lib("exmpp/include/exmpp.hrl").
 -include_lib("exmpp/include/exmpp_client.hrl").
+-include_lib("exmpp/include/exmpp_jid.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 % API
--export([start_link/0, start_link/2, send_message/2, stop/0,
-	 last_received_msg/0, clear_last_received/0]).
+-export([start_link/0, start_link/2, stop/0]).
+
+-export([login/3, xmpp_call/2, xmpp_cast/2,
+         last_received_msg/0, clear_last_received/0]).
 
 % gen_server callbacks
--export([init/1, init/2, login/3, handle_call/3, handle_cast/2, handle_info/2,
+-export([init/1, init/2, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--record(state, {session, msg, my_jid, last_received_msg}).
+-record(state, {session, msg, my_jid, last_received_msg, reply_expected,
+                reply_to}).
 -define(SERVER, ?MODULE).
 
 %%====================================================================
@@ -51,10 +55,19 @@ start_link(Sender, Password) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%%  send a message to the recipient
+%%  send a message to the recipient and return first xmpp chat message
+%% that is received after the chat.
 %%-------------------------------------------------------------------
-send_message(To, SendMsg) ->
-    gen_server:call(?MODULE, {send_message, To, SendMsg}).
+xmpp_call(To, SendMsg) ->
+    gen_server:call(?MODULE, {xmpp_call, To, SendMsg}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  send a message to the recipient in cast fashion.
+%%-------------------------------------------------------------------
+xmpp_cast(To, SendMsg) ->
+    gen_server:cast(?MODULE, {xmpp_call, To, SendMsg}).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -82,7 +95,7 @@ clear_last_received() ->
 %%  it sets the initial the paramters for login and session @end
 %%--------------------------------------------------------------------
 init([])->
-    Sender = "echo@localhost",
+    Sender = "test_client@localhost",
     Password = "password",
     %SendMsg = "Hello World !",
     login(exmpp, Sender, Password).
@@ -125,22 +138,19 @@ login(App, Sender, Password) ->
 %%--------------------------------------------------------------------
 handle_call(stop, _From , State = #state{session=MySession}) ->
     exmpp_session:stop(MySession),
-    %application:stop(exmpp),
-    %application:stop(exmpp_stringprep),
-    %application:stop(inet),
     {stop, normal, ok, State};
-    %{stop, normal, State};
-handle_call({send_message, To, SendMsg}, _From, State) ->
-    M = exmpp_message:chat(SendMsg),
-    M2 = exmpp_stanza:set_sender(M, To),
-    M3 = exmpp_stanza:set_recipient(M2, State#state.my_jid),
-    echo_packet(State#state.session, M3),
-    {reply, ok, State#state{msg = SendMsg}};
+
+handle_call({xmpp_call, To, SendMsg}, From, State) ->
+    send_chat(To, State#state.my_jid, State#state.session, SendMsg),
+    {noreply, State#state{msg = SendMsg, reply_to=From}};
+
 handle_call(last_received_msg, _From, State) ->
     {reply, State#state.last_received_msg, State};
+
 handle_call(clear_last_received, _From, State) ->
     NewState = State#state{last_received_msg = undefined},
     {reply, ok, NewState};
+
 handle_call(_Request, _From, State) ->
     Reply = no_support,
     {reply, Reply, State}.
@@ -150,6 +160,10 @@ handle_call(_Request, _From, State) ->
 %%  handling cast messages
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({xmpp_cast, To, SendMsg}, State) ->
+    send_chat(To, State#state.my_jid, State#state.session, SendMsg),
+    {no_reply, State#state{msg = SendMsg, reply_to=undefined}};
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -160,27 +174,37 @@ handle_cast(_Msg, State) ->
 %% stop the session. Otherwise it is a message that will process
 %% @end
 %%--------------------------------------------------------------------
-handle_info(stop,State= #state{session=MySession}) ->
+handle_info(stop, State= #state{session=MySession}) ->
     exmpp_session:stop(MySession),
-    application:stop(exmpp),
-    application:stop(exmpp_stringprep),
-    application:stop(inet),
     {stop, normal, State};
 
-handle_info(#received_packet{packet_type=message,raw_packet=Packet,
-                             type_attr="chat"} , State) ->
-
-    Body = binary_to_list(exmpp_message:get_body(Packet)),
-    % when messages go wrong you can use this function to extract info
-    _PrintMsg = lists:flatten(
-                  io_lib:format("Not handeled Message ~p from ~p to ~p~n",
-                                [Body, exmpp_stanza:get_sender(Packet),
-                                 exmpp_stanza:get_recipient(Packet)])),
+%% This is how this module, as an exmpp client, receives messages sent 
+%% to this jid by ejabberd. If a response is expected by a call,
+%% the message is sent as a reply to that call. Otherwise, the message
+%% is just stored in the state.
+handle_info(#received_packet{packet_type=message,
+                             raw_packet=Packet,
+                             type_attr="chat"},
+            State=#state{reply_to=undefined}) ->
+    Body = raw_packet_body_string(Packet),
     {noreply, State#state{last_received_msg = Body}};
+
+% #state.reply_to being set implies a call has not been
+% replied to.
+handle_info(#received_packet{packet_type=message,
+                             raw_packet=Packet,
+                             type_attr="chat"},
+            State=#state{reply_to=From}) ->
+    Body = raw_packet_body_string(Packet),
+    gen_server:reply(From, Body),
+    NewState = State#state{last_received_msg = undefined,
+                           reply_to = undefined},
+    {noreply, NewState};
 
 handle_info(_Record, State) ->
     %io:format("~p~n", [Record]),
     {noreply, State}.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -208,8 +232,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%                                      {timeout, any()}
 %%
 %%  Try to send presence to ejabberd server and if the user is not
-%%  registerd, it will register the user first. Then it will send a mesage to
-%%  sample user in echo component of ejabberd. @end
+%%  registerd, it will register the user first. 
+%% @end
 %%--------------------------------------------------------------------
 
 % We are connected. We now log in (and try registering if authentication fails)
@@ -229,21 +253,34 @@ session(MySession, Password) ->
     % We explicitly send presence:
     exmpp_session:send_packet(MySession,
                                exmpp_presence:set_status(
-                                exmpp_presence:available(), "Echo Ready")),
-
+                                exmpp_presence:available(), "Test Client Ready")),
    {ok, MySession}.
-%%---------------------------------------------------------------------
-%% @doc echo_packet(MySession, Packet) -> ok | {error, Error}
-%%
-%%  Send the same packet back for each message received. It just
-%% change the sender and receiver. @end
-%%---------------------------------------------------------------------
-echo_packet(MySession, Packet) ->
-    From = exmpp_xml:get_attribute(Packet, <<"from">>, <<"unknown">>),
-    To = exmpp_xml:get_attribute(Packet, <<"to">>, <<"unknown">>),
-    TmpPacket = exmpp_xml:set_attribute(Packet, <<"from">>, To),
-    TmpPacket2 = exmpp_xml:set_attribute(TmpPacket, <<"to">>, From),
-    NewPacket = exmpp_xml:remove_attribute(TmpPacket2, <<"id">>),
-    exmpp_session:send_packet(MySession, NewPacket),
+
+
+%%-------------------------------------------------------------------
+%% To is a string ejabberd id
+%% From is a #jid from exmpp_jid
+%% Message is a string
+%%-------------------------------------------------------------------
+send_chat(To, From, Session, Message) ->
+    TmpPacket1 = exmpp_message:chat(Message),
+    TmpPacket2 = exmpp_xml:set_attribute(TmpPacket1, <<"from">>, From#jid.raw),
+    TmpPacket3 = exmpp_xml:set_attribute(TmpPacket2, <<"to">>, To),
+    ReadyPacket = exmpp_xml:remove_attribute(TmpPacket3, <<"id">>),
+    exmpp_session:send_packet(Session, ReadyPacket),
     ok.
 
+
+%%-------------------------------------------------------------------
+%% Returns the string Body contends of an exmpp Packet.
+%%-------------------------------------------------------------------
+raw_packet_body_string(Packet) ->
+    binary_to_list(exmpp_message:get_body(Packet)).
+
+
+
+    % when messages go wrong you can use this function to extract info
+%    _PrintMsg = lists:flatten(
+%                  io_lib:format("Not handeled Message ~p from ~p to ~p~n",
+%                                [Body, exmpp_stanza:get_sender(Packet),
+%                                 exmpp_stanza:get_recipient(Packet)])),

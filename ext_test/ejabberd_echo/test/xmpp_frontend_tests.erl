@@ -6,9 +6,6 @@
 %%% This assumes the xmpp_frontend is running a server on the
 %%% hostname 'localhost' and is connected to a backend release.
 %%%
-%%% The time waited for the response to be received
-%%% is defined in RESPONSE_WAIT_PERIOD.
-%%%
 %%%==================================================================
 
 -module(xmpp_frontend_tests).
@@ -21,7 +18,6 @@
 %% Some macros which define predefined messages and value for running
 %% these tests.
 %%-------------------------------------------------------------------
--define(RESPONSE_WAIT_PERIOD, 500).
 -define(SERVICE_BOT, "service@tt.localhost").
 
 
@@ -108,8 +104,7 @@ basic_fixture_test_ () ->
     {setup,
      fun setup_basic/0,
      fun teardown/1,
-     [fun ejabberd_echo/0,
-      fun xmpp_empty_message/0]}.
+     [fun echo/0]}.
 
 instantiator_fixture_test_() ->
     {setup,
@@ -135,16 +130,16 @@ setup_basic() ->
 setup_for_instantiator() ->
     ?debugMsg("Setting up xmpp tests. "),
     xmpp_client:start_link(),
-    [{?REGISTER_COMMAND_CORRECT, ?REG_RESPONSE_SUCCESS, "valid registration attempt"}
-%     {"REGISTER fdg END", ?REG_RESPONSE_BAD_SYNTAX, "register command with missing fields"},
-%     {"register me", ?RESPONSE_COMMAND_UNKNOWN, "request matching no command"},
-%     {?LOGIN_COMMAND_CORRECT, ?LOGIN_RESPONSE_SUCCESS, "valid login attempt"},
-%     {?LOGIN_COMMAND_BAD_PASSWORD, "Invalid login data.", "login request with invalid password"},
-%     {?LOGIN_COMMAND_BAD_NICK, "Invalid login data.","login request with invalid nickname"},
-%     {?UPDATE_COMMAND_CORRECT, ?UPD_RESPONSE_SUCCESS, "valid update attempt"},
-%     {?UPDATE_COMMAND_MISSING_FIELD, ?UPD_RESPONSE_BAD_SYNTAX, "update command with missing fields"},
-%     {?CREATE_COMMAND_CORRECT, ?CREATE_RESPONSE_SUCCESS, "valid create command"},
-%     {?CREATE_COMMAND_MISSING_FIELDS, ?CREATE_RESPONSE_BAD_SYNTAX, "create command with missing fields"}
+    [{?REGISTER_COMMAND_CORRECT, ?REG_RESPONSE_SUCCESS, "valid registration attempt"},
+     {"REGISTER fdg END", ?REG_RESPONSE_BAD_SYNTAX, "register command with missing fields"},
+     {"register me", ?RESPONSE_COMMAND_UNKNOWN, "request matching no command"},
+     {?LOGIN_COMMAND_CORRECT, ?LOGIN_RESPONSE_SUCCESS, "valid login attempt"},
+     {?LOGIN_COMMAND_BAD_PASSWORD, "Invalid login data.", "login request with invalid password"},
+     {?LOGIN_COMMAND_BAD_NICK, "Invalid login data.","login request with invalid nickname"},
+     {?UPDATE_COMMAND_CORRECT, ?UPD_RESPONSE_SUCCESS, "valid update attempt"},
+     {?UPDATE_COMMAND_MISSING_FIELD, ?UPD_RESPONSE_BAD_SYNTAX, "update command with missing fields"},
+     {?CREATE_COMMAND_CORRECT, ?CREATE_RESPONSE_SUCCESS, "valid create command"},
+     {?CREATE_COMMAND_MISSING_FIELDS, ?CREATE_RESPONSE_BAD_SYNTAX, "create command with missing fields"}
     ].
 
 
@@ -170,10 +165,7 @@ instantiator([{Request, Expect, Description}|Rest]) ->
     Test = fun() ->
                    ?debugFmt("Testing ~s.", [Description]),
                    %?debugFmt("Sending \"~s\" to ~s.~n",[Request, ?SERVICE_BOT]),
-                   ok = xmpp_client:clear_last_received(),
-                   xmpp_client:send_message(?SERVICE_BOT, Request),
-                   timer:sleep(?RESPONSE_WAIT_PERIOD),
-                   Response = xmpp_client:last_received_msg(),
+                   Response = xmpp_client:xmpp_call(?SERVICE_BOT, Request),
                    ResponsePrefix = response_prefix(Expect, Response),
                    ?assertEqual(Expect, ResponsePrefix)
            end,
@@ -187,25 +179,10 @@ instantiator([]) ->
 %%  run echo test with ejabberd server. it send a message to a user at
 %%  echo local host and get the same message
 %%-------------------------------------------------------------------
-ejabberd_echo() ->
+echo() ->
     ok = xmpp_client:clear_last_received(),
-    xmpp_client:send_message("tester@echo.localhost", ?ECHO_TEST_MSG),
-    timer:sleep(?RESPONSE_WAIT_PERIOD),
-    RMsg = xmpp_client:last_received_msg(),
+    RMsg = xmpp_client:xmpp_call("tester@echo.localhost", ?ECHO_TEST_MSG),
     ?assertEqual(?ECHO_TEST_MSG, RMsg).
-
-
-%%-------------------------------------------------------------------
-%% @doc
-%%  Send an empty message to service component.
-%%  Expect it to be ignored since it will contain no xml body element.
-%%-------------------------------------------------------------------
-xmpp_empty_message() ->
-    ok = xmpp_client:clear_last_received(),
-    xmpp_client:send_message(?SERVICE_BOT, ""),
-    timer:sleep(?RESPONSE_WAIT_PERIOD),
-    Response = xmpp_client:last_received_msg(),
-    ?assertEqual(undefined, Response).
 
 
 %%------------------------------------------------------------------
