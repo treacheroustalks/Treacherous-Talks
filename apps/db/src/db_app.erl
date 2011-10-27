@@ -1,4 +1,5 @@
 -module(db_app).
+-vsn("1.0.0").
 
 -behaviour(application).
 
@@ -10,8 +11,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    io:format ("starting supervisor~n"),
-    db_server:start_link(),
+    io:format ("[~p] starting~n", [?MODULE]),
     db_sup:start_link().
 
 stop(_State) ->
