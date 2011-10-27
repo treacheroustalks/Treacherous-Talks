@@ -52,7 +52,7 @@ echo "##### trying to build yaws"
 cd deps/yaws
 autoconf || errors=1
 ./configure --disable-pam || errors=1
-build_dep "make"
+build_dep "make -j4"
 cd $cwd
 ##
 ##################################

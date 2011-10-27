@@ -34,7 +34,7 @@ $(deps):
 	cp -r $(deps-ext) components
 
 ejabberd-beams: ejabberd/src/Makefile
-	cd ejabberd/src && make compile-beam
+	cd ejabberd/src && make compile-beam -j4
 
 ejabberd/:
 	# wget -nv -O ejabberd-2.1.9.tar.gz 'https://github.com/processone/ejabberd/tarball/v2.1.9'

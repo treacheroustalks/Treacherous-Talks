@@ -14,12 +14,12 @@ install/: $(beams) install-ejabberd config
 
 install-ejabberd: installation/installed-ejabberd
 installation/installed-ejabberd: ejabberd/src/made
-	cd ejabberd/src && make install && (cd $(CURDIR) && touch installation/installed-ejabberd)
+	cd ejabberd/src && make install -j4 && (cd $(CURDIR) && touch installation/installed-ejabberd)
 
 make-ejabberd: ejabberd/src/made
 ejabberd/src/made:
 	cd ejabberd/src && ./configure --prefix=$(CURDIR)/installation
-	cd ejabberd/src && make && touch made
+	cd ejabberd/src && make -j4 && touch made
 
 clean:
 	cd ejabberd/src; if [ -e Makefile ]; then make clean; fi
