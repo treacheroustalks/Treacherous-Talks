@@ -24,3 +24,4 @@ ejabberd/src/made:
 clean:
 	cd ejabberd/src; if [ -e Makefile ]; then make clean; fi
 	rm -rf installation
+	rm -f ejabberd/src/made

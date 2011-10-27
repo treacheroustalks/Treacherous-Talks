@@ -21,21 +21,43 @@ development workflow
 
 One suggested workflow for development of component modules:
 
-1. make release 
-    make a release of the xmpp_frontend
+Starting in ext_rel/xmpp_frontend...
+
+1. make
+    Make a release of the xmpp_frontend in rel/xmpp_frontend.
+    It's this that the release script will copy to system_release.
 2. cd rel/xmpp_frontend
 3. make install
     make a local installation of ejabberd and our modules and configs
+    under the directory 'installation'
 4. edit the modules e.g. ../../components/*.erl
-5. cp ../../components/*.erl components/
-    copy the component source here
-6. make -B components
-    rebuild the component source here
-7. make install
-    reinstall the components
+5. run make again in ext_rel/xmpp_frontend
+    recompile and copy the component source into the release dir
+6. run make again in ext_rel/xmpp_frontend/rel/xmpp_frontend
+    reinstall components into ejabberd
 8. ./installation/sbin/ejabberdctl live
     Run an interactive instance of ejabberd to see what's going on 
     while you test your modifications.
+
+################## the cool part: ####################
+Your edit, compile, test loop is number 4...8 :)
+######################################################
+
+To do this easily, I usually keep terminals open at:
+   main/
+   main/ext_rel/xmpp_rontend
+   main/ext_rel/xmpp_rontend/rel/xmpp_frontend.
+
+Before I commit I run build and test under main.
+
+Running build, then release under /main will make main/test fail
+because it assumes xmpp_frontend is still released under
+ext_rel/xmpp_frontend/rel, yet the release script moves it out of
+that directory and into system-release.
+
+IMPORTANT!!!
+After moving the xmpp_frontend release direcrory
+you have to run make reinstall.
 
 Yes, this is clunky. If you can improve on it, do so and inform 
 people of the better workflow, here perhaps!

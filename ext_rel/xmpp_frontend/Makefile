@@ -24,17 +24,18 @@ $(beams): $(deps) ejabberd-beams components/*.erl
 	mkdir -p ebin
 	erlc -I components -I ejabberd/src -pa ejabberd/src -o ebin $(erls)
 
-ejabberd/src/Makefile: ejabberd
-	cd ejabberd/src && ./configure
-
 deps: $(deps)
 $(deps):
 	rebar get-deps
 	rebar compile
 	cp -r $(deps-ext) components
 
-ejabberd-beams: ejabberd/src/Makefile
-	cd ejabberd/src && make compile-beam -j4
+# The ejabberd beams are only needed in our component building step because we implement
+# the gen_mod behaviour. If they are not present, erlc gives a warning.
+ejabberd-beams:
+	# Fetch compiled beams for this step, they're just needed for the gen_mod behaviour.
+	cd ejabberd/src && wget -nv 'http://buildbot.pcs/mirror/ejabberd_beams.tar.gz'
+	cd ejabberd/src && tar -xf ejabberd_beams.tar.gz
 
 ejabberd/:
 	# wget -nv -O ejabberd-2.1.9.tar.gz 'https://github.com/processone/ejabberd/tarball/v2.1.9'
@@ -47,6 +48,7 @@ clean: clean-release
 	rm -rf ebin
 	rm -rf components/datatypes
 	rm -rf $(deps)
+	rm -rf deps
 
 
 clean-release:
