@@ -2,6 +2,8 @@
 -behaviour(gen_server).
 
 -include_lib ("datatypes/include/game.hrl").
+-include_lib ("datatypes/include/bucket.hrl").
+
 -include_lib ("eunit/include/eunit.hrl").
 
 %% ------------------------------------------------------------------
@@ -16,10 +18,8 @@
          code_change/3]).
 
 %% server state
--record(state, {client}).
+-record(state, {}).
 
-get_client (#state{client=Client}) ->
-    Client.
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
@@ -37,9 +37,7 @@ ping() ->
 -spec init (no_arg) -> no_return ().
 init(no_arg) ->
     service_worker:join_group(?MODULE),
-    {ok, Riak} = (application:get_env (game, riak)),
-    {ok, Client} = db_c:connect (Riak),
-    {ok, #state{client=Client}}.
+    {ok, #state{}}.
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
@@ -48,12 +46,12 @@ handle_call(_Request, _From, State) ->
     {noreply, ok, State}.
 
 handle_cast({new_game, From, Game=#game{id = ID}}, State) ->
-    Reply = new_game(State, ID, Game),
+    Reply = new_game(ID, Game),
     gen_server:reply(From, Reply),
     {noreply, State};
 handle_cast ({get_game, From, ID}, State) ->
     BinID = list_to_binary(integer_to_list(ID)),
-    DBReply = db_c:get (get_client (State), ?GAME_BUCKET, BinID),
+    DBReply = db:get(?B_GAME, BinID),
     case DBReply of 
         {ok, DBObj} -> 
             gen_server:reply (From,
@@ -64,7 +62,7 @@ handle_cast ({get_game, From, ID}, State) ->
     {noreply, State};
 handle_cast ({delete_game, From, Key}, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
-    gen_server:reply (From, db_c:delete (get_client (State), ?GAME_BUCKET, BinKey)),
+    gen_server:reply (From, db:delete(?B_GAME, BinKey)),
     {noreply, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
@@ -85,11 +83,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-new_game(State, undefined, #game{} = Game) ->
-    ID = db_c:get_unique_id(),
-    new_game(State, ID, Game#game{id = ID});
-new_game(State, ID, #game{} = Game) ->
+new_game(undefined, #game{} = Game) ->
+    ID = db:get_unique_id(),
+    new_game(ID, Game#game{id = ID});
+new_game(ID, #game{} = Game) ->
     BinID = list_to_binary(integer_to_list(ID)),
-    DBObj=db_obj:create (?GAME_BUCKET, BinID, Game),
-    db_c:put (get_client (State), DBObj),
+    DBObj=db_obj:create(?B_GAME, BinID, Game),
+    db:put(DBObj),
     {ok, ID}.

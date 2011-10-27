@@ -14,3 +14,4 @@
 
 -define(B_SESSION, <<"session">>).
 -define(B_USER, <<"user">>).
+-define (B_GAME, <<"game">>).

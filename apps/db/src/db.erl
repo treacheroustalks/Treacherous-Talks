@@ -48,9 +48,8 @@
 %%-------------------------------------------------------------------
 %% @doc 
 %% Ping riak.
-%% @end
 %%
-%% @spec ping_riak() -> pong | pang.
+%% @spec ping_riak() -> pong | pang
 %% @end
 %%-------------------------------------------------------------------
 ping_riak() ->
@@ -60,12 +59,11 @@ ping_riak() ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Gets a value from the DB.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  get(Bucket::binary(), Key::binary()) ->
-%%     {ok, db_obj()} | {error, notfound}.
-%% @end]
+%%     {ok, db_obj()} | {error, notfound}
+%% @end
 %%-------------------------------------------------------------------
 get(Bucket, Key) ->
     ?CALL_WORKER({get, Bucket, Key}).
@@ -75,14 +73,13 @@ get(Bucket, Key) ->
 %% Options:
 %%      [{r, 1}] would set r=1 for the request
 %%      [{if_modified, VClock}] will return unchanged if the object's vclock matches
-%%      [head] only return the object's metadata, the value is set to <<>>
+%%      [head] only return the object's metadata, the value is set to binary
 %%      [deletedvclock] return a vclock if a tombstone is encountered
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  get(Bucket::binary(), Key::binary(), Options::list()) ->
-%%     {ok, db_obj()} | {error, notfound}.
-%% @end]
+%%     {ok, db_obj()} | {error, notfound}
+%% @end
 %%-------------------------------------------------------------------
 get(Bucket, Key, Options) ->
     ?CALL_WORKER({get, Bucket, Key, Options}).
@@ -92,12 +89,11 @@ get(Bucket, Key, Options) ->
 %% @doc
 %% Returns a bucket/key pair list for a given index.
 %% An index needs to be a binary and end with _bin
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  get_index(Bucket::binary(), {Index::binary, IndexKey::binary()}) ->
-%%     {ok, [ [bucket::binary(), key::binary()] ]} | {error, term()}.
-%% @end]
+%%     {ok, [list()]} | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 get_index(Bucket, IdxTup={_Index, _IndexKey}) ->
     ?CALL_WORKER({get_index, Bucket, IdxTup}).
@@ -106,12 +102,11 @@ get_index(Bucket, IdxTup={_Index, _IndexKey}) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Stores an object in the database.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  put(Obj::db_obj()) ->
 %%     ok | {ok, key()} | {error, term()}
-%% @end]
+%% @end
 %%-------------------------------------------------------------------
 put(Obj) ->
     ?CALL_WORKER({put, Obj}).
@@ -123,15 +118,14 @@ put(Obj) ->
 %%      [{dw,1}] set dw=1,
 %%      [{pw,1}] set pw=1,
 %%      [return_body] returns the updated metadata/value
-%%      [return_head] returns the updated metadata with the values set as <<>>
+%%      [return_head] returns the updated metadata with the values set as binary
 %%      [if_not_modified] the put fails unless riakc_obj and database vclocks match
 %%      [if_none_match] the put fails if the key already exist
-%% @end
 %%
-%% [@spec
-%%  put(Obj::db_obj()) ->
+%% @spec
+%%  put(Obj::db_obj(), Options::list()) ->
 %%     ok | {ok, key()} | {error, term()}
-%% @end]
+%% @end
 %%-------------------------------------------------------------------
 put(Obj, Options) ->
     ?CALL_WORKER({put, Obj, Options}).
@@ -140,12 +134,11 @@ put(Obj, Options) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Deletes a value from the database.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  delete(Bucket::binary(), Key::binary()) ->
-%%     ok | {error, term()}.
-%% @end]
+%%     ok | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 delete(Bucket, Key) ->
     ?CALL_WORKER({delete, Bucket, Key}).
@@ -159,12 +152,11 @@ delete(Bucket, Key) ->
 %%      [{pr,quorum}] sets pr=quorum
 %%      [{pw,2}] sets pw=2
 %%      [{dw,2}] sets dw=2
-%% @end
 %%
-%% [@spec
-%%  delete(Bucket::binary(), Key::binary()) ->
-%%     ok | {error, term()}.
-%% @end]
+%% @spec
+%%  delete(Bucket::binary(), Key::binary(), Options::list()) ->
+%%     ok | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 delete(Bucket, Key, Options) ->
     ?CALL_WORKER({delete, Bucket, Key, Options}).
@@ -173,12 +165,11 @@ delete(Bucket, Key, Options) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Lists all the buckets in the riak cluster.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  list_buckets() ->
-%%     {ok, [binary()]} | {error, term()}.
-%% @end]
+%%     {ok, [binary()]} | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 list_buckets() ->
     ?CALL_WORKER(list_buckets).
@@ -186,12 +177,11 @@ list_buckets() ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Lists all keys for a given bucket.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  list_keys(Bucket::binary()) ->
-%%     {ok, [binary()]}.
-%% @end]
+%%     {ok, [binary()]}
+%% @end
 %%-------------------------------------------------------------------
 list_keys(Bucket) ->
     ?CALL_WORKER({list_keys, Bucket}).
@@ -199,24 +189,22 @@ list_keys(Bucket) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Gets the bucket properties.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  get_bucket(Bucket::binary()) ->
-%%     {ok, bucket_props()} | {error, term()}.
-%% @end]
+%%     {ok, bucket_props()} | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 get_bucket(Bucket) ->
     ?CALL_WORKER({get_bucket, Bucket}).
 %%-------------------------------------------------------------------
 %% @doc
 %% Sets the bucket properties.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  set_bucket(Bucket::binary(), BucketProps::bucket_props()) ->
-%%     ok | {error, term()}.
-%% @end]
+%%     ok | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 set_bucket(Bucket, BucketProps) ->
     ?CALL_WORKER({set_bucket, Bucket, BucketProps}).
@@ -226,13 +214,12 @@ set_bucket(Bucket, BucketProps) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Perform a map/reduce on the given Inputs.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  mapred(Inputs::[{Bucket::binary(), Key::binary()}], 
 %%         Query::[MAGIC]) ->
-%%     {ok, ...} | {error, term()}.
-%% @end]
+%%     {ok, list()} | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 mapred(Inputs, Query) ->
     ?CALL_WORKER({mapred, Inputs, Query}).
@@ -243,12 +230,11 @@ mapred(Inputs, Query, Timeout) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Perform a map/reduce on the given bucket.
-%% @end
 %%
-%% [@spec
+%% @spec
 %%  mapred_bucket(Bucket::binary(), Query::[MAGIC]) ->
-%%     {ok, ...} | {error, term()}.
-%% @end]
+%%     {ok, list()} | {error, term()}
+%% @end
 %%-------------------------------------------------------------------
 mapred_bucket(Bucket, Query) ->
     ?CALL_WORKER({mapred_bucket, Bucket, Query}).
@@ -259,9 +245,8 @@ mapred_bucket(Bucket, Query, Timeout) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Returns a unique id.
-%% @end
 %%
-%% @spec get_unique_id() -> integer().
+%% @spec get_unique_id() -> integer()
 %% @end
 %%-------------------------------------------------------------------
 get_unique_id() ->

@@ -26,7 +26,6 @@
                 date_created = {date (), time ()} :: date (),
                 date_completed = undefined :: date ()}).
 
--define (GAME_BUCKET, <<"game">>).
 
 
 -endif.

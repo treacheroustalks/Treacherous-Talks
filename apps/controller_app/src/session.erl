@@ -12,12 +12,12 @@
 %%%-------------------------------------------------------------------
 -module(session).
 
--export([add_user/2,
-         update_user/3,
-         get_user/2,
-         is_online/2,
-         has_access/3,
-         remove_user/2]).
+-export([add_user/1,
+         update_user/2,
+         get_user/1,
+         is_online/1,
+         has_access/2,
+         remove_user/1]).
 
 -include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/user.hrl").
@@ -28,13 +28,13 @@
 %% The function adds the user to the session and returns the session id
 %% @end
 %%------------------------------------------------------------------------------
-add_user(Conn, User) ->
+add_user(User) ->
     %% We use the user's id as session id for now
     %% TODO: This is not secure. Change it to a random id
     Id = User#user.id,
     Key = term_to_binary(Id),
     UserObj = db_obj:create(?B_SESSION, Key, User),
-    db_c:put(Conn, UserObj),
+    db:put(UserObj),
     Id.
 
 
@@ -44,10 +44,10 @@ add_user(Conn, User) ->
 %% Updates the user's data in the session
 %% @end
 %%------------------------------------------------------------------------------
-update_user(Conn, Id, User) ->
+update_user(Id, User) ->
     Key = term_to_binary(Id),
     UserObj = db_obj:create(?B_SESSION, Key, User),
-    db_c:put(Conn, UserObj),
+    db:put(UserObj),
     ok.
 
 
@@ -57,9 +57,9 @@ update_user(Conn, Id, User) ->
 %% Returns the user's data from the session
 %% @end
 %%------------------------------------------------------------------------------
-get_user(Conn, Id) ->
+get_user(Id) ->
     Key = term_to_binary(Id),
-    UserObj = db_c:get(Conn, ?B_SESSION, Key),
+    UserObj = db:get(?B_SESSION, Key),
     db_obj:get_value(UserObj).
 
 
@@ -69,8 +69,8 @@ get_user(Conn, Id) ->
 %% Checks if the given user has an active session
 %% @end
 %%------------------------------------------------------------------------------
-is_online(Conn, Id) ->
-    case get_user(Conn, Id) of
+is_online(Id) ->
+    case get_user(Id) of
         {error, notfound} ->
             false;
         {ok, _User} ->
@@ -85,8 +85,8 @@ is_online(Conn, Id) ->
 %% the resource
 %% @end
 %%------------------------------------------------------------------------------
-has_access(Conn, Id, Role) ->
-    case get_user(Conn, Id) of
+has_access(Id, Role) ->
+    case get_user(Id) of
         {error, notfound} ->
             false;
         {ok, User} ->
@@ -100,9 +100,9 @@ has_access(Conn, Id, Role) ->
 %% Removes the user from the session
 %% @end
 %%------------------------------------------------------------------------------
-remove_user(Conn, Id) ->
+remove_user(Id) ->
     Key = term_to_binary(Id),
-    db_c:delete(Conn, ?B_SESSION, Key).
+    db:delete(?B_SESSION, Key).
 
 
 %%------------------------------------------------------------------------------

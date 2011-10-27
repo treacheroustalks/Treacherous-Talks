@@ -31,7 +31,7 @@
          code_change/3]).
 
 %% server state
--record(state, {db_conn}).
+-record(state, {}).
 
 
 %% ------------------------------------------------------------------
@@ -73,9 +73,7 @@ ping() ->
 -spec init(atom()) -> {ok, #state{}}.
 init(no_arg) ->
     service_worker:join_group(?MODULE),
-    {ok, Riak} = application:get_env(?APP, riak),
-    {ok, Conn} = db_c:connect(Riak),
-    {ok, #state{db_conn = Conn}}.
+    {ok, #state{}}.
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
@@ -115,12 +113,12 @@ handle_call({update_user, User}, From, State) ->
 %%%         {reply, interger(), #state{}} | {reply, invalid, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({login_user, User}, _From, #state{db_conn = Conn} = State) ->
+handle_call({login_user, User}, _From, State) ->
     case user_management:is_valid(User#user.nick, User#user.password) of
         false ->
             {reply, invalid, State};
         UserNew = #user{} ->
-            SessionId = session:add_user(Conn, UserNew),
+            SessionId = session:add_user(UserNew),
             {reply, SessionId, State}
     end;
 %%-------------------------------------------------------------------
