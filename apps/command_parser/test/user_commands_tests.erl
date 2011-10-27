@@ -31,20 +31,22 @@ parse_register_test_() ->
 
 parse_update_test_() ->
     ActualOutput = user_commands:parse_update(?SAMPLE_UPDATE),
-    Expected = {ok, "Lin", [{5,"QWER"},{4,field_missing},{6,"Agner Erlang"}]},
+    Expected = {ok, 123456, [{#user.password,"QWER"},
+                             {#user.email,field_missing},
+                             {#user.name,"Agner Erlang"}]},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
 
 parse_create_test_() ->
     ActualOutput = user_commands:parse_create(?SAMPLE_CREATE),
-    Expected = {ok, #game{name = "awesome_game", press = "white",
-                       order_phase = 240, retreat_phase = 210,
-                       build_phase = 160, waiting_time = 3200,
-                     description = field_missing,
-                       password = "1234",
-                        num_players = field_missing,
-                       creator_id = undefined}},
+    Expected = {ok, 987654, #game{name = "awesome_game", press = "white",
+                                  order_phase = 240, retreat_phase = 210,
+                                  build_phase = 160, waiting_time = 3200,
+                                  description = field_missing,
+                                  password = "1234",
+                                  num_players = field_missing,
+                                  creator_id = undefined}},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
@@ -163,15 +165,15 @@ get_check_type_test_()->
 parse_reconfig_test_() ->
     [
      ?_assertEqual(
-            {error, {required_fields, [?GAMEID]}},
+            {error, {required_fields, [?GAMEID, ?SESSION]}},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_WITHOUT_GAMEID)
      ),
      ?_assertEqual(
-            {error, {invalid_input, [?GAMEID]}},
+            {error, {invalid_input, [?SESSION, ?GAMEID]}},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_WITH_CHARGID)
      ),
      ?_assertEqual(
-            {ok,111222,
+            {ok, 456123, 111222,
             [{4,"awesome_game"},
              {7,"white"},
              {8,240},

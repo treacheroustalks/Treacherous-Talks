@@ -24,7 +24,7 @@ adfadfasdfaldfad">>
 -define(SAMPLE_UPDATE,
 <<"sddfaadfaff\r
 UPDATE\r
-NICKNAME: Lin\r
+SESSION: 123456\r
 PASSWORD: QWER\r
 FULLNAME: Agner Erlang\r
 END\r
@@ -35,6 +35,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 CREATE\r
 ----Required Fields---------\r
+SESSION: 987654\r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r
 ORDERCIRCLE: 4H\r
@@ -69,6 +70,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 RECONFIG\r
 ----Required Fields---------\r
+SESSION: 456123\r
 GAMEID: 111222  \r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r
@@ -87,6 +89,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 RECONFIG\r
 ----Required Fields---------\r
+SESSION: asd\r
 GAMEID: aws \r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r

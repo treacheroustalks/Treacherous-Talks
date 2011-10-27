@@ -59,8 +59,14 @@ update_user(Id, User) ->
 %%------------------------------------------------------------------------------
 get_user(Id) ->
     Key = term_to_binary(Id),
-    UserObj = db:get(?B_SESSION, Key),
-    db_obj:get_value(UserObj).
+    case db:get(?B_SESSION, Key) of
+        {ok, UserObj} ->
+            {ok, db_obj:get_value(UserObj)};
+        {error, Error} ->
+            {error, Error};
+        Other ->
+            erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
+    end.
 
 
 %%------------------------------------------------------------------------------
@@ -72,9 +78,9 @@ get_user(Id) ->
 is_online(Id) ->
     case get_user(Id) of
         {error, notfound} ->
-            false;
+            {ok, false};
         {ok, _User} ->
-            true
+            {ok, true}
     end.
 
 

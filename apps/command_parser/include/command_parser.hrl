@@ -6,6 +6,8 @@
 -define(END, "END").
 
 
+-define(SESSION, "SESSION").
+
 -define(NICKNAME, "NICKNAME").
 -define(PASSWORD, "PASSWORD").
 -define(FULLNAME, "FULLNAME").

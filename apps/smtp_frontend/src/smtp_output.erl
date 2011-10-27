@@ -72,6 +72,10 @@ reply([From, To, ToHost], {reconfig_game, invalid_data}, Info) ->
               [Info]);
 
 
+reply([From, To, ToHost], {Cmd, invalid_session}, Info) ->
+    send_mail(From, To, ToHost,
+              "[~p]Invalid user session.~n~p~n",
+              [Cmd, Info]);
 reply([From, To, ToHost], {Cmd, parse_error}, Error) ->
     send_mail(To, From, ToHost,
               "The command[~p] could not be interpreted correctly:~n~p~n",

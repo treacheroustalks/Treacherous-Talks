@@ -25,17 +25,21 @@
          new_game/1,
          reconfig_game/1,
          get_game/1,
-         update_rec_by_proplist/2]).
+         get_session_user/1,
+         update_session_user/2,
+         is_online/1,
+         update_rec_by_proplist/2
+        ]).
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 
 -define(WORKER, controller_app_worker).
+-define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER), Cmd)).
 
 %% ------------------------------------------------------------------
 %% External API Function Definitions
 %% ------------------------------------------------------------------
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Main controller function. Expects a command from the frontend,
@@ -49,13 +53,17 @@
 %%              login |
 %%              create_user |
 %%              update_user |
+%%              create_game |
+%%              update_game |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data.
 %% @end
 %%
 %% [@spec
-%% handle_action(ParsedData::{command(), any()}, {CallbackFun::Fun, Args::[any()]) -> ok.
+%% handle_action(ParsedData::{command(), any()},
+%%               {CallbackFun::Fun, Args::[any()]},
+%%               SessionId::Integer()) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
 handle_action({register, {ok, UserInfo}}, {CallbackFun, Args}) ->
@@ -78,35 +86,49 @@ handle_action({login, {ok, UserInfo}}, {CallbackFun, Args}) ->
 handle_action({login, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {login, parse_error}, Error);
 
-handle_action({update_user, {ok, Nick, UpdateUserProplist}}, {CallbackFun, Args}) ->
-    case controller:get_user(#user.nick, Nick) of
-        [] ->
-            CallbackFun(Args, {update_user, invalid_data}, UpdateUserProplist);
-        [OldUser | _] ->
+handle_action({update_user, {ok, Session, UpdateUserProplist}}, {CallbackFun, Args}) ->
+    case controller:get_session_user(Session) of
+        {error, _Error} ->
+            CallbackFun(Args, {update_user, invalid_session}, Session);
+        {ok, OldUser} ->
             UpdatedUser = update_rec_by_proplist(OldUser, UpdateUserProplist),
             UserRec = controller:update_user(UpdatedUser),
+            controller:update_session_user(Session, UserRec),
             CallbackFun(Args, {update_user, success}, UserRec)
     end;
 handle_action({update_user, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {update_user, parse_error}, Error);
 
-handle_action({reconfig_game, {ok, GameId, GamePropList}}, {CallbackFun, Args}) ->
-    case controller:get_game(GameId) of
-        {ok, #game{status = waiting} = OldGame} ->
-            % it is only possible to update when status is waiting
-            NewGame = update_rec_by_proplist(OldGame, GamePropList),
-            {ok, _Id} = controller:reconfig_game(NewGame),
-            CallbackFun(Args, {reconfig_game, success}, NewGame);
-        _ ->
-            CallbackFun(Args, {reconfig_game, invalid_data}, GamePropList)
+handle_action({reconfig_game, {ok, Session, GameId, GamePropList}},
+              {CallbackFun, Args}) ->
+    case controller:get_session_user(Session) of
+        {error, _Error} ->
+            CallbackFun(Args, {reconfig_game, invalid_session}, Session);
+        {ok, User} ->
+            UserId = User#user.id,
+            case controller:get_game(GameId) of
+                {ok, #game{status = waiting, creator_id = UserId} = OldGame} ->
+                    % it is only possible to update when status is waiting
+                    NewGame = update_rec_by_proplist(OldGame, GamePropList),
+                    {ok, _Id} = controller:reconfig_game(NewGame),
+                    CallbackFun(Args, {reconfig_game, success}, NewGame);
+                _ ->
+                    CallbackFun(Args, {reconfig_game, invalid_data}, GamePropList)
+            end
     end;
 handle_action({reconfig_game, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {reconfig_game, parse_error}, Error);
 
-handle_action({create_game, {ok, GameInfo}}, {CallbackFun, Args}) ->
-    GameRec = controller:new_game(GameInfo),
-    % @TODO no invalid register create_game case yet ?
-    CallbackFun(Args, {create_game, success}, GameRec);
+handle_action({create_game, {ok, Session, GameInfo}}, {CallbackFun, Args}) ->
+    case controller:get_session_user(Session) of
+        {error, _Error} ->
+            CallbackFun(Args, {create_game, invalid_session}, Session);
+        {ok, User} ->
+            Creator = User#user.id,
+            GameRec = controller:new_game(GameInfo#game{creator_id = Creator}),
+            % @todo no invalid create_game case yet ?
+            CallbackFun(Args, {create_game, success}, GameRec)
+    end;
 handle_action({create_game, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {create_game, parse_error}, Error);
 
@@ -114,22 +136,6 @@ handle_action(unknown_command, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, []);
 handle_action(Cmd, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, Cmd).
-
-
-%%------------------------------------------------------------------------------
-%% @doc update record via a proplist
-%%  Input: Arg1: OldUser#user
-%%         Arg2: [{#user.name, "username"}, {#user.password, "xxxx"}]
-%%
-%%  Output: #user{name="username", password="xxxx"}
-%% @end
-%%------------------------------------------------------------------------------
-update_rec_by_proplist(OldUser, [{_, field_missing}|Rest]) ->
-    update_rec_by_proplist(OldUser, Rest);
-update_rec_by_proplist(OldUser, [{Field, Value}|Rest]) ->
-    update_rec_by_proplist(setelement(Field, OldUser, Value), Rest);
-update_rec_by_proplist(UpdatedUser, []) ->
-    UpdatedUser.
 
 
 %%-------------------------------------------------------------------
@@ -140,8 +146,7 @@ update_rec_by_proplist(UpdatedUser, []) ->
 %% [@spec create_user(Id::Integer(), #user{}) @end]
 %%-------------------------------------------------------------------
 create_user(User) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {create_user, User}).
+    ?CALL_WORKER({create_user, User}).
 
 
 %%-------------------------------------------------------------------
@@ -152,8 +157,7 @@ create_user(User) ->
 %% [@spec create_user(#user{}) @end]
 %%-------------------------------------------------------------------
 update_user(User) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {update_user, User}).
+    ?CALL_WORKER({update_user, User}).
 
 
 %%-------------------------------------------------------------------
@@ -164,8 +168,7 @@ update_user(User) ->
 %% [@spec login_user(#user{}) @end]
 %%-------------------------------------------------------------------
 login_user(User) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {login_user, User}).
+    ?CALL_WORKER({login_user, User}).
 
 
 %%-------------------------------------------------------------------
@@ -176,12 +179,10 @@ login_user(User) ->
 %% [@spec get_user(integer()|string()) @end]
 %%-------------------------------------------------------------------
 get_user(Type, Key) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                   {get_user, Type, Key}).
+    ?CALL_WORKER({get_user, Type, Key}).
 get_user(Id) ->
     io:format ("get_user/2 :)~n"),
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {get_user, Id}).
+    ?CALL_WORKER({get_user, Id}).
 
 
 %%-------------------------------------------------------------------
@@ -191,8 +192,8 @@ get_user(Id) ->
 %% [@spec create_game(#game{}) @end]
 %%-------------------------------------------------------------------
 new_game(Game) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {new_game, Game}).
+    ?CALL_WORKER({new_game, Game}).
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -201,8 +202,8 @@ new_game(Game) ->
 %% [@spec reconfig_game(#game{}) @end]
 %%-------------------------------------------------------------------
 reconfig_game(Game) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {reconfig_game, Game}).
+    ?CALL_WORKER({reconfig_game, Game}).
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -211,5 +212,53 @@ reconfig_game(Game) ->
 %% [@spec get_game(Id::Integer()) @end]
 %%-------------------------------------------------------------------
 get_game(Id) ->
-    gen_server:call(service_worker:select_pid(?WORKER),
-                    {get_game, Id}).
+    ?CALL_WORKER({get_game, Id}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for getting a user that has a session
+%% @end
+%% [@spec get_session_user(SessionId::Integer()) @end]
+%%-------------------------------------------------------------------
+get_session_user(SessionId) ->
+    ?CALL_WORKER({get_session_user, SessionId}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for updating the session of a user
+%% @end
+%% [@spec update_session_user(SessionId::integer(), User::#user{}) @end]
+%%-------------------------------------------------------------------
+update_session_user(SessionId, User) ->
+    ?CALL_WORKER({update_session_user, SessionId, User}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% API for checking if a user is online
+%% @end
+%% [@spec is_online(SessionId::Integer()) @end]
+%%-------------------------------------------------------------------
+is_online(SessionId) ->
+    ?CALL_WORKER({is_online, SessionId}).
+
+%%-------------------------------------------------------------------
+%% Helper functions
+%%-------------------------------------------------------------------
+
+%%------------------------------------------------------------------------------
+%% @doc update record via a proplist
+%%  Input: Arg1: OldUser#user
+%%         Arg2: [{#user.name, "username"}, {#user.password, "xxxx"}]
+%%
+%%  Output: #user{name="username", password="xxxx"}
+%% @end
+%%------------------------------------------------------------------------------
+update_rec_by_proplist(Old, [{_, field_missing}|Rest]) ->
+    update_rec_by_proplist(Old, Rest);
+update_rec_by_proplist(Old, [{Field, Value}|Rest]) ->
+    update_rec_by_proplist(setelement(Field, Old, Value), Rest);
+update_rec_by_proplist(Updated, []) ->
+    Updated.

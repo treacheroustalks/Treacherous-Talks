@@ -11,7 +11,7 @@
 %-define (REQUIRED, undefined).
 
 -record (game, {id :: integer (),
-                ?REQUIRED (creator_id) :: integer (),
+                creator_id :: integer (),
                 ?REQUIRED (name) :: string (),
                 description :: string (),
                 status = waiting :: waiting | ongoing | stopped | finished,

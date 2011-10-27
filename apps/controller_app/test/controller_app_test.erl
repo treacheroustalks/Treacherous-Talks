@@ -47,6 +47,8 @@ controller_test_() ->
       fun controller_handle_reconfig_game_success/0,
       fun controller_handle_reconfig_game_invalid/0,
       fun controller_handle_reconfig_game_error/0,
+      fun controller_handle_update_game_invalid_session/0,
+      fun controller_handle_update_game_invalid_gamestate_session/0,
       fun teardown/0
      ]}.
 
@@ -261,13 +263,14 @@ controller_handle_action_login_error() ->
 controller_handle_action_update_user_success() ->
     ?debugMsg("Testing handle_action: update_user success"),
     meck:new(controller, [passthrough]),
-    meck:expect(controller, get_user, 2, [#user{}]),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
     meck:expect(controller, update_user, 1, return_value),
+    meck:expect(controller, update_session_user, 2, ok),
 
     ParsedUser = [{#user.name, "asdf"}],
     Callback = fun ([], Result, Data) -> {Result, Data} end,
     {Result, return_value} = controller:handle_action(
-                               {update_user, {ok, "Nickname" ,ParsedUser}},
+                               {update_user, {ok, 123456 ,ParsedUser}},
                                {Callback, []}),
     ?assertEqual({update_user, success}, Result),
 
@@ -283,14 +286,15 @@ controller_handle_action_update_user_success() ->
 controller_handle_action_update_user_invalid() ->
     ?debugMsg("Testing handle_action: update_user invalid"),
     meck:new(controller, [passthrough]),
-    meck:expect(controller, get_user, 2, []),
+    meck:expect(controller, get_session_user, 1, {error, msg}),
 
     ParsedUser = [],
+    SessionId = 123456,
     Callback = fun ([], Result, Data) -> {Result, Data} end,
-    {Result, ParsedUser} = controller:handle_action(
-                             {update_user, {ok, "NickKey", ParsedUser}},
+    Result = controller:handle_action(
+                             {update_user, {ok, SessionId, ParsedUser}},
                              {Callback, []}),
-    ?assertEqual({update_user, invalid_data}, Result),
+    ?assertEqual({{update_user, invalid_session}, SessionId}, Result),
 
     meck:unload(controller),
     ?debugVal("Completed handle_action: update_user invalid").
@@ -321,13 +325,16 @@ controller_handle_action_update_user_error() ->
 controller_handle_action_create_game_success() ->
     ?debugMsg("Testing handle_action: create_game success"),
     meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
     meck:expect(controller, new_game, 1, return_value),
 
+    SessionId = 123456,
     Callback = fun ([], Result, Data) -> {Result, Data} end,
-    {Result, return_value} = controller:handle_action(
-                               {create_game, {ok, a_game}},
+    Game = get_test_game(),
+    Result = controller:handle_action(
+                               {create_game, {ok, SessionId, Game}},
                                {Callback, []}),
-    ?assertEqual({create_game, success}, Result),
+    ?assertEqual({{create_game, success}, return_value}, Result),
 
     meck:unload(controller),
     ?debugVal("Completed handle_action: create_game success").
@@ -376,16 +383,22 @@ controller_handle_action_unknown_command() ->
 controller_handle_reconfig_game_success() ->
     ?debugMsg("Testing handle_action: reconfig_game success"),
     meck:new(controller, [passthrough]),
-    Game = get_test_game(),
+    SessionId = 123456,
+    Game = get_test_game(SessionId),
+    User = #user{id = SessionId},
+
     meck:expect(controller, get_game, 1, {ok, Game}),
+    meck:expect(controller, get_session_user, 1, {ok, User}),
     meck:expect(controller, reconfig_game, 1, {ok, 666}),
+    
     GameProplist = [{#game.name, "NEW NAME"}],
     NewGame = Game#game{name = "NEW NAME"},
     Callback = fun([], Result, Data) -> {Result, Data} end,
-    {Result, NewGame} = controller:handle_action(
-                            {reconfig_game, {ok, 1, GameProplist}},
+    
+    Result = controller:handle_action(
+                            {reconfig_game, {ok, SessionId, 1, GameProplist}},
                             {Callback, []}),
-    ?assertEqual({reconfig_game, success}, Result),
+    ?assertEqual({{reconfig_game, success}, NewGame}, Result),
     meck:unload(controller),
     ?debugVal("Completed handle_action: reconfig_game success").
 
@@ -401,16 +414,18 @@ controller_handle_reconfig_game_success() ->
 controller_handle_reconfig_game_invalid() ->
     ?debugMsg("Testing handle_action: reconfig_game invalid"),
     meck:new(controller, [passthrough]),
-    Game = get_test_game(),
+    SessionId = 123456,
+    Game = get_test_game(SessionId),
     NotInWaitingGame = Game#game{status = finished},
     meck:expect(controller, get_game, 1, {ok, NotInWaitingGame}),
     meck:expect(controller, reconfig_game, 1, {ok, 666}),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
     PropListGame = [{#game.name, "NEW NAME"}],
     Callback = fun([], Result, Data) -> {Result, Data} end,
-    {Result, PropListGame} = controller:handle_action(
-                            {reconfig_game, {ok, 1, PropListGame}},
+    Result = controller:handle_action(
+                            {reconfig_game, {ok, SessionId, 1, PropListGame}},
                             {Callback, []}),
-    ?assertEqual({reconfig_game, invalid_data}, Result),
+    ?assertEqual({{reconfig_game, invalid_data}, PropListGame}, Result),
     meck:unload(controller),
     ?debugVal("Completed handle_action: reconfig_game invalid").
 
@@ -429,6 +444,7 @@ controller_handle_reconfig_game_error() ->
                                {Callback, []}),
     ?assertEqual({reconfig_game, parse_error}, Result),
     ?debugMsg("Completed handle_actio: reconfig_game parse error").
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -478,6 +494,77 @@ controller_new_game() ->
 
 %%-------------------------------------------------------------------
 %% @doc
+%% Tests updating of a game with an invalid session
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_update_game_invalid_session() ->
+    ?debugMsg("Testing updating game with invalid session"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {error, msg}),
+    SessionId = 123456,
+    Game = get_test_game(),
+    ChangeList = [{#game.description, "Failing tests"}],
+    UpdateResult = controller:handle_action(
+                                {reconfig_game, {ok, SessionId, 
+                                                 Game#game.id, ChangeList}},
+                                {Callback, []}),
+
+    meck:unload(controller),
+    ?assertEqual({{reconfig_game, invalid_session}, SessionId}, UpdateResult),
+    ?debugMsg("Testing updating game with invalid session end").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests updating of a game in an invalid gamestate, but with a
+%% valid session
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_update_game_invalid_gamestate_session() ->
+    ?debugMsg("Testing updating game with invalid gamestate valid session"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    Game = get_test_game(),
+    NotInWaitingGame = Game#game{status = finished},
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_game, 1, {ok, NotInWaitingGame}),
+    meck:new(user_management),
+    SessionId = test_login_session(get_registered_user2(), Callback),
+    meck:unload(user_management),
+    ChangeList = [{#game.description, "New description!"}],
+    UpdateResult = controller:handle_action(
+                     {reconfig_game, {ok, SessionId,
+                                      NotInWaitingGame#game.id, ChangeList}},
+                     {Callback, []}),
+    ?assertEqual({{reconfig_game, invalid_data}, ChangeList}, UpdateResult),
+    meck:unload(controller),
+    ?debugMsg("Testing updating game with invalid gamestate valid session end").
+
+%-------------------------------------------------------------------
+%% Helper for session tests (create game)
+%%-------------------------------------------------------------------
+test_create_game_session(SessionId, Callback) ->
+    meck:expect(controller, new_game,
+                fun(Game) -> Game#game{id = 123} end),
+    {CreateResult, GameRec} = controller:handle_action(
+                                {create_game, {ok, get_new_test_game()}},
+                                {Callback, []}, SessionId),
+    ?assertEqual({create_game, success}, CreateResult),
+    GameRec.
+
+%%-------------------------------------------------------------------
+%% Helper for session tests (log in)
+%%-------------------------------------------------------------------
+test_login_session(User, Callback) ->
+    meck:expect(user_management, is_valid, 2, User),
+    %% Login
+    {LogResult, SessionId} = controller:handle_action(
+                               {login, {ok, User}},
+                               {Callback, []}),
+    ?assertEqual({login, success}, LogResult),
+    SessionId.
+
+%%-------------------------------------------------------------------
+%% @doc
 %% Sets up the tests
 %% @end
 %%-------------------------------------------------------------------
@@ -486,9 +573,9 @@ setup() ->
     ?debugVal("Starting ALL tests"),
     % Application has to be loaded to get env variables
     application:load(controller_app),
-%    ?debugVal(application:start(protobuffs)),
-%    ?debugVal(application:start(riakc)),
-%    ?debugVal(application:start(db)),
+    ?debugVal(application:start(protobuffs)),
+    ?debugVal(application:start(riakc)),
+    ?debugVal(application:start(db)),
     ?debugVal(controller_app_sup:start_link()).
 
 
@@ -510,12 +597,12 @@ setup_meck() ->
     meck:new(controller_app_worker_sup, [passthrough]),
     meck:new(controller_app_worker, [passthrough]),
     meck:new(user_management),
-    meck:new(db),
+%    meck:new(db),
     meck:expect(controller_app_worker_sup, init,
                 fun(_No_Arg) ->
-                        initReturn(controller_app_worker) end),
-    meck:expect(db, get, 2, {ok, a_value}),
-    meck:expect(db, put, 1, ok).
+                        initReturn(controller_app_worker) end).
+    %meck:expect(db, get, 2, {ok, a_value}),
+    %meck:expect(db, put, 1, ok).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -525,8 +612,8 @@ setup_meck() ->
 teardown_meck() ->
     meck:unload(controller_app_worker_sup),
     meck:unload(controller_app_worker),
-    meck:unload(user_management),
-    meck:unload(db).
+    meck:unload(user_management).
+    %meck:unload(db).
 
 fake_game_setup() ->
     meck:new(game),
@@ -568,8 +655,10 @@ get_test_data(update_user) ->
     {#user{}};
 get_test_data(login) ->
     {#user{id=5527647785738502144}, 5527647785738502144}.
-get_test_game () ->
-    #game{creator_id=123,
+get_test_game() ->
+    get_test_game(74253467).
+get_test_game(Id) ->
+    #game{creator_id = Id,
           name="game name",
           description="lorem ipsum dolor sit amet",
           press = black_press,
@@ -578,6 +667,44 @@ get_test_game () ->
           build_phase = 12*60,
           password="pass",
           waiting_time = 48*60}.
+
+get_new_test_game () ->
+    #game{name="game name",
+          description="lorem ipsum dolor sit amet",
+          press = black_press,
+          order_phase = 12*60,
+          retreat_phase = 12*60,
+          build_phase = 12*60,
+          password="pass",
+          waiting_time = 48*60}.
+
+get_registered_user() ->
+    #user{id = 74253467,
+          nick = "uniq",
+          email = "she@mail.com",
+          password = "secret",
+          name = "Unique Monique",
+          role = undefined,
+          channel = undefined,
+          last_ip = undefined,
+          last_login = undefined,
+          score = 0,
+          date_created = undefined,
+          date_updated = undefined}.
+
+get_registered_user2() ->
+    #user{id = 123456789,
+          nick = "sammy",
+          email = "sam@serious.com",
+          password = "hidden",
+          name = "Serious Sam",
+          role = undefined,
+          channel = undefined,
+          last_ip = undefined,
+          last_login = undefined,
+          score = 0,
+          date_created = undefined,
+          date_updated = undefined}.
 
 update_rec_by_proplist_test_() ->
     [

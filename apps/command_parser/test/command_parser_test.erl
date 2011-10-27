@@ -14,17 +14,20 @@ parse_test_() ->
                                               email = "ss@lin.pcs", name = "Agner Erlang"}}
                         })),
      ?_test(check_parse(?SAMPLE_UPDATE,
-                        {update_user, {ok, "Lin", [{5,"QWER"},{4,field_missing},
-                                            {6,"Agner Erlang"}]}
+                        {update_user, {ok, 123456,
+                                       [{#user.password,"QWER"},
+                                        {#user.email,field_missing},
+                                        {#user.name,"Agner Erlang"}]}
                         })),
      ?_test(check_parse(?SAMPLE_CREATE,
-                        {create_game, {ok, #game{name = "awesome_game", press = "white",
-                           order_phase = 240, retreat_phase = 210,
-                           build_phase = 160, waiting_time = 3200,
-                           description = field_missing,
-                           password = "1234",
-                           num_players = field_missing,
-                           creator_id = undefined}}
+                        {create_game, {ok, 987654,
+                                       #game{name = "awesome_game", press = "white",
+                                             order_phase = 240, retreat_phase = 210,
+                                             build_phase = 160, waiting_time = 3200,
+                                             description = field_missing,
+                                             password = "1234",
+                                             num_players = field_missing,
+                                             creator_id = undefined}}
                         })),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}}))

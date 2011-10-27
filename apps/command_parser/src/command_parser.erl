@@ -31,11 +31,11 @@
 %% {register, Error} |
 %% {login, {ok, #user{}}} |
 %% {login, Error} |
-%% {update, {ok, UserNick,[{#user.field, Value}]}} |
+%% {update, {ok, SessionId,[{#user.field, Value}]}} |
 %% {update, Error} |
-%% {create_game, {ok, #user{}}} |
+%% {create_game, {ok, Session, #game{}}} |
 %% {create_game, Error} |
-%% {reconfig_game, {ok, gameid, #game{}}|
+%% {reconfig_game, {ok, SessionId, gameid, #game{}}|
 %% {reconfig_game, {error, {required_fields, RequiredFields}}}|
 %% {reconfig_game,{error, {invalid_input, ErrorList}}}|
 %% unknown_command]

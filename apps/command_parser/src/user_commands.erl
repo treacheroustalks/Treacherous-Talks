@@ -58,15 +58,15 @@ parse_login(Data) ->
 %% @end
 %%------------------------------------------------------------------------------
 parse_create(Data) ->
-    RequiredFields = [?GAMENAME, ?PRESSTYPE, ?ORDERCIRCLE, ?RETREATCIRCLE,
-                      ?GAINLOSTCIRCLE, ?WAITTIME],
+    RequiredFields = [?SESSION, ?GAMENAME, ?PRESSTYPE, ?ORDERCIRCLE,
+                      ?RETREATCIRCLE, ?GAINLOSTCIRCLE, ?WAITTIME],
     OptionalFields = [?PASSWORD, ?DESCRIPTION, ?NUMBEROFPLAYERS],
     ReqValues = get_required_fields(RequiredFields, Data),
     case lists:member(field_missing, ReqValues) of
         true ->
             {error, {required_fields, RequiredFields}};
         false ->
-            [Name, Press, OrdPhase, RetPhase, BldPhase, WaitTime] = ReqValues,
+            [Session, Name, Press, OrdPhase, RetPhase, BldPhase, WaitTime] = ReqValues,
             OptionalValues = get_required_fields(OptionalFields, Data),
             [Pw, Description, NumPlayers] = OptionalValues,
 
@@ -74,13 +74,14 @@ parse_create(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, #game{name = Name, press = Press,
-                       order_phase = parse_time_format(OrdPhase),
-                       retreat_phase = parse_time_format(RetPhase),
-                       build_phase = parse_time_format(BldPhase),
-                       waiting_time = parse_time_format(WaitTime),
-                       description = Description, num_players = NumPlayers,
-                       password = Pw, creator_id = undefined}};
+                    {ok, list_to_integer(Session), 
+                     #game{name = Name, press = Press,
+                           order_phase = parse_time_format(OrdPhase),
+                           retreat_phase = parse_time_format(RetPhase),
+                           build_phase = parse_time_format(BldPhase),
+                           waiting_time = parse_time_format(WaitTime),
+                           description = Description, num_players = NumPlayers,
+                           password = Pw, creator_id = undefined}};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end
@@ -97,17 +98,17 @@ parse_create(Data) ->
 %% @end
 %%------------------------------------------------------------------------------
 parse_reconfig(Data) ->
-    RequiredFields = [?GAMEID],
+    RequiredFields = [?GAMEID, ?SESSION],
     OptionalFields = [?GAMENAME, ?PRESSTYPE, ?ORDERCIRCLE, ?RETREATCIRCLE,
                       ?GAINLOSTCIRCLE, ?WAITTIME,?PASSWORD,
-                       ?DESCRIPTION, ?NUMBEROFPLAYERS],
+                      ?DESCRIPTION, ?NUMBEROFPLAYERS],
     ReqValues = get_required_fields(RequiredFields, Data),
 
     case lists:member(field_missing, ReqValues) of
         true ->
             {error, {required_fields, RequiredFields}};
         false ->
-            [GameIdStr] = ReqValues,
+            [GameIdStr, Session] = ReqValues,
             OptionalValues = get_required_fields(OptionalFields, Data),
             [Name, Press, OrdPhase, RetPhase, BldPhase, WaitTime, Pw,
                 Description, NumPlayers] = OptionalValues,
@@ -116,7 +117,7 @@ parse_reconfig(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, list_to_integer(GameIdStr),
+                    {ok, list_to_integer(Session), list_to_integer(GameIdStr),
                       [{#game.name, Name}, {#game.press,  Press},
                        {#game.order_phase, parse_time_format(OrdPhase)},
                        {#game.retreat_phase, parse_time_format(RetPhase)},
@@ -166,18 +167,30 @@ parse_register(Data) ->
 %% @end
 %%------------------------------------------------------------------------------
 parse_update(Data) ->
-    OptionalFields = [?NICKNAME, ?PASSWORD, ?EMAIL, ?FULLNAME],
-    Values = get_required_fields(OptionalFields, Data),
-    [Nick, Pw, Mail, Name] = Values,
+    RequiredFields = [?SESSION],
+    OptionalFields = [?PASSWORD, ?EMAIL, ?FULLNAME],
+    ReqValues = get_required_fields(RequiredFields, Data),
 
-    case get_error_list(Values,  get_check_type(OptionalFields),
-                                OptionalFields) of
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [Session] = ReqValues,
+            OptionalValues = get_required_fields(OptionalFields, Data),
+            [Pw, Mail, Name] = OptionalValues,
+
+            case get_error_list(merge_list(ReqValues, OptionalValues),
+                    get_check_type(merge_list(RequiredFields, OptionalFields)),
+                                merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, Nick, [{#user.password, Pw},
-                     {#user.email, Mail},{#user.name, Name}]};
-        % output user update proplist for optional fields
-                 ErrorList ->
+                    {ok, list_to_integer(Session), 
+                     [{#user.password, Pw},
+                      {#user.email, Mail},
+                      {#user.name, Name}]};
+                    % output user update proplist for optional fields
+                ErrorList ->
                     {error, {invalid_input, ErrorList}}
+            end
     end.
 
 
@@ -309,6 +322,8 @@ get_check_type([], AccCheckList) ->
     lists:reverse(AccCheckList);
 get_check_type([H|Rest], AccCheckList) ->
     UpdatedCheckList = case H of
+        ?SESSION -> [num_only|AccCheckList];
+
         ?NICKNAME -> [begin_with_alpha|AccCheckList];
         ?PASSWORD -> [password|AccCheckList];
         ?FULLNAME -> [alpha_space_only|AccCheckList];

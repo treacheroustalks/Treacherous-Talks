@@ -123,6 +123,42 @@ handle_call({login_user, User}, _From, State) ->
     end;
 %%-------------------------------------------------------------------
 %% @doc
+%% Handles call for getting a user that has a session id
+%% @end
+%% [@spec handle_call({get_session_user::atom(), SessionId::Integer()},
+%%                     From::{pid(), Tag}, #state{}) ->
+%%                     {reply, #user{}, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({get_session_user, SessionId}, _From, State) ->
+    User = session:get_user(SessionId),
+    {reply, User, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for updating the session of a user
+%% @end
+%% [@spec handle_call({update_session_user::atom(), SessionId::Integer(), User::#user{}},
+%%                     From::{pid(), Tag}, #state{}) ->
+%%                     {reply, #user{}, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({update_session_user, SessionId, User}, _From, State) ->
+    Response = session:update_user(SessionId, User),
+    {reply, Response, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for checking if a user has a session
+%% @end
+%% [@spec handle_call({is_online::atom(), SessionId::Integer()},
+%%                     From::{pid(), Tag}, #state{}) ->
+%%                     {reply, is_online::Boolean(), #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({is_online, SessionId}, _From, State) ->
+    IsOnline = session:is_online(SessionId),
+    {reply, IsOnline, State};
+%%-------------------------------------------------------------------
+%% @doc
 %% Handles call for getting a user
 %% @end
 %% [@spec handle_call({get_user::atom(), atom(),

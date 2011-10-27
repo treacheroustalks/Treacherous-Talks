@@ -78,13 +78,16 @@ reply([From, To], {reconfig_game, invalid_data}, Info) ->
               [Info]);
 
 
-
+reply([From, To], {Cmd, invalid_session}, Info) ->
+    send_chat(From, To,
+              "[~p]Invalid user session.~n~p~n",
+              [Cmd, Info]);
 reply([From, To], {Cmd, parse_error}, Error) ->
     send_chat(From, To,
               "The command [~p] could not be interpreted correctly:~n~s~n",
               [Cmd, parse_error_msg(Error)]);
 
-reply([From, To], unknown_command, Data) ->
+reply([From, To], unknown_command, _Data) ->
     send_chat(From, To,
               "The provided command is unknown.~n"
               "Supported commands are:~n"

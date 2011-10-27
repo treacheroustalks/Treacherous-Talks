@@ -47,21 +47,22 @@ END").
 NICKNAME: nonexistentuser
 PASSWORD: pass
 END").
--define(UPDATE_COMMAND_CORRECT,
+-define(UPDATE_COMMAND_CORRECT(Session),
 "UPDATE
-NICKNAME: nickname
+SESSION: " ++ Session ++ "
 PASSWORD: pass
 FULLNAME: Full Nameeee
 EMAIL: sth@sth
 END").
--define(UPDATE_COMMAND_MISSING_FIELD,
+-define(UPDATE_COMMAND_MISSING_FIELD(Session),
 "UPDATE
 PASSWORD: pass
 FULLNAME: Full Nameeee
 EMAIL: ath@sth
 END").
--define(CREATE_COMMAND_CORRECT,
+-define(CREATE_COMMAND_CORRECT(Session),
 "CREATE
+SESSION: " ++ Session ++ "
 GAMENAME: bob
 PRESSTYPE: none
 ORDERCIRCLE: 1D
@@ -69,7 +70,7 @@ RETREATCIRCLE: 1D
 GAINLOSTCIRCLE: 1D
 WAITTIME: 1D
 END").
--define(CREATE_COMMAND_MISSING_FIELDS,
+-define(CREATE_COMMAND_MISSING_FIELDS(Session),
 "CREATE
 ORDERCIRCLE: 1
 RETREATCIRCLE: 1
@@ -88,11 +89,14 @@ Required fields: [\"NICKNAME\",\"PASSWORD\",\"EMAIL\",\"FULLNAME\"]").
 -define(LOGIN_RESPONSE_SUCCESS, "Login was successful. Your session is:").
 -define(UPD_RESPONSE_SUCCESS,
         "User information was successfully updated.").
--define(UPD_RESPONSE_BAD_SYNTAX, "Invalid user update information.").
+-define(UPD_RESPONSE_SESSION_ERROR, "[update_user]Invalid user session.").
+-define(UPD_RESPONSE_BAD_SYNTAX, "The command [update_user] could not be interpreted correctly:
+Required fields: [\"SESSION\"]").
 -define(CREATE_RESPONSE_SUCCESS, "Game creation was successful.").
+-define(CREATE_RESPONSE_SESSION_ERROR, "[create_game]Invalid user session.").
 -define(CREATE_RESPONSE_BAD_SYNTAX, "The command [create_game] could not be interpreted correctly:
-Required fields: [\"GAMENAME\",\"PRESSTYPE\",\"ORDERCIRCLE\",\"RETREATCIRCLE\",
-                  \"GAINLOSTCIRCLE\",\"WAITTIME\"]").
+Required fields: [\"SESSION\",\"GAMENAME\",\"PRESSTYPE\",\"ORDERCIRCLE\",
+                  \"RETREATCIRCLE\",\"GAINLOSTCIRCLE\",\"WAITTIME\"]").
 -define(RESPONSE_COMMAND_UNKNOWN, "The provided command is unknown.
 Supported commands are:").
 
@@ -106,11 +110,17 @@ basic_fixture_test_ () ->
      fun teardown/1,
      [fun echo/0]}.
 
+instantiator_fixture_reg_login_test_() ->
+    {setup,
+     fun setup_reg_login_instantiator/0,
+     fun teardown/1,
+     fun reg_login_instantiator/1}.
+
 instantiator_fixture_test_() ->
     {setup,
-     fun setup_for_instantiator/0,
+     fun setup_session_instantiator/0,
      fun teardown/1,
-     fun instantiator/1}.
+     fun session_instantiator/1}.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -127,7 +137,7 @@ setup_basic() ->
     xmpp_client:start_link(),
     ok.
 
-setup_for_instantiator() ->
+setup_reg_login_instantiator() ->
     ?debugMsg("Setting up xmpp tests. "),
     xmpp_client:start_link(),
     [{?REGISTER_COMMAND_CORRECT, ?REG_RESPONSE_SUCCESS, "valid registration attempt"},
@@ -135,11 +145,34 @@ setup_for_instantiator() ->
      {"register me", ?RESPONSE_COMMAND_UNKNOWN, "request matching no command"},
      {?LOGIN_COMMAND_CORRECT, ?LOGIN_RESPONSE_SUCCESS, "valid login attempt"},
      {?LOGIN_COMMAND_BAD_PASSWORD, "Invalid login data.", "login request with invalid password"},
-     {?LOGIN_COMMAND_BAD_NICK, "Invalid login data.","login request with invalid nickname"},
-     {?UPDATE_COMMAND_CORRECT, ?UPD_RESPONSE_SUCCESS, "valid update attempt"},
-     {?UPDATE_COMMAND_MISSING_FIELD, ?UPD_RESPONSE_BAD_SYNTAX, "update command with missing fields"},
-     {?CREATE_COMMAND_CORRECT, ?CREATE_RESPONSE_SUCCESS, "valid create command"},
-     {?CREATE_COMMAND_MISSING_FIELDS, ?CREATE_RESPONSE_BAD_SYNTAX, "create command with missing fields"}
+     {?LOGIN_COMMAND_BAD_NICK, "Invalid login data.","login request with invalid nickname"}].
+
+setup_session_instantiator() ->
+    xmpp_client:start_link(),
+    Response = xmpp_client:xmpp_call(?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT),
+    {match, [Session]} = re:run(Response,
+                                ?LOGIN_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
+                                [{capture, all_but_first, list}]),
+    ?debugVal(Session),
+    [
+     {?UPDATE_COMMAND_CORRECT(Session),
+      ?UPD_RESPONSE_SUCCESS,
+      "valid update attempt"},
+     {?UPDATE_COMMAND_CORRECT("1234567891"),
+      ?UPD_RESPONSE_SESSION_ERROR,
+      "update attempt with invalid session"},
+     {?UPDATE_COMMAND_MISSING_FIELD(Session),
+      ?UPD_RESPONSE_BAD_SYNTAX,
+      "update command with missing fields"},
+     {?CREATE_COMMAND_CORRECT(Session),
+      ?CREATE_RESPONSE_SUCCESS,
+      "valid create command"},
+     {?CREATE_COMMAND_CORRECT("1234567891"),
+      ?CREATE_RESPONSE_SESSION_ERROR,
+      "create attempt with invalid session"},
+     {?CREATE_COMMAND_MISSING_FIELDS(Session),
+      ?CREATE_RESPONSE_BAD_SYNTAX,
+      "create command with missing fields"}
     ].
 
 
@@ -159,9 +192,9 @@ teardown(_)->
 
 
 %%-------------------------------------------------------------------
-%% instantiate common tests
+%% instantiate register/login tests
 %%-------------------------------------------------------------------
-instantiator([{Request, Expect, Description}|Rest]) ->
+reg_login_instantiator([{Request, Expect, Description}|Rest]) ->
     Test = fun() ->
                    ?debugFmt("Testing ~s.", [Description]),
                    %?debugFmt("Sending \"~s\" to ~s.~n",[Request, ?SERVICE_BOT]),
@@ -169,9 +202,15 @@ instantiator([{Request, Expect, Description}|Rest]) ->
                    ResponsePrefix = response_prefix(Expect, Response),
                    ?assertEqual(Expect, ResponsePrefix)
            end,
-    [Test | instantiator(Rest)];
-instantiator([]) ->
+    [Test | reg_login_instantiator(Rest)];
+reg_login_instantiator([]) ->
     [].
+
+%%-------------------------------------------------------------------
+%% instantiate tests that require session
+%%-------------------------------------------------------------------
+session_instantiator(In) ->
+    reg_login_instantiator(In).
 
 
 %%-------------------------------------------------------------------
