@@ -48,7 +48,8 @@ game_test_ () ->
       delete_game_tst_ (),
       game_timer_create_tst_(),
       game_timer_state_tst_(),
-      game_update_tst_()
+      game_update_tst_(),
+      join_game_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -134,6 +135,37 @@ game_update_tst_() ->
       end].
 
 %%------------------------------------------------------------------------------
+%% Tests the goin game functionality
+%%------------------------------------------------------------------------------
+join_game_tst_() ->
+    [fun() ->
+              ?debugMsg("join game test"),
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % join new player with id=1122 and country=england
+              game:join_game({self(), join_game_test},
+                             Game#game.id, 1122, england),
+              timer:sleep(50),
+              GP = sync_get_game_player (Game#game.id),
+              ?assertEqual(1, length(GP#game_player.players)),
+              ?debugMsg("join game test end")
+      end,
+     fun() ->
+              ?debugMsg("join game test when country already taken"),
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % join new player with id=1122 and country=england
+              game:join_game({self(), join_game_test},
+                             Game#game.id, 1122, england),
+              timer:sleep(50),
+              Msg = sync_join_game_player (Game#game.id, 221122, england),
+              ?assertEqual(country_not_available, Msg),
+              ?debugMsg("join game test end")
+      end].
+
+%%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
 sync_new (Game=#game{}) ->
@@ -155,6 +187,33 @@ sync_get (ID) ->
             ?debugMsg ("received game"),
             Game;
         {get_game, Other} ->
+            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
+    after ?TEST_TIMEOUT ->
+            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
+    end.
+
+sync_get_game_player (ID) ->
+    ok = game:get_game_players ({self (), get_game_player}, ID),
+    receive
+        {get_game_player, {ok, GamePlayer}} ->
+            ?debugMsg ("received game player"),
+            GamePlayer;
+        {get_game_player, Other} ->
+            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
+    after ?TEST_TIMEOUT ->
+            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
+    end.
+
+sync_join_game_player (GameID, UserID, Country) ->
+    ok = game:join_game ({self (), sync_join_game}, GameID, UserID, Country),
+    receive
+        {sync_join_game, {ok, GamePlayer}} ->
+            ?debugMsg ("received game player"),
+            GamePlayer;
+        {sync_join_game, {error, country_not_available}} ->
+            ?debugMsg ("Sync join game country not available"),
+            country_not_available;
+        {sync_join_game, Other} ->
             erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
     after ?TEST_TIMEOUT ->
             erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})

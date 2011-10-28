@@ -5,6 +5,13 @@
 
 -type press () :: any ().
 -type password () :: string () | undefined.
+-type country () :: england |
+                    germany |
+                    france |
+                    austria |
+                    italy |
+                    russia |
+                    turkey.
 
 -define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
 -define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
@@ -27,6 +34,15 @@
                 date_completed = undefined :: date ()}).
 
 
+-record (game_user, {id :: integer (),
+                     country :: country ()}).
+
+-record (game_player, {id :: integer (),
+                players = [] :: [game_user]}).
+
+-record (game_status, { num_sup_center :: integer(),
+                        ranking :: integer(),
+                        country :: country ()}).
 
 -endif.
 %INDEX
