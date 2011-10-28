@@ -1,7 +1,7 @@
 %% -----------------------------------------------------------------------------
 %% @doc
 %% rules implements the game rules as in the manual.
-%% It uses {@link map_utils} as representation of the board.
+%% It uses {@link map} as representation of the board.
 %% @author <stephan.brandauer@gmail.com>
 %% @end
 %% -----------------------------------------------------------------------------
@@ -67,9 +67,9 @@ do_process (_Phase,
             Order={move, Unit, From, To}) ->
     case is_legal (Map, Order) of
         true ->
-            case map_utils:unit_exists (Map, From, Unit) of
+            case map:unit_exists (Map, From, Unit) of
                 true ->
-                    map_utils:move_unit (Map, Unit, From, To),
+                    map:move_unit (Map, Unit, From, To),
                     {executed, Order};
                 false ->
                     {unit_does_not_exist, Order}
@@ -97,7 +97,7 @@ is_legal (Map, Order) ->
             true;
         {move, {Type, _Nation}, From, To} ->
             lists:member (To, 
-                          map_utils:get_reachable (Map, From, Type));
+                          map:get_reachable (Map, From, Type));
         {support, _Unit, _Province, Order} ->
             %% todo: check, if it is neighboring 
             %% (case Order of {move..} | {hold..}
@@ -106,7 +106,7 @@ is_legal (Map, Order) ->
             %% a convoy order is always legal if seen alone.
             %% (Think of chained convoys, they only work when a full ensemble 
             %% of convoy orders fit together.
-%            map_utils:unit_exists (Map, Unit) and 
+%            map:unit_exists (Map, Unit) and 
 %                is_province (Map, From) and
 %                is_province (Map, To).
             true
@@ -149,10 +149,10 @@ illegal_orders () ->
 
 legal_move_test () ->
     ?debugMsg ("legal_move_test"),
-    Map = map_utils:create_map (standard_game),
+    Map = map_data:create (standard_game),
     %% legal orders:
     [?assertEqual (true, is_legal (Map, Order)) || Order <- legal_orders ()],
     %% illegal orders:
     [?assertEqual (false, is_legal (Map, Order)) || Order <- illegal_orders ()],
     ?debugMsg ("legal_move_test: done"),
-    map_utils:delete (Map).
+    map_data:delete (Map).

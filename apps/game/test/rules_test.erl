@@ -3,7 +3,7 @@
 -include_lib ("eunit/include/eunit.hrl").
 
 simple_move_test () ->
-    Map = map_utils:create_map (standard_game),
+    Map = map_data:create (standard_game),
     Orders = [{move, {army, germany}, berlin, prussia},
               {move, {army, austria}, vienna, galicia},
               {move, {fleet, italy}, napoli, tyrhennian_sea}],
@@ -21,7 +21,7 @@ simple_move_test () ->
     lists:foreach (fun (Order={move, Unit, _, MovedTo}) ->
                            ?debugVal (Order),
                            ?assertEqual (true, 
-                                         map_utils:unit_exists (Map,
+                                         map:unit_exists (Map,
                                                                 MovedTo,
                                                                 Unit))
                    end,
@@ -30,8 +30,8 @@ simple_move_test () ->
     lists:foreach (fun (Order={move, _, MovedFrom, _}) ->
                            ?debugVal (Order),
                            ?assertEqual ([], 
-                                         map_utils:get_units (Map,
+                                         map:get_units (Map,
                                                               MovedFrom))
                    end,
                    Orders),
-    map_utils:delete (Map).
+    map_data:delete (Map).

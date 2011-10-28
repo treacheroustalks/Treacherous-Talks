@@ -20,7 +20,7 @@ test:
 	rebar skip_deps=true eunit
 
 dia:
-	dialyzer -Wno_return -I ../ ebin
+	dialyzer -Wno_return -I ../ --src src
 
 complete: small_clean deps compile dia test docs
 	@echo ok
