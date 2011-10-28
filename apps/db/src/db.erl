@@ -32,7 +32,8 @@
          set_bucket/2,
          mapred/2, mapred/3,
          mapred_bucket/2, mapred_bucket/3,
-         get_unique_id/0
+         get_unique_id/0,
+         int_to_bin/1, int_to_bin/2
         ]).
 
 %% -----------------------------------------------------------------
@@ -252,6 +253,26 @@ mapred_bucket(Bucket, Query, Timeout) ->
 get_unique_id() ->
     db_c:get_unique_id().
 
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts an integer id to the expected binary format.
+%%
+%% @spec int_id_to_bin(Id::integer()) -> binary()
+%% @end
+%%-------------------------------------------------------------------
+int_to_bin(Id) ->
+    int_to_bin(Id, "").
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts an integer id to the expected binary format with a given
+%% suffix.
+%%
+%% @spec int_id_to_bin(Id::integer(), Suffix::string()) -> binary()
+%% @end
+%%-------------------------------------------------------------------
+int_to_bin(Id, Suffix) ->
+    list_to_binary(integer_to_list(Id) ++ Suffix).
 
 %%-------------------------------------------------------------------
 %% not sure if we need the streaming for now ...

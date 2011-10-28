@@ -83,7 +83,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 get_user(Id) ->
-    BinId = list_to_binary(integer_to_list(Id)),
+    BinId = db:int_to_bin(Id),
     case db:get(?B_USER, BinId) of
         {ok, RiakObj} ->
             db_obj:get_value(RiakObj);
@@ -113,7 +113,7 @@ create_user(undefined, #user{} = User) ->
     Id = db:get_unique_id(),
     create_user(Id, User#user{id = Id});
 create_user(Id, #user{} = User) ->
-    BinId = list_to_binary(integer_to_list(Id)),
+    BinId = db:int_to_bin(Id),
     DBVal = db_obj:create(?B_USER, BinId, User),
     db:put(DBVal),
     {ok, ReadItem} = db:get(?B_USER, BinId),

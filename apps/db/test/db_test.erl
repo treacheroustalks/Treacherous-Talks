@@ -91,3 +91,10 @@ list_keys() ->
     ?assertEqual({ok, [Key]}, Result),
     db:delete(Bucket, Key).
     
+
+%% test int_to_bin
+int_to_bin_test() ->
+    Id = 123456789,
+    ?assertEqual(<<"123456789">>, db:int_to_bin(Id)),
+
+    ?assertEqual(<<"123456789-suffix">>, db:int_to_bin(Id, "-suffix")).
