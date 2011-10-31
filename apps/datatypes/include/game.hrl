@@ -16,6 +16,7 @@
 -define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
 -define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
 %-define (REQUIRED, undefined).
+-define(GAME_PLAYER_LINK_USER, <<"user">>).
 
 -record (game, {id :: integer (),
                 creator_id :: integer (),
@@ -38,11 +39,15 @@
                      country :: country ()}).
 
 -record (game_player, {id :: integer (),
-                players = [] :: [game_user]}).
+                players = [] :: [#game_user{}]}).
 
--record (game_status, { num_sup_center :: integer(),
-                        ranking :: integer(),
-                        country :: country ()}).
+-record (game_state, { id :: integer(),
+                       phase :: string(),
+                        map :: any()}).
+
+-record(game_overview, {game_rec :: #game{},
+                        country :: country(),
+                        map :: any()}).
 
 -endif.
 %INDEX

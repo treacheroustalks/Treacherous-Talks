@@ -49,18 +49,11 @@ handle_cast({new_game, From, Game=#game{id = ID}}, State) ->
     gen_server:reply(From, Reply),
     {noreply, State};
 handle_cast ({get_game, From, ID}, State) ->
-    BinID = list_to_binary(integer_to_list(ID)),
-    DBReply = db:get(?B_GAME, BinID),
-    case DBReply of
-        {ok, DBObj} ->
-            gen_server:reply (From,
-                              {ok, db_obj:get_value (DBObj)});
-        Other ->
-            gen_server:reply (From, Other)
-    end,
+    Reply = get_game(ID),
+    gen_server:reply (From, Reply),
     {noreply, State};
 handle_cast ({join_game, From, GameID, UserID, Country}, State) ->
-    BinID = list_to_binary(integer_to_list(GameID) ++ ?B_PLAYER_SUFFIX),
+    BinID = db:int_to_bin(GameID),
     DBReply = db:get (?B_GAME_PLAYER, BinID),
     case DBReply of
         {ok, DBObj} ->
@@ -71,15 +64,13 @@ handle_cast ({join_game, From, GameID, UserID, Country}, State) ->
     end,
     {noreply, State};
 handle_cast ({get_game_player, From, GameID}, State) ->
-    BinID = list_to_binary(integer_to_list(GameID)++ ?B_PLAYER_SUFFIX),
-    DBReply = db:get (?B_GAME_PLAYER, BinID),
-    case DBReply of
-        {ok, DBObj} ->
-            gen_server:reply (From,
-                              {ok, db_obj:get_value (DBObj)});
-        Other ->
-            gen_server:reply (From, Other)
-    end,
+    Reply = get_game_player(GameID),
+    gen_server:reply(From, Reply),
+    {noreply, State};
+
+handle_cast ({get_game_state, From, GameID, UserID}, State) ->
+    Reply =get_game_state(GameID, UserID),
+    gen_server:reply (From, Reply),
     {noreply, State};
 
 handle_cast ({delete_game, From, Key}, State) ->
@@ -109,15 +100,13 @@ new_game(undefined, #game{} = Game) ->
     ID = db:get_unique_id(),
     new_game(ID, Game#game{id = ID});
 new_game(ID, #game{} = Game) ->
-    IDStr = integer_to_list(ID),
-    GameBinID = list_to_binary(IDStr),
-    GamePlayerBinID = list_to_binary(IDStr ++ ?B_PLAYER_SUFFIX),
+    BinID = db:int_to_bin(ID),
 
-    DBGameObj=db_obj:create (?B_GAME, GameBinID, Game),
-    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, GamePlayerBinID,
-                                                   #game_player{id=ID}),
+    DBGameObj=db_obj:create (?B_GAME, BinID, Game),
+    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
     db:put (DBGameObj),
     db:put (DBGamePlayerObj),
+
     {ok, ID}.
 
 
@@ -129,8 +118,61 @@ join_game(BinID, GameID, GameDBObj, UserID, Country) ->
             UpdatedGP = GP#game_player{players=
                                      [NewPlayer|GP#game_player.players]},
             NewDBObj=db_obj:create (?B_GAME_PLAYER, BinID, UpdatedGP),
-            db:put (NewDBObj),
+            NewDBLinkObj = db_obj:add_link(NewDBObj,
+                                           {{?B_USER, db:int_to_bin(UserID)},
+                                            ?GAME_PLAYER_LINK_USER}),
+
+            db:put (NewDBLinkObj),
             {ok, GameID};
         _ ->
             {error, country_not_available}
        end.
+
+get_game(ID)->
+    BinID = db:int_to_bin(ID),
+    DBReply = db:get(?B_GAME, BinID),
+    case DBReply of
+        {ok, DBObj} ->
+            {ok, db_obj:get_value (DBObj)};
+        Other ->
+            Other
+    end.
+
+get_game_player(GameID)->
+    BinID = db:int_to_bin(GameID),
+    DBReply = db:get (?B_GAME_PLAYER, BinID),
+    case DBReply of
+        {ok, DBObj} ->
+            {ok, db_obj:get_value (DBObj)};
+        Other ->
+            Other
+    end.
+
+get_game_state(GameID, UserID) ->
+    case get_game_player(GameID) of
+        {ok, GPRec = #game_player{}} ->
+            case lists:keyfind(UserID, #game_user.id,
+                               GPRec#game_player.players) of
+                false ->
+                    {error, user_not_play_this_game};
+                GU = #game_user{} ->
+                    get_game_map(GameID, #game_overview
+                                               {country = GU#game_user.country})
+
+                    end;
+        Other ->
+            Other
+
+    end.
+
+get_game_map(GameID, #game_overview{} = GameOverview) ->
+    {ok, Game=#game{status= Status}} = get_game(GameID),
+    case Status of
+        waiting ->
+            Map = map_data:create (standard_game),
+            GameOV = GameOverview#game_overview{game_rec= Game,
+                           map = digraph_io:to_erlang_term (Map)},
+            {ok, GameOV};
+        _ -> %TODO provide state for other type of games which are not waiting
+            {error, game_not_waiting}
+    end.

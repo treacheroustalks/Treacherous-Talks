@@ -7,7 +7,8 @@
           delete_game/2,
           update_game/2,
           join_game/4,
-          get_game_players/2
+          get_game_players/2,
+          get_game_state/3
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -82,5 +83,16 @@ get_game_players(From, GameID) ->
     gen_server:cast(service_worker:select_pid(game_worker),
                     {get_game_player, From, GameID}).
 
-
-
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  gets a game status from the database and returns it asynchronously
+%%
+%%  will reply {tag (), {ok, #game_status{}}} to the calling process in case of success
+%% if the user is not joined the game reply {tag(), {error, user_not_play_this_game}}
+%% this function only return state of waiting game and if the game is not in
+%% waiting, it will reply {tag(), {error, game_not_waiting}}
+%% @end
+%% -----------------------------------------------------------------------------
+get_game_state(From, GameID, UserID) ->
+    gen_server:cast(service_worker:select_pid(game_worker),
+                    {get_game_state, From, GameID, UserID}).
