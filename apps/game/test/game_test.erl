@@ -9,7 +9,9 @@ apps () ->
     [datatypes, service, protobuffs, riakc, db, game].
 
 app_started_setup () ->
-    [application:start (App) || App <- apps ()].
+    ?debugMsg ("starting apps:"),
+    Response = [{App, application:start (App)} || App <- apps ()],
+    ?debugMsg (io_lib:format ("~p", [Response])).
 
 app_started_teardown (_) ->
     [application:stop (App) || App <- lists:reverse (apps ())].

@@ -2,22 +2,24 @@
 %% @doc
 %% rules implements the game rules as in the manual.
 %% It uses {@link map} as representation of the board.
+%%
 %% @author <stephan.brandauer@gmail.com>
 %% @end
 %% -----------------------------------------------------------------------------
 -module (rules).
 
--export ([process/3]).
+-export ([process/4]).
 
 -include_lib ("eunit/include/eunit.hrl").
+-include_lib ("game/include/rule.hrl").
 
--type nation () :: russia
-                   | turkey
-                   | austria
-                   | italy
-                   | germany
-                   | france
-                   | england.
+-type nation () :: any (). % russia
+%                   | turkey
+%                   | austria
+%                   | italy
+%                   | germany
+%                   | france
+%                   | england.
 
 -type province () :: atom ().
 
@@ -31,6 +33,20 @@
 
 -type game_time () :: {phase (), year ()}.
 
+%% e.g.:
+%% {move, {army, austria}, vienna, galicia}
+%% {support, {army, austria}, {move, {army, germany}, munich, silesia}}
+%% {convoy, {fleet, england}, english_channel, {army, england}, wales, picardy}
+-type hold_order () :: {hold, unit ()}.
+-type move_order () :: {move, unit (), province (), province ()}.
+-type support_order () :: {support, unit (), province (), order ()}.
+-type convoy_order () :: {convoy, unit (), province (), unit (), province (), province ()}.
+
+-type order () :: hold_order () |
+                  move_order () |
+                  support_order () |
+                  convoy_order ().
+
 -spec new_time (phase ()) -> game_time ().
 new_time (Phase) ->
     {Phase, make_ref ()}.
@@ -39,20 +55,7 @@ new_time (Phase) ->
 % stores the last order, a unit received.
 -record (history, {time = {undefined, undefined}, order=undefined}).
 
-%% e.g.:
-%% {move, {army, austria}, vienna, galicia}
-%% {support, {army, austria}, {move, {army, germany}, munich, silesia}}
--type hold_order () :: {hold, unit ()}.
--type move_order () :: {move, unit (), province (), province ()}.
--type support_order () :: {support, unit (), province (), order ()}.
--type convoy_order () :: {convoy, unit (), province (), province ()}.
-
--type order () :: hold_order () |
-                  move_order () |
-                  support_order () |
-                  convoy_order ().
-
--type order_return () :: ok | unit_does_not_exist.
+-type order_return () :: ok | atom ().
 
 -type order_status () :: {order_return () | order ()}.
 
@@ -64,52 +67,110 @@ new_time (Phase) ->
 %% updated map.
 %% @end
 %% -----------------------------------------------------------------------------
--spec process (phase (), map (), [order ()]) -> [order_status ()].
-process (Phase, Map, Orders) ->
+-spec process (phase (), map (), [any ()], [order ()]) -> [order_status ()].
+process (Phase, Map, Rules, Orders) ->
+    Orders1 = execute_rules (Map, Rules, Orders),
     GameTime = new_time (Phase),
-    lists:map (fun (O) ->
-                       do_process (Phase, GameTime, Map, O)
+    lists:map (fun (Order) ->
+                       do_process (Phase, GameTime, Map, Order)
                end,
-               Orders).
+               Orders1).
 
 -spec do_process (phase (), game_time (), map (), order ()) ->
                          ok | no_return ().
-do_process (_Phase, _GameTime, _Map, {hold, _}) ->
+do_process (_Phase, _GameTime, _Map, Order = {hold, _, _}) ->
+    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
     ok;
 do_process (_Phase,
             GameTime,
             Map,
             Order = {move, Unit, From, To}) ->
-    case is_legal (Map, Order) of
-        true ->
-            case unit_can_act (Map, Unit, From, GameTime) of
-                true ->
-                    % remeber when and where the unit came from:
-                    map:set_unit_info (Map, Unit, From,
-                                       history,
-                                       #history{time = GameTime,
-                                                order = Order}),
-                    % ..and move it:
-                    Status = map:move_unit (Map, Unit, From, To),
-                    {Status, Order};
-                false ->
-                    {unit_does_not_exist, Order}
-                end;
-        false ->
-            {illegal_order, Order}
-    end;
-do_process (Phase, GameTime, Map, Order) ->
-    is_legal (Map, Order),
+    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
+    map:set_unit_info (Map, Unit, From,
+                       history,
+                       #history{time = GameTime,
+                                order = Order}),
+    Status = map:move_unit (Map, Unit, From, To),
+    {Status, Order};
+do_process (Phase,
+            GameTime,
+            Map,
+            Order) ->
     erlang:error ({error,
                    {unhandled_case, {?MODULE, ?LINE},
                     [Phase, GameTime, Map, Order]}}).
 
+-spec make_pairs ([any ()], Arity) -> [tuple ()] when
+      Arity :: pos_integer ().
+make_pairs (List, 1) ->
+    [{A} || A <- List];
+make_pairs (List, 2) ->
+    [{A, B} || A <- List, B <- List, A < B].
+
+%% @doc
+%% The function execute_rule is quite central to the module.
+%% A #rule is a record that has a certain 'arity'.
+%% A #rule of arity 2 applies to 2-tuples of orders:
+%% Every possible pair of two orders is generated and given to the
+%% #rule.detector function. If that returns true, an instance of
+%% the rule was found. In that case, the tuple is given to the
+%% #rule.actor function - that function replies with two updated orders or
+%% an atom telling the execute_order function what to do with those rules
+%% (for instance: 'remove')
+%% @end
+-spec execute_rule (Map, Rule, [Order]) -> [Order] when
+      Map :: map (),
+      Rule :: #rule{},
+      Order :: order ().
+execute_rule (Map, Rule, Orders) ->
+    ?debugVal (Orders),
+    Pairs = make_pairs (Orders, Rule#rule.arity),
+    ?debugVal (Pairs),
+    RuleResponse =
+        lists:foldl (fun (Pair, Acc) ->
+                             ?debugMsg (io_lib:format ("#### Rule '~p' running!~n",
+                                                       [Rule#rule.name])),
+                             ?debugVal (Pair),
+                             case (Rule#rule.detector) (Map, Pair) of
+                                 true ->
+                                     ?debugMsg (io_lib:format ("Actor said '~p'!~n",
+                                                               [(Rule#rule.actor) (Map, Pair)])),
+                                     Ret = (Rule#rule.actor) (Map, Pair) ++ Acc,
+                                     Ret;
+                                 false ->
+                                     ?debugMsg (io_lib:format ("No detection: using: ~p~n", [Acc])),
+                                     Acc
+                             end
+                     end,
+                     [],
+                     Pairs),
+    ?debugVal (RuleResponse),
+    lists:foldl (fun (Order, Acc) ->
+                         case Order of
+                             {remove, O} ->
+                                 lists:delete (O, Acc);
+                             Other -> erlang:error ({error, unhandled_clause,
+                                                     Other,
+                                                     ?MODULE, ?LINE})
+                         end
+                 end,
+                 Orders,
+                 RuleResponse).
+
+-spec execute_rules (Map, [Rule], [Order]) -> any () when
+      Map :: map (),
+      Rule :: #rule{},
+      Order :: order ().
+execute_rules (Map, [Rule | Rules], Orders) ->
+    execute_rules (Map, Rules, execute_rule (Map, Rule, Orders));
+execute_rules (_, [], Orders) ->
+    Orders.
+
 -spec unit_can_act (map (), unit (), province (), game_time ()) -> boolean ().
 unit_can_act (Map, Unit, Id, Time) ->
     case map:get_unit_info (Map, Unit, Id, history) of
-        History=#history{time=Time} ->
+        #history{time=Time} ->
             % has done something already!
-            ?debugVal (History),
             false;
         _Other ->
             true
@@ -208,4 +269,4 @@ unit_can_act_test () ->
     io:format(user, "asserting that unit is able to move again..", []),
     ?assertEqual (true, unit_can_act (Map, Unit, galicia, NextTime)),
     map_data:delete (Map),
-    io:format(user, "unit_can_act_test: done", []).
+    io:format(user, "unit_can_act_test: done~n", []).

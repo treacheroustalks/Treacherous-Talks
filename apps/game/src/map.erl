@@ -78,14 +78,14 @@ get_province_info (Map, Id, Key) ->
                     undefined
             end;
         false ->
-            not_found
+            province_not_found
     end.
 
 -spec get_unit_dict (map (), unit (), prov_id ()) -> dict ().
 get_unit_dict (Map, Unit, Id) ->
     StoredUnits = get_province_info (Map, Id, units),
     case lists:keyfind (Unit, #stored_unit.unit, StoredUnits) of
-        #stored_unit{info = Dict} ->        
+        #stored_unit{info = Dict} ->
             Dict;
         false ->
             create_info ()
@@ -95,7 +95,7 @@ get_unit_dict (Map, Unit, Id) ->
 set_unit_dict (Map, Unit, Id, Dict) ->
     StoredUnits = get_province_info (Map, Id, units),
     NewStoredUnit = #stored_unit{unit=Unit, info=Dict},
-    NewStoredUnits = lists:keyreplace (Unit, #stored_unit.unit, 
+    NewStoredUnits = lists:keyreplace (Unit, #stored_unit.unit,
                                        StoredUnits, NewStoredUnit),
     set_province_info (Map, Id, units, NewStoredUnits).
 
@@ -209,14 +209,14 @@ get_reachable (Map, From, UnitType) ->
       Degree :: pos_integer ().
 get_reachable (Map, From, UnitType, Degree)  when Degree > 1 ->
     DirectNeighbours = get_reachable (Map, From, UnitType),
-    ordsets:union ([DirectNeighbours | [get_reachable (Map, 
-                                                       Neigh, 
-                                                       UnitType, 
+    ordsets:union ([DirectNeighbours | [get_reachable (Map,
+                                                       Neigh,
+                                                       UnitType,
                                                        Degree-1)
                                         || Neigh <- DirectNeighbours]]);
 get_reachable (Map, From, UnitType, 1) ->
     % take those outgoing edges, where UnitType is in #connection_info.types,
-    % return an ordered set (because the first clause implicitly expects that 
+    % return an ordered set (because the first clause implicitly expects that
     % by using ordsets:union)
     ordsets:from_list (
       lists:foldl (fun (E, Acc) ->
@@ -228,8 +228,8 @@ get_reachable (Map, From, UnitType, 1) ->
                                false ->
                                    Acc
                            end
-                   end, 
-                   [From], 
+                   end,
+                   [From],
                    digraph:out_edges (Map, From))).
 
 %% -----------------------------------------------------------------------------
