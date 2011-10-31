@@ -41,13 +41,26 @@ get_reachable_test () ->
                          prussia,
                          silesia,
                          bohemia,
-                         tyrolia],
+                         tyrolia,
+                         burgundy,
+                         belgium,
+                         holland,
+                         denmark,
+                         sweden],
                         map:get_reachable (Map, kiel, army, 2))),
-    ?assert (set_equiv ([helgoland,
-                         baltic_sea, 
+    ?assert (set_equiv ([helgoland_bight,
+                         baltic_sea,
+                         gulf_of_bothnia,
+                         livonia,
                          berlin,
                          prussia,
-                         kiel],
+                         kiel,
+                         north_sea,
+                         holland,
+                         belgium,
+                         denmark,
+                         sweden,
+                         skagerrak],
                         map:get_reachable (Map, kiel, fleet, 2))),
     map_teardown (Map).
 
@@ -59,10 +72,10 @@ vienna_is_center_test () ->
 set_get_province_info_test () ->
     Map = map_data:create (empty),
     map:add_province (Map, first_province),
-    ?assertEqual (undefined, 
+    ?assertEqual (undefined,
                   map:get_province_info (Map, first_province, is_center)),
     map:set_province_info (Map, first_province, is_center, true),
-    ?assertEqual (true, 
+    ?assertEqual (true,
                   map:get_province_info (Map, first_province, is_center)),
     map_data:delete (Map).
 
@@ -98,7 +111,7 @@ get_provinces_test () ->
     map:add_province (Map, "stringonia"),
     map:add_province (Map, {tuple, town}),
     map:add_province (Map, atomic_wasteland),
-    ?assert (set_equiv (["stringonia", {tuple, town}, atomic_wasteland], 
+    ?assert (set_equiv (["stringonia", {tuple, town}, atomic_wasteland],
                       map:get_provinces (Map))),
     map_teardown (Map).
 
@@ -107,7 +120,7 @@ unit_info_test () ->
     % make (A) Vie unique:
     Ref = make_ref (),
     map:set_unit_info (Map, {army, austria}, vienna, ref, Ref),
-    ?assertEqual (Ref, 
+    ?assertEqual (Ref,
                   map:get_unit_info (Map, {army, austria}, vienna, ref)),
     map:move_unit (Map, {army, austria}, vienna, galicia),
     ?assertEqual (Ref,
@@ -125,15 +138,15 @@ serialization_test () ->
     Self = self (),
     ?debugVal (Self),
     spawn_link (fun () ->
-                        DeserializedMap = 
+                        DeserializedMap =
                             digraph_io:from_erlang_term (SerialMap),
                         ?assertEqual (
-                           [{army, austria}], 
+                           [{army, austria}],
                            map:get_units (DeserializedMap, vienna)),
                         ?assert (
                            set_equiv (
-                             [bohemia, galicia, tyrolia, 
-                              trieste, budapest, vienna], 
+                             [bohemia, galicia, tyrolia,
+                              trieste, budapest, vienna],
                              map:get_reachable (Map, vienna, army))),
                         Self ! test_done
                 end),

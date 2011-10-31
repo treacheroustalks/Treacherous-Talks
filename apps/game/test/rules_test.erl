@@ -4,20 +4,20 @@
 
 simple_moves_test () ->
     Map = map_data:create (standard_game),
-    OrdersAndResults = 
+    OrdersAndResults =
         [{ok, {move, {army, germany}, berlin, prussia}},
          {ok, {move, {army, austria}, vienna, galicia}},
-         {ok, {move, {fleet, italy}, napoli, tyrhennian_sea}},
-         {unit_does_not_exist, {move, {fleet, italy}, roma, napoli}}],
+         {ok, {move, {fleet, italy}, naples, tyrrhenian_sea}},
+         {unit_does_not_exist, {move, {fleet, italy}, rome, naples}}],
     {_, Orders} = lists:unzip (OrdersAndResults),
-    ?assertEqual (OrdersAndResults, rules:process (spring, Map, 
+    ?assertEqual (OrdersAndResults, rules:process (spring, Map,
                                                    Orders)),
     %% check if they are, where they should be
     lists:foreach (fun ({Result, _Order={move, Unit, _MovedFrom, MovedTo}}) ->
 %                           ?debugVal (Order),
                            case Result of
                                ok ->
-                                   ?assertEqual (true, 
+                                   ?assertEqual (true,
                                                  map:unit_exists (Map,
                                                                   MovedTo,
                                                                   Unit));

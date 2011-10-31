@@ -34,7 +34,7 @@
 -spec new_time (phase ()) -> game_time ().
 new_time (Phase) ->
     {Phase, make_ref ()}.
-    
+
 % time = {season (), year ()}, order = order received then.
 % stores the last order, a unit received.
 -record (history, {time = {undefined, undefined}, order=undefined}).
@@ -72,7 +72,7 @@ process (Phase, Map, Orders) ->
                end,
                Orders).
 
--spec do_process (phase (), game_time (), map (), order ()) -> 
+-spec do_process (phase (), game_time (), map (), order ()) ->
                          ok | no_return ().
 do_process (_Phase, _GameTime, _Map, {hold, _}) ->
     ok;
@@ -85,9 +85,9 @@ do_process (_Phase,
             case unit_can_act (Map, Unit, From, GameTime) of
                 true ->
                     % remeber when and where the unit came from:
-                    map:set_unit_info (Map, Unit, From, 
-                                       history, 
-                                       #history{time = GameTime, 
+                    map:set_unit_info (Map, Unit, From,
+                                       history,
+                                       #history{time = GameTime,
                                                 order = Order}),
                     % ..and move it:
                     Status = map:move_unit (Map, Unit, From, To),
@@ -127,17 +127,17 @@ is_legal (Map, Order) ->
         {hold, _} ->
             true;
         {move, {Type, _Nation}, From, To} ->
-            lists:member (To, 
+            lists:member (To,
                           map:get_reachable (Map, From, Type));
         {support, _Unit, _Province, Order} ->
-            %% todo: check, if it is neighboring 
+            %% todo: check, if it is neighboring
             %% (case Order of {move..} | {hold..}
             is_legal (Map, Order);
         {convoy, _Unit, _From, _To} ->
             %% a convoy order is always legal if seen alone.
-            %% (Think of chained convoys, they only work when a full ensemble 
+            %% (Think of chained convoys, they only work when a full ensemble
             %% of convoy orders fit together.
-%            map:unit_exists (Map, Unit) and 
+%            map:unit_exists (Map, Unit) and
 %                is_province (Map, From) and
 %                is_province (Map, To).
             true
@@ -170,13 +170,13 @@ legal_orders () ->
     [{move, {army, austria}, vienna, galicia},
      {move, {fleet, germany}, berlin, prussia},
      {move, {fleet, germany}, kiel, berlin},
-     {move, {army, italy}, roma, apulia}].
+     {move, {army, italy}, rome, apulia}].
 
 illegal_orders () ->
     [{move, {army, austria}, vienna, munich}, % too far!
-     {move, {army, germany}, kiel, helgoland},% can't swim!
+     {move, {army, germany}, kiel, helgoland_bight},% can't swim!
      {move, {fleet, germany}, kiel, ruhr},    % can't walk!
-     {move, {fleet, italy}, roma, apulia}].   % not on same coast!
+     {move, {fleet, italy}, rome, apulia}].   % not on same coast!
 
 legal_move_test () ->
     Map = map_data:create (standard_game),
@@ -197,8 +197,8 @@ unit_can_act_test () ->
     ?assertEqual (true, unit_can_act (Map, Unit, vienna, Time)),
     io:format(user, "faking a move this round..", []),
     map:set_unit_info (Map, Unit,
-                       vienna, 
-                       history, #history{time = Time, 
+                       vienna,
+                       history, #history{time = Time,
                                          order = Order}),
     io:format(user, "asserting that unit is not able to move any more..", []),
     ?assertEqual (false, unit_can_act (Map, Unit, vienna, Time)),
