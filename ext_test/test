@@ -8,6 +8,9 @@ errors=0
 
 echo Running test script
 
+echo Starting backend
+$sysrel/backend/bin/backend start || errors=1
+
 echo Starting web frontend
 $sysrel/web_frontend/bin/web_frontend start || errors=1
 
@@ -19,6 +22,9 @@ python $cwd/web_interface_test.py || errors=1
 
 echo Stopping web frontend
 $sysrel/web_frontend/bin/web_frontend stop || errors=1
+
+echo Stopping backend
+$sysrel/backend/bin/backend stop || errors=1
 
 # Return any error codes
 exit $errors
