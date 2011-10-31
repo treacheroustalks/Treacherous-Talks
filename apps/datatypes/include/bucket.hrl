@@ -16,4 +16,3 @@
 -define(B_USER, <<"user">>).
 -define (B_GAME, <<"game">>).
 -define(B_GAME_PLAYER, <<"game_player">>).
--define(B_PLAYER_SUFFIX, "-player").

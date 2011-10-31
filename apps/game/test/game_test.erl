@@ -49,7 +49,8 @@ game_test_ () ->
       game_timer_create_tst_(),
       game_timer_state_tst_(),
       game_update_tst_(),
-      join_game_tst_()
+      join_game_tst_(),
+      get_game_state_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -164,6 +165,56 @@ join_game_tst_() ->
               ?assertEqual(country_not_available, Msg),
               ?debugMsg("join game test end")
       end].
+%%------------------------------------------------------------------------------
+%% Tests the get game state functionality
+%%------------------------------------------------------------------------------
+get_game_state_tst_ () ->
+    [fun() ->
+              ?debugMsg("start get game state test ..."),
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % join new player with id=1122 and country=england
+              UserID = 1122,
+              Country = england,
+              game:join_game({self(), join_game_test},
+                             Game#game.id, UserID, Country),
+              timer:sleep(50),
+              GOV = sync_get_game_state (Game#game.id, UserID),
+              ?assertEqual(Country, GOV#game_overview.country),
+              ?debugMsg("game state retrieved")
+      end,
+    fun() ->
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % join new player with id=1122 and country=england
+              UserID = 1122,
+              %Country = england,
+              %game:join_game({self(), join_game_test},
+              %               Game#game.id, UserID, Country),
+              timer:sleep(50),
+              Reply = sync_get_game_state (Game#game.id, UserID),
+              ?assertEqual(user_not_play_this_game, Reply),
+              ?debugMsg("User does not play this game")
+      end,
+    fun() ->
+              GameRecord = test_game(),
+              GameRecord2 = GameRecord#game{status = ongoing},
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord2)),
+              % join new player with id=1122 and country=england
+              UserID = 1122,
+              Country = england,
+              game:join_game({self(), join_game_test},
+                             Game#game.id, UserID, Country),
+              timer:sleep(50),
+              Reply = sync_get_game_state (Game#game.id, UserID),
+              ?assertEqual(game_not_waiting, Reply),
+              ?debugMsg("Game is not in waiting phase"),
+              ?debugMsg("get game state test end")
+      end
+     ].
 
 %%------------------------------------------------------------------------------
 %% Helpers
@@ -211,9 +262,24 @@ sync_join_game_player (GameID, UserID, Country) ->
             ?debugMsg ("received game player"),
             GamePlayer;
         {sync_join_game, {error, country_not_available}} ->
-            ?debugMsg ("Sync join game country not available"),
+            ?debugMsg ("join game country not available"),
             country_not_available;
         {sync_join_game, Other} ->
+            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
+    after ?TEST_TIMEOUT ->
+            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
+    end.
+
+sync_get_game_state (GameID, UserID) ->
+    ok = game:get_game_state ({self (), sync_get_game_state}, GameID, UserID),
+    receive
+        {sync_get_game_state, {ok, GameOverview}} ->
+            GameOverview;
+        {sync_get_game_state, {error, user_not_play_this_game}} ->
+            user_not_play_this_game;
+        {sync_get_game_state, {error, game_not_waiting}} ->
+            game_not_waiting;
+        {sync_get_game_state, Other} ->
             erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
     after ?TEST_TIMEOUT ->
             erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
