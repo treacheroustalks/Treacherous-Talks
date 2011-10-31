@@ -205,6 +205,17 @@ handle_call({update_game, Game}, From, State) ->
 handle_call({get_game, Id}, From, State) ->
     game:get_game(From, Id),
     {noreply, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for getting an overview of a game
+%% @end
+%% [@spec handle_call({game_overview::atom(), GameId::Integer(), UserId::Integer()},
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({game_overview, GameId, UserId}, From, State) ->
+    game:get_game_status(From, GameId, UserId),
+    {noreply, State};
 handle_call(Request, From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, From, State}]),
     {noreply, ok, State}.

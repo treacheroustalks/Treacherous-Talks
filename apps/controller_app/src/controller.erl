@@ -28,6 +28,7 @@
          get_session_user/1,
          update_session_user/2,
          is_online/1,
+         game_overview/2,
          update_rec_by_proplist/2
         ]).
 
@@ -57,7 +58,7 @@
 %%              update_game |
 %%              unkown_command.
 %%
-%% result() :: success | parse_error | invalid_data.
+%% result() :: success | parse_error | invalid_data | invalid_session.
 %% @end
 %%
 %% [@spec
@@ -118,6 +119,17 @@ handle_action({reconfig_game, {ok, Session, GameId, GamePropList}},
     end;
 handle_action({reconfig_game, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {reconfig_game, parse_error}, Error);
+
+handle_action({game_overview, {ok, Session, GameID}}, {CallbackFun, Args}) ->
+    case controller:get_session_user(Session) of
+        {error, _Error} ->
+            CallbackFun(Args, {game_overview, invalid_session}, Session);
+        {ok, User} ->
+            Overview = controller:game_overview(GameID, User#user.id),
+            CallbackFun(Args, {game_overview, success}, Overview)
+    end;
+handle_action({game_overview, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {game_overview, parse_error}, Error);
 
 handle_action({create_game, {ok, Session, GameInfo}}, {CallbackFun, Args}) ->
     case controller:get_session_user(Session) of
@@ -186,7 +198,8 @@ get_user(Id) ->
 
 
 %%-------------------------------------------------------------------
-%% @doc
+%% @doc new_game/1
+%%
 %% API for creation of a game
 %% @end
 %% [@spec create_game(#game{}) @end]
@@ -196,7 +209,8 @@ new_game(Game) ->
 
 
 %%-------------------------------------------------------------------
-%% @doc
+%% @doc reconfig_game/1
+%%
 %% API for updating a game
 %% @end
 %% [@spec reconfig_game(#game{}) @end]
@@ -206,7 +220,8 @@ reconfig_game(Game) ->
 
 
 %%-------------------------------------------------------------------
-%% @doc
+%% @doc get_game/1
+%%
 %% API for getting a game
 %% @end
 %% [@spec get_game(Id::Integer()) @end]
@@ -216,7 +231,8 @@ get_game(Id) ->
 
 
 %%-------------------------------------------------------------------
-%% @doc
+%% @doc get_session_user/1
+%%
 %% API for getting a user that has a session
 %% @end
 %% [@spec get_session_user(SessionId::Integer()) @end]
@@ -226,7 +242,8 @@ get_session_user(SessionId) ->
 
 
 %%-------------------------------------------------------------------
-%% @doc
+%% @doc update_session_user/2
+%%
 %% API for updating the session of a user
 %% @end
 %% [@spec update_session_user(SessionId::integer(), User::#user{}) @end]
@@ -236,13 +253,24 @@ update_session_user(SessionId, User) ->
 
 
 %%-------------------------------------------------------------------
-%% @doc
+%% @doc is_online/1
+%%
 %% API for checking if a user is online
 %% @end
 %% [@spec is_online(SessionId::Integer()) @end]
 %%-------------------------------------------------------------------
 is_online(SessionId) ->
     ?CALL_WORKER({is_online, SessionId}).
+
+%%-------------------------------------------------------------------
+%% @doc game_overview/2
+%%
+%% API for getting an overview of a game
+%% @end
+%% [@spec game_overview(GameId::Integer(), UserId::Integer()) @end]
+%%-------------------------------------------------------------------
+game_overview(GameId, UserId) ->
+    ?CALL_WORKER({game_overview, GameId, UserId}).
 
 %%-------------------------------------------------------------------
 %% Helper functions
