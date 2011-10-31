@@ -2,36 +2,31 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 
-simple_move_test () ->
+simple_moves_test () ->
     Map = map_data:create (standard_game),
-    Orders = [{move, {army, germany}, berlin, prussia},
-              {move, {army, austria}, vienna, galicia},
-              {move, {fleet, italy}, napoli, tyrhennian_sea}],
-    lists:all (fun (Reply) ->
-                       case Reply of
-                           {executed, _} -> 
-                               true;
-                           NotExecuted -> 
-                               ?debugVal (NotExecuted),
-                               false
-                       end
-               end,
-               rules:process (spring, Map, Orders)),
+    OrdersAndResults = 
+        [{ok, {move, {army, germany}, berlin, prussia}},
+         {ok, {move, {army, austria}, vienna, galicia}},
+         {ok, {move, {fleet, italy}, napoli, tyrhennian_sea}},
+         {unit_does_not_exist, {move, {fleet, italy}, roma, napoli}}],
+    {_, Orders} = lists:unzip (OrdersAndResults),
+    ?assertEqual (OrdersAndResults, rules:process (spring, Map, 
+                                                   Orders)),
     %% check if they are, where they should be
-    lists:foreach (fun (Order={move, Unit, _, MovedTo}) ->
-                           ?debugVal (Order),
-                           ?assertEqual (true, 
-                                         map:unit_exists (Map,
-                                                                MovedTo,
-                                                                Unit))
+    lists:foreach (fun ({Result, _Order={move, Unit, _MovedFrom, MovedTo}}) ->
+%                           ?debugVal (Order),
+                           case Result of
+                               ok ->
+                                   ?assertEqual (true, 
+                                                 map:unit_exists (Map,
+                                                                  MovedTo,
+                                                                  Unit));
+                               _Other ->
+                                   ?assertEqual (false,
+                                                 map:unit_exists (Map,
+                                                                  MovedTo,
+                                                                  Unit))
+                           end
                    end,
-                   Orders),
-    %%  and are gone where they were:
-    lists:foreach (fun (Order={move, _, MovedFrom, _}) ->
-                           ?debugVal (Order),
-                           ?assertEqual ([], 
-                                         map:get_units (Map,
-                                                              MovedFrom))
-                   end,
-                   Orders),
+                   OrdersAndResults),
     map_data:delete (Map).

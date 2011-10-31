@@ -79,10 +79,10 @@ add_move_remove_test () ->
     ?assertEqual ([], map:get_units (Map, vienna)),
     ?assertEqual ([{army, austria}], map:get_units (Map, galicia)),
     %% now try to do that again! has to fail:
-    ?assertException (error, _,
-                      map:move_unit (Map, {army, austria},
-                                           vienna,
-                                           galicia)),
+    ?assertEqual (unit_does_not_exist,
+                  map:move_unit (Map, {army, austria},
+                                 vienna,
+                                 galicia)),
     %% now try to move galicia to budapest - two units will stand there, since
     %% budapest has an army already
     ?assertEqual ([{army, austria}], map:get_units (Map, galicia)),
@@ -93,12 +93,20 @@ add_move_remove_test () ->
                   map:get_units (Map, budapest)),
     map_teardown (Map).
 
+get_provinces_test () ->
+    Map = empty_map_setup (),
+    map:add_province (Map, "stringonia"),
+    map:add_province (Map, {tuple, town}),
+    map:add_province (Map, atomic_wasteland),
+    ?assert (set_equiv (["stringonia", {tuple, town}, atomic_wasteland], 
+                      map:get_provinces (Map))),
+    map_teardown (Map).
+
 unit_info_test () ->
     Map = test_map_setup (),
     % make (A) Vie unique:
     Ref = make_ref (),
     map:set_unit_info (Map, {army, austria}, vienna, ref, Ref),
-    ?debugVal (map:get_unit_info (Map, {army, austria}, vienna, ref)),
     ?assertEqual (Ref, 
                   map:get_unit_info (Map, {army, austria}, vienna, ref)),
     map:move_unit (Map, {army, austria}, vienna, galicia),

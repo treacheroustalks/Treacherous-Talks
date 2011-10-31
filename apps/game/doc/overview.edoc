@@ -8,4 +8,5 @@ It is responsible for everything that relates to setting up and playing games.
 
 The public interface to be used from the outside is in the module {@link game}.
 
+We measure <a href="coverage/index.html">test coverage</a>!
 @end

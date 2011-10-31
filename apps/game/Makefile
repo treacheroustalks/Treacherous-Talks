@@ -1,7 +1,10 @@
 all: deps compile docs
 
-docs:
+docs: test
 	rebar skip_deps=true doc
+	rm -rf doc/coverage
+	mkdir doc/coverage
+	cp -r .eunit/*.html doc/coverage
 
 deps:
 	rebar get-deps
