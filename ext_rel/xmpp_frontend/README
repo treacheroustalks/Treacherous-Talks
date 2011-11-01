@@ -45,8 +45,8 @@ Your edit, compile, test loop is number 4...8 :)
 
 To do this easily, I usually keep terminals open at:
    main/
-   main/ext_rel/xmpp_rontend
-   main/ext_rel/xmpp_rontend/rel/xmpp_frontend.
+   main/ext_rel/xmpp_frontend
+   main/ext_rel/xmpp_frontend/rel/xmpp_frontend.
 
 Before I commit I run build and test under main.
 

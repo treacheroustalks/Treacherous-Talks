@@ -214,7 +214,7 @@ handle_call({get_game, Id}, From, State) ->
 %% @end
 %%-------------------------------------------------------------------
 handle_call({game_overview, GameId, UserId}, From, State) ->
-    game:get_game_status(From, GameId, UserId),
+    game:get_game_state(From, GameId, UserId),
     {noreply, State};
 %%-------------------------------------------------------------------
 %% @doc

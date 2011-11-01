@@ -171,7 +171,7 @@ get_game_map(GameID, #game_overview{} = GameOverview) ->
         waiting ->
             Map = map_data:create (standard_game),
             GameOV = GameOverview#game_overview{game_rec= Game,
-                           map = digraph_io:to_erlang_term (Map)},
+                                                map = digraph_io:to_erlang_term(Map)},
             {ok, GameOV};
         _ -> %TODO provide state for other type of games which are not waiting
             {error, game_not_waiting}
