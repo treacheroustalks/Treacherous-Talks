@@ -4,10 +4,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 import time
 
-def basicWebsocket(path): 
+def basicWebsocket(driver, path):
     testString = "Hello World from test!"
-    # Create a new instance of the browser driver
-    driver = webdriver.Chrome()
     driver.get(path)
     
     # Find the 'Connect' button and click it to connect
@@ -28,5 +26,16 @@ def basicWebsocket(path):
     finally:
         driver.quit()
 
-# Run the test for websocket example
-basicWebsocket("http://localhost:8000/websockets_example.yaws")
+
+# Create a new (shared among tests) browser instance
+driver = webdriver.Chrome()
+
+# Keep the try/except blocks around the tests so that we can close the browser
+# properly even when tests fail :-)
+try:
+    # Run the test for websocket example
+    basicWebsocket(driver, "http://localhost:8000/websockets_example.yaws")
+except Exception, e:
+    # Terminate the browser and re-throw the exception
+    driver.quit()
+    raise
