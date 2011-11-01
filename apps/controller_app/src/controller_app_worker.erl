@@ -216,6 +216,18 @@ handle_call({get_game, Id}, From, State) ->
 handle_call({game_overview, GameId, UserId}, From, State) ->
     game:get_game_status(From, GameId, UserId),
     {noreply, State};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for joining a game
+%% @end
+%% [@spec handle_call({join_game::atom(), GameId::Integer(), UserId::Integer(), 
+%%                     Country::country()}, From::{pid(), Tag}, #state{}) -> 
+%%                                                  {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({join_game, GameId, UserId, Country}, From, State) ->
+    game:join_game(From, GameId, UserId, Country),
+    {noreply, State};
 handle_call(Request, From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, From, State}]),
     {noreply, ok, State}.

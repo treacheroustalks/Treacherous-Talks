@@ -25,6 +25,7 @@
          new_game/1,
          reconfig_game/1,
          get_game/1,
+         join_game/3,
          get_session_user/1,
          update_session_user/2,
          is_online/1,
@@ -58,7 +59,7 @@
 %%              update_game |
 %%              unkown_command.
 %%
-%% result() :: success | parse_error | invalid_data | invalid_session.
+%% result() :: success | parse_error | invalid_data | invalid_session | error.
 %% @end
 %%
 %% [@spec
@@ -153,6 +154,22 @@ handle_action({create_game, {ok, Session, GameInfo}}, {CallbackFun, Args}) ->
     end;
 handle_action({create_game, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {create_game, parse_error}, Error);
+
+handle_action({join_game, {ok, Session, GameId, Country}}, {CallbackFun, Args}) ->
+    case controller:get_session_user(Session) of
+        {error, _Error} ->
+            CallbackFun(Args, {join_game, invalid_session}, Session);
+        {ok, User} ->
+            case controller:join_game(GameId, User#user.id, Country) of
+                {ok, GameKey} ->
+                    CallbackFun(Args, {join_game, success}, GameKey);
+                {error, Error} ->
+                    CallbackFun(Args, {join_game, error}, Error)
+            end
+    end;
+handle_action({join_game, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {join_game, parse_error}, Error);       
+
 
 handle_action(unknown_command, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, []);
@@ -281,6 +298,16 @@ is_online(SessionId) ->
 %%-------------------------------------------------------------------
 game_overview(GameId, UserId) ->
     ?CALL_WORKER({game_overview, GameId, UserId}).
+
+%%-------------------------------------------------------------------
+%% @doc join_game/3
+%%
+%% API for joining a game
+%% @end
+%% [@spec game_overview(GameId::Integer(), UserId::Integer(), Country::country()) @end]
+%%-------------------------------------------------------------------
+join_game(GameId, UserId, Country) ->
+    ?CALL_WORKER({join_game, GameId, UserId, Country}).
 
 %%-------------------------------------------------------------------
 %% Helper functions

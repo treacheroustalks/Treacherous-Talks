@@ -37,6 +37,10 @@ controller_game_test_() ->
       fun controller_handle_game_overview_success/0,
       fun controller_handle_game_overview_invalid_session/0,
       fun controller_handle_game_overview_parse_error/0,
+      fun controller_handle_join_game_success/0,
+      fun controller_handle_join_game_invalid_session/0,
+      fun controller_handle_join_game_error/0,
+      fun controller_handle_join_game_parse_error/0,
       fun teardown/0
      ]}.
 
@@ -267,6 +271,64 @@ controller_handle_game_overview_parse_error() ->
     Result = controller:handle_action({game_overview, error}, {Callback, []}),
     ?assertEqual({{game_overview, parse_error}, error}, Result),
     ?debugMsg("Testing game overview parse error end").
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests joining a game
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_join_game_success() ->
+    ?debugMsg("Testing join game success"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
+    meck:expect(controller, join_game, 3, {ok, 111222}),
+    Session = 12345678,
+    GameId = 111222,
+    Result = controller:handle_action(
+               {join_game, {ok, Session, GameId, some_country}},
+               {Callback, []}),
+    ?assertEqual({{join_game, success}, 111222}, Result),
+    meck:unload(controller),
+    ?debugMsg("Testing join game success end").
+    
+controller_handle_join_game_invalid_session() ->
+    ?debugMsg("Testing join game invalid session"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {error, some_error}),
+    Session = 12345678,
+    GameId = 111222,
+    Result = controller:handle_action(
+               {join_game, {ok, Session, GameId, some_country}},
+               {Callback, []}),
+    ?assertEqual({{join_game, invalid_session}, Session}, Result),
+    meck:unload(controller),
+    ?debugMsg("Testing join game invalid session end").
+
+controller_handle_join_game_error() ->
+    ?debugMsg("Testing join game error - could not join"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
+    meck:expect(controller, join_game, 3, {error, could_not_join}),
+    Session = 12345678,
+    GameId = 111222,
+    Result = controller:handle_action(
+               {join_game, {ok, Session, GameId, some_country}},
+               {Callback, []}),
+    ?assertEqual({{join_game, error}, could_not_join}, Result),
+    meck:unload(controller),
+    ?debugMsg("Testing join game error - could not join end").
+
+controller_handle_join_game_parse_error() ->
+    ?debugMsg("Testing join game parse error"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    Result = controller:handle_action({join_game, error}, {Callback, []}),
+    ?assertEqual({{join_game, parse_error}, error}, Result),
+    ?debugMsg("Testing join game parse error end").
+
 
 %%-------------------------------------------------------------------
 %% @doc
