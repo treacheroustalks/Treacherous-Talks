@@ -13,8 +13,12 @@
 -module(user_commands).
 
 % Export for API
--export([parse_create/1, parse_update/1, parse_register/1, parse_login/1,
-        parse_reconfig/1]).
+-export([parse_create/1,
+         parse_update/1,
+         parse_register/1,
+         parse_login/1,
+         parse_reconfig/1,
+         parse_overview/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -183,7 +187,7 @@ parse_update(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, list_to_integer(Session), 
+                    {ok, list_to_integer(Session),
                      [{#user.password, Pw},
                       {#user.email, Mail},
                       {#user.name, Name}]};
@@ -192,6 +196,32 @@ parse_update(Data) ->
                     {error, {invalid_input, ErrorList}}
             end
     end.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_overview/1
+%%
+%% Parses a game overview request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+parse_overview(Data) ->
+    RequiredFields = [?SESSION, ?GAMEID],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId, GameId] = ReqValues,
+
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    {ok, list_to_integer(SessionId), list_to_integer(GameId)};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
 
 
 %% Internal function

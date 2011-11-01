@@ -51,6 +51,13 @@ parse_create_test_() ->
         ?_assertEqual(Expected, ActualOutput)
     ].
 
+parse_game_overview_test_() ->
+    ActualOutput = user_commands:parse_overview(?SAMPLE_GAME_OVERVIEW),
+    Expected = {ok, 123456789, 111222},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
 parse_time_format_test_() ->
     [
         ?_assertEqual(

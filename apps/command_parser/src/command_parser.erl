@@ -44,10 +44,11 @@
 % if no matched input, let it crash to detect the bug earlier
 parse(BinString) when is_binary(BinString) ->
     Commands =   "(" ++ ?LOGIN
-               ++"|" ++ ?CREATE
-               ++"|" ++ ?RECONFIG
+               ++ "|" ++ ?CREATE
+               ++ "|" ++ ?RECONFIG
                ++ "|" ++ ?REGISTER
                ++ "|" ++ ?UPDATE
+               ++ "|" ++ ?OVERVIEW
                ++ ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -63,7 +64,9 @@ parse(BinString) when is_binary(BinString) ->
                 <<?REGISTER>> ->
                     {register, user_commands:parse_register(Data)};
                 <<?UPDATE>> ->
-                    {update_user, user_commands:parse_update(Data)}
+                    {update_user, user_commands:parse_update(Data)};
+                <<?OVERVIEW>>  ->
+                    {game_overview, user_commands:parse_overview(Data)}
             end;
          nomatch ->
                 unknown_command

@@ -30,7 +30,9 @@ parse_test_() ->
                                              creator_id = undefined}}
                         })),
      ?_test(check_parse(?SAMPLE_LOGIN,
-                        {login, {ok, #user{nick = "Lin", password = "QWER"}}}))
+                        {login, {ok, #user{nick = "Lin", password = "QWER"}}})),
+     ?_test(check_parse(?SAMPLE_GAME_OVERVIEW,
+                        {game_overview, {ok, 123456789, 111222}}))
     ].
 
 check_parse(Sample, Expected) ->

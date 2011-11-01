@@ -103,3 +103,14 @@ PASSWORD: 1234
 END\r
 adfadfasdfaldfad">>
 ).
+
+-define(SAMPLE_GAME_OVERVIEW,
+<<"sddfaadfaff\r
+OVERVIEW\r
+----Required Fields---------\r
+SESSION: 123456789\r
+GAMEID: 111222 \r
+\r
+END\r
+adfadfasdfaldfad">>
+).
