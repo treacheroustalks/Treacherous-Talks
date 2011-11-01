@@ -1,0 +1,210 @@
+<erl>
+%%%-------------------------------------------------------------------
+%%% @copyright
+%%% COPYRIGHT
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc Websocket endpoint
+%%% @end
+%%%
+%%% @since : 25 Oct 2011 by Bermuda Triangle
+%%% @end
+%%%-------------------------------------------------------------------
+
+-include_lib("datatypes/include/user.hrl").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Yaws function that gets called when an endpoint is requested.
+%% The function creates a process for every websocket connection.
+%% @end
+%%-------------------------------------------------------------------
+out(A) ->
+    io:format("Spawning websocket owner~n",[]),
+    WebSocketOwner = spawn(fun() -> websocket_owner() end),
+    {websocket, WebSocketOwner, true}.
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Websocket owner - function to start the websocket server
+%% @end
+%%-------------------------------------------------------------------
+websocket_owner() ->
+    receive
+    {ok, WebSocket, ProtocolVersion} ->
+        socket_server(WebSocket, ProtocolVersion);
+    _ -> ok
+    end.
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Websocket server
+%% @end
+%%-------------------------------------------------------------------
+socket_server(WebSocket, ProtocolVersion) ->
+    receive
+    {tcp, WebSocket, DataFrame} ->
+        Data = yaws_api:websocket_unframe_data(ProtocolVersion, DataFrame),
+        io:format("Got data from Websocket: ~p~n", [Data]),
+        ParsedCmd = web_parser:parse(json_decode(Data)),
+        io:format("Parsed command: ~p~n", [ParsedCmd]),
+        controller:handle_action(ParsedCmd,
+                                 {fun reply/3, [WebSocket, ProtocolVersion]}),
+        socket_server(WebSocket, ProtocolVersion);
+    {tcp_closed, WebSocket} ->
+        io:format("Websocket closed. Terminating socket_server...~n");
+    Any ->
+        io:format("socket_server received msg:~p~n", [Any]),
+        socket_server(WebSocket, ProtocolVersion)
+    end.
+
+
+%% Convert data from websocket (JSON) to erlang terms
+json_decode(Data) ->
+    json2:decode_string(binary_to_list(Data)).
+
+
+%% Convert erlang terms to JSON
+json_encode(Data) ->
+    list_to_binary(json2:encode(json2:obj_from_list(Data))).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Callback functions that gets called by controller
+%% @end
+%%-------------------------------------------------------------------
+reply([WebSocket, ProtocolVersion], {register, success}, User) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, register_success());
+reply([WebSocket, ProtocolVersion], {register, invalid_data}, Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
+
+reply([WebSocket, ProtocolVersion], {login, success}, Session) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, login_success(Session));
+reply([WebSocket, ProtocolVersion], {login, invalid_data}, _Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, login_invalid_data());
+
+reply([WebSocket, ProtocolVersion], {get_session_user, success}, User) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            get_session_user_success(User));
+reply([WebSocket, ProtocolVersion], {get_session_user, invalid_data}, _Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            get_session_user_invalid_data());
+
+reply([WebSocket, ProtocolVersion], {update_user, success}, User) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            update_user_success(User));
+reply([WebSocket, ProtocolVersion], {update_user, invalid_data}, _Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            update_user_invalid_data());
+
+reply([WebSocket, ProtocolVersion], {create_game, success}, Game) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
+reply([WebSocket, ProtocolVersion], {create_game, invalid_data}, Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
+
+reply([WebSocket, ProtocolVersion], {Cmd, parse_error}, Error) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
+
+reply([WebSocket, ProtocolVersion], unknown_command, Data) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode("")).
+
+
+%%-------------------------------------------------------------------
+%% Functions that handle return data
+%%-------------------------------------------------------------------
+%% @doc
+%% Format for returning messages to the client
+%%
+%% event: Name of the event used by js callbacks to make changes to web page
+%% event_data: Encoded data that may be relevant for the event
+%% page: The page that has to be loaded on the client
+%% message_type: Type of message to be displayed (optional)
+%% 			    success, error, warning
+%%  message_data: Data to be displayed as the message
+%% @end
+%%-------------------------------------------------------------------
+register_success() ->
+    R = [{"event", "register_success"},
+         {"event_data", ""},
+         {"page", "login"},
+         {"message_type", "success"},
+         {"message_value", "Registration successful."
+                           " Please login to continue."}
+        ],
+    json_encode(R).
+
+register_invalid_data() ->
+    R = [{"event", "register_invalid_data"},
+         {"event_data", ""},
+         {"page", "register"},
+         {"message_type", "error"},
+         {"message_value", "An error occurred during registration."
+                           " Please try after some time."}
+        ],
+    json_encode(R).
+
+login_success(Session) ->
+    Data = [{"session_id", Session}],
+    R = [{"event", "login_success"},
+         {"event_data", json2:obj_from_list(Data)},
+         {"page", "dashboard"},
+         {"message_type", "success"},
+         {"message_value", "You are now logged in!"}],
+    json_encode(R).
+
+login_invalid_data() ->
+    R = [{"event", "login_invalid_data"},
+         {"event_data", ""},
+         {"page", "login"},
+         {"message_type", "error"},
+         {"message_value", "Invalid login data."
+                           " Please check your nick and password"}],
+    json_encode(R).
+
+get_session_user_success(User) ->
+    Data = [{"nick", User#user.nick},
+            {"email", User#user.email},
+            {"fullname", User#user.name}],
+    R = [{"event", "get_session_user_success"},
+         {"event_data", json2:obj_from_list(Data)},
+         {"page", ""},
+         {"message_type", "success"},
+         {"message_value", "You are now logged in!"}],
+    json_encode(R).
+
+get_session_user_invalid_data() ->
+    R = [{"event", "get_session_user_invalid_data"},
+         {"event_data", ""},
+         {"page", "login"},
+         {"message_type", "error"},
+         {"message_value", "Session invalid."
+                           " Please login to continue."}],
+    json_encode(R).
+
+update_user_success(User) ->
+    Data = [{"nick", User#user.nick},
+            {"email", User#user.email},
+            {"fullname", User#user.name}],
+    R = [{"event", "update_user_success"},
+         {"event_data", json2:obj_from_list(Data)},
+         {"page", "dashboard"},
+         {"message_type", "success"},
+         {"message_value", "Your information was updated successfully."}],
+    json_encode(R).
+
+update_user_invalid_data() ->
+    R = [{"event", "update_user_invalid_data"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", "An error occurred during information update."
+                           " Please try after some time."}
+        ],
+    json_encode(R).
+
+
+
+</erl>
