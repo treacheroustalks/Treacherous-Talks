@@ -31,6 +31,7 @@
 %% {register, Error} |
 %% {login, {ok, #user{}}} |
 %% {login, Error} |
+%% {play_order, {OrderList, ErrorList}} |
 %% {update, {ok, SessionId,[{#user.field, Value}]}} |
 %% {update, Error} |
 %% {create_game, {ok, Session, #game{}}} |
@@ -47,7 +48,8 @@
 %%-------------------------------------------------------------------
 % if no matched input, let it crash to detect the bug earlier
 parse(BinString) when is_binary(BinString) ->
-    Commands =   "(" ++ ?LOGIN
+    Commands =    "(" ++ ?LOGIN
+               ++ "|" ++ ?ORDER
                ++ "|" ++ ?CREATE
                ++ "|" ++ ?RECONFIG
                ++ "|" ++ ?REGISTER
@@ -62,6 +64,8 @@ parse(BinString) when is_binary(BinString) ->
             case Cmd of
                 <<?LOGIN>> ->
                     {login, user_commands:parse_login(Data)};
+                <<?ORDER>> ->
+                    {player_orders, player_orders:parse_orders(Data)};
                 <<?CREATE>> ->
                     {create_game, user_commands:parse_create(Data)};
                 <<?RECONFIG>> ->

@@ -42,3 +42,65 @@ check_parse(Sample, Expected) ->
     %?debugVal(Expected),
     ?assertEqual(Expected, command_parser:parse(Sample)).
 
+
+reconfig_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_RECONFIG),
+    Expected = {reconfig_game,{ok,456123,111222,
+                   [{4,"awesome_game"},
+                    {7,"white"},
+                    {8,240},
+                    {9,210},
+                    {10,160},
+                    {14,3200},
+                    {5,field_missing},
+                    {11,field_missing},
+                    {12,"1234"},
+                    {3,undefined}]}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
+order_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS1),
+    Expected = {player_orders,{ok,{[{move,fleet,mid,nat,north_coast},
+                     {waive},
+                     {build,fleet,mun,north_coast},
+                     {remove,army,mun},
+                     {disband,army,mun},
+                     {support_move,army,mun,fleet,kie,ber,any_coast},
+                     {support_move,army,mun,fleet,kie,ber,any_coast},
+                     {support_hold,fleet,fin,any_unit,bre},
+                     {support_hold,fleet,fin,any_unit,bre},
+                     {hold,any_unit,hol},
+                     {hold,army,bre},
+                     {hold,army,bre},
+                     {convoy,fleet,gol,army,bre,mar},
+                     {convoy,fleet,wes,army,bre,mar},
+                     {convoy,fleet,fin,army,bre,mar},
+                     {move,army,bre,mar,any_coast},
+                     {convoy,fleet,gol,army,bre,mar},
+                     {convoy,fleet,wes,army,bre,mar},
+                     {convoy,fleet,fin,army,bre,mar},
+                     {move,army,bre,mar,any_coast},
+                     {convoy,fleet,nth,army,lon,nrg},
+                     {convoy,fleet,nth,army,lon,nrg},
+                     {move,army,lon,nrg,any_coast},
+                     {move,army,lon,nrg,north_coast},
+                     {move,any_unit,lon,nrg,any_coast},
+                     {move,army,lon,nrg,any_coast}],
+                    [{error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",["a","bre","->","f",[],[],[]]}},
+                     {error,{"invalid action#",["a","bre","-","f",[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,{"invalid action#",[[],[],"-",[],[],[],[]]}},
+                     {error,"eid#invalid location name, not in atom table"},
+                     {error,"ses#invalid location name, not in atom table"}]}}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].

@@ -104,6 +104,7 @@ END\r
 adfadfasdfaldfad">>
 ).
 
+
 -define(SAMPLE_GAME_OVERVIEW,
 <<"sddfaadfaff\r
 OVERVIEW\r
@@ -138,4 +139,67 @@ COUNTRY: Dummyland
 \r
 END\r
 adfadfasdfaldfad">>
+).
+
+-define(SAMPLE_TEST_ORDERS1,
+<<"
+    sddfaadfaff
+
+    ORDER
+
+    SESSIONID: 1234341
+    GAMEID: 3958230945903
+
+------move----------------
+    A Lon-Nrg
+    Lon-Nrg
+    A Lon -> Nrg nc
+    Army Lon move Nrg
+
+---short-convoy-----------
+    F Nth C A Lon-Nrg
+    F Nth Convoy A Lon move Nrg
+
+---njudge-convoy-move-----
+    A Bre-Fin-Wes-Gol-Mar
+    A Bre->Fin->Wes->Gol->Mar
+
+------long convoy---------
+    A Bre-Mar
+    F Fin C A Bre-Mar
+    F Wes C A Bre-Mar
+    F Gol C A Bre-Mar
+
+    Army Bre-> Mar
+    F Fin C A Bre move Mar
+    F Wes Convoy A Bre->Mar
+    Fleet Gol C A Bre - Mar
+
+
+------hold----------------
+    A Bre H
+    Army Bre hold
+    hol hold
+
+------support hold--------
+    F Fin S Bre
+    Fleet Fin support Bre
+
+------support move--------
+    A MUN S F KIE-BER
+    Army MUN Support Fleet KIE move BER
+
+------retreat-------------
+    A Mun disband
+
+------build---------------
+    remove A mun
+    build F Mun nc
+    waive
+
+    Fleet Mid_Atlantic_Ocean move North_Atlantic_Ocean nc
+
+    END
+
+    adfadfasdfaldfad">>
 ).
