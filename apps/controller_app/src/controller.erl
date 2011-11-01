@@ -52,7 +52,7 @@
 %%
 %% command() :: register |
 %%              login |
-%%              create_user |
+%%              get_session_user |
 %%              update_user |
 %%              create_game |
 %%              update_game |
@@ -86,6 +86,16 @@ handle_action({login, {ok, UserInfo}}, {CallbackFun, Args}) ->
     end;
 handle_action({login, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {login, parse_error}, Error);
+
+handle_action({get_session_user, {ok, SessionId}}, {CallbackFun, Args}) ->
+    case controller:get_session_user(SessionId) of
+        {error, Error} ->
+            CallbackFun(Args, {get_session_user, invalid_data}, Error);
+        {ok, UserRec} ->
+            CallbackFun(Args, {get_session_user, success}, UserRec)
+    end;
+handle_action({get_session_user, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {get_session_user, parse_error}, Error);
 
 handle_action({update_user, {ok, Session, UpdateUserProplist}}, {CallbackFun, Args}) ->
     case controller:get_session_user(Session) of

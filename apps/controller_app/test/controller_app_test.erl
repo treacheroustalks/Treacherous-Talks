@@ -37,6 +37,9 @@ controller_test_() ->
       fun controller_handle_action_login_success/0,
       fun controller_handle_action_login_invalid/0,
       fun controller_handle_action_login_error/0,
+      fun controller_handle_action_get_session_user_success/0,
+      fun controller_handle_action_get_session_user_invalid/0,
+      fun controller_handle_action_get_session_user_error/0,
       fun controller_handle_action_update_user_success/0,
       fun controller_handle_action_update_user_invalid/0,
       fun controller_handle_action_update_user_error/0,
@@ -247,6 +250,62 @@ controller_handle_action_login_error() ->
 
     ?debugMsg("Completed handle_action: login parse error").
 
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% getting user data from session successfully.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_get_session_user_success() ->
+    ?debugMsg("Testing handle_action: get_session_user success"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, #user{}} = controller:handle_action(
+                               {get_session_user, {ok, a_session_id}},
+                               {Callback, []}),
+    ?assertEqual({get_session_user, success}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: get_session_user success").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% invalid session data.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_get_session_user_invalid() ->
+    ?debugMsg("Testing handle_action: get_session_user invalid"),
+    meck:new(controller, [passthrough]),
+    meck:expect(controller, get_session_user, 1, {error, test_error}),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, test_error} = controller:handle_action(
+                               {get_session_user, {ok, a_session_id}},
+                               {Callback, []}),
+    ?assertEqual({get_session_user, invalid_data}, Result),
+
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: get_session_user invalid").
+
+
+%% @doc
+%% Tests the handle_action functionality in the controller for
+%% parse_error during registration.
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_action_get_session_user_error() ->
+    ?debugMsg("Testing handle_action: get_session_user parse error"),
+
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {get_session_user, error},
+                               {Callback, []}),
+    ?assertEqual({get_session_user, parse_error}, Result),
+
+    ?debugMsg("Completed handle_action: get_session_user parse error").
 
 %% @doc
 %% Tests the handle_action functionality in the controller for
