@@ -6,25 +6,90 @@ cwd="$( cd -P "$( dirname "$0" )" && pwd )"
 sysrel=$cwd/../system-release
 errors=0
 
-echo Running test script
 
-echo Starting backend
-$sysrel/backend/bin/backend start || errors=1
+# Convenience function for echoing to stderr
+function echoerr() { echo -e "$@" 1>&2; }
 
-echo Starting web frontend
-$sysrel/web_frontend/bin/web_frontend start || errors=1
+# This function takes a release name as an argument and starts it and pings it
+# to be sure that it is up
+function start_release () {
+    local_error=0
+    # Start the release given in $1
+    echo "##### Starting $1"
+    $sysrel/$1/bin/$1 start || local_error=1
+    # Wait before pinging
+    sleep 1
+    # Do five ping attempts and fail if all is unsuccessfull
+    running=0
+    for i in {1..5}
+    do
+        echo "##### Ping attempt number $i for $1"
+        # Run command and pipe output to find regexp
+        $sysrel/$1/bin/$1 ping 2>&1 | perl -pe 'END { print; exit $status }
+                                                $status=100 if
+                                                /.*not responding to pings/;'
+        case "$?" in
+            0) running=1
+               break ;;
+        esac
+        # Sleep before next attempt
+        sleep 1
+    done
+    # Check if ping was unsuccessfull and set errors accordingly
+    if [ $running -eq 0 ]; then
+        local_error=1
+    fi
+    case "$local_error" in
+        0) echo -e "##### $1 is up and running\n" ;;
+        *) echoerr "##### ERROR: Could not start $1\n"
+           errors=$local_error ;;
+    esac
+}
 
-# Sleep to make sure that the node is up
-sleep 3
+# This function takes a release name as an argument and stops that release
+function stop_release () {
+    local_error=0
+    # Stop the release given in $1
+    echo "##### Stopping $1"
+    $sysrel/$1/bin/$1 stop || local_error=1
+    case "$local_error" in
+        0) echo -e "##### $1 is stopped\n" ;;
+        *) echoerr "##### ERROR: Could not stop $1\n"
+           errors=$local_error ;;
+    esac
+}
 
-echo Running Selenium tests
-python $cwd/web_interface_test.py || errors=1
+# This function takes a command as an argument and executes it
+function run_script () {
+    local_error=0
+    # Run the script given in $1
+    echo "##### Running $1"
+    $1 || local_error=1
+    case "$local_error" in
+        0) echo -e "##### $1 was successfull\n" ;;
+        *) echoerr "##### ERROR: $1 failed\n"
+           errors=$local_error ;;
+    esac
+}
 
-echo Stopping web frontend
-$sysrel/web_frontend/bin/web_frontend stop || errors=1
+###### Script starts here
 
-echo Stopping backend
-$sysrel/backend/bin/backend stop || errors=1
+echo -e "##### Running test script\n"
 
-# Return any error codes
+start_release backend
+start_release web_frontend
+
+# Run Selenium test script
+run_script "python $cwd/web_interface_test.py"
+
+stop_release web_frontend
+stop_release backend
+
+
+if (( errors )); then
+    echoerr "##### Test run was NOT successfull."
+else
+    echo "##### Test run was successfull."
+fi
+
 exit $errors
