@@ -4,6 +4,7 @@
 -define(RECONFIG, "RECONFIG").
 -define(CREATE, "CREATE").
 -define(OVERVIEW, "OVERVIEW").
+-define(JOIN, "JOIN").
 -define(END, "END").
 
 
@@ -24,4 +25,13 @@
 -define(RETREATCIRCLE, "RETREATCIRCLE").
 -define(GAINLOSTCIRCLE, "GAINLOSTCIRCLE").
 -define(WAITTIME, "WAITTIME").
+-define(COUNTRY, "COUNTRY").
 
+% countries allowed in the game
+-define(COUNTRIES, [england,
+                    germany,
+                    france,
+                    austria,
+                    italy,
+                    russia,
+                    turkey]).

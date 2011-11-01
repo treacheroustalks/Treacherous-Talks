@@ -18,7 +18,8 @@
          parse_register/1,
          parse_login/1,
          parse_reconfig/1,
-         parse_overview/1]).
+         parse_overview/1,
+         parse_join/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -222,7 +223,39 @@ parse_overview(Data) ->
             end
     end.
 
+%%------------------------------------------------------------------------------
+%% @doc parse_join/1
+%%
+%% Parses a game join game request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+parse_join(Data) ->
+    RequiredFields = [?SESSION, ?GAMEID, ?COUNTRY],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId, GameId, CountryStr] = ReqValues,
 
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    Country = list_to_atom(string:to_lower(CountryStr)),
+                    case lists:member(Country, ?COUNTRIES) of
+                        false -> {error, {invalid_input, CountryStr}};
+                        true ->
+                            {ok,
+                             list_to_integer(SessionId),
+                             list_to_integer(GameId),
+                             Country
+                            }
+                    end;
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
 
 %% Internal function
 %%------------------------------------------------------------------------------
@@ -353,22 +386,24 @@ get_check_type([], AccCheckList) ->
 get_check_type([H|Rest], AccCheckList) ->
     UpdatedCheckList = case H of
         ?SESSION -> [num_only|AccCheckList];
-
+               
         ?NICKNAME -> [begin_with_alpha|AccCheckList];
         ?PASSWORD -> [password|AccCheckList];
         ?FULLNAME -> [alpha_space_only|AccCheckList];
         ?EMAIL -> [mail_addr|AccCheckList];
-
+                           
         ?DESCRIPTION -> [alpha_space_only|AccCheckList];
         ?GAMEID -> [num_only|AccCheckList];
         ?NUMBEROFPLAYERS -> [num_only|AccCheckList];
-
+                           
         ?GAMENAME -> [begin_with_alpha|AccCheckList];
         ?PRESSTYPE -> [alpha_space_only|AccCheckList];
         ?ORDERCIRCLE -> [duration_time|AccCheckList];
         ?RETREATCIRCLE -> [duration_time|AccCheckList];
         ?GAINLOSTCIRCLE -> [duration_time|AccCheckList];
-        ?WAITTIME -> [duration_time|AccCheckList]
+        ?WAITTIME -> [duration_time|AccCheckList];
+        
+        ?COUNTRY -> [alpha_space_only|AccCheckList]
     end,
     get_check_type(Rest, UpdatedCheckList).
 

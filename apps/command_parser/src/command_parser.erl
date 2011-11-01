@@ -38,6 +38,10 @@
 %% {reconfig_game, {ok, SessionId, gameid, #game{}}|
 %% {reconfig_game, {error, {required_fields, RequiredFields}}}|
 %% {reconfig_game,{error, {invalid_input, ErrorList}}}|
+%% {game_overview, {ok, SessionId, GameId}} |
+%% {game_overview, Error} |
+%% {join_game, {ok, SessionId, GameId, Country} |
+%% {join_game, Error} |
 %% unknown_command]
 %% @end
 %%-------------------------------------------------------------------
@@ -49,6 +53,7 @@ parse(BinString) when is_binary(BinString) ->
                ++ "|" ++ ?REGISTER
                ++ "|" ++ ?UPDATE
                ++ "|" ++ ?OVERVIEW
+               ++ "|" ++ ?JOIN
                ++ ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -65,8 +70,10 @@ parse(BinString) when is_binary(BinString) ->
                     {register, user_commands:parse_register(Data)};
                 <<?UPDATE>> ->
                     {update_user, user_commands:parse_update(Data)};
-                <<?OVERVIEW>>  ->
-                    {game_overview, user_commands:parse_overview(Data)}
+                <<?OVERVIEW>> ->
+                    {game_overview, user_commands:parse_overview(Data)};
+                <<?JOIN>> ->
+                    {join_game, user_commands:parse_join(Data)}
             end;
          nomatch ->
                 unknown_command

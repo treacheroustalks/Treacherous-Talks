@@ -32,7 +32,9 @@ parse_test_() ->
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}})),
      ?_test(check_parse(?SAMPLE_GAME_OVERVIEW,
-                        {game_overview, {ok, 123456789, 111222}}))
+                        {game_overview, {ok, 123456789, 111222}})),
+     ?_test(check_parse(?SAMPLE_JOIN_GAME,
+                        {join_game, {ok, 123456789, 111222, england}}))
     ].
 
 check_parse(Sample, Expected) ->

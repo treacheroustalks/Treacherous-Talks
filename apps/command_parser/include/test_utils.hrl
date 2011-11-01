@@ -114,3 +114,28 @@ GAMEID: 111222 \r
 END\r
 adfadfasdfaldfad">>
 ).
+
+-define(SAMPLE_JOIN_GAME,
+<<"sddfaadfaff\r
+JOIN\r
+----Required Fields---------\r
+SESSION: 123456789\r
+GAMEID: 111222 \r
+COUNTRY: England
+\r
+END\r
+adfadfasdfaldfad">>
+).
+
+% Dummyland is not a valid country
+-define(SAMPLE_JOIN_GAME_ERROR,
+<<"sddfaadfaff\r
+JOIN\r
+----Required Fields---------\r
+SESSION: 123456789\r
+GAMEID: 111222 \r
+COUNTRY: Dummyland
+\r
+END\r
+adfadfasdfaldfad">>
+).

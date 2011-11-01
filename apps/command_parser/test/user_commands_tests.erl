@@ -55,7 +55,21 @@ parse_game_overview_test_() ->
     ActualOutput = user_commands:parse_overview(?SAMPLE_GAME_OVERVIEW),
     Expected = {ok, 123456789, 111222},
     [
-        ?_assertEqual(Expected, ActualOutput)
+     ?_assertEqual(Expected, ActualOutput)
+    ].
+
+parse_join_game_test_() ->
+    ActualOutput = user_commands:parse_join(?SAMPLE_JOIN_GAME),
+    Expected = {ok, 123456789, 111222, england},
+    [
+     ?_assertEqual(Expected, ActualOutput)
+    ].
+
+parse_join_game_error_test_() ->
+    ActualOutput = user_commands:parse_join(?SAMPLE_JOIN_GAME_ERROR),
+    Expected = {error, {invalid_input, "Dummyland"}},
+    [
+     ?_assertEqual(Expected, ActualOutput)
     ].
 
 parse_time_format_test_() ->
