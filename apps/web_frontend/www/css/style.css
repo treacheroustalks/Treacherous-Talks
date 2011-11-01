@@ -14,3 +14,8 @@ a h2 {
 .debug {
     border: 1px solid red;
 }
+
+.desc {
+    font-size: 11px;
+    font-style: italic;
+}

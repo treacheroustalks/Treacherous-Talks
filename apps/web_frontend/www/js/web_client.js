@@ -172,11 +172,28 @@ function load_update_user_page() {
     load_page(load_update_user_data);
 }
 
+/**
+ * Update the user data on update_user page
+ *
+ * @return
+ */
 function load_update_user_data() {
     $('#email').val(userObj.email);
     $('#fullname').val(userObj.fullname);
 }
 
+/**
+ * Load the create_game page
+ */
+function load_create_game_page() {
+    page = 'create_game';
+    load_page();
+}
+
+/**
+ * Load the local userObj
+ * @return
+ */
 function load_userObj(data) {
     userObj.email = data.email;
     userObj.nick = data.nick;
@@ -278,6 +295,9 @@ function handle_enter() {
         break;
     case 'update_user':
         validate_update_user();
+        break;
+    case 'create_game':
+        validate_create_game();
         break;
     default:
         break;
@@ -382,6 +402,70 @@ function validate_update_user() {
 }
 
 /**
+ * Validate user update data and if successful, send it to server
+ */
+function validate_create_game() {
+    var name = $('#name').val();
+    var description = $('#description').val();
+    var password = $('#password').val();
+    var press = $('#press').val();
+    var order_phase = $('#order_phase').val();
+    var retreat_phase = $('#retreat_phase').val();
+    var build_phase = $('#build_phase').val();
+    var waiting_time = $('#waiting_time').val();
+    var num_players = $('#num_players').val();
+
+    if (check_field_empty(name, 'name'))
+        return false;
+    if (check_field_empty(press, 'press'))
+        return false;
+    if (check_field_empty(order_phase, 'order_phase'))
+        return false;
+    if (check_field_empty(retreat_phase, 'retreat_phase'))
+        return false;
+    if (check_field_empty(build_phase, 'build_phase'))
+        return false;
+    if (check_field_empty(waiting_time, 'waiting_time'))
+        return false;
+    if (check_field_empty(num_players, 'num_players'))
+        return false;
+
+    if (check_field_int(order_phase, 'order_phase'))
+        return false;
+    if (check_field_int(retreat_phase, 'retreat_phase'))
+        return false;
+    if (check_field_int(build_phase, 'build_phase'))
+        return false;
+    if (check_field_int(waiting_time, 'waiting_time'))
+        return false;
+
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "name" : name
+        }, {
+            "description" : description
+        }, {
+            "password" : password
+        }, {
+            "press" : press
+        }, {
+            "order_phase" : order_phase
+        }, {
+            "retreat_phase" : retreat_phase
+        }, {
+            "build_phase" : build_phase
+        }, {
+            "waiting_time" : waiting_time
+        }, {
+            "num_players" : num_players
+        } ]
+    };
+    call_server('create_game', dataObj);
+}
+
+/**
  * Check if a given field is empty and display appropriate message
  *
  * @param field
@@ -433,6 +517,21 @@ function check_field_password(password, confirm_password) {
         return true;
     }
     return false;
+}
+
+/**
+ * Check if the given field is an integer
+ *
+ * @param field
+ * @return
+ */
+function check_field_int(field, name) {
+    if (isNaN(field) || parseInt(field) != field) {
+        set_message('error', name + ' should be an integer.');
+        clear_message();
+        return true;
+    } else
+        return false;
 }
 
 /*------------------------------------------------------------------------------
