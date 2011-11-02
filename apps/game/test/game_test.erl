@@ -25,7 +25,30 @@ test_game () ->
           retreat_phase = 12*60,
           build_phase = 12*60,
           password="pass",
-          waiting_time = 48*60}.
+          waiting_time = 50*60}.
+
+test_game2 () ->
+    #game{ id = 111222,
+           creator_id=123,
+           name="game name",
+           description="lorem ipsum dolor sit amet",
+           press = black_press,
+           order_phase = 100,
+           retreat_phase = 100,
+           build_phase = 100,
+           password="pass",
+           waiting_time = 100}.
+
+test_game3 () ->
+    #game{ creator_id=123,
+           name="game name",
+           description="this is a long game!",
+           press = black_press,
+           order_phase = 100,
+           retreat_phase = 100,
+           build_phase = 100,
+           password="pass",
+           waiting_time = 5}.
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -106,17 +129,39 @@ game_timer_create_tst_() ->
 %%--------------------------------------------------------------------
 game_timer_state_tst_ () ->
     [fun() ->
-             Game = test_game(),
+             ?debugMsg("game timer state test start"),
+             Game = test_game2(),
+             Id = Game#game.id,
              % create a new game timer
-             {ok, TimerPid} = game_timer_sup:create_timer(Game),
+             game_timer_sup:create_timer(Game),
+             ?assertEqual(waiting_phase, game_timer:current_state(Id)),
              % assert that we have entered the waiting phase
-             ?assertEqual(waiting_phase, game_timer:current_state(TimerPid)),
+             game_timer:event(Id, timeout),
+             ?assertEqual(order_phase, game_timer:current_state(Id)),
              % trigger an event to go to the next phase (only for testing)
-             game_timer:event(TimerPid, event),
              % assert that we are in the order phase
-             ?assertEqual(order_phase, game_timer:current_state(TimerPid)),
-             game_timer:event(TimerPid, event),
-             ?assertEqual(retreat_phase, game_timer:current_state(TimerPid))
+             game_timer:event(Id, timeout),
+             ?assertEqual(retreat_phase, game_timer:current_state(Id)),
+             game_timer:event(Id, timeout),
+             ?assertEqual(build_phase, game_timer:current_state(Id)),
+             ?debugMsg("game timer state test end")
+     end,
+     fun() ->
+             ?debugMsg("game timer reconfig test"),
+             GameRecord = test_game3(),
+             Game = sync_get(sync_new(GameRecord)),
+             UpdatedGame = Game#game{description="RECONFIG",
+                                     waiting_time = 1},
+             ?debugVal(UpdatedGame),
+             ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
+             game:reconfig_game({self(), update}, UpdatedGame),
+             ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
+             timer:sleep(20),
+             game_timer:event(Game#game.id, timeout),
+             ?assertEqual(order_phase, game_timer:current_state(Game#game.id)),
+             ?assertEqual(UpdatedGame#game{status = ongoing},
+                          game_timer:get_game_state(Game#game.id)),
+             ?debugMsg("game timer reconfig test end")
      end].
 
 %%------------------------------------------------------------------------------
@@ -133,6 +178,8 @@ game_update_tst_() ->
               % Update the game with the same id as Game to UpdatedGame
               game:reconfig_game({self(), update_test}, UpdatedGame),
               timer:sleep(50),
+              %% Now the game should have changed in the DB to have
+              %% status = ongoing, change that before assert
               ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
               ?debugMsg("Update game test end")
       end].

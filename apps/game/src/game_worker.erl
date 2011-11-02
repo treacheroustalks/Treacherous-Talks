@@ -45,7 +45,15 @@ handle_call(_Request, _From, State) ->
     {noreply, ok, State}.
 
 handle_cast({new_game, From, Game=#game{id = ID}}, State) ->
-    Reply = new_game(ID, Game),
+    Reply = ({ok, NewID} = new_game(ID, Game)),
+    {ok, NewGame} = get_game(NewID),
+    game_timer_sup:create_timer(NewGame),
+    game_timer:event(NewID, start),
+    gen_server:reply(From, Reply),
+    {noreply, State};
+handle_cast({reconfig_game, From, Game=#game{id = ID}}, State) ->
+    Reply = update_game(ID, Game),
+    game_timer:event(ID, {reconfig, Game}),
     gen_server:reply(From, Reply),
     {noreply, State};
 handle_cast ({get_game, From, ID}, State) ->
@@ -77,6 +85,11 @@ handle_cast ({delete_game, From, Key}, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
     gen_server:reply (From, db:delete(?B_GAME, BinKey)),
     {noreply, State};
+
+handle_cast({phase_change, Game, NewPhase}, State) ->
+    phase_change(Game, NewPhase),
+    {noreply, State};
+
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
@@ -101,12 +114,16 @@ new_game(undefined, #game{} = Game) ->
     new_game(ID, Game#game{id = ID});
 new_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
-
     DBGameObj=db_obj:create (?B_GAME, BinID, Game),
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
     db:put (DBGameObj),
     db:put (DBGamePlayerObj),
+    {ok, ID}.
 
+update_game(ID, #game{} = Game) ->
+    BinID = db:int_to_bin(ID),
+    DBGameObj=db_obj:create (?B_GAME, BinID, Game),
+    db:put (DBGameObj),
     {ok, ID}.
 
 
@@ -175,4 +192,26 @@ get_game_map(GameID, #game_overview{} = GameOverview) ->
             {ok, GameOV};
         _ -> %TODO provide state for other type of games which are not waiting
             {error, game_not_waiting}
+    end.
+
+phase_change(Game, NewPhase) ->
+    case NewPhase of
+        order_phase ->
+            ok;
+        retreat_phase ->
+            %% after evaluating the orders, and retreat phase is not needed
+            %% send back an event game_timer(Gameid, Event)
+            %% to skip retreat phase: game_timer:event(Game#game.id, skip);
+            ok;
+        build_phase ->
+            %% check if build phase is needed, if not, send an event
+            %% to the game_timer
+            %% to skip phase if not needed: game_timer:event(Game#game.id, skip)
+            ok;
+        started ->
+            %% update the game in the db (it is now ongoing)
+            %% this is only the first time, continue as the order_phase case
+            update_game(Game#game.id, Game),
+            %% do some other stuff that's needed...
+            ok
     end.

@@ -55,7 +55,7 @@ reconfig_test_() ->
                     {5,field_missing},
                     {11,field_missing},
                     {12,"1234"},
-                    {3,undefined}]}},
+                    {3,field_missing}]}},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].

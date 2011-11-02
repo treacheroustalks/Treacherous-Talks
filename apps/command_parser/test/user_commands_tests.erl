@@ -204,7 +204,7 @@ parse_reconfig_test_() ->
              {5,field_missing},
              {11,field_missing},
              {12,"1234"},
-             {3,undefined}]},
+             {3,field_missing}]},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG)
      ),
      ?_assertEqual(
@@ -218,7 +218,7 @@ parse_reconfig_test_() ->
              {5,field_missing},
              {11,field_missing},
              {12,"1234"},
-             {3,undefined}]},
+             {3,field_missing}]},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_2)
      )
 

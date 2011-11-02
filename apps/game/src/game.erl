@@ -8,7 +8,8 @@
           reconfig_game/2,
           join_game/4,
           get_game_players/2,
-          get_game_state/3
+          get_game_state/3,
+          phase_change/2
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -57,7 +58,7 @@ delete_game (From, Key) ->
 %% -----------------------------------------------------------------------------
 reconfig_game(From, Game = #game{}) ->
     gen_server:cast(service_worker:select_pid(game_worker),
-                    {new_game, From, Game}).
+                    {reconfig_game, From, Game}).
 
 % -----------------------------------------------------------------------------
 %% @doc
@@ -96,3 +97,12 @@ get_game_players(From, GameID) ->
 get_game_state(From, GameID, UserID) ->
     gen_server:cast(service_worker:select_pid(game_worker),
                     {get_game_state, From, GameID, UserID}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  API for handling phase changes
+%% @end
+%% ----------------------------------------------------------------------------
+phase_change(Game, NewPhase) ->
+    gen_server:cast(service_worker:select_pid(game_worker),
+                    {phase_change, Game, NewPhase}).

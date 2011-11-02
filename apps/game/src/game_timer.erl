@@ -4,7 +4,7 @@
 %% ------------------------------------------------------------------
 %% Ecternal API Function Exports
 %% ------------------------------------------------------------------
--export([start_link/1, event/2, current_state/1]).
+-export([start_link/1, event/2, current_state/1, get_game_state/1, stop/1]).
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Exports
@@ -24,60 +24,105 @@
 %%---------------------------------------------------------------------
 -record(state, {game, phase = init}).
 
+-define(GAME(State), (State#state.game)#game).
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
 start_link(Game) ->
-    gen_fsm:start_link(?MODULE, Game, []).
+    gen_fsm:start_link({global, {?MODULE, Game#game.id}}, ?MODULE, Game, []).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to change the state of the FSM Timer.
 %% @end
-%% [@spec create(Timer::pid(), Event::atom()) -> ok.
+%% [@spec event(Timer::pid(), Event::atom()) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
 -spec event(pid(), atom()) -> ok.
 event(Timer, Event) ->
-    gen_fsm:send_event(Timer, Event).
+    gen_fsm:send_event({global, {?MODULE, Timer}}, Event).
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Sends an event to Timer, to find out the current state
+%% Sends an event to Timer, to find out the current state (ONLY for testing)
 %% @end
-%% [@spec create(Timer::pid()) -> StateName::atom().
+%% [@spec current_state(Timer::pid()) -> StateName::atom().
 %% @end]
 %%-------------------------------------------------------------------
 -spec current_state(pid()) -> atom().
 current_state(Timer) ->
-    gen_fsm:sync_send_all_state_event(Timer, statename).
+    gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, phasename).
+%%-------------------------------------------------------------------
+%% @doc
+%% Sends an event to Timer, to find out the state of the game (ONLY for testing)
+%% @end
+%% [@spec get_game_state(Timer::pid()) -> Game::game{}.
+%% @end]
+%%-------------------------------------------------------------------
+-spec get_game_state(pid()) -> atom().
+get_game_state(Timer) ->
+    gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, game).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Sends an event to Timer, to stop it
+%% @end
+%% [@spec stop(Timer::pid()) -> ok.
+%% @end]
+%%-------------------------------------------------------------------
+-spec stop(pid()) -> ok.
+stop(Timer) ->
+    gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, stop).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 init(Game) ->
-    service_worker:join_group(?MODULE),
-    {ok, waiting_phase, #state{game = Game, phase = waiting_phase}}.
+    io:format("A brand new game timer ~p for ~p~n", [self(), Game]),
+    Timeout = timer:minutes(Game#game.waiting_time),
+    {ok, waiting_phase, #state{game = Game, phase = waiting_phase}, Timeout}.
 
+
+waiting_phase({reconfig, UpdatedGame}, State) ->
+    %UpdatedGame = get_game(State#state.game),
+    Timeout = timer:minutes(UpdatedGame#game.waiting_time),
+    {next_state, waiting_phase, State#state{game = UpdatedGame}, Timeout};
+waiting_phase(timeout, State) ->
+    %% This is where we "move" on to the next state!
+    NewState = State#state{phase = order_phase,
+                           game = State#state.game#game{status = ongoing}},
+    game:phase_change(NewState#state.game, started),
+    Timeout = timer:minutes((State#state.game)#game.order_phase),
+    {next_state, order_phase, NewState, Timeout};
 waiting_phase(_Event, State) ->
-    {next_state, order_phase, State#state{phase = order_phase}}.
-% TODO: Currently "restarts" the phase
+    %% any other event than timeout or reconfig
+    Timeout = timer:minutes((State#state.game)#game.waiting_time),
+    {next_state, waiting_phase, State, Timeout}.
 waiting_phase(_Event, _From, State) ->
+    %% TODO: This currently only restarts the phase
     Reply = {waiting_phase, State},
     {reply, Reply, waiting_phase, State}.
 
 
+%% All events are handled in the same way
 order_phase(_Event, State) ->
-    {next_state, retreat_phase, State#state{phase = retreat_phase}}.
+    %% Inform game that phase has changed
+    game:phase_change(State#state.game, retreat_phase),
+    Timeout = timer:minutes((State#state.game)#game.retreat_phase),
+    {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}.
 % TODO: Currently "restarts" the phase
 order_phase(_Event, _From, State) ->
     Reply = {order_phase, State},
     {reply, Reply, order_phase, State}.
 
 
+%% All events are handled equally
 retreat_phase(_Event, State) ->
-    {next_state, build_phase, State#state{phase = retreat_phase}}.
+    %% unknown event
+    game:phase_change(State#state.game, build_phase),
+    Timeout = timer:minutes((State#state.game)#game.build_phase),
+    {next_state, build_phase, State#state{phase = build_phase}, Timeout}.
 % TODO: Currently "restarts" the phase
 retreat_phase(_Event, _From, State) ->
     Reply = {retreat_phase, State},
@@ -85,17 +130,31 @@ retreat_phase(_Event, _From, State) ->
 
 
 build_phase(_Event, State) ->
-    {next_state, order_phase, State#state{phase = build_phase}}.
+    game:phase_change(State#state.game, order_phase),
+    Timeout = timer:minutes((State#state.game)#game.order_phase),
+    {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
 % TODO: Currently "restarts" the phase
 build_phase(_Event, _From, State) ->
     Reply = {build_state, State},
     {reply, Reply, build_phase, State}.
 
+
 handle_event(_Event, StateName, State) ->
     {next_state, StateName, State}.
 
+handle_sync_event(stop, _From, _StateName, State) ->
+    io:format("Stopping timer for ~p...~n", [?GAME(State).id]),
+    {stop, stop, ok, State};
 handle_sync_event(statename, _From, StateName, State) ->
+    %% for this to pick up where it was, we need to recalculate
+    %% the timeout, so only use for tests where timeouts are not used!
     {reply, StateName, StateName, State};
+handle_sync_event(phasename, _From, StateName, State) ->
+    %% for this to pick up where it was, we need to recalculate
+    %% the timeout, so only use for tests where timeouts are not used!
+    {reply, State#state.phase, StateName, State};
+handle_sync_event(game, _From, StateName, State) ->
+    {reply, State#state.game, StateName, State};
 handle_sync_event(_Event, _From, StateName, State) ->
     Reply = ok,
     {reply, Reply, StateName, State}.
@@ -104,7 +163,7 @@ handle_info(_Info, StateName, State) ->
     {next_state, StateName, State}.
 
 terminate(_Reason, _StateName, State) ->
-    io:format("Terminating game timer ~p~n", [(State#state.game)#game.id]),
+    io:format("Terminating game timer ~p~n", [State]),
     ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
@@ -113,4 +172,3 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-

@@ -131,7 +131,7 @@ parse_reconfig(Data) ->
                        {#game.description, Description},
                        {#game.num_players, NumPlayers},
                        {#game.password, Pw},
-                       {#game.creator_id, undefined}]};
+                       {#game.creator_id, field_missing}]};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end
