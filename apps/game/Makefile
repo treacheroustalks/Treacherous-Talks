@@ -25,7 +25,7 @@ test:
 dia:
 	dialyzer -Wno_return -I ../ --src src
 
-complete: small_clean deps compile dia test docs
+complete: small_clean deps compile test docs dia
 	@echo ok
 
 .PHONY: all small_clean clean compile test docs dia complete

@@ -16,7 +16,7 @@
 to_erlang_term (Digraph) ->
     Vertices = lists:map (fun (V) ->
                                   digraph:vertex (Digraph, V)
-                          end, 
+                          end,
                           digraph:vertices (Digraph)),
     Edges = lists:map (fun (E) ->
                                digraph:edge (Digraph, E)

@@ -2,31 +2,54 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 
-simple_moves_test () ->
+units_exist_test () ->
     Map = map_data:create (standard_game),
-    OrdersAndResults =
-        [{ok, {move, {army, germany}, berlin, prussia}},
-         {ok, {move, {army, austria}, vienna, galicia}},
-         {ok, {move, {fleet, italy}, naples, tyrrhenian_sea}},
-         {unit_does_not_exist, {move, {fleet, italy}, rome, naples}}],
-    {_, Orders} = lists:unzip (OrdersAndResults),
-    ?assertEqual (OrdersAndResults, rules:process (spring, Map,
-                                                   Orders)),
-    %% check if they are, where they should be
-    lists:foreach (fun ({Result, _Order={move, Unit, _MovedFrom, MovedTo}}) ->
-%                           ?debugVal (Order),
-                           case Result of
-                               ok ->
-                                   ?assertEqual (true,
-                                                 map:unit_exists (Map,
-                                                                  MovedTo,
-                                                                  Unit));
-                               _Other ->
-                                   ?assertEqual (false,
-                                                 map:unit_exists (Map,
-                                                                  MovedTo,
-                                                                  Unit))
-                           end
-                   end,
-                   OrdersAndResults),
+    Rules = diplomacy_rules:create (standard_game),
+    %% there is no army in galicia!
+    Response =
+        rules:process (something, Map, Rules, [{move, {army, austria},
+                                                 galicia, ukraine}]),
+    ?assertEqual ([], Response),
+    map_data:delete (Map).
+
+trade_places_test () ->
+    Map = map_data:create (standard_game),
+    Rules = diplomacy_rules:create (standard_game),
+    Response =
+        rules:process (something, Map, Rules,
+                       [{move, {army, austria}, budapest, vienna},
+                        {move, {army, austria}, vienna, budapest}]),
+    ?assertEqual ([], Response),
+    map_data:delete (Map).
+
+unit_cannot_go_there_test () ->
+    Map = map_data:create (standard_game),
+    Rules = diplomacy_rules:create (standard_game),
+    Response =
+        rules:process (something, Map, Rules,
+                       [{move, {army, austria}, budapest, warsaw}]),
+    ?assertEqual ([], Response),
+    map_data:delete (Map).
+
+bounce_test () ->
+    Map = map_data:create (standard_game),
+    Rules = diplomacy_rules:create (standard_game),
+    rules:process (something, Map, Rules,
+                   [{move, {army, austria}, vienna, galicia},
+                    {move, {army, russia}, warsaw, galicia}]),
+    ?assertEqual ([], map:get_units (Map, galicia)),
+    map_data:delete (Map).
+
+hold_vs_move_test () ->
+%    ?debugMsg ("######################### DIPLOMACY-RULES TEST"),
+    Map = map_data:create (standard_game),
+    Rules = diplomacy_rules:create (standard_game),
+    ?assertEqual ([{fleet, austria}], map:get_units (Map, trieste)),
+    ?assertEqual ([{army, italy}], map:get_units (Map, venice)),
+    rules:process (something, Map, Rules,
+                   [{move, {fleet, austria}, trieste, venice},
+                    {hold, {army, italy}, venice}]),
+    ?assertEqual ([{fleet, austria}], map:get_units (Map, trieste)),
+    ?assertEqual ([{army, italy}], map:get_units (Map, venice)),
+%    ?debugMsg ("######################### DIPLOMACY-RULES TEST: DONE"),
     map_data:delete (Map).
