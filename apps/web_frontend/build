@@ -2,22 +2,9 @@
 
 errors=0
 
-# Setup the shell to report errors even when piping commands. This allows perl
-# to operate on output while preserving the exit code from the previous
-# command. Warning! This is a bash specific feature.
-set -o pipefail
-
-rebar clean || errors=1
-# We also need to use sed here so that the main build script doesn't pick it up
-rebar compile 2>&1 | perl -pe 'END { print; exit $status } $status=100
-                               if /\.bea#.*: no such file or directory/;' \
-                   | sed s/such\ file/brain/
-case $? in
-    0)   ;;
-    100) echo "# rebar error. Will try to run rebar compile again."
-         rebar compile || errors=1;;
-    *)   errors=1;;
-esac
+# We don't want to build Yaws here, therefore we skip all deps
+rebar skip_deps=true clean || errors=1
+rebar skip_deps=true compile || errors=1
 rebar skip_deps=true doc || errors=1
 
 exit $errors

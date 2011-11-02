@@ -32,9 +32,9 @@ function build_dep () {
     $1 | sed s/Warning/ignore-warning/ || local_error=1
     case "$local_error" in
         0) echo "##### Exit status: success" ;;
-        *) echoerr "##### Exit status: ERROR" ;;
+        *) echoerr "##### Exit status: ERROR"
+           errors=1 ;;
     esac
-    errors=$local_error
 }
 
 # PROTOBUFFS
@@ -77,24 +77,13 @@ for app in ${app_build_order[@]}; do
     cd $app
     if [ -x build ]; then
         echo "####################################"
-        race_cond=1
-        while [ "$race_cond" -ne 0 ]; do
-            echo "##### executing " $(pwd)"/build"
-            # Run the build file and pipe all output through a perl one-liner
-            # that detects rebar race conditions and returns a special error
-            # code in that case.
-            ./build 2>&1 | perl -pe 'END { print; exit $status } $status=100 
-                                     if /\.bea#.*: no such file or directory/;'
-            case $? in
-                0)   echo -e "##### Exit status: success\n"
-                     race_cond=0;;
-                100) echoerr "##### Exit status: ERROR (due to rebar)\n"
-                     race_cond=1;;
-                *)   echoerr "##### Exit status: ERROR\n"
-                     errors=1
-                     race_cond=0;;
-            esac
-        done
+        echo "##### executing " $(pwd)"/build"
+        ./build
+        case $? in
+            0)  echo -e "##### Exit status: success\n" ;;
+            *)  echoerr "##### Exit status: ERROR\n"
+                errors=1 ;;
+        esac
     fi
     cd ..
 done
