@@ -1,0 +1,63 @@
+<!-- Create game page -->
+<div class="span-11">
+    <h2>Create a new game</h2>
+    <fieldset>
+        <legend>Create game</legend>
+        <form id="create_game">
+            <p>
+                <label>Game name</label><br/>
+                <input id="name" type="text" class="title">
+            </p>
+            <p>
+                <label>Game description</label><br/>
+                <textarea id="description"></textarea><br/>
+                <span class="desc">Description about the game (Optional)</span>
+            </p>
+            <p>
+                <label>Game password</label><br/>
+                <input id="password" type="text" class="title" value=""><br/>
+                <span class="desc">Password for the game (Optional)</span>
+            </p>
+            <p>
+                <label>Press type</label><br/>
+                <select name="press" id="press">
+                    <option value="">Select Press</option>
+                    <option value="white">White</option>
+                    <option value="grey">Grey</option>
+                    <option value="black">Black</option>
+                </select>
+            </p>
+            <p>
+                <label>Order time</label><br/>
+                <input id="order_phase" type="text" class="title">
+            </p>
+            <p>
+                <label>Retreat time</label><br/>
+                <input id="retreat_phase" type="text" class="title">
+            </p>
+            <p>
+                <label>Build time</label><br/>
+                <input id="build_phase" type="text" class="title">
+            </p>
+            <p>
+                <label>Waiting time</label><br/>
+                <input id="waiting_time" type="text" class="title">
+            </p>
+            <p>
+                <label>Number of players</label><br/>
+                <select name="num_players" id="num_players">
+                    <option value="">Select number of players</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                </select>
+            </p>
+            <p>
+                <button type="button" onclick="validate();">Create game</button>
+            </p>
+        </form>
+    </fieldset>
+</div>

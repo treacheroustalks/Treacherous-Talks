@@ -100,10 +100,12 @@ reply([WebSocket, ProtocolVersion], {update_user, invalid_data}, _Info) ->
     yaws_api:websocket_send(WebSocket, ProtocolVersion,
                             update_user_invalid_data());
 
-reply([WebSocket, ProtocolVersion], {create_game, success}, Game) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
-reply([WebSocket, ProtocolVersion], {create_game, invalid_data}, Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
+reply([WebSocket, ProtocolVersion], {create_game, success}, GameData) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            create_game_success(GameData));
+reply([WebSocket, ProtocolVersion], {create_game, invalid_data}, _Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            create_game_invalid_data());
 
 reply([WebSocket, ProtocolVersion], {Cmd, parse_error}, Error) ->
     yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
@@ -205,6 +207,25 @@ update_user_invalid_data() ->
         ],
     json_encode(R).
 
+create_game_success(GameData) ->
+    {ok, GameId} = GameData,
+    Msg = string:concat("Game created successfully, GameId = ",
+                        integer_to_list(GameId)),
+    R = [{"event", "create_game_success"},
+         {"event_data", ""},
+         {"page", "dashboard"},
+         {"message_type", "success"},
+         {"message_value", Msg}],
+    json_encode(R).
 
+create_game_invalid_data() ->
+    R = [{"event", "update_user_invalid_data"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", "An error occurred during creation of the game."
+                           " Please try after some time."}
+        ],
+    json_encode(R).
 
 </erl>

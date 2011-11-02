@@ -52,7 +52,9 @@ parse(RawData) ->
              {ok,
               SessionId,
               #game{name = get_field("name", Data),
+                    description = get_field("description", Data),
                     press = get_field("press", Data),
+                    password = get_field("password", Data),
                     order_phase =
                         list_to_integer(get_field("order_phase", Data)),
                     retreat_phase =
@@ -78,7 +80,12 @@ parse(RawData) ->
 %% Get a specific field from a list of tuples
 get_field(Key, Data) ->
     {Key, Value} = lists:keyfind(Key, 1, Data),
-    Value.
+    case Value of
+        "" ->
+            undefined;
+        _ ->
+            Value
+    end.
 
 %% Convert JSON decoded erlang into list of tuples
 decode(RawData) ->
