@@ -2,8 +2,8 @@ reldir = rel/xmpp_frontend
 configs = config/ejabberd.cfg config/ejabberdctl.cfg config/inetrc
 beams = components/echo_bot.beam components/tt_bot.beam components/tt_xmpp_output.beam
 erls = components/echo_bot.erl components/tt_bot.erl components/tt_xmpp_output.erl
-deps-ext = ../../apps/controller_app ../../apps/command_parser ../../apps/service ../../apps/datatypes
-deps = components/controller_app components/command_parser components/service components/datatypes
+deps-ext = ../../apps/controller_app ../../apps/command_parser ../../apps/service ../../apps/datatypes ../../apps/game
+deps = components/controller_app components/command_parser components/service components/datatypes components/game
 
 all: release
 
@@ -28,7 +28,7 @@ deps: $(deps)
 $(deps):
 	rebar get-deps
 	rebar compile
-	cp -r $(deps-ext) components
+	cp -rf $(deps-ext) components
 
 # The ejabberd beams are only needed in our component building step because we implement
 # the gen_mod behaviour. If they are not present, erlc gives a warning.

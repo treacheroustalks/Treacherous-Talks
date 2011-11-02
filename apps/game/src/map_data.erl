@@ -341,6 +341,57 @@ create (standard_game) ->
                                                                    ankara,
                                                                    constantinople,
                                                                    smyrna]],
+    %% add province owner
+    [map:set_province_info (Map, Prov, owner, Owner) || {Prov, Owner} <- [% Austria:
+                                                    {bohemia,austria},
+                                                    {budapest,austria},
+                                                    {galicia,austria},
+                                                    {trieste,austria},
+                                                    {tyrolia,austria},
+                                                    {vienna,austria},
+                                                % England:
+                                                    {clyde,england},
+                                                    {edinburgh,england},
+                                                    {liverpool,england},
+                                                    {london,england},
+                                                    {wales,england},
+                                                    {yorkshire,england},
+                                                % France:
+                                                    {brest,france},
+                                                    {burgundy,france},
+                                                    {gascony,france},
+                                                    {marseilles,france},
+                                                    {paris,france},
+                                                    {picardy,france},
+                                                % Germany:
+                                                    {berlin,germany},
+                                                    {kiel,germany},
+                                                    {munich,germany},
+                                                    {prussia,germany},
+                                                    {ruhr,germany},
+                                                    {silesia,germany},
+                                                % Italy:
+                                                    {apulia,italy},
+                                                    {naples,italy},
+                                                    {piedmont,italy},
+                                                    {rome,italy},
+                                                    {tuscany,italy},
+                                                    {venice,italy},
+                                                % Russia:
+                                                    {finland,russia},
+                                                    {livonia,russia},
+                                                    {moscow,russia},
+                                                    {sevastopol,russia},
+                                                    {st_petersburg,russia},
+                                                    {ukraine,russia},
+                                                    {warsaw,russia},
+                                                % Turkey:
+                                                    {ankara,turkey},
+                                                    {armenia,turkey},
+                                                    {constantinople,turkey},
+                                                    {smyrna,turkey},
+                                                    {syria,turkey}]],
+
                                                 % add the units:
     [map:add_unit (Map, Unit, To) || {To, Unit} <-
                                                [{budapest, {army, austria}},

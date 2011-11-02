@@ -36,3 +36,8 @@
                     italy,
                     russia,
                     turkey]).
+
+-define(STATUS, "STATUS").
+-define(RESULT, "RESULT").
+
+-define(SUPPLYCENTER, "SUPPLY CENTERS").
