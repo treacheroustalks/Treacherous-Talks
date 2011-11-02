@@ -22,11 +22,14 @@
           move_unit/4,
           get_units/2,
           get_province_info/3,
+          get_province_info/4,
           set_province_info/4,
           get_unit_info/4,
+          get_unit_info/5,
           set_unit_info/5,
           get_reachable/3,
-          get_reachable/4]).
+          get_reachable/4,
+          is_reachable/4]).
 
 -type prov_id () :: any ().
 
@@ -69,13 +72,17 @@ set_province_info (Map, Id, Key, Value) ->
 
 -spec get_province_info (map (), prov_id (), any ()) -> any ().
 get_province_info (Map, Id, Key) ->
+    get_province_info (Map, Id, Key, undefined).
+
+-spec get_province_info (map (), prov_id (), any (), any ()) -> any ().
+get_province_info (Map, Id, Key, Default) ->
     case digraph:vertex (Map, Id) of
         {Id, Dict} ->
             case dict:find (Key, Dict) of
                 {ok, Value} ->
                     Value;
                 _Other ->
-                    undefined
+                    Default
             end;
         false ->
             province_not_found
@@ -101,12 +108,16 @@ set_unit_dict (Map, Unit, Id, Dict) ->
 
 -spec get_unit_info (map (), unit (), prov_id (), any ()) -> any ().
 get_unit_info (Map, Unit, Id, Key) ->
+    get_unit_info (Map, Unit, Id, Key, undefined).
+
+-spec get_unit_info (map (), unit (), prov_id (), any (), any ()) -> any ().
+get_unit_info (Map, Unit, Id, Key, Default) ->
     Dict = get_unit_dict (Map, Unit, Id),
     case dict:find (Key, Dict) of
         {ok, InfoValue} ->
             InfoValue;
         _Other ->
-            undefined
+            Default
     end.
 
 set_unit_info (Map, Unit, Id, Key, Value) ->
@@ -196,6 +207,9 @@ get_units (Map, Id) ->
       UnitType :: unit_type ().
 get_reachable (Map, From, UnitType) ->
     get_reachable (Map, From, UnitType, 1).
+
+is_reachable (Map, From, To, UnitType) ->
+    lists:member (To, get_reachable (Map, From, UnitType)).
 
 %% -----------------------------------------------------------------------------
 %% @doc

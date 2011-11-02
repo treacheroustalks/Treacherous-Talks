@@ -1,10 +1,7 @@
 all: deps compile docs
 
-docs: test
+docs:
 	rebar skip_deps=true doc
-	rm -rf doc/coverage
-	mkdir doc/coverage
-	cp -r .eunit/*.html doc/coverage
 
 deps:
 	rebar get-deps
@@ -21,6 +18,9 @@ compile:
 
 test:
 	rebar skip_deps=true eunit
+	rm -rf doc/coverage
+	mkdir doc/coverage
+	cp -r .eunit/*.html doc/coverage
 
 dia:
 	dialyzer -Wno_return -I ../ --src src
