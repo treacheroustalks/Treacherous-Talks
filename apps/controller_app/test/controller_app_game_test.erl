@@ -29,6 +29,9 @@ controller_game_test_() ->
       fun controller_new_game/0,
       fun controller_handle_action_create_game_success/0,
       fun controller_handle_action_create_game_error/0,
+      fun controller_handle_get_game_success/0,
+      fun controller_handle_get_game_invalid/0,
+      fun controller_handle_get_game_error/0,
       fun controller_handle_reconfig_game_success/0,
       fun controller_handle_reconfig_game_invalid/0,
       fun controller_handle_reconfig_game_error/0,
@@ -82,6 +85,70 @@ controller_handle_action_create_game_error() ->
     ?assertEqual({create_game, parse_error}, Result),
 
     ?debugVal("Completed handle_action: create_game parse error").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests getting a game for successful case
+%%
+%% The session is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_get_game_success() ->
+    ?debugMsg("Testing handle_action: get_game success"),
+    meck:new(controller, [passthrough]),
+    SessionId = 123456,
+    Game = get_test_game(SessionId),
+    User = #user{id = SessionId},
+
+    meck:expect(controller, get_game, 1, {ok, Game}),
+    meck:expect(controller, get_session_user, 1, {ok, User}),
+
+    Callback = fun([], Result, Data) -> {Result, Data} end,
+    Result = controller:handle_action(
+                            {get_game, {ok, SessionId, 1}},
+                            {Callback, []}),
+    ?assertEqual({{get_game, success}, Game}, Result),
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: get_game success").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests getting a game, when it is invalid
+%%
+%% The session is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_get_game_invalid() ->
+    ?debugMsg("Testing handle_action: get_game invalid"),
+    meck:new(controller, [passthrough]),
+    SessionId = 123456,
+
+    meck:expect(controller, get_game, 1, some_invalid_data),
+    meck:expect(controller, get_session_user, 1, {ok, #user{}}),
+
+    Callback = fun([], Result, Data) -> {Result, Data} end,
+    Result = controller:handle_action(
+                            {get_game, {ok, SessionId, 1}},
+                            {Callback, []}),
+    ?assertEqual({{get_game, invalid_data}, some_invalid_data}, Result),
+    meck:unload(controller),
+    ?debugVal("Completed handle_action: get_game invalid").
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Tests getting a game, for the parse_error case
+%%
+%% The session is a mocked module
+%% @end
+%%-------------------------------------------------------------------
+controller_handle_get_game_error() ->
+    ?debugMsg("Testing handle_action: get_game parse error"),
+    Callback = fun ([], Result, Data) -> {Result, Data} end,
+    {Result, error} = controller:handle_action(
+                               {get_game, error},
+                               {Callback, []}),
+    ?assertEqual({get_game, parse_error}, Result),
+    ?debugMsg("Completed handle_action: get_game parse error").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -292,7 +359,7 @@ controller_handle_join_game_success() ->
     ?assertEqual({{join_game, success}, 111222}, Result),
     meck:unload(controller),
     ?debugMsg("Testing join game success end").
-    
+
 controller_handle_join_game_invalid_session() ->
     ?debugMsg("Testing join game invalid session"),
     Callback = fun ([], Result, Data) -> {Result, Data} end,

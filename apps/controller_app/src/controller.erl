@@ -111,6 +111,21 @@ handle_action({update_user, {ok, Session, UpdateUserProplist}}, {CallbackFun, Ar
 handle_action({update_user, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {update_user, parse_error}, Error);
 
+handle_action({get_game, {ok, SessionId, GameId}}, {CallbackFun, Args}) ->
+    case controller:get_session_user(SessionId) of
+        {error, Error} ->
+            CallbackFun(Args, {get_game, invalid_session}, Error);
+        {ok, _UserRec} ->
+            case controller:get_game(GameId) of
+                {ok, GameRec} ->
+                    CallbackFun(Args, {get_game, success}, GameRec);
+                Error ->
+                    CallbackFun(Args, {get_game, invalid_data}, Error)
+            end
+    end;
+handle_action({get_game, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {get_game, parse_error}, Error);
+
 handle_action({reconfig_game, {ok, Session, GameId, GamePropList}},
               {CallbackFun, Args}) ->
     case controller:get_session_user(Session) of
@@ -168,7 +183,7 @@ handle_action({join_game, {ok, Session, GameId, Country}}, {CallbackFun, Args}) 
             end
     end;
 handle_action({join_game, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {join_game, parse_error}, Error);       
+    CallbackFun(Args, {join_game, parse_error}, Error);
 
 
 handle_action(unknown_command, {CallbackFun, Args}) ->
