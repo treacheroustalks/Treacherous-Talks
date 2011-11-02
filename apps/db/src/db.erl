@@ -258,7 +258,7 @@ get_unique_id() ->
 %% @doc
 %% Converts an integer id to the expected binary format.
 %%
-%% @spec int_id_to_bin(Id::integer()) -> binary()
+%% @spec int_to_bin(Id::integer()) -> binary()
 %% @end
 %%-------------------------------------------------------------------
 int_to_bin(Id) ->
@@ -268,7 +268,7 @@ int_to_bin(Id) ->
 %% Converts an integer id to the expected binary format with a given
 %% suffix.
 %%
-%% @spec int_id_to_bin(Id::integer(), Suffix::string()) -> binary()
+%% @spec int_to_bin(Id::integer(), Suffix::string()) -> binary()
 %% @end
 %%-------------------------------------------------------------------
 int_to_bin(Id, Suffix) ->

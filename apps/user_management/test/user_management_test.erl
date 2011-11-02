@@ -3,7 +3,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--define(TIMEOUT, 3000).
+-define(TIMEOUT, 10000).
 
 %% startup
 apps() ->
