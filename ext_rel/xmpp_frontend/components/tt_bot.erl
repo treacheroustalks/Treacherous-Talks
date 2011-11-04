@@ -33,6 +33,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include_lib("datatypes/include/user.hrl").
 
 -define(PROCNAME, tt_bot).
 -define(SUBDOMAIN, tt).
@@ -151,7 +152,7 @@ code_change(_OldVsn, Host, _Extra) ->
 %%
 %%  This function also handle the presence and subscription messages
 %%-------------------------------------------------------------------
-route(From, 
+route(From,
       To = #jid{user=?SERVICE_USER},
       {xmlelement, "presence", _, _} = Packet) ->
     case xml:get_tag_attr_s("type", Packet) of
@@ -184,7 +185,12 @@ route(From,
             ?INFO_MSG("Ignoring message because ~p. Packet:~n~p~n",
                       [Reason, Packet]);
         Body ->
-            ParsedCmd = command_parser:parse(Body),
+            ParsedCmd = case command_parser:parse(Body) of
+                            {register,{ok, #user{} = User}} ->
+                                {register,{ok, User#user{channel=xmpp}}};
+                            Other ->
+                                Other
+                        end,
             ?INFO_MSG("Body ~p parsed as command ~p.~n",
                       [Body, ParsedCmd]),
             Callback = {fun tt_xmpp_output:reply/3,[To,From]},

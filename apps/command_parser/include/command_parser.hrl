@@ -15,6 +15,7 @@
 -define(PASSWORD, "PASSWORD").
 -define(FULLNAME, "FULLNAME").
 -define(EMAIL, "EMAIL").
+-define(CHANNEL, "CHANNEL").
 
 
 -define(GAMEID, "GAMEID").
