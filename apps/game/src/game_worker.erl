@@ -41,7 +41,6 @@ init(no_arg) ->
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 
-
 handle_call({put_game_order, Key, GameMove}, _From, State) ->
     Reply = put_game_order(Key, GameMove),
     {reply, Reply, State};
@@ -58,23 +57,20 @@ handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
     game_timer_sup:create_timer(NewGame),
     game_timer:event(NewID, start),
     {reply, Reply, State};
+
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
     Reply = update_game(ID, Game),
     game_timer:event(ID, {reconfig, Game}),
     {reply, Reply, State};
+
 handle_call({get_game, ID}, _From, State) ->
     Reply = get_game(ID),
     {reply, Reply, State};
+
 handle_call({join_game, GameID, UserID, Country}, _From, State) ->
-    BinID = db:int_to_bin(GameID),
-    DBReply = db:get (?B_GAME_PLAYER, BinID),
-    Reply = case DBReply of
-        {ok, DBObj} ->
-            join_game(BinID, GameID, DBObj, UserID, Country);
-        Other ->
-            Other
-    end,
+    Reply = game_join_proc:join_game(GameID, UserID, Country),
     {reply, Reply, State};
+
 handle_call({get_game_player, GameID}, _From, State) ->
     Reply = get_game_player(GameID),
     {reply, Reply, State};
@@ -87,6 +83,7 @@ handle_call({delete_game, Key}, _From, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
     Reply = db:delete(?B_GAME, BinKey),
     {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -94,6 +91,7 @@ handle_call(_Request, _From, State) ->
 handle_cast({phase_change, Game, NewPhase}, State) ->
     phase_change(Game, NewPhase),
     {noreply, State};
+
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
@@ -137,6 +135,7 @@ new_game(ID, #game{} = Game) ->
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
     db:put (DBGameObj),
     db:put (DBGamePlayerObj),
+    {ok, _Pid} = game_join_proc:start(ID),
     {ok, ID}.
 
 update_game(ID, #game{} = Game) ->
@@ -144,28 +143,6 @@ update_game(ID, #game{} = Game) ->
     DBGameObj=db_obj:create (?B_GAME, BinID, Game),
     db:put (DBGameObj),
     {ok, ID}.
-
-
-join_game(BinID, GameID, GameDBObj, UserID, Country) ->
-    GP = db_obj:get_value (GameDBObj),
-    case lists:keyfind(Country, #game_user.country,GP#game_player.players) of
-        false -> % if the country is available
-            NewPlayer= #game_user{id=UserID, country=Country},
-            UpdatedGP = GP#game_player{players=
-                                     [NewPlayer|GP#game_player.players]},
-            NewDBObj=db_obj:create (?B_GAME_PLAYER, BinID, UpdatedGP),
-            NewDBLinkObj = db_obj:add_link(NewDBObj,
-                                           {{?B_USER, db:int_to_bin(UserID)},
-                                            ?GAME_PLAYER_LINK_USER}),
-
-            db:put (NewDBLinkObj),
-            {ok, GameID};
-        _ ->
-            {error, country_not_available}
-       end.
-
-
-
 
 get_game(ID)->
     BinID = db:int_to_bin(ID),
@@ -235,6 +212,7 @@ phase_change(Game, NewPhase) ->
             %% this is only the first time, continue as the order_phase case
             update_game(Game#game.id, Game),
             %% do some other stuff that's needed...
+            game_join_proc:stop(Game#game.id),
             ok
     end.
 

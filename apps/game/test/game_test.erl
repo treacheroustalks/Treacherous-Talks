@@ -185,7 +185,7 @@ game_update_tst_() ->
       end].
 
 %%------------------------------------------------------------------------------
-%% Tests the goin game functionality
+%% Tests the join game functionality
 %%------------------------------------------------------------------------------
 join_game_tst_() ->
     [fun() ->
@@ -194,10 +194,11 @@ join_game_tst_() ->
               % Create a new Game
               Game = sync_get(sync_new(GameRecord)),
               % join new player with id=1122 and country=england
-              game:join_game(Game#game.id, 1122, england),
+              JoinResult = game:join_game(Game#game.id, 1122, england),
+              ?assertEqual({ok, Game#game.id}, JoinResult),
               timer:sleep(50),
-              GP = sync_get_game_player (Game#game.id),
-              ?assertEqual(1, length(GP#game_player.players)),
+              GamePlayers = sync_get_game_player (Game#game.id),
+              ?assertEqual(1, length(GamePlayers#game_player.players)),
               ?debugMsg("join game test end")
       end,
      fun() ->
@@ -208,10 +209,43 @@ join_game_tst_() ->
               % join new player with id=1122 and country=england
               game:join_game(Game#game.id, 1122, england),
               timer:sleep(50),
-              Msg = sync_join_game_player(Game#game.id, 221122, england),
-              ?assertEqual(country_not_available, Msg),
+              JoinResult = game:join_game(Game#game.id, 221122, england),
+              ?assertEqual({error, country_not_available}, JoinResult),
               ?debugMsg("join game test end")
-      end].
+      end,
+     fun() ->
+              ?debugMsg("join game test when user is already in the game"),
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % join new player with id=1122 and country=england
+              game:join_game(Game#game.id, 1122, england),
+              timer:sleep(50),
+              JoinResult = game:join_game(Game#game.id, 1122, austria),
+              ?assertEqual({error, user_already_joined}, JoinResult),
+              ?debugMsg("join game test end")
+      end,
+    fun() ->
+            ?debugMsg("game join proc start and end"),
+            {ok, GameId} = game:new_game(test_game()),
+            Game = sync_get(GameId),
+            JoinProcPid = game_join_proc_map:get_pid(GameId),
+
+            % a join proc exists for the game after creating the game
+            ?assertEqual(true, game_join_proc:is_alive(JoinProcPid)),
+            game:phase_change(Game, started),
+
+            % block only until the join process is gone.
+            % If the test times out, the proc probably didn't die within 5s
+            % and suggests something's wrong.
+            MonitorRef = monitor(process, JoinProcPid),
+            receive {'DOWN', MonitorRef, _Type, _Object, _Info} -> ok end,
+            % no join proc exists for the game when the game has started
+            ?assertEqual(false, game_join_proc:is_alive(JoinProcPid)),
+
+            % no entry exists for the game in the game id -> pid DB
+            ?assertEqual(none, game_join_proc_map:get_pid(GameId))
+    end].
 %%------------------------------------------------------------------------------
 %% Tests the get game state functionality
 %%------------------------------------------------------------------------------
@@ -258,7 +292,13 @@ get_game_state_tst_ () ->
               ?assertEqual(game_not_waiting, Reply),
               ?debugMsg("Game is not in waiting phase"),
               ?debugMsg("get game state test end")
-      end
+      end,
+     fun() ->
+             ?debugMsg("Test joining a game which doesn't exist"),
+             sync_delete(1234), % ensure it doesn't exist
+             ?assertEqual({error, notfound},
+                          game:join_game(1234, 1122, england))
+     end
      ].
 
 %%------------------------------------------------------------------------------
