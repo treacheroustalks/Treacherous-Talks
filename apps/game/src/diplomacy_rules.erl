@@ -185,34 +185,31 @@ is_supportable (_) ->
     false.
 
 
-do_add_support (Map,
-                SupportingUnit, SupportingFrom,
-                SupportedUnit, SupportedWhere) ->
-    SupportingUnits =
+do_add_support (Map, SupportOrder = {support, _, _, SupportedOrder}) ->
+    SupportedUnit = get_moving_unit (SupportedOrder),
+    SupportedWhere = get_moving_from (SupportedOrder),
+    SupportingOrders =
         map:get_unit_info (Map,
-                           SupportedUnit, SupportedWhere, supporting, []),
-    case lists:member ({SupportingUnit, SupportingFrom}, SupportingUnits) of
+                           SupportedUnit, SupportedWhere, support_orders, []),
+    case lists:member (SupportOrder, SupportingOrders) of
         true ->
             ok;
         false ->
-            map:set_unit_info (Map, SupportedUnit, SupportedWhere, supporting,
-                               [{SupportingUnit, SupportingFrom} | SupportingUnits])
+            map:set_unit_info (Map, SupportedUnit, SupportedWhere, support_orders,
+                               [SupportOrder | SupportingOrders])
     end.
 
 support_actor (Map, {OtherOrder, SupOrder = {support, _Unit, _Where, _Order}}) ->
     support_actor (Map, {SupOrder, OtherOrder});
 support_actor (Map,
-               {SupOrder = {support, SupUnit = {SupType, _}, SupPlace, _Order},
+               {SupOrder = {support, {SupType, _}, SupPlace, _Order},
                 OtherOrder}) ->
     case (is_supportable (OtherOrder)) of
         true ->
             To = get_moving_to (OtherOrder),
             case map:is_reachable (Map, SupPlace, To, SupType) of
                 true ->
-                    From = get_moving_from (OtherOrder),
-                    do_add_support (Map,
-                                    SupUnit, SupPlace,
-                                    get_moving_unit (OtherOrder), From),
+                    do_add_support (Map, SupOrder),
                     [];
                 false ->
                     [{remove, SupOrder}]
@@ -234,9 +231,17 @@ hold_vs_move2_detector (_Map, {{hold, _Unit1, To},
 hold_vs_move2_detector (_Map, _) ->
     false.
 
-hold_vs_move2_actor (_Map, {{hold, _Unit1, _HoldPlace},
-                            Move = {move, Unit2, From, _HoldPlace}}) ->
-    [{remove, Move}, {add, {hold, Unit2, From}}].
+hold_vs_move2_actor (Map, {HoldOrder = {hold, HoldUnit, HoldPlace},
+                           MoveOrder = {move, _MoveUnit, _From, _HoldPlace}}) ->
+    HoldStrength = get_unit_strength (Map, HoldOrder),
+    MoveStrength = get_unit_strength (Map, MoveOrder),
+    if
+        HoldStrength >= MoveStrength ->
+            io:format (user, "emit ~p~n", [[{remove, MoveOrder}]]),
+            replace_by_hold_actor (Map, {MoveOrder});
+        true ->
+            [{remove, HoldOrder}, {reply, {dislodge, HoldUnit, HoldPlace}}]
+    end.
 
 bounce2_detector (_Map, {{move, _Unit1, _From1, _To},
                          {move, _Unit2, _From2, _To}}) ->
@@ -244,22 +249,45 @@ bounce2_detector (_Map, {{move, _Unit1, _From1, _To},
 bounce2_detector (_Map, {_, _}) ->
     false.
 
-get_unit_strength (Map, Unit1, From1) ->
-    length (map:get_unit_info (Map, Unit1, From1, supporting, [])).
+get_unit_strength (Map, Order) ->
+    ?debugMsg ("<<<<< get_unit_strength"),
+    ?debugVal (Order),
+    %% supports are valid for a specific move only - we are counting them here:
+    lists:foldl (
+      fun (SupOrder, Sum) ->
+              ?debugVal (SupOrder),
+              case SupOrder of
+                  {support, _U, _W, Order} ->
+                      ?debugMsg ("+1"),
+                      Sum+1;
+                  _ ->
+                      ?debugMsg ("nuthin'"),
+                      Sum
+              end
+      end,
+      1,
+      map:get_unit_info (Map,
+                         get_moving_unit (Order),
+                         get_first_from (Order),
+                         support_orders, [])).
 
 bounce2_actor (Map,
-               {O1 = {move, Unit1, From1, To},
-                O2 = {move, Unit2, From2, To}}) ->
-    io:format (user, "bounce2 ~p~n", [['map', O1, O2]]),
-    Strength1 = get_unit_strength (Map, Unit1, From1),
-    Strength2 = get_unit_strength (Map, Unit2, From2),
+               {O1 = {move, _, _, To},
+                O2 = {move, _, _, To}}) ->
+%    ?debugMsg ("######## bounce2_actor"),
+%    ?debugVal (O1),
+%    ?debugVal (O2),
+    Strength1 = get_unit_strength (Map, O1),
+    Strength2 = get_unit_strength (Map, O2),
+%    ?debugVal (Strength1),
+%    ?debugVal (Strength2),
     if
         Strength1 > Strength2 ->
-            [{remove, O2}];
+            replace_by_hold_actor (Map, {O2});
         Strength2 > Strength1 ->
-            [{remove, O1}];
+            replace_by_hold_actor (Map, {O1});
         true ->
-            [{remove, O1}, {remove, O2}]
+            replace_by_hold_actor (Map, {O1, O2})
     end.
 
 unit_cannot_go_there_detector (Map, {{move, {Type, _Owner}, From, To}}) ->

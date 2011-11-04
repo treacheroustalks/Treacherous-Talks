@@ -17,9 +17,10 @@
           get_provinces/1,
           connect_provinces/4,
           add_unit/3,
+          remove_unit/3,
           unit_exists/3,
-%          pop_stored_unit/3,
           move_unit/4,
+          get_units/1,
           get_units/2,
           get_province_info/3,
           get_province_info/4,
@@ -56,6 +57,19 @@ add_province (Map, Id) ->
 
 get_provinces (Map) ->
     digraph:vertices (Map).
+
+get_units (Map) ->
+    lists:foldl (
+      fun (Province, Acc) ->
+              case get_units (Map, Province) of
+                  [] ->
+                      Acc;
+                  Units ->
+                      [{Province, Units} | Acc]
+              end
+      end,
+      [],
+      get_provinces (Map)).
 
 create_info () ->
     dict:new ().
@@ -175,6 +189,14 @@ pop_stored_unit (Map, Unit, From) ->
                                lists:delete (StoredUnit, Units)),
             StoredUnit
     end.
+
+-spec remove_unit (Map, Unit, From) -> ok when
+      Map :: map (),
+      Unit :: unit (),
+      From :: prov_id ().
+remove_unit (Map, Unit, From) ->
+    pop_stored_unit (Map, Unit, From),
+    ok.
 
 %% -----------------------------------------------------------------------------
 %% @doc
