@@ -18,87 +18,133 @@
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 
+-export([]).
 
-parse_login_test_() ->
-    ActualOutput = web_parser:parse(get_login_data()),
-    Expected = {login,
-                {ok, #user{nick = "maximus",
-                           password = "hunter2"}}},
-    ?_assertEqual(Expected, ActualOutput).
+parser_test_() ->
+    {inorder,
+     [
+      fun login/0,
+      fun register/0,
+      fun update/0,
+      fun get_game/0,
+      fun create_game/0,
+      fun get_session_user/0,
+      fun reconfig_game/0
+     ]}.
 
+login() ->
+    ?assertEqual(login_exp_data(),
+                 web_parser:parse(login_data())).
 
-parse_register_test_() ->
-    ActualOutput = web_parser:parse(get_register_data()),
-    Expected = {register,
-                {ok, #user{nick = "maximus",
-                           password = "hunter2",
-                           email = "maximus@hotmail.com",
-                           name = "Maximus Decimus Meridius"}}},
-    ?_assertEqual(Expected, ActualOutput).
+get_session_user() ->
+    ?assertEqual(get_session_user_exp_data(),
+                 web_parser:parse(get_session_user_data())).
 
+register() ->
+    ?assertEqual(register_exp_data(),
+                 web_parser:parse(register_data())).
 
-parse_update_test_() ->
-    ActualOutput = web_parser:parse(get_update_data()),
-    Expected = {update_user,
-                {ok,
-                 123456,
-                 [{#user.password, "hunter2"},
-                  {#user.email, "maximus@hotmail.com"},
-                  {#user.name, "Maximus Decimus Meridius"}]}},
-    ?_assertEqual(Expected, ActualOutput).
+update() ->
+    ?assertEqual(update_exp_data(),
+                 web_parser:parse(update_data())).
 
+get_game() ->
+    ?assertEqual(get_game_exp_data(),
+                 web_parser:parse(get_game_data())).
 
-parse_create_game_test_() ->
-    ActualOutput = web_parser:parse(get_create_game_data()),
-    Expected = {create_game,
-             {ok,
-              123456,
-              #game{name = "War of the world",
-                    press = "grey",
-                    password = "hunter2",
-                    order_phase = 10,
-                    retreat_phase = 10,
-                    build_phase = 10,
-                    waiting_time = 10,
-                    creator_id = undefined}}},
-    ?_assertEqual(Expected, ActualOutput).
+create_game() ->
+    ?assertEqual(create_game_exp_data(),
+                 web_parser:parse(create_game_data())).
 
+reconfig_game() ->
+    ?assertEqual(reconfig_game_exp_data(),
+                 web_parser:parse(reconfig_game_data())).
 
-parse_get_session_user_test_() ->
-    ActualOutput = web_parser:parse(get_get_session_user_data()),
-    Expected = {get_session_user, {ok, 123456}},
-    ?_assertEqual(Expected, ActualOutput).
+%% Expected data
+login_exp_data() ->
+   {login,
+    {ok, #user{nick = "maximus",
+               password = "hunter2"}}}.
 
+register_exp_data() ->
+   {register,
+    {ok, #user{nick = "maximus",
+               password = "hunter2",
+               email = "maximus@hotmail.com",
+               name = "Maximus Decimus Meridius"}}}.
 
-get_login_data() ->
+update_exp_data() ->
+   {update_user,
+    {ok,
+     123456,
+     [{#user.password, "hunter2"},
+      {#user.email, "maximus@hotmail.com"},
+      {#user.name, "Maximus Decimus Meridius"}]}}.
+
+create_game_exp_data() ->
+    {create_game,
+     {ok,
+      123456,
+      #game{name = "War of the world",
+            press = "grey",
+            password = "hunter2",
+            order_phase = 10,
+            retreat_phase = 10,
+            build_phase = 10,
+            waiting_time = 10,
+            num_players = 7,
+            creator_id = undefined}}}.
+
+get_session_user_exp_data() ->
+    {get_session_user, {ok, 123456}}.
+
+get_game_exp_data() ->
+    {get_game, {ok, 123456, 654321}}.
+
+reconfig_game_exp_data() ->
+    {reconfig_game,
+     {ok, 123456, 654321,
+      [{#game.name, "War of worlds"},
+       {#game.press,  "white"},
+       {#game.order_phase, 120},
+       {#game.retreat_phase, 240},
+       {#game.build_phase, 360},
+       {#game.waiting_time, 420},
+       {#game.description, "Game description"},
+       {#game.num_players, 7},
+       {#game.password, "pass"},
+       {#game.creator_id, field_missing}]}}.
+
+%% Input data
+login_data() ->
     {ok,{struct,
-    [{"action","login"},
-                  {"data",
-                   {array, [{struct,[{"nick","maximus"}]},
-                            {struct,[{"password","hunter2"}]}]}}]}}.
+     [{"action","login"},
+      {"data",
+       {array, [{struct,[{"nick","maximus"}]},
+                {struct,[{"password","hunter2"}]}]}}]}}.
 
-get_register_data() ->
+register_data() ->
     {ok,{struct,
      [{"action","register"},
       {"data",
        {array,
            [{struct,[{"email","maximus@hotmail.com"}]},
-            {struct,[{"fullname","Maximus Decimus Meridius"}]},
+            {struct,[{"name","Maximus Decimus Meridius"}]},
             {struct,[{"nick","maximus"}]},
             {struct,[{"password","hunter2"}]}]}}]}}.
 
 
-get_update_data() ->
+update_data() ->
     {ok,{struct,
      [{"action","update_user"},
       {"data",
        {array,
            [{struct,[{"session_id","123456"}]},
             {struct,[{"email","maximus@hotmail.com"}]},
-            {struct,[{"fullname","Maximus Decimus Meridius"}]},
+            {struct,[{"name","Maximus Decimus Meridius"}]},
             {struct,[{"password","hunter2"}]}]}}]}}.
 
-get_create_game_data() ->
+create_game_data() ->
     {ok,{struct,
      [{"action","create_game"},
       {"data",
@@ -111,13 +157,37 @@ get_create_game_data() ->
             {struct,[{"order_phase","10"}]},
             {struct,[{"retreat_phase","10"}]},
             {struct,[{"build_phase","10"}]},
-            {struct,[{"order_phase","10"}]},
             {struct,[{"waiting_time","10"}]},
-            {struct,[{"fullname","Maximus Decimus Meridius"}]}]}}]}}.
+            {struct,[{"num_players","7"}]}]}}]}}.
 
-get_get_session_user_data() ->
+get_session_user_data() ->
     {ok,{struct,
      [{"action","get_session_user"},
       {"data",
        {array,
            [{struct,[{"session_id","123456"}]}]}}]}}.
+
+get_game_data() ->
+    {ok,{struct,
+     [{"action","get_game"},
+      {"data",
+       {array,
+           [{struct,[{"session_id","123456"}]},
+            {struct,[{"game_id","654321"}]}]}}]}}.
+
+reconfig_game_data() ->
+    {ok,{struct,
+     [{"action","reconfig_game"},
+      {"data",
+       {array,
+           [{struct,[{"session_id","123456"}]},
+            {struct,[{"game_id","654321"}]},
+            {struct,[{"name","War of worlds"}]},
+            {struct,[{"description","Game description"}]},
+            {struct,[{"press","white"}]},
+            {struct,[{"password","pass"}]},
+            {struct,[{"order_phase","120"}]},
+            {struct,[{"retreat_phase","240"}]},
+            {struct,[{"build_phase","360"}]},
+            {struct,[{"waiting_time","420"}]},
+            {struct,[{"num_players","7"}]}]}}]}}.

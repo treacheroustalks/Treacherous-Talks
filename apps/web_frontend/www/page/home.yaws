@@ -1,0 +1,11 @@
+<!-- Home page when logged out -->
+<div class="page-header">
+  <h1>Welcome to Treacherous Talks! <small>A multiplayer implementation of Diplomacy.</small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <img src="/image/map.gif" class="span13"/>
+  </div>
+</div>

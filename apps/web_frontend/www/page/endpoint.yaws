@@ -12,6 +12,7 @@
 %%%-------------------------------------------------------------------
 
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/game.hrl").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -100,12 +101,26 @@ reply([WebSocket, ProtocolVersion], {update_user, invalid_data}, _Info) ->
     yaws_api:websocket_send(WebSocket, ProtocolVersion,
                             update_user_invalid_data());
 
+reply([WebSocket, ProtocolVersion], {get_game, success}, Game) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            get_game_success(Game));
+reply([WebSocket, ProtocolVersion], {get_game, invalid_data}, _Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            get_game_invalid_data());
+
 reply([WebSocket, ProtocolVersion], {create_game, success}, GameData) ->
     yaws_api:websocket_send(WebSocket, ProtocolVersion,
                             create_game_success(GameData));
 reply([WebSocket, ProtocolVersion], {create_game, invalid_data}, _Info) ->
     yaws_api:websocket_send(WebSocket, ProtocolVersion,
                             create_game_invalid_data());
+
+reply([WebSocket, ProtocolVersion], {reconfig_game, success}, Game) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            reconfig_game_success(Game));
+reply([WebSocket, ProtocolVersion], {reconfig_game, invalid_data}, _Info) ->
+    yaws_api:websocket_send(WebSocket, ProtocolVersion,
+                            reconfig_game_invalid_data());
 
 reply([WebSocket, ProtocolVersion], {Cmd, parse_error}, Error) ->
     yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
@@ -124,14 +139,14 @@ reply([WebSocket, ProtocolVersion], unknown_command, Data) ->
 %% event_data: Encoded data that may be relevant for the event
 %% page: The page that has to be loaded on the client
 %% message_type: Type of message to be displayed (optional)
-%% 			    success, error, warning
+%%               success, error, warning, info
 %%  message_data: Data to be displayed as the message
 %% @end
 %%-------------------------------------------------------------------
 register_success() ->
     R = [{"event", "register_success"},
          {"event_data", ""},
-         {"page", "login"},
+         {"page", "home"},
          {"message_type", "success"},
          {"message_value", "Registration successful."
                            " Please login to continue."}
@@ -167,29 +182,27 @@ login_invalid_data() ->
     json_encode(R).
 
 get_session_user_success(User) ->
-    Data = [{"nick", User#user.nick},
-            {"email", User#user.email},
-            {"fullname", User#user.name}],
+    RequiredFields = ["nick", "email", "name"],
+    Data = userrec_to_proplist(User, RequiredFields),
     R = [{"event", "get_session_user_success"},
          {"event_data", json2:obj_from_list(Data)},
-         {"page", ""},
-         {"message_type", "success"},
-         {"message_value", "You are now logged in!"}],
+         {"page", "dashboard"},
+         {"message_type", ""},
+         {"message_value", ""}],
     json_encode(R).
 
 get_session_user_invalid_data() ->
     R = [{"event", "get_session_user_invalid_data"},
          {"event_data", ""},
-         {"page", "login"},
+         {"page", ""},
          {"message_type", "error"},
          {"message_value", "Session invalid."
                            " Please login to continue."}],
     json_encode(R).
 
 update_user_success(User) ->
-    Data = [{"nick", User#user.nick},
-            {"email", User#user.email},
-            {"fullname", User#user.name}],
+    RequiredFields = ["nick", "email", "name"],
+    Data = userrec_to_proplist(User, RequiredFields),
     R = [{"event", "update_user_success"},
          {"event_data", json2:obj_from_list(Data)},
          {"page", "dashboard"},
@@ -205,6 +218,47 @@ update_user_invalid_data() ->
          {"message_value", "An error occurred during information update."
                            " Please try after some time."}
         ],
+    json_encode(R).
+
+get_game_success(Game) ->
+    RequiredFields = ["id", "creator_id", "name", "description", "password",
+                      "press", "order_phase", "retreat_phase", "build_phase",
+                      "waiting_time", "num_players", "result"],
+    Data = gamerec_to_proplist(Game, RequiredFields),
+    R = [{"event", "get_game_success"},
+         {"event_data", json2:obj_from_list(Data)},
+         {"page", ""},
+         {"message_type", ""},
+         {"message_value", ""}],
+    json_encode(R).
+
+get_game_invalid_data() ->
+    R = [{"event", "get_game_invalid_data"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", "Game with specified Id not found in the database"}],
+    json_encode(R).
+
+reconfig_game_success(Game) ->
+    RequiredFields = ["id", "creator_id", "name", "description", "status",
+                      "press", "order_phase", "retreat_phase", "build_phase",
+                      "waiting_time", "num_players", "result"],
+    Data = gamerec_to_proplist(Game, RequiredFields),
+    R = [{"event", "reconfig_game_success"},
+         {"event_data", json2:obj_from_list(Data)},
+         {"page", "dashboard"},
+         {"message_type", "success"},
+         {"message_value", "Game reconfigured successfully."}],
+    json_encode(R).
+
+reconfig_game_invalid_data() ->
+    R = [{"event", "get_game_invalid_data"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", "There was a problem reconfiguring the game."
+                           " Please try again after some time"}],
     json_encode(R).
 
 create_game_success(GameData) ->
@@ -227,5 +281,29 @@ create_game_invalid_data() ->
                            " Please try after some time."}
         ],
     json_encode(R).
+
+
+%% Utility functions
+
+%% Converts game record to proplist
+%% RequiredFields is used so as to avoid sending all data to user
+gamerec_to_proplist(Game, RequiredFields) ->
+    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, game)],
+    PropList = lists:zip(RecordInfo, tl(tuple_to_list(Game))),
+    FilterPL = [{X, Y} || {X, Y} <- PropList, lists:member(X, RequiredFields)],
+    lists:map(fun({X, Y}) -> {X, case is_atom(Y) of
+                                     true -> atom_to_list(Y);
+                                      false -> Y
+                                 end} end, FilterPL).
+
+%% Converts user record to proplist
+userrec_to_proplist(User, RequiredFields) ->
+    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, user)],
+    PropList = lists:zip(RecordInfo, tl(tuple_to_list(User))),
+    FilterPL = [{X, Y} || {X, Y} <- PropList, lists:member(X, RequiredFields)],
+    lists:map(fun({X, Y}) -> {X, case is_atom(Y) of
+                                     true -> atom_to_list(Y);
+                                      false -> Y
+                                 end} end, FilterPL).
 
 </erl>

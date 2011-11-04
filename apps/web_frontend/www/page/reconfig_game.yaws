@@ -1,13 +1,15 @@
+<!-- Reconfig game page -->
 <div class="page-header">
-  <h1>Create game <small>Create a new game</small></h1>
+  <h1>Reconfigure the game <small>Change game options</small></h1>
 </div>
 <div class="row">
   <div class="span15">
   <div id="message"></div>
     <div class="clear"></div>
     <fieldset>
-    <legend>Create game</legend>
+    <legend id="game_legend">Reconfigure game: </legend>
     <form id="create_game">
+        <input type="hidden" id="game_id" />
         <div class="clearfix">
             <label for="name">Game name</label>
             <div class="input">
@@ -82,7 +84,7 @@
             </div>
         </div>
         <div class="actions">
-            <input type="submit" class="btn primary" value="Create game" onclick="validate(); return false;">&nbsp;
+            <input type="submit" class="btn primary" value="Update game" onclick="validate(); return false;">&nbsp;
             <button type="reset" class="btn" onclick="load_home_page();">Cancel</button>
         </div>
     </form>
