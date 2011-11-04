@@ -1,38 +1,48 @@
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
 
-import time
-
 address="http://localhost:8000"
+waittime=20
 
 ### Generalized test functions
 def registerUser(driver, path, data, response):
     driver.get(path)
-    time.sleep(1)
 
     driver.find_element_by_partial_link_text("Register!").click()
-    time.sleep(1)
 
     for element, value in data.iteritems():
         driver.find_element_by_id(element).send_keys(value)
 
     driver.find_element_by_xpath("//form[@id='register']/p[7]/button").click()
-    time.sleep(1)
 
-    assert response == driver.find_element_by_class_name("success").text
+    # Loop until page has loaded completly (we'll get exceptions about stale
+    # objects while it is not fully loaded).
+    while True:
+        try:
+            ret = driver.find_element_by_class_name("success").text
+            break
+        except StaleElementReferenceException:
+            continue
+    assert response == ret
 
 def login(driver, path, data, response):
     driver.get(path)
-    time.sleep(1)
 
     for element, value in data.iteritems():
         driver.find_element_by_id(element).send_keys(value)
 
     driver.find_element_by_xpath("//form[@id='login']/p[4]/button").click()
-    time.sleep(1)
 
-    assert response == driver.find_element_by_xpath("//div[@id='page']/h2").text
+    # Loop until page has loaded completly (we'll get exceptions about stale
+    # objects while it is not fully loaded).
+    while True:
+        try:
+            ret = driver.find_element_by_xpath("//div[@id='page']/h2").text
+            break
+        except StaleElementReferenceException:
+            continue
+    assert response == ret
 
 
 ### Tests
@@ -53,6 +63,9 @@ def loginTest(driver):
 
 # Create a new (shared among tests) browser instance
 driver = webdriver.Chrome()
+# Set the maximum time the script will wait to find an element before throwing
+# an exception
+driver.implicitly_wait(waittime)
 
 # Keep the try/except blocks around the tests so that we can close the browser
 # properly even when tests fail :-)
