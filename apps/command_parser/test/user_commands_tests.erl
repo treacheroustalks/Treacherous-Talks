@@ -31,7 +31,7 @@ parse_register_test_() ->
 
 parse_update_test_() ->
     ActualOutput = user_commands:parse_update(?SAMPLE_UPDATE),
-    Expected = {ok, 123456, [{#user.password,"QWER"},
+    Expected = {ok, "123456", [{#user.password,"QWER"},
                              {#user.email,field_missing},
                              {#user.name,"Agner Erlang"}]},
     [
@@ -40,7 +40,7 @@ parse_update_test_() ->
 
 parse_create_test_() ->
     ActualOutput = user_commands:parse_create(?SAMPLE_CREATE),
-    Expected = {ok, 987654, #game{name = "awesome_game", press = "white",
+    Expected = {ok, "987654", #game{name = "awesome_game", press = "white",
                                   order_phase = 240, retreat_phase = 210,
                                   build_phase = 160, waiting_time = 3200,
                                   description = field_missing,
@@ -53,14 +53,14 @@ parse_create_test_() ->
 
 parse_game_overview_test_() ->
     ActualOutput = user_commands:parse_overview(?SAMPLE_GAME_OVERVIEW),
-    Expected = {ok, 123456789, 111222},
+    Expected = {ok, "123456789", 111222},
     [
      ?_assertEqual(Expected, ActualOutput)
     ].
 
 parse_join_game_test_() ->
     ActualOutput = user_commands:parse_join(?SAMPLE_JOIN_GAME),
-    Expected = {ok, 123456789, 111222, england},
+    Expected = {ok, "123456789", {111222, england}},
     [
      ?_assertEqual(Expected, ActualOutput)
     ].
@@ -194,31 +194,33 @@ parse_reconfig_test_() ->
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_WITH_CHARGID)
      ),
      ?_assertEqual(
-            {ok, 456123, 111222,
-            [{4,"awesome_game"},
-             {7,"white"},
-             {8,240},
-             {9,210},
-             {10,160},
-             {14,3200},
-             {5,field_missing},
-             {11,field_missing},
-             {12,"1234"},
-             {3,field_missing}]},
+            {ok, "456123",
+             {111222,
+              [{4,"awesome_game"},
+               {7,"white"},
+               {8,240},
+               {9,210},
+               {10,160},
+               {14,3200},
+               {5,field_missing},
+               {11,field_missing},
+               {12,"1234"},
+               {3,field_missing}]}},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG)
      ),
      ?_assertEqual(
-            {ok, 456123, 111222,
-            [{4,"awesome_game"},
-             {7,"white"},
-             {8,240},
-             {9,field_missing},
-             {10,field_missing},
-             {14,field_missing},
-             {5,field_missing},
-             {11,field_missing},
-             {12,"1234"},
-             {3,field_missing}]},
+            {ok, "456123",
+             {111222,
+              [{4,"awesome_game"},
+               {7,"white"},
+               {8,240},
+               {9,field_missing},
+               {10,field_missing},
+               {14,field_missing},
+               {5,field_missing},
+               {11,field_missing},
+               {12,"1234"},
+               {3,field_missing}]}},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_2)
      )
 

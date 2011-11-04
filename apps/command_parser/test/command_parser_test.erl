@@ -14,13 +14,13 @@ parse_test_() ->
                                               email = "ss@lin.pcs", name = "Agner Erlang"}}
                         })),
      ?_test(check_parse(?SAMPLE_UPDATE,
-                        {update_user, {ok, 123456,
+                        {update_user, {ok, "123456",
                                        [{#user.password,"QWER"},
                                         {#user.email,field_missing},
                                         {#user.name,"Agner Erlang"}]}
                         })),
      ?_test(check_parse(?SAMPLE_CREATE,
-                        {create_game, {ok, 987654,
+                        {create_game, {ok, "987654",
                                        #game{name = "awesome_game", press = "white",
                                              order_phase = 240, retreat_phase = 210,
                                              build_phase = 160, waiting_time = 3200,
@@ -32,9 +32,9 @@ parse_test_() ->
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}})),
      ?_test(check_parse(?SAMPLE_GAME_OVERVIEW,
-                        {game_overview, {ok, 123456789, 111222}})),
+                        {game_overview, {ok, "123456789", 111222}})),
      ?_test(check_parse(?SAMPLE_JOIN_GAME,
-                        {join_game, {ok, 123456789, 111222, england}}))
+                        {join_game, {ok, "123456789", {111222, england}}}))
     ].
 
 check_parse(Sample, Expected) ->
@@ -45,17 +45,18 @@ check_parse(Sample, Expected) ->
 
 reconfig_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_RECONFIG),
-    Expected = {reconfig_game,{ok,456123,111222,
-                   [{4,"awesome_game"},
-                    {7,"white"},
-                    {8,240},
-                    {9,210},
-                    {10,160},
-                    {14,3200},
-                    {5,field_missing},
-                    {11,field_missing},
-                    {12,"1234"},
-                    {3,field_missing}]}},
+    Expected = {reconfig_game,{ok,"456123", {
+                                    111222,
+                                    [{4,"awesome_game"},
+                                     {7,"white"},
+                                     {8,240},
+                                     {9,210},
+                                     {10,160},
+                                     {14,3200},
+                                     {5,field_missing},
+                                     {11,field_missing},
+                                     {12,"1234"},
+                                     {3,field_missing}]}}},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].

@@ -17,8 +17,6 @@
 
 -include_lib("datatypes/include/user.hrl").
 
--define(APP, controller_app).
-
 %% ------------------------------------------------------------------
 %% Internal API Function Exports
 %% ------------------------------------------------------------------
@@ -85,20 +83,14 @@ handle_call(ping, _From, State) ->
 %%                     From::{pid(), Tag}, #state{}) -> {noreply, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({create_user, User}, From, State) ->
-    user_management:create(From, User),
-    {noreply, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for updating a user
-%% @end
-%% [@spec handle_call({create_user::atom(), #user{}},
-%%                     From::{pid(), Tag}, #state{}) -> {noreply, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({update_user, User}, From, State) ->
-    user_management:update(From, User),
-    {noreply, State};
+handle_call({register, User}, _From, State) ->
+    Result = case user_management:create(User) of 
+                 {error, Error} ->
+                     {error, Error};
+                 User1 = #user{} ->
+                     {ok, User1}
+             end,
+    {reply, Result, State};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for logging in a user
@@ -108,55 +100,19 @@ handle_call({update_user, User}, From, State) ->
 %% session id.
 %% On fail, it returns the atom invalid
 %% @end
-%% [@spec handle_call({login_user::atom(), #user{}},
+%% [@spec handle_call({login::atom(), #user{}},
 %%                     From::{pid(), Tag}, #state{}) ->
 %%%         {reply, interger(), #state{}} | {reply, invalid, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({login_user, User}, _From, State) ->
-    case user_management:is_valid(User#user.nick, User#user.password) of
-        false ->
-            {reply, invalid, State};
-        UserNew = #user{} ->
-            SessionId = session:add_user(UserNew),
-            {reply, SessionId, State}
-    end;
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for getting a user that has a session id
-%% @end
-%% [@spec handle_call({get_session_user::atom(), SessionId::Integer()},
-%%                     From::{pid(), Tag}, #state{}) ->
-%%                     {reply, #user{}, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({get_session_user, SessionId}, _From, State) ->
-    User = session:get_user(SessionId),
-    {reply, User, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for updating the session of a user
-%% @end
-%% [@spec handle_call({update_session_user::atom(), SessionId::Integer(), User::#user{}},
-%%                     From::{pid(), Tag}, #state{}) ->
-%%                     {reply, #user{}, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({update_session_user, SessionId, User}, _From, State) ->
-    Response = session:update_user(SessionId, User),
-    {reply, Response, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for checking if a user has a session
-%% @end
-%% [@spec handle_call({is_online::atom(), SessionId::Integer()},
-%%                     From::{pid(), Tag}, #state{}) ->
-%%                     {reply, is_online::Boolean(), #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({is_online, SessionId}, _From, State) ->
-    IsOnline = session:is_online(SessionId),
-    {reply, IsOnline, State};
+handle_call({login, User}, _From, State) ->
+    Result = case user_management:is_valid(User#user.nick, User#user.password) of
+                 false ->
+                     {error, invalid_login_data};
+                 User1 = #user{} ->
+                     {ok, session:start(User1)}
+             end,
+    {reply, Result, State};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for getting a user
@@ -167,67 +123,11 @@ handle_call({is_online, SessionId}, _From, State) ->
 %% @end
 %%-------------------------------------------------------------------
 handle_call({get_user, Id}, From, State) ->
-    user_management:get(From, Id),
-    {noreply, State};
+    Result = user_management:get(From, Id),
+    {reply, Result, State};
 handle_call({get_user, Type, Key}, From, State) ->
-    user_management:get(From, Type, Key),
-    {noreply, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for creating a new game
-%% @end
-%% [@spec handle_call({new_game::atom(), #game{}},
-%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({new_game, Game}, From, State) ->
-    game:new_game(From, Game),
-    {noreply, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for updating a game
-%% @end
-%% [@spec handle_call({reconfig_game::atom(), #game{}},
-%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({reconfig_game, Game}, From, State) ->
-    game:reconfig_game(From, Game),
-    {noreply, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for updating a game
-%% @end
-%% [@spec handle_call({get_game::atom(), Id::Integer()},
-%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({get_game, Id}, From, State) ->
-    game:get_game(From, Id),
-    {noreply, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for getting an overview of a game
-%% @end
-%% [@spec handle_call({game_overview::atom(), GameId::Integer(), UserId::Integer()},
-%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({game_overview, GameId, UserId}, From, State) ->
-    game:get_game_state(From, GameId, UserId),
-    {noreply, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for joining a game
-%% @end
-%% [@spec handle_call({join_game::atom(), GameId::Integer(), UserId::Integer(),
-%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
-%%                                                  {reply, ok, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({join_game, GameId, UserId, Country}, From, State) ->
-    game:join_game(From, GameId, UserId, Country),
-    {noreply, State};
+    Result = user_management:get(From, Type, Key),
+    {reply, Result, State};
 handle_call(Request, From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, From, State}]),
     {noreply, ok, State}.

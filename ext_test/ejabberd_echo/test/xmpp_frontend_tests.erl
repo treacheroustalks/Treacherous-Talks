@@ -122,7 +122,7 @@ Supported commands are:").
 -define(JOIN_GAME_RESPONSE_INVALID_DATA,"Invalid join game data.").
 
 -define(GAME_OVERVIEW_RESPONSE_SUCCESS,"\nGame Overview:\n").
--define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"You do not play this game").
+-define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"You are not playing this game").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -174,20 +174,22 @@ setup_session_instantiator() ->
     xmpp_client:start_link(),
     Response = xmpp_client:xmpp_call(?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT),
     {match, [Session]} = re:run(Response,
-                                ?LOGIN_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
+                                ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
                                 [{capture, all_but_first, list}]),
+    ?debugVal(Session),
+    InvalidSession = "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAAAEAAAAAAg==",
+
     Game = xmpp_client:xmpp_call(?SERVICE_BOT, ?CREATE_COMMAND_CORRECT(Session)),
     ?debugVal(Game),
     {match, [GameID]} = re:run(Game,
                                 ?CREATE_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
                                 [{capture, all_but_first, list}]),
-    ?debugVal(Session),
     ?debugVal(GameID),
     [
      {?UPDATE_COMMAND_CORRECT(Session),
       ?UPD_RESPONSE_SUCCESS,
       "valid update attempt"},
-     {?UPDATE_COMMAND_CORRECT("1234567891"),
+     {?UPDATE_COMMAND_CORRECT(InvalidSession),
       ?UPD_RESPONSE_SESSION_ERROR,
       "update attempt with invalid session"},
      {?UPDATE_COMMAND_MISSING_FIELD(Session),
@@ -196,7 +198,7 @@ setup_session_instantiator() ->
      {?CREATE_COMMAND_CORRECT(Session),
       ?CREATE_RESPONSE_SUCCESS,
       "valid create command"},
-     {?CREATE_COMMAND_CORRECT("1234567891"),
+     {?CREATE_COMMAND_CORRECT(InvalidSession),
       ?CREATE_RESPONSE_SESSION_ERROR,
       "create attempt with invalid session"},
     {?CREATE_COMMAND_MISSING_FIELDS(Session),

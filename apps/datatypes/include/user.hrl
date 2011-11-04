@@ -14,7 +14,8 @@
                 last_login :: date () | never,
                 score = 0 :: integer (),
                 date_created :: date (),
-                date_updated :: date ()
+                date_updated :: date (),
+                last_session :: string()
                }).
 
 

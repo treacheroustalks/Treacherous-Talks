@@ -3,136 +3,151 @@
 %%% COPYRIGHT
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Session
+%%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
 %%%
-%%% Module to handle user sessions
+%%% @doc This mdoules provides the interface for sessions.
 %%%
-%%% @author Sukumar Yethadka <sbhat7@gmail.com>
+%%% @end
+%%%
+%%% @since :  2 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 -module(session).
 
--export([add_user/1,
-         update_user/2,
-         get_user/1,
-         is_online/1,
-         has_access/2,
-         remove_user/1]).
-
--include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/game.hrl").
 
-%%------------------------------------------------------------------------------
-%% @doc add_user/2
+%% ------------------------------------------------------------------
+%% Interface Function Exports
+%% ------------------------------------------------------------------
+-export([
+         start/1,
+         stop/1,
+         alive/1,
+         get_session_user/2,
+         update_user/2,
+         create_game/2,
+         reconfig_game/2,
+         game_overview/2,
+         join_game/2
+        ]).
+
+%% ------------------------------------------------------------------
+%% Internal Function Exports - for eUnit only!
+%% ------------------------------------------------------------------
+-export([
+        ]).
+
+%% ------------------------------------------------------------------
+%% Internal macros
+%% ------------------------------------------------------------------
+-define(SESSION_CAST(Id, Info), gen_server:cast(session_id:to_pid(Id), Info)).
+-define(SESSION_CAST(Id, Cmd, Data), ?SESSION_CAST(Id, {Cmd, Data})).
+
+-define(SESSION_CALL(Id, Info), gen_server:call(session_id:to_pid(Id), Info)).
+-define(SESSION_CALL(Id, Cmd, Data), ?SESSION_CALL(Id, {Cmd, Data})).
+
+%% ------------------------------------------------------------------
+%% Interface Function Implementation
+%% ------------------------------------------------------------------
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Starts a new session for the given user and returns the session id.
 %%
-%% The function adds the user to the session and returns the session id
+%% @spec start(User::#user{}) -> string()
 %% @end
-%%------------------------------------------------------------------------------
-add_user(User) ->
-    %% We use the user's id as session id for now
-    %% TODO: This is not secure. Change it to a random id
-    Id = User#user.id,
-    Key = term_to_binary(Id),
-    UserObj = db_obj:create(?B_SESSION, Key, User),
-    db:put(UserObj),
-    Id.
+%%-------------------------------------------------------------------
+start(User=#user{}) ->
+    {ok, Pid} = session_proc:start(User),
+    session_id:from_pid(Pid).
+    
 
-
-%%------------------------------------------------------------------------------
-%% @doc update_user/2
+%%-------------------------------------------------------------------
+%% @doc
+%% Stops a session for the given user.
 %%
-%% Updates the user's data in the session
+%% @spec stop(User::#user{}) -> ok
 %% @end
-%%------------------------------------------------------------------------------
-update_user(Id, User) ->
-    Key = term_to_binary(Id),
-    UserObj = db_obj:create(?B_SESSION, Key, User),
-    db:put(UserObj),
-    ok.
-
-
-%%------------------------------------------------------------------------------
-%% @doc get_user/2
+%%-------------------------------------------------------------------
+stop(SessionId) ->
+    exit(session_id:to_pid(SessionId), shutdown).
+    
+%%-------------------------------------------------------------------
+%% @doc
+%% Checks if a session with the given ID exists
 %%
-%% Returns the user's data from the session
+%% @spec alive(SessionId::list()) -> boolean()
 %% @end
-%%------------------------------------------------------------------------------
-get_user(Id) ->
-    Key = term_to_binary(Id),
-    case db:get(?B_SESSION, Key) of
-        {ok, UserObj} ->
-            {ok, db_obj:get_value(UserObj)};
-        {error, Error} ->
-            {error, Error};
-        Other ->
-            erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
-    end.
-
-
-%%------------------------------------------------------------------------------
-%% @doc is_online/2
-%%
-%% Checks if the given user has an active session
-%% @end
-%%------------------------------------------------------------------------------
-is_online(Id) ->
-    case get_user(Id) of
-        {error, notfound} ->
-            {ok, false};
-        {ok, _User} ->
-            {ok, true}
-    end.
-
-
-%%------------------------------------------------------------------------------
-%% @doc has_access/2
-%%
-%% The function checks if the user has the required role (Role) needed to access
-%% the resource
-%% @end
-%%------------------------------------------------------------------------------
-has_access(Id, Role) ->
-    case get_user(Id) of
-        {error, notfound} ->
+%%-------------------------------------------------------------------
+alive(SessionId) ->
+    case session_id:to_pid(SessionId) of 
+        {error, _} ->
             false;
-        {ok, User} ->
-            check_role(User#user.role, Role)
+        Pid ->
+              case rpc:call(node(Pid), erlang, is_process_alive, [Pid]) of
+                  {badrpc, _Reason} -> false;
+                  Result -> Result
+              end
     end.
 
-
-%%------------------------------------------------------------------------------
-%% @doc remove_user/2
+%%-------------------------------------------------------------------
+%% @doc get_session_user/2
+%% API for getting the session user
 %%
-%% Removes the user from the session
+%% @spec get_session_user(string(), any()) -> #user{}
 %% @end
-%%------------------------------------------------------------------------------
-remove_user(Id) ->
-    Key = term_to_binary(Id),
-    db:delete(?B_SESSION, Key).
+%%-------------------------------------------------------------------
+get_session_user(SessionId, _) ->
+    ?SESSION_CALL(SessionId, get_session_user).
 
+%%-------------------------------------------------------------------
+%% @doc update_user/2
+%% API for updating a user
+%%
+%% @spec update_user(string(), #user{}) -> #user{}
+%% @end
+%%-------------------------------------------------------------------
+update_user(SessionId, PropList) ->
+    ?SESSION_CALL(SessionId, update_user, PropList).
 
-%%------------------------------------------------------------------------------
-%% Internal functions
-%%------------------------------------------------------------------------------
-%% Check if the given Role has enough level to access resource that needs
-%% the level of (atleast) RequiredRole
-check_role(Role, RequiredRole) ->
-    case Role of
-        operator ->
-            % Operator has full access
-            true;
-        moderator ->
-            if
-                (RequiredRole == user) or (RequiredRole == moderator) ->
-                    true;
-                true ->
-                    false
-            end;
-        user ->
-            if
-                RequiredRole == user ->
-                    true;
-                true ->
-                    false
-            end
-    end.
+%%-------------------------------------------------------------------
+%% @doc create_game/2
+%% API for creation of a game
+%%
+%% @spec create_game(string(), #game{}) -> #game{}
+%% @end
+%%-------------------------------------------------------------------
+create_game(SessionId, Game) ->
+    ?SESSION_CALL(SessionId, create_game, Game).
+
+%%-------------------------------------------------------------------
+%% @doc reconfig_game/2
+%% API for updating a game
+%%
+%% @spec reconfig_game(string(), {integer(), #game{}}) -> #game{}
+%% @end
+%%-------------------------------------------------------------------
+reconfig_game(SessionId, Data={_GameId, _PropList}) ->
+    ?SESSION_CALL(SessionId, reconfig_game, Data).
+
+%%-------------------------------------------------------------------
+%% @doc game_overview/2
+%% API for updating a game
+%%
+%% @spec game_overview(string(), integer()) -> #game_overview{}
+%% @end
+%%-------------------------------------------------------------------
+game_overview(SessionId, GameId) ->
+    ?SESSION_CALL(SessionId, game_overview, GameId).
+
+%%-------------------------------------------------------------------
+%% @doc join_game/2
+%% API for updating a game
+%%
+%% @spec join_game(string(), {integer(), atom()}) -> 
+%%         {ok, integer()} | {error, country_not_available}
+%% @end
+%%-------------------------------------------------------------------
+join_game(SessionId, Data={_GameId, _Country}) ->
+    ?SESSION_CALL(SessionId, join_game, Data).

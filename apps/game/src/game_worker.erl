@@ -40,56 +40,49 @@ init(no_arg) ->
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
+handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
+    Reply = new_game(ID, Game),
+    {ok, NewID} = Reply,
+    {ok, NewGame} = get_game(NewID),
+    game_timer_sup:create_timer(NewGame),
+    game_timer:event(NewID, start),
+    {reply, Reply, State};
+handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
+    Reply = update_game(ID, Game),
+    game_timer:event(ID, {reconfig, Game}),
+    {reply, Reply, State};
+handle_call({get_game, ID}, _From, State) ->
+    Reply = get_game(ID),
+    {reply, Reply, State};
+handle_call({join_game, GameID, UserID, Country}, _From, State) ->
+    BinID = db:int_to_bin(GameID),
+    DBReply = db:get (?B_GAME_PLAYER, BinID),
+    Reply = case DBReply of
+        {ok, DBObj} ->
+            join_game(BinID, GameID, DBObj, UserID, Country);
+        Other ->
+            Other
+    end,
+    {reply, Reply, State};
+handle_call({get_game_player, GameID}, _From, State) ->
+    Reply = get_game_player(GameID),
+    {reply, Reply, State};
+
+handle_call({get_game_state, GameID, UserID}, _From, State) ->
+    Reply =get_game_state(GameID, UserID),
+    {reply, Reply, State};
+
+handle_call({delete_game, Key}, _From, State) ->
+    BinKey = list_to_binary(integer_to_list(Key)),
+    Reply = db:delete(?B_GAME, BinKey),
+    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
-handle_cast({new_game, From, Game=#game{id = ID}}, State) ->
-    Reply = ({ok, NewID} = new_game(ID, Game)),
-    {ok, NewGame} = get_game(NewID),
-    game_timer_sup:create_timer(NewGame),
-    game_timer:event(NewID, start),
-    gen_server:reply(From, Reply),
-    {noreply, State};
-handle_cast({reconfig_game, From, Game=#game{id = ID}}, State) ->
-    Reply = update_game(ID, Game),
-    game_timer:event(ID, {reconfig, Game}),
-    gen_server:reply(From, Reply),
-    {noreply, State};
-handle_cast ({get_game, From, ID}, State) ->
-    Reply = get_game(ID),
-    gen_server:reply (From, Reply),
-    {noreply, State};
-handle_cast ({join_game, From, GameID, UserID, Country}, State) ->
-    BinID = db:int_to_bin(GameID),
-    DBReply = db:get (?B_GAME_PLAYER, BinID),
-    case DBReply of
-        {ok, DBObj} ->
-            gen_server:reply (From,
-                      join_game(BinID, GameID, DBObj, UserID, Country));
-        Other ->
-            gen_server:reply (From, Other)
-    end,
-    {noreply, State};
-handle_cast ({get_game_player, From, GameID}, State) ->
-    Reply = get_game_player(GameID),
-    gen_server:reply(From, Reply),
-    {noreply, State};
-
-handle_cast ({get_game_state, From, GameID, UserID}, State) ->
-    Reply =get_game_state(GameID, UserID),
-    gen_server:reply (From, Reply),
-    {noreply, State};
-
-handle_cast ({delete_game, From, Key}, State) ->
-    BinKey = list_to_binary(integer_to_list(Key)),
-    gen_server:reply (From, db:delete(?B_GAME, BinKey)),
-    {noreply, State};
-
 handle_cast({phase_change, Game, NewPhase}, State) ->
     phase_change(Game, NewPhase),
     {noreply, State};
-
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
@@ -171,7 +164,7 @@ get_game_state(GameID, UserID) ->
             case lists:keyfind(UserID, #game_user.id,
                                GPRec#game_player.players) of
                 false ->
-                    {error, user_not_play_this_game};
+                    {error, user_not_playing_this_game};
                 GU = #game_user{} ->
                     get_game_map(GameID, #game_overview
                                                {country = GU#game_user.country})

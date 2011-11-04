@@ -7,12 +7,9 @@
                   kernel,
                   stdlib,
                   datatypes,
-                  service,
                   riakc,
                   protobuffs,
                   db
                  ]},
-  {mod, { user_management_app, []}},
-  {env, [{user_management_workers, 50},
-         {riak, {pb, {"127.0.0.1", 8081}}}]}
+  {env, []}
  ]}.

@@ -32,7 +32,9 @@
                 result = none :: none | won | draw,
                 ?REQUIRED (waiting_time) :: pos_integer (),
                 date_created = {date (), time ()} :: date (),
-                date_completed = undefined :: date ()}).
+                date_completed = undefined :: date (),
+                last_session :: string()
+               }).
 
 
 -record (game_user, {id :: integer (),

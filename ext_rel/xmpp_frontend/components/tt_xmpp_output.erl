@@ -1,4 +1,4 @@
-%%%===================================================================
+%%%===================================================================
 %%% @copyright
 %%% COPYRIGHT
 %%% @end
@@ -62,7 +62,7 @@ reply([From, To], {update_user, invalid_data}, Info) ->
               "Invalid user update information.~n~p~n",
               [Info]);
 
-reply([From, To], {create_game, success}, {ok, GameID}) ->
+reply([From, To], {create_game, success}, GameID) ->
     send_chat(From, To,
               "Game creation was successful. Your game ID is: \"~p\"~n",
               [GameID]);
@@ -83,17 +83,18 @@ reply([From, To], {reconfig_game, invalid_data}, Info) ->
 reply([From, To], {join_game, success}, Info) ->
     send_chat(From, To,
               "Join game was successful.~n~p~n", [Info]);
-reply([From, To], {join_game, error}, Error) ->
+reply([From, To], {join_game, invalid_data}, Error) ->
     send_chat(From, To,
               "Invalid join game data.~n~p~n", [Error]);
 
-reply([From, To], {game_overview, success}, {ok, GOV}) ->
+reply([From, To], {game_overview, success}, GOV) ->
     Info = lists:flatten(game_overview(GOV)),
     send_message(From, To,
                  "chat", "\nGame Overview:\n" ++ Info);
-reply([From, To], {game_overview, success}, {error, user_not_play_this_game}) ->
+reply([From, To], {game_overview, invalid_data},
+      user_not_playing_this_game) ->
     send_chat(From, To,
-              "You do not play this game");
+              "You are not playing this game");
 
 reply([From, To], {Cmd, invalid_session}, Info) ->
     send_chat(From, To,

@@ -104,7 +104,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 RECONFIG\r
 ----Required Fields---------\r
-SESSION: asd\r
+SESSION: asd54-asd \r
 GAMEID: aws \r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r

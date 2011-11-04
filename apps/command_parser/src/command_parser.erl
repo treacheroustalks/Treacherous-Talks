@@ -36,12 +36,12 @@
 %% {update, Error} |
 %% {create_game, {ok, Session, #game{}}} |
 %% {create_game, Error} |
-%% {reconfig_game, {ok, SessionId, gameid, #game{}}|
+%% {reconfig_game, {ok, SessionId, {gameid, #game{}}}|
 %% {reconfig_game, {error, {required_fields, RequiredFields}}}|
 %% {reconfig_game,{error, {invalid_input, ErrorList}}}|
 %% {game_overview, {ok, SessionId, GameId}} |
 %% {game_overview, Error} |
-%% {join_game, {ok, SessionId, GameId, Country} |
+%% {join_game, {ok, SessionId, {GameId, Country}} |
 %% {join_game, Error} |
 %% unknown_command]
 %% @end

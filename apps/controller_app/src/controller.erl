@@ -18,19 +18,10 @@
 
 
 %% Internal functions, exported for eUnit, do not use!
--export([create_user/1,
-         get_user/1, get_user/2,
-         update_user/1,
-         login_user/1,
-         new_game/1,
-         reconfig_game/1,
-         get_game/1,
-         join_game/3,
-         get_session_user/1,
-         update_session_user/2,
-         is_online/1,
-         game_overview/2,
-         update_rec_by_proplist/2
+-export([
+         register/1,
+         login/1,
+         get_user/2
         ]).
 
 -include_lib("datatypes/include/user.hrl").
@@ -63,128 +54,43 @@
 %% @end
 %%
 %% [@spec
-%% handle_action(ParsedData::{command(), any()},
+%% handle_action(ParsedData::{command(), {ok, any()}} |
+%%                           {command(), {ok, integer(), any()}} |
+%%                           {command(), {error, any()}},
 %%               {CallbackFun::Fun, Args::[any()]},
 %%               SessionId::Integer()) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
-handle_action({register, {ok, UserInfo}}, {CallbackFun, Args}) ->
-    case controller:create_user(UserInfo) of
-        error ->
-            CallbackFun(Args, {register, invalid_data}, error);
-        UserRec ->
-            CallbackFun(Args, {register, success}, UserRec)
-    end;
-handle_action({register, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {register, parse_error}, Error);
-
-handle_action({login, {ok, UserInfo}}, {CallbackFun, Args}) ->
-    case controller:login_user(UserInfo) of
-        invalid ->
-            CallbackFun(Args, {login, invalid_data}, UserInfo);
-        Session ->
-            CallbackFun(Args, {login, success}, Session)
-    end;
-handle_action({login, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {login, parse_error}, Error);
-
-handle_action({get_session_user, {ok, SessionId}}, {CallbackFun, Args}) ->
-    case controller:get_session_user(SessionId) of
+handle_action({Command, {ok, Data}}, {CallbackFun, Args}) 
+  when Command == register;
+       Command == login ->
+    case controller:Command(Data) of
         {error, Error} ->
-            CallbackFun(Args, {get_session_user, invalid_data}, Error);
-        {ok, UserRec} ->
-            CallbackFun(Args, {get_session_user, success}, UserRec)
+            CallbackFun(Args, {Command, invalid_data}, Error);
+        {ok, Result} ->
+            CallbackFun(Args, {Command, success}, Result)
     end;
-handle_action({get_session_user, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {get_session_user, parse_error}, Error);
-
-handle_action({update_user, {ok, Session, UpdateUserProplist}}, {CallbackFun, Args}) ->
-    case controller:get_session_user(Session) of
-        {error, _Error} ->
-            CallbackFun(Args, {update_user, invalid_session}, Session);
-        {ok, OldUser} ->
-            UpdatedUser = update_rec_by_proplist(OldUser, UpdateUserProplist),
-            UserRec = controller:update_user(UpdatedUser),
-            controller:update_session_user(Session, UserRec),
-            CallbackFun(Args, {update_user, success}, UserRec)
-    end;
-handle_action({update_user, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {update_user, parse_error}, Error);
-
-handle_action({get_game, {ok, SessionId, GameId}}, {CallbackFun, Args}) ->
-    case controller:get_session_user(SessionId) of
-        {error, Error} ->
-            CallbackFun(Args, {get_game, invalid_session}, Error);
-        {ok, _UserRec} ->
-            case controller:get_game(GameId) of
-                {ok, GameRec} ->
-                    CallbackFun(Args, {get_game, success}, GameRec);
-                Error ->
-                    CallbackFun(Args, {get_game, invalid_data}, Error)
-            end
-    end;
-handle_action({get_game, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {get_game, parse_error}, Error);
-
-handle_action({reconfig_game, {ok, Session, GameId, GamePropList}},
-              {CallbackFun, Args}) ->
-    case controller:get_session_user(Session) of
-        {error, _Error} ->
-            CallbackFun(Args, {reconfig_game, invalid_session}, Session);
-        {ok, User} ->
-            UserId = User#user.id,
-            case controller:get_game(GameId) of
-                {ok, #game{status = waiting, creator_id = UserId} = OldGame} ->
-                    % it is only possible to update when status is waiting
-                    NewGame = update_rec_by_proplist(OldGame, GamePropList),
-                    {ok, _Id} = controller:reconfig_game(NewGame),
-                    CallbackFun(Args, {reconfig_game, success}, NewGame);
-                _ ->
-                    CallbackFun(Args, {reconfig_game, invalid_data}, GamePropList)
-            end
-    end;
-handle_action({reconfig_game, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {reconfig_game, parse_error}, Error);
-
-handle_action({game_overview, {ok, Session, GameID}}, {CallbackFun, Args}) ->
-    case controller:get_session_user(Session) of
-        {error, _Error} ->
-            CallbackFun(Args, {game_overview, invalid_session}, Session);
-        {ok, User} ->
-            Overview = controller:game_overview(GameID, User#user.id),
-            CallbackFun(Args, {game_overview, success}, Overview)
-    end;
-handle_action({game_overview, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {game_overview, parse_error}, Error);
-
-handle_action({create_game, {ok, Session, GameInfo}}, {CallbackFun, Args}) ->
-    case controller:get_session_user(Session) of
-        {error, _Error} ->
-            CallbackFun(Args, {create_game, invalid_session}, Session);
-        {ok, User} ->
-            Creator = User#user.id,
-            GameRec = controller:new_game(GameInfo#game{creator_id = Creator}),
-            % @todo no invalid create_game case yet ?
-            CallbackFun(Args, {create_game, success}, GameRec)
-    end;
-handle_action({create_game, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {create_game, parse_error}, Error);
-
-handle_action({join_game, {ok, Session, GameId, Country}}, {CallbackFun, Args}) ->
-    case controller:get_session_user(Session) of
-        {error, _Error} ->
-            CallbackFun(Args, {join_game, invalid_session}, Session);
-        {ok, User} ->
-            case controller:join_game(GameId, User#user.id, Country) of
-                {ok, GameKey} ->
-                    CallbackFun(Args, {join_game, success}, GameKey);
+handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args}) 
+  when Command == update_user;
+       Command == get_session_user;
+       Command == create_game;
+       Command == reconfig_game;
+       Command == game_overview;
+       Command == join_game ->
+    case session:alive(SessionId) of
+        false ->
+            CallbackFun(Args, {Command, invalid_session}, SessionId);
+        true->
+            case session:Command(SessionId, Data) of
                 {error, Error} ->
-                    CallbackFun(Args, {join_game, error}, Error)
+                    CallbackFun(Args, {Command, invalid_data}, Error);
+                {ok, Result} ->
+                    CallbackFun(Args, {Command, success}, Result)
             end
     end;
-handle_action({join_game, Error}, {CallbackFun, Args}) ->
-    CallbackFun(Args, {join_game, parse_error}, Error);
 
+handle_action({Command, Error}, {CallbackFun, Args}) ->
+    CallbackFun(Args, {Command, parse_error}, Error);
 
 handle_action(unknown_command, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, []);
@@ -199,30 +105,19 @@ handle_action(Cmd, {CallbackFun, Args}) ->
 %% @end
 %% [@spec create_user(Id::Integer(), #user{}) @end]
 %%-------------------------------------------------------------------
-create_user(User) ->
-    ?CALL_WORKER({create_user, User}).
+register(User) ->
+    ?CALL_WORKER({register, User}).
 
 
 %%-------------------------------------------------------------------
-%% @doc update_user/1
-%%
-%% API for updating a user
-%% @end
-%% [@spec create_user(#user{}) @end]
-%%-------------------------------------------------------------------
-update_user(User) ->
-    ?CALL_WORKER({update_user, User}).
-
-
-%%-------------------------------------------------------------------
-%% @doc login_user/1
+%% @doc login/1
 %%
 %% API for logging in a user
 %% @end
-%% [@spec login_user(#user{}) @end]
+%% [@spec login(#user{}) @end]
 %%-------------------------------------------------------------------
-login_user(User) ->
-    ?CALL_WORKER({login_user, User}).
+login(User) ->
+    ?CALL_WORKER({login, User}).
 
 
 %%-------------------------------------------------------------------
@@ -234,111 +129,3 @@ login_user(User) ->
 %%-------------------------------------------------------------------
 get_user(Type, Key) ->
     ?CALL_WORKER({get_user, Type, Key}).
-get_user(Id) ->
-    io:format ("get_user/2 :)~n"),
-    ?CALL_WORKER({get_user, Id}).
-
-
-%%-------------------------------------------------------------------
-%% @doc new_game/1
-%%
-%% API for creation of a game
-%% @end
-%% [@spec create_game(#game{}) @end]
-%%-------------------------------------------------------------------
-new_game(Game) ->
-    ?CALL_WORKER({new_game, Game}).
-
-
-%%-------------------------------------------------------------------
-%% @doc reconfig_game/1
-%%
-%% API for updating a game
-%% @end
-%% [@spec reconfig_game(#game{}) @end]
-%%-------------------------------------------------------------------
-reconfig_game(Game) ->
-    ?CALL_WORKER({reconfig_game, Game}).
-
-
-%%-------------------------------------------------------------------
-%% @doc get_game/1
-%%
-%% API for getting a game
-%% @end
-%% [@spec get_game(Id::Integer()) @end]
-%%-------------------------------------------------------------------
-get_game(Id) ->
-    ?CALL_WORKER({get_game, Id}).
-
-
-%%-------------------------------------------------------------------
-%% @doc get_session_user/1
-%%
-%% API for getting a user that has a session
-%% @end
-%% [@spec get_session_user(SessionId::Integer()) @end]
-%%-------------------------------------------------------------------
-get_session_user(SessionId) ->
-    ?CALL_WORKER({get_session_user, SessionId}).
-
-
-%%-------------------------------------------------------------------
-%% @doc update_session_user/2
-%%
-%% API for updating the session of a user
-%% @end
-%% [@spec update_session_user(SessionId::integer(), User::#user{}) @end]
-%%-------------------------------------------------------------------
-update_session_user(SessionId, User) ->
-    ?CALL_WORKER({update_session_user, SessionId, User}).
-
-
-%%-------------------------------------------------------------------
-%% @doc is_online/1
-%%
-%% API for checking if a user is online
-%% @end
-%% [@spec is_online(SessionId::Integer()) @end]
-%%-------------------------------------------------------------------
-is_online(SessionId) ->
-    ?CALL_WORKER({is_online, SessionId}).
-
-%%-------------------------------------------------------------------
-%% @doc game_overview/2
-%%
-%% API for getting an overview of a game
-%% @end
-%% [@spec game_overview(GameId::Integer(), UserId::Integer()) @end]
-%%-------------------------------------------------------------------
-game_overview(GameId, UserId) ->
-    ?CALL_WORKER({game_overview, GameId, UserId}).
-
-%%-------------------------------------------------------------------
-%% @doc join_game/3
-%%
-%% API for joining a game
-%% @end
-%% [@spec game_overview(GameId::Integer(), UserId::Integer(), Country::country()) @end]
-%%-------------------------------------------------------------------
-join_game(GameId, UserId, Country) ->
-    ?CALL_WORKER({join_game, GameId, UserId, Country}).
-
-%%-------------------------------------------------------------------
-%% Helper functions
-%%-------------------------------------------------------------------
-
-%%------------------------------------------------------------------------------
-%% @doc update record via a proplist
-%%  Input: Arg1: OldUser#user
-%%         Arg2: [{#user.name, "username"}, {#user.password, "xxxx"}]
-%%
-%%  Output: #user{name="username", password="xxxx"}
-%% @end
-%%------------------------------------------------------------------------------
-update_rec_by_proplist(Old, [{_, field_missing}|Rest]) ->
-    update_rec_by_proplist(Old, Rest);
-update_rec_by_proplist(Old, [{Field, Value}|Rest]) ->
-    update_rec_by_proplist(setelement(Field, Old, Value), Rest);
-update_rec_by_proplist(Updated, []) ->
-    Updated.

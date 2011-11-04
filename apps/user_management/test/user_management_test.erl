@@ -72,7 +72,7 @@ update_user_test_() ->
      {setup,
       fun app_start/0,
       fun app_stop/1,
-      update_user()
+      fun update_user/0
       }}.
 
 get_user_test_() ->
@@ -80,58 +80,29 @@ get_user_test_() ->
      {setup,
       fun app_start/0,
       fun app_stop/1,
-      [get_user_t(),
-       get_user_fail_t(),
-       get_user_key_t()]
+      [fun get_user_t/0,
+       fun get_user_fail_t/0,
+       fun get_user_key_t/0]
       }}.
 
 get_user_t() ->
     fun() ->
             User = user_management:create(create_user()),
-            ok = user_management:get({self(), Tag = make_ref()},
-                                     User#user.id),
-            receive
-                {Tag, User} ->
-                    ok;
-                Unhandled ->
-                    erlang:error({error,
-                                  {expected, {Tag, {ok, User}},
-                                   got, Unhandled}})
-            after ?TIMEOUT ->
-                    erlang:error({error, no_asynch_reply})
-            end
+            Result = user_management:get(User#user.id),
+            ?assertEqual(User, Result)
     end.
 
 get_user_key_t () ->
     fun () ->
             User = user_management:create(create_user ()),
-            ok = user_management:get ({self (), Tag = make_ref ()},
-                                     #user.nick,
-                                     User#user.nick),
-            receive
-                {Tag, Users} when is_list (Users) ->
-                    ?debugVal (Users),
-                    ok;
-                Unhandled ->
-                    ?debugVal (Unhandled),
-                    erlang:error ({error, unhandled_msg})
-            after ?TIMEOUT ->
-                    erlang:error ({error, no_asynch_reply})
-            end
+            Result = user_management:get(#user.nick, User#user.nick),
+            ?assert(is_list(Result))
     end.
 
 get_user_fail_t() ->
     fun() ->
-            ok = user_management:get({self(), Tag = make_ref()},
-                                     db_c:get_unique_id()),
-            receive
-                {Tag, {error, notfound}} ->
-                    ok;
-                Unhandled ->
-                    erlang:error({error,
-                                  {expected, {Tag, something},
-                                   got, Unhandled}})
-            end
+            Result = user_management:get(db_c:get_unique_id()),
+            ?assertEqual({error, notfound}, Result)
     end.
 
 %% tests generators
@@ -145,8 +116,8 @@ update_user() ->
     fun() ->
             User = user_management:create(create_user()),
             UpdatedUser = User#user{name = "Updated Name"},
-            ?assertEqual(UpdatedUser,
-                         user_management:update(UpdatedUser))
+            Result = user_management:update(UpdatedUser),
+            ?assertEqual({ok, UpdatedUser}, Result)
     end.
 
 authenticate_user({#user{nick = Nick}, Pw, Expected}) ->

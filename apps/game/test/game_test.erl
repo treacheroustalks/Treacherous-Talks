@@ -154,7 +154,7 @@ game_timer_state_tst_ () ->
                                      waiting_time = 1},
              ?debugVal(UpdatedGame),
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
-             game:reconfig_game({self(), update}, UpdatedGame),
+             game:reconfig_game(UpdatedGame),
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
              timer:sleep(20),
              game_timer:event(Game#game.id, timeout),
@@ -176,7 +176,7 @@ game_update_tst_() ->
               % Create a copy of Game with a new description
               UpdatedGame = Game#game{description = "Updated game"},
               % Update the game with the same id as Game to UpdatedGame
-              game:reconfig_game({self(), update_test}, UpdatedGame),
+              game:reconfig_game(UpdatedGame),
               timer:sleep(50),
               %% Now the game should have changed in the DB to have
               %% status = ongoing, change that before assert
@@ -194,8 +194,7 @@ join_game_tst_() ->
               % Create a new Game
               Game = sync_get(sync_new(GameRecord)),
               % join new player with id=1122 and country=england
-              game:join_game({self(), join_game_test},
-                             Game#game.id, 1122, england),
+              game:join_game(Game#game.id, 1122, england),
               timer:sleep(50),
               GP = sync_get_game_player (Game#game.id),
               ?assertEqual(1, length(GP#game_player.players)),
@@ -207,10 +206,9 @@ join_game_tst_() ->
               % Create a new Game
               Game = sync_get(sync_new(GameRecord)),
               % join new player with id=1122 and country=england
-              game:join_game({self(), join_game_test},
-                             Game#game.id, 1122, england),
+              game:join_game(Game#game.id, 1122, england),
               timer:sleep(50),
-              Msg = sync_join_game_player (Game#game.id, 221122, england),
+              Msg = sync_join_game_player(Game#game.id, 221122, england),
               ?assertEqual(country_not_available, Msg),
               ?debugMsg("join game test end")
       end].
@@ -226,8 +224,7 @@ get_game_state_tst_ () ->
               % join new player with id=1122 and country=england
               UserID = 1122,
               Country = england,
-              game:join_game({self(), join_game_test},
-                             Game#game.id, UserID, Country),
+              game:join_game(Game#game.id, UserID, Country),
               timer:sleep(50),
               GOV = sync_get_game_state (Game#game.id, UserID),
               ?assertEqual(Country, GOV#game_overview.country),
@@ -244,7 +241,7 @@ get_game_state_tst_ () ->
               %               Game#game.id, UserID, Country),
               timer:sleep(50),
               Reply = sync_get_game_state (Game#game.id, UserID),
-              ?assertEqual(user_not_play_this_game, Reply),
+              ?assertEqual(user_not_playing_this_game, Reply),
               ?debugMsg("User does not play this game")
       end,
     fun() ->
@@ -255,8 +252,7 @@ get_game_state_tst_ () ->
               % join new player with id=1122 and country=england
               UserID = 1122,
               Country = england,
-              game:join_game({self(), join_game_test},
-                             Game#game.id, UserID, Country),
+              game:join_game(Game#game.id, UserID, Country),
               timer:sleep(50),
               Reply = sync_get_game_state (Game#game.id, UserID),
               ?assertEqual(game_not_waiting, Reply),
@@ -268,80 +264,43 @@ get_game_state_tst_ () ->
 %%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
-sync_new (Game=#game{}) ->
-    game:new_game ({self (), new_game}, Game),
-    receive
-        {new_game, {ok, Key}} ->
-            ?debugMsg (io_lib:format ("~p",[{created_new, Key}])),
-            Key;
-        {new_game, Other} ->
-            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
-    after ?TEST_TIMEOUT ->
-            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
-    end.
+sync_new(Game=#game{}) ->
+    {ok, Id} = game:new_game(Game),
+    Id.
 
-sync_get (ID) ->
-    ok = game:get_game ({self (), get_game}, ID),
-    receive
-        {get_game, {ok, Game}} ->
-            ?debugMsg ("received game"),
-            Game;
-        {get_game, Other} ->
-            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
-    after ?TEST_TIMEOUT ->
-            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
-    end.
+sync_get(ID) ->
+    {ok, Game} = game:get_game(ID),
+    Game.
 
-sync_get_game_player (ID) ->
-    ok = game:get_game_players ({self (), get_game_player}, ID),
-    receive
-        {get_game_player, {ok, GamePlayer}} ->
-            ?debugMsg ("received game player"),
+sync_get_game_player(ID) ->
+    {ok, GamePlayer} = game:get_game_players(ID),
+    GamePlayer.
+
+sync_join_game_player(GameID, UserID, Country) ->
+    case game:join_game(GameID, UserID, Country) of
+        {ok, GamePlayer} ->
             GamePlayer;
-        {get_game_player, Other} ->
-            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
-    after ?TEST_TIMEOUT ->
-            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
+        {error, country_not_available} ->
+            country_not_available
     end.
 
-sync_join_game_player (GameID, UserID, Country) ->
-    ok = game:join_game ({self (), sync_join_game}, GameID, UserID, Country),
-    receive
-        {sync_join_game, {ok, GamePlayer}} ->
-            ?debugMsg ("received game player"),
-            GamePlayer;
-        {sync_join_game, {error, country_not_available}} ->
-            ?debugMsg ("join game country not available"),
-            country_not_available;
-        {sync_join_game, Other} ->
-            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
-    after ?TEST_TIMEOUT ->
-            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
-    end.
-
-sync_get_game_state (GameID, UserID) ->
-    ok = game:get_game_state ({self (), sync_get_game_state}, GameID, UserID),
-    receive
-        {sync_get_game_state, {ok, GameOverview}} ->
+sync_get_game_state(GameID, UserID) ->
+    case game:get_game_state(GameID, UserID) of
+        {ok, GameOverview} ->
             GameOverview;
-        {sync_get_game_state, {error, user_not_play_this_game}} ->
-            user_not_play_this_game;
-        {sync_get_game_state, {error, game_not_waiting}} ->
+        {error, user_not_playing_this_game} ->
+            user_not_playing_this_game;
+        {error, game_not_waiting} ->
             game_not_waiting;
-        {sync_get_game_state, Other} ->
+        Other ->
             erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
-    after ?TEST_TIMEOUT ->
-            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
     end.
 
-sync_delete (ID) ->
-    ok = game:delete_game ({self (), delete_game}, ID),
-    receive
-        {delete_game, ok} ->
+sync_delete(ID) ->
+    case game:delete_game(ID) of
+        ok ->
             ?debugMsg ("deleted game"),
             ok;
-        {delete_game, Other} ->
+        Other ->
             erlang:error ({error, {{received, Other}, {expected, ok}}})
-    after ?TEST_TIMEOUT ->
-            erlang:error ({error, {no_asynch_answer, ?FILE, ?LINE}})
     end.

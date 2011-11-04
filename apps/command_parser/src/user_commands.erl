@@ -79,7 +79,7 @@ parse_create(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, list_to_integer(Session),
+                    {ok, Session,
                      #game{name = Name, press = Press,
                            order_phase = parse_time_format(OrdPhase),
                            retreat_phase = parse_time_format(RetPhase),
@@ -122,7 +122,8 @@ parse_reconfig(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, list_to_integer(Session), list_to_integer(GameIdStr),
+                    {ok, Session,
+                     {list_to_integer(GameIdStr),
                       [{#game.name, Name}, {#game.press,  Press},
                        {#game.order_phase, parse_time_format(OrdPhase)},
                        {#game.retreat_phase, parse_time_format(RetPhase)},
@@ -131,7 +132,7 @@ parse_reconfig(Data) ->
                        {#game.description, Description},
                        {#game.num_players, NumPlayers},
                        {#game.password, Pw},
-                       {#game.creator_id, field_missing}]};
+                       {#game.creator_id, field_missing}]}};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end
@@ -188,7 +189,7 @@ parse_update(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, list_to_integer(Session),
+                    {ok, Session,
                      [{#user.password, Pw},
                       {#user.email, Mail},
                       {#user.name, Name}]};
@@ -217,7 +218,7 @@ parse_overview(Data) ->
             case get_error_list(ReqValues,  get_check_type(RequiredFields),
                                 RequiredFields) of
                 [] ->
-                    {ok, list_to_integer(SessionId), list_to_integer(GameId)};
+                    {ok, SessionId, list_to_integer(GameId)};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end
@@ -247,9 +248,9 @@ parse_join(Data) ->
                         false -> {error, {invalid_input, CountryStr}};
                         true ->
                             {ok,
-                             list_to_integer(SessionId),
-                             list_to_integer(GameId),
-                             Country
+                             SessionId,
+                             {list_to_integer(GameId),
+                              Country}
                             }
                     end;
                 ErrorList ->
@@ -330,6 +331,8 @@ is_valid_value(FieldType, Value) ->
     case FieldType of
         alpha_num_only ->% only allow alphabets and number
             Check(invalid_pattern, "[^A-Za-z0-9_]");
+        base64 ->
+            Check(invalid_pattern, "[^A-Za-z0-9=]");
         begin_with_alpha ->% The first character must be alphabetic
             Check(valid_pattern, "(^[A-Za-z][A-Za-z0-9_]*$)");
         num_only ->% forbids non-number characters
@@ -387,7 +390,7 @@ get_check_type([], AccCheckList) ->
     lists:reverse(AccCheckList);
 get_check_type([H|Rest], AccCheckList) ->
     UpdatedCheckList = case H of
-        ?SESSION -> [num_only|AccCheckList];
+        ?SESSION -> [base64|AccCheckList];
 
         ?NICKNAME -> [begin_with_alpha|AccCheckList];
         ?PASSWORD -> [password|AccCheckList];
