@@ -19,10 +19,11 @@
 
 %% Exports for eunit
 -export([init_valid_region/0,translate_location/1,interpret_str_orders/1,
-         translate_fullname_to_abbv_atom/1,interpret_order_line/1]).
+         translate_abbv_to_fullname_atom/1,interpret_order_line/1]).
 
 -include("test_utils.hrl").
 -include("player_orders.hrl").
+-include("command_parser.hrl").
 
 %%------------------------------------------------------------------------------
 %% @doc parse player's orders to a list of order terms.
@@ -42,14 +43,36 @@
 %%------------------------------------------------------------------------------
 parse_orders (EmailBody) when is_binary(EmailBody) ->
     parse_orders (binary_to_list(EmailBody));
+parse_orders ([]) -> {error, "empty order"};
 parse_orders (EmailBody) ->
     init_valid_region(),
-    LowerCasedEmailBody = string:to_lower(EmailBody),
-    MailLines = string:tokens(LowerCasedEmailBody, "\n"),
-    OrderList = interpret_str_orders(MailLines),
-    ResultOrders = lists:partition(fun(X)->
+    MailLines = string:tokens(EmailBody, "\n,"),
+
+    % error will be throw out from get_field_value/2
+    catch begin
+          [RawSessionId|RestLines] = MailLines,
+          SessionId = get_field_value(RawSessionId, ?SESSION":\s*([0-9]*)\s*"),
+
+          [RawGameId|RawOrderList] = RestLines,
+          GameId = get_field_value(RawGameId, ?GAMEID":\s*([0-9]*)\s*"),
+
+          OrderList = interpret_str_orders(RawOrderList),
+          ResultOrders = lists:partition(fun(X)->
                                         element(1, X) /= error end, OrderList),
-    {ok, ResultOrders}.
+          io:format(user, "~p~n", [ResultOrders]),
+          {ok, {session, list_to_integer(SessionId)},
+               {gameid, list_to_integer(GameId)},
+               ResultOrders}
+    end.
+
+% this function should be only used by parse_orders/1
+get_field_value(Data, Pattern) ->
+    Match = re:run(Data, Pattern,
+                        [{capture, all_but_first, list},{newline, anycrlf}]),
+    case Match of
+        {match, [Value]} -> Value;
+        nomatch -> throw({error, Data ++ "#invalid value#" ++ Pattern})
+    end.
 
 
 %%------------------------------------------------------------------------------
@@ -65,7 +88,7 @@ parse_orders (EmailBody) ->
 %% @end
 %%------------------------------------------------------------------------------
 interpret_str_orders (MailLines) ->
-    {ok, OrderParser} = re:compile(?ORD_PARSER, [{newline, anycrlf}]),
+    {ok, OrderParser} = re:compile(?ORD_PARSER, [caseless, {newline, anycrlf}]),
     interpret_str_orders(MailLines, OrderParser, []).
 
 interpret_str_orders ([], _, StrOrderList) -> StrOrderList;
@@ -135,10 +158,11 @@ interpret_order_line (OrderLine) ->
 % functions prefix with translate_
 % should only be called by interpret_order_line/1----------------------------
 translate_location([]) -> nil;
-translate_location(Loc) when length(Loc) >3 ->
-    translate_fullname_to_abbv_atom(Loc);
+translate_location(Loc) when length(Loc) == 3 ->
+    translate_abbv_to_fullname_atom(Loc);
 translate_location(Loc) ->
-    ExistingAtom = (catch list_to_existing_atom(Loc)),
+    LowercasedLoc = string:to_lower(Loc),
+    ExistingAtom = (catch list_to_existing_atom(LowercasedLoc)),
     case ExistingAtom of
         {'EXIT', _} ->
             throw({error, Loc ++ "#invalid location name, not in atom table"});
@@ -163,12 +187,13 @@ translate_action(Key) ->
     get_translation(Key, ?TRANS_ACTION, "action name").
 
 
-translate_fullname_to_abbv_atom(Key) ->
-    get_translation(Key, ?TRANS_LOC_FULLNAME, "full name").
+translate_abbv_to_fullname_atom(Key) ->
+    get_translation(Key, ?TRANS_LOC_ABBV, "loc abbv").
 
 
 get_translation(Key, PropList, ErrorMsg) ->
-    Value = proplists:get_value(Key, PropList),
+    LowercasedKey = string:to_lower(Key),
+    Value = proplists:get_value(LowercasedKey, PropList),
     case Value of
         undefined ->
             throw({error, Key ++ "#invalid " ++ ErrorMsg});

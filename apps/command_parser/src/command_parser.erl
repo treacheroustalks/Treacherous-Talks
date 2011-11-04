@@ -48,15 +48,15 @@
 %%-------------------------------------------------------------------
 % if no matched input, let it crash to detect the bug earlier
 parse(BinString) when is_binary(BinString) ->
-    Commands =    "(" ++ ?LOGIN
-               ++ "|" ++ ?ORDER
-               ++ "|" ++ ?CREATE
-               ++ "|" ++ ?RECONFIG
-               ++ "|" ++ ?REGISTER
-               ++ "|" ++ ?UPDATE
-               ++ "|" ++ ?OVERVIEW
-               ++ "|" ++ ?JOIN
-               ++ ")(.*)END",
+    Commands =    "("?LOGIN
+                  "|"?ORDER
+                  "|"?CREATE
+                  "|"?RECONFIG
+                  "|"?REGISTER
+                  "|"?UPDATE
+                  "|"?OVERVIEW
+                  "|"?JOIN
+                  ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
     case re:run(BinString, MP, [{capture, all_but_first, binary}]) of
@@ -65,7 +65,7 @@ parse(BinString) when is_binary(BinString) ->
                 <<?LOGIN>> ->
                     {login, user_commands:parse_login(Data)};
                 <<?ORDER>> ->
-                    {player_orders, player_orders:parse_orders(Data)};
+                    {game_move, player_orders:parse_orders(Data)};
                 <<?CREATE>> ->
                     {create_game, user_commands:parse_create(Data)};
                 <<?RECONFIG>> ->
