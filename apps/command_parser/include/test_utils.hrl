@@ -85,6 +85,21 @@ END\r
 adfadfasdfaldfad">>
 ).
 
+-define(SAMPLE_RECONFIG_2,
+<<"sddfaadfaff\r
+RECONFIG\r
+----Required Fields---------\r
+SESSION: 456123\r
+GAMEID: 111222  \r
+GAMENAME: awesome_game\r
+PRESSTYPE: white\r
+ORDERCIRCLE: 4H\r
+----Optional Fields---------\r
+PASSWORD: 1234
+\r
+END\r
+adfadfasdfaldfad">>
+).
 -define(SAMPLE_RECONFIG_WITH_CHARGID,
 <<"sddfaadfaff\r
 RECONFIG\r

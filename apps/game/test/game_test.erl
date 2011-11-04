@@ -131,7 +131,7 @@ game_update_tst_() ->
               % Create a copy of Game with a new description
               UpdatedGame = Game#game{description = "Updated game"},
               % Update the game with the same id as Game to UpdatedGame
-              game:update_game({self(), update_test}, UpdatedGame),
+              game:reconfig_game({self(), update_test}, UpdatedGame),
               timer:sleep(50),
               ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
               ?debugMsg("Update game test end")

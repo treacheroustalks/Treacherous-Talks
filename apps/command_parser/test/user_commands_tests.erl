@@ -206,5 +206,20 @@ parse_reconfig_test_() ->
              {12,"1234"},
              {3,undefined}]},
              user_commands:parse_reconfig(?SAMPLE_RECONFIG)
+     ),
+     ?_assertEqual(
+            {ok, 456123, 111222,
+            [{4,"awesome_game"},
+             {7,"white"},
+             {8,240},
+             {9,field_missing},
+             {10,field_missing},
+             {14,field_missing},
+             {5,field_missing},
+             {11,field_missing},
+             {12,"1234"},
+             {3,undefined}]},
+             user_commands:parse_reconfig(?SAMPLE_RECONFIG_2)
      )
+
      ].

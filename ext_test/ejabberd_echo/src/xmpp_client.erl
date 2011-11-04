@@ -178,7 +178,7 @@ handle_info(stop, State= #state{session=MySession}) ->
     exmpp_session:stop(MySession),
     {stop, normal, State};
 
-%% This is how this module, as an exmpp client, receives messages sent 
+%% This is how this module, as an exmpp client, receives messages sent
 %% to this jid by ejabberd. If a response is expected by a call,
 %% the message is sent as a reply to that call. Otherwise, the message
 %% is just stored in the state.
@@ -232,7 +232,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%                                      {timeout, any()}
 %%
 %%  Try to send presence to ejabberd server and if the user is not
-%%  registerd, it will register the user first. 
+%%  registerd, it will register the user first.
 %% @end
 %%--------------------------------------------------------------------
 

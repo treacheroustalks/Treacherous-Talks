@@ -187,12 +187,12 @@ handle_call({new_game, Game}, From, State) ->
 %% @doc
 %% Handles call for updating a game
 %% @end
-%% [@spec handle_call({update_game::atom(), #game{}},
+%% [@spec handle_call({reconfig_game::atom(), #game{}},
 %%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({update_game, Game}, From, State) ->
-    game:update_game(From, Game),
+handle_call({reconfig_game, Game}, From, State) ->
+    game:reconfig_game(From, Game),
     {noreply, State};
 %%-------------------------------------------------------------------
 %% @doc
@@ -220,8 +220,8 @@ handle_call({game_overview, GameId, UserId}, From, State) ->
 %% @doc
 %% Handles call for joining a game
 %% @end
-%% [@spec handle_call({join_game::atom(), GameId::Integer(), UserId::Integer(), 
-%%                     Country::country()}, From::{pid(), Tag}, #state{}) -> 
+%% [@spec handle_call({join_game::atom(), GameId::Integer(), UserId::Integer(),
+%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
 %%                                                  {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------

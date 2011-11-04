@@ -62,10 +62,10 @@ reply([From, To], {update_user, invalid_data}, Info) ->
               "Invalid user update information.~n~p~n",
               [Info]);
 
-reply([From, To], {create_game, success}, Game) ->
+reply([From, To], {create_game, success}, {ok, GameID}) ->
     send_chat(From, To,
-              "Game creation was successful.~n~p~n",
-              [Game]);
+              "Game creation was successful. Your game ID is: \"~p\"~n",
+              [GameID]);
 reply([From, To], {create_game, invalid_data}, Info) ->
     send_chat(From, To,
               "Invalid game creation data.~n~p~n",
@@ -77,7 +77,7 @@ reply([From, To], {reconfig_game, success}, Game) ->
               [Game]);
 reply([From, To], {reconfig_game, invalid_data}, Info) ->
     send_chat(From, To,
-              "Invalid game update information.~n~p~n",
+              "Invalid reconfig game information.~n~p~n",
               [Info]);
 
 reply([From, To], {join_game, success}, Info) ->
@@ -85,7 +85,7 @@ reply([From, To], {join_game, success}, Info) ->
               "Join game was successful.~n~p~n", [Info]);
 reply([From, To], {join_game, error}, Error) ->
     send_chat(From, To,
-              "Invalid join game.~n~p~n", [Error]);
+              "Invalid join game data.~n~p~n", [Error]);
 
 reply([From, To], {game_overview, success}, {ok, GOV}) ->
     Info = lists:flatten(game_overview(GOV)),
@@ -186,11 +186,11 @@ get_game_info(#game{} = Game, Msg) ->
     Msg2 = update_msg(Msg1, Game#game.description, ?DESCRIPTION, field_missing),
     Msg3 = update_msg(Msg2, Game#game.status, ?STATUS, undefined),
     Msg4 = update_msg(Msg3, Game#game.press, ?PRESSTYPE, undefined),
-    Msg5 = update_msg(Msg4, Game#game.order_phase, ?ORDERCIRCLE, undefined),
-    Msg6 = update_msg(Msg5, Game#game.retreat_phase, ?RETREATCIRCLE, undefined),
-    Msg7 = update_msg(Msg6, Game#game.build_phase, ?GAINLOSTCIRCLE, undefined),
+    Msg5 = update_msg(Msg4, Game#game.order_phase, ?ORDERCIRCLE, undefined, min),
+    Msg6 = update_msg(Msg5, Game#game.retreat_phase, ?RETREATCIRCLE, undefined, min),
+    Msg7 = update_msg(Msg6, Game#game.build_phase, ?GAINLOSTCIRCLE, undefined, min),
     Msg8 = update_msg(Msg7, Game#game.result, ?RESULT, none),
-    Msg9 = update_msg(Msg8, Game#game.waiting_time, ?WAITTIME, undefined),
+    Msg9 = update_msg(Msg8, Game#game.waiting_time, ?WAITTIME, undefined, min),
     update_msg(Msg9, Game#game.num_players, ?NUMBEROFPLAYERS, field_missing).
 
 %%-------------------------------------------------------------------
@@ -287,4 +287,21 @@ update_msg(Msg, Value, Label, Default) ->
             Msg ++ Val
     end.
 
+update_msg(Msg, Value, Label, Default, min) when is_integer(Value) ->
+    D = Value div 1440,
+    M1 = print_time("", D, "D"),
+    Rem = Value rem 1440,
+
+    H = Rem div 60,
+    M2 = print_time(M1, H, "H"),
+    M = Rem rem 60,
+    M3 = print_time(M2, M, "M"),
+    update_msg(Msg, M3, Label, Default);
+update_msg(Msg, Value, Label, Default, min) ->
+    update_msg(Msg, Value, Label, Default).
+
+print_time(Msg, Value, Label) when Value > 0 ->
+    Msg ++ integer_to_list(Value) ++ Label;
+print_time(Msg, _Value, _Label) ->
+    Msg.
 

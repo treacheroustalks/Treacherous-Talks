@@ -79,7 +79,7 @@ parse_create(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, list_to_integer(Session), 
+                    {ok, list_to_integer(Session),
                      #game{name = Name, press = Press,
                            order_phase = parse_time_format(OrdPhase),
                            retreat_phase = parse_time_format(RetPhase),
@@ -283,6 +283,8 @@ get_required_fields(Fields, Data) ->
 %%  Output: (1)*60*24 + (2)*60 + (30)
 %% @end
 %%------------------------------------------------------------------------------
+parse_time_format(field_missing) ->
+    field_missing;
 parse_time_format(TimeFormat) ->
     GetField = fun(Pattern) ->
         % Pattern must have a subpattern, e.g. "([0-9]+)D"
@@ -386,23 +388,23 @@ get_check_type([], AccCheckList) ->
 get_check_type([H|Rest], AccCheckList) ->
     UpdatedCheckList = case H of
         ?SESSION -> [num_only|AccCheckList];
-               
+
         ?NICKNAME -> [begin_with_alpha|AccCheckList];
         ?PASSWORD -> [password|AccCheckList];
         ?FULLNAME -> [alpha_space_only|AccCheckList];
         ?EMAIL -> [mail_addr|AccCheckList];
-                           
+
         ?DESCRIPTION -> [alpha_space_only|AccCheckList];
         ?GAMEID -> [num_only|AccCheckList];
         ?NUMBEROFPLAYERS -> [num_only|AccCheckList];
-                           
+
         ?GAMENAME -> [begin_with_alpha|AccCheckList];
         ?PRESSTYPE -> [alpha_space_only|AccCheckList];
         ?ORDERCIRCLE -> [duration_time|AccCheckList];
         ?RETREATCIRCLE -> [duration_time|AccCheckList];
         ?GAINLOSTCIRCLE -> [duration_time|AccCheckList];
         ?WAITTIME -> [duration_time|AccCheckList];
-        
+
         ?COUNTRY -> [alpha_space_only|AccCheckList]
     end,
     get_check_type(Rest, UpdatedCheckList).

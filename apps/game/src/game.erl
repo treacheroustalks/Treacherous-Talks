@@ -5,7 +5,7 @@
 -export ([new_game/2,
           get_game/2,
           delete_game/2,
-          update_game/2,
+          reconfig_game/2,
           join_game/4,
           get_game_players/2,
           get_game_state/3
@@ -49,13 +49,13 @@ delete_game (From, Key) ->
                      {delete_game, From, Key}).
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  updates a game from the database asynchronously
+%%  reconfig a game from the database asynchronously
 %%
 %%  will reply {tag (), {ok, GameKey :: Integer()}} to the calling process
 %% in case of success
 %% @end
 %% -----------------------------------------------------------------------------
-update_game(From, Game = #game{}) ->
+reconfig_game(From, Game = #game{}) ->
     gen_server:cast(service_worker:select_pid(game_worker),
                     {new_game, From, Game}).
 

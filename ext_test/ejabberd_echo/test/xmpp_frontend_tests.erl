@@ -77,7 +77,24 @@ RETREATCIRCLE: 1
 GAINLOSTCIRCLE: 1
 WAITTIME: 1
 END").
-
+-define(RECONFIG_COMMAND(Session, GameID),
+"RECONFIG
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+PRESSTYPE: none
+ORDERCIRCLE: 2D
+END").
+-define(JOIN_GAME_COMMAND(Session, GameID),
+"JOIN
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+COUNTRY: england
+END").
+-define(GAME_OVERVIEW_COMMAND(Session, GameID),
+"OVERVIEW
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+END").
 
 %%------------------------------------------------------------------
 %% Responses
@@ -92,14 +109,20 @@ Required fields: [\"NICKNAME\",\"PASSWORD\",\"EMAIL\",\"FULLNAME\"]").
 -define(UPD_RESPONSE_SESSION_ERROR, "[update_user]Invalid user session.").
 -define(UPD_RESPONSE_BAD_SYNTAX, "The command [update_user] could not be interpreted correctly:
 Required fields: [\"SESSION\"]").
--define(CREATE_RESPONSE_SUCCESS, "Game creation was successful.").
+-define(CREATE_RESPONSE_SUCCESS, "Game creation was successful. Your game ID is:").
 -define(CREATE_RESPONSE_SESSION_ERROR, "[create_game]Invalid user session.").
 -define(CREATE_RESPONSE_BAD_SYNTAX, "The command [create_game] could not be interpreted correctly:
 Required fields: [\"SESSION\",\"GAMENAME\",\"PRESSTYPE\",\"ORDERCIRCLE\",
                   \"RETREATCIRCLE\",\"GAINLOSTCIRCLE\",\"WAITTIME\"]").
 -define(RESPONSE_COMMAND_UNKNOWN, "The provided command is unknown.
 Supported commands are:").
+-define(RECONFIG_RESPONSE_SUCCESS, "Game information was successfully updated.").
+-define(RECONFIG_RESPONSE_INVALID_DATA,"Invalid reconfig game information.").
+-define(JOIN_GAME_RESPONSE_SUCCESS,"Join game was successful.").
+-define(JOIN_GAME_RESPONSE_INVALID_DATA,"Invalid join game data.").
 
+-define(GAME_OVERVIEW_RESPONSE_SUCCESS,"\nGame Overview:\n").
+-define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"You do not play this game").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -153,7 +176,13 @@ setup_session_instantiator() ->
     {match, [Session]} = re:run(Response,
                                 ?LOGIN_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
                                 [{capture, all_but_first, list}]),
+    Game = xmpp_client:xmpp_call(?SERVICE_BOT, ?CREATE_COMMAND_CORRECT(Session)),
+    ?debugVal(Game),
+    {match, [GameID]} = re:run(Game,
+                                ?CREATE_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
+                                [{capture, all_but_first, list}]),
     ?debugVal(Session),
+    ?debugVal(GameID),
     [
      {?UPDATE_COMMAND_CORRECT(Session),
       ?UPD_RESPONSE_SUCCESS,
@@ -170,10 +199,33 @@ setup_session_instantiator() ->
      {?CREATE_COMMAND_CORRECT("1234567891"),
       ?CREATE_RESPONSE_SESSION_ERROR,
       "create attempt with invalid session"},
-     {?CREATE_COMMAND_MISSING_FIELDS(Session),
+    {?CREATE_COMMAND_MISSING_FIELDS(Session),
       ?CREATE_RESPONSE_BAD_SYNTAX,
-      "create command with missing fields"}
+      "create command with missing fields"},
+
+    {?RECONFIG_COMMAND(Session, GameID),
+      ?RECONFIG_RESPONSE_SUCCESS,
+      "successful reconfig game"},
+    {?RECONFIG_COMMAND(Session, "1111222"),
+      ?RECONFIG_RESPONSE_INVALID_DATA,
+      "invalid reconfig game data"},
+
+    {?GAME_OVERVIEW_COMMAND(Session, GameID),
+      ?GAME_OVERVIEW_RESPONSE_NOT_PLAY,
+      "game overview not play this game"},
+
+    {?JOIN_GAME_COMMAND(Session, GameID),
+      ?JOIN_GAME_RESPONSE_SUCCESS,
+      "successful join game"},
+    {?JOIN_GAME_COMMAND(Session, GameID),
+      ?JOIN_GAME_RESPONSE_INVALID_DATA,
+      "invalid join game data"},
+    {?GAME_OVERVIEW_COMMAND(Session, GameID),
+      ?GAME_OVERVIEW_RESPONSE_SUCCESS,
+      "successful game overview"}
+
     ].
+
 
 
 %%-------------------------------------------------------------------
