@@ -162,7 +162,7 @@ adfadfasdfaldfad">>
 
     ORDER
 
-    SESSIONID: 1234341
+    SESSION: 1234341
     GAMEID: 3958230945903
 
 ------move----------------
@@ -210,9 +210,21 @@ adfadfasdfaldfad">>
 ------build---------------
     remove A mun
     build F Mun nc
-    waive
+    waive, Fleet Mid_Atlantic_Ocean move North_Atlantic_Ocean nc
 
-    Fleet Mid_Atlantic_Ocean move North_Atlantic_Ocean nc
+    END
+
+    adfadfasdfaldfad">>
+).
+
+-define(SAMPLE_TEST_ORDERS_ID_SESSION,
+<<"  ORDER
+
+    SESSION: 1234341
+    GAMEID: 3958230945903
+
+------move----------------
+    A Lon-Nrg
 
     END
 
