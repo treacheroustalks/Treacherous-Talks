@@ -1,36 +1,53 @@
 <!-- User registration page -->
-<div class="span-11">
-    <h2>New user? Register!</h2>
-    <fieldset>
-        <legend>Register</legend>
-        <form id="register">
-            <p><label>All fields are mandatory</label></p>
-            <p>
-                <label>E-mail</label><br/>
-                <input id="reg_email" type="text" class="title" placeholder="example@example.com">
-            </p>
-            <p>
-                <label>Full Name</label><br/>
-                <input id="reg_fullname" type="text" class="title" placeholder="John Doe">
-            </p>
-            <p>
-                <label>Nick</label><br/>
-                <input id="reg_nick" type="text" class="title" placeholder="john_doe">
-            </p>
-            <p>
-                <label>Password</label><br/>
-                <input id="reg_password" type="password" class="title">
-            </p>
-            <p>
-                <label>Confirm Password</label><br/>
-                <input id="reg_confirm_password" type="password" class="title">
-            </p>
-            <p>
-                <button type="button" onclick="validate();">Register</button>
-            </p>
-        </form>
-    </fieldset>
+<div class="page-header">
+  <h1>Register <small>Create a new user account</small></h1>
 </div>
-<div class="span-11 last">
-    <a href="javascript:void(0);" onclick="load_login_page();"><h2>Already have an account? Login!</h2></a>
-</div
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <fieldset>
+    <legend>Register</legend>
+    <form id="register">
+        <div class="span6 alert-message info">
+            <p>All the fields are mandatory</p>
+        </div>
+        <div class="clear"></div>
+        <div class="clearfix">
+            <label for="reg_email">E-mail</label>
+            <div class="input">
+                <input id="reg_email" name="reg_email" type="text" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="reg_name">Full Name</label>
+            <div class="input">
+                <input id="reg_name" name="reg_name" type="text" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="reg_nick">Nick</label>
+            <div class="input">
+                <input id="reg_nick" name="reg_nick" type="text" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="reg_password">Password</label>
+            <div class="input">
+                <input id="reg_password" name="reg_password" type="password" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="reg_confirm_password">Confirm password</label>
+            <div class="input">
+                <input id="reg_confirm_password" name="reg_confirm_password" type="password" />
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Register" onclick="validate(); return false;">&nbsp;
+            <button type="reset" class="btn" onclick="load_home_page();">Cancel</button>
+        </div>
+    </form>
+    </fieldset>
+  </div>
+</div>

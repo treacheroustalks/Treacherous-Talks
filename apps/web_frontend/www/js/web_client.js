@@ -15,17 +15,18 @@
 var ws; // Websocket client
 var page; // Current page
 var delay = 1000; // Delay for message clear
-var msgDiv = $('#message'); // Div to display messages on
 var pageDiv = $('#page'); // Div to load pages on
 var cookie_name = 'treacherous_talks'; // Cookie name
 var cookie_expire_days = 7; // Cookie expiry in days
-var initial_page = 'login'; // First page to be loaded
+var initial_page = 'home'; // First page to be loaded
 var dash_page = 'dashboard'; // First page to be loaded once logged in
+var home_page = initial_page; // Home page. Value changes on user login status
+
 var debug = true;
 var userObj = {
     "email" : undefined,
     "nick" : undefined,
-    "fullname" : undefined
+    "name" : undefined
 };
 
 /*------------------------------------------------------------------------------
@@ -137,6 +138,29 @@ function call_server(command, dataObj) {
 }
 
 /**
+ * Logs out the user
+ */
+function logout() {
+    delete_cookie();
+    home_page = initial_page;
+    logout_update_elements();
+    page = home_page;
+    load_page();
+}
+
+function login_update_elements() {
+    $("#login_form").hide();
+    $("#logout").show();
+    $("#register_menu").hide();
+}
+
+function logout_update_elements() {
+    $("#logout").hide();
+    $("#login_form").show();
+    $("#register_menu").show();
+}
+
+/**
  * Load page on the browser
  */
 function load_page(callback) {
@@ -153,6 +177,14 @@ function load_page(callback) {
  */
 function load_register_page() {
     page = 'register';
+    load_page();
+}
+
+/**
+ * Load the registration page
+ */
+function load_home_page() {
+    page = home_page;
     load_page();
 }
 
@@ -179,7 +211,36 @@ function load_update_user_page() {
  */
 function load_update_user_data() {
     $('#email').val(userObj.email);
-    $('#fullname').val(userObj.fullname);
+    $('#name').val(userObj.name);
+}
+
+/**
+ * Load the reconfig_game page
+ */
+function load_reconfig_game_page(page_data) {
+    page = 'reconfig_game';
+    load_page(function() {
+        load_reconfig_game_data(page_data)
+    });
+}
+
+/**
+ * Update the game data on reconfig_game page
+ *
+ * @return
+ */
+function load_reconfig_game_data(page_data) {
+    $('#game_legend').append(page_data.id)
+    $('#game_id').val(page_data.id)
+    $('#name').val(page_data.name);
+    $('#description').val(page_data.description);
+    $('#password').val(page_data.password);
+    $('#press').val(page_data.press);
+    $('#order_phase').val(page_data.order_phase);
+    $('#retreat_phase').val(page_data.retreat_phase);
+    $('#build_phase').val(page_data.build_phase);
+    $('#waiting_time').val(page_data.waiting_time);
+    $('#num_players').val(page_data.num_players);
 }
 
 /**
@@ -192,12 +253,13 @@ function load_create_game_page() {
 
 /**
  * Load the local userObj
+ *
  * @return
  */
 function load_userObj(data) {
     userObj.email = data.email;
     userObj.nick = data.nick;
-    userObj.fullname = data.fullname;
+    userObj.name = data.name;
 }
 
 /*------------------------------------------------------------------------------
@@ -208,11 +270,19 @@ function load_userObj(data) {
  */
 function handle_event(data) {
     // Check if a new page has to be loaded
-    if (data.page != undefined && data.page != "" && page != data.page) {
+    if (!is_empty_page(data.page)) {
         page = data.page;
-        load_page();
-    }
+        load_page(function() {
+            handle_event_page_load(data);
+        });
+    } else
+        handle_event_page_load(data);
+}
 
+/**
+ * Handle the event and display the message once the page is loaded
+ */
+function handle_event_page_load(data) {
     // Check if a message has to be displayed
     if (data.message_type != undefined && data.message_value != undefined) {
         set_message(data.message_type, data.message_value);
@@ -220,19 +290,24 @@ function handle_event(data) {
 
     // Handle event
     if (data.event != undefined && data.event_data != undefined) {
-        event_action(data.event, data.event_data);
+        event_action(data);
     }
 }
 
 /**
  * Take actions based on events sent by the server
  */
-function event_action(event, event_data) {
+function event_action(data) {
+    var event = data.event;
+    var event_data = data.event_data;
+
     switch (event) {
     case "login_success":
-        clear_message();
         // User is logged in, set the cookie
         set_cookie(event_data.session_id);
+        login_update_elements();
+        home_page = dash_page;
+
         // Get the user from the server
         var dataObj = {
             "content" : [ {
@@ -249,16 +324,19 @@ function event_action(event, event_data) {
         break;
     case "get_session_user_invalid_data":
         clear_message();
+        logout();
         break;
     case "get_session_user_success":
-        if (page == dash_page) {
+        if (is_empty_page(data.page) && page == dash_page) {
             // This case occurs when a logged in user reloads a page
-
-            // Update local userObj
-            load_userObj(event_data);
-            // Load the dashboard
             load_page();
-        }
+            login_update_elements();
+            home_page = dash_page;
+        } else
+            handle_event_page_load(data);
+        // Update local userObj
+        load_userObj(event_data);
+        clear_message();
         break;
     case "update_user_success":
         clear_message();
@@ -267,9 +345,23 @@ function event_action(event, event_data) {
     case "update_user_invalid_data":
         clear_message();
         break;
+    case "get_game_invalid_data":
+        clear_message();
+        $('#game_id').val("");
+    case "get_game_success":
+        if (is_empty_page(data.page) && dash_page) {
+            // This case occurs when a game is to be reconfigured from dashboard
+            load_reconfig_game_page(event_data);
+        } else
+            handle_event_page_load(data);
+
     default:
         break;
     }
+}
+
+function is_empty_page(pg) {
+    return pg == undefined || pg == "" || pg == page;
 }
 
 /*------------------------------------------------------------------------------
@@ -287,9 +379,6 @@ function validate() {
  */
 function handle_enter() {
     switch (page) {
-    case 'login':
-        validate_login();
-        break;
     case 'register':
         validate_register();
         break;
@@ -297,7 +386,10 @@ function handle_enter() {
         validate_update_user();
         break;
     case 'create_game':
-        validate_create_game();
+        validate_game_data();
+        break;
+    case 'reconfig_game':
+        validate_game_data();
         break;
     default:
         break;
@@ -327,18 +419,40 @@ function validate_login() {
 }
 
 /**
+ * Validate temporary form on dashboard to get game_id
+ */
+function validate_dashboard_reconfig() {
+    var game_id = $('#game_id').val();
+
+    if (check_field_empty(game_id, 'Game Id'))
+        return false;
+
+    if (check_field_int(game_id, 'Game Id'))
+        return false;
+
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "game_id" : game_id
+        } ]
+    };
+    call_server('get_game', dataObj);
+}
+
+/**
  * Validate user registration data and if successful, send it to server
  */
 function validate_register() {
     var email = $('#reg_email').val();
-    var fullname = $('#reg_fullname').val();
+    var name = $('#reg_name').val();
     var nick = $('#reg_nick').val();
     var password = $('#reg_password').val();
     var confirm_password = $('#reg_confirm_password').val();
 
     if (check_field_empty(email, 'email'))
         return false;
-    if (check_field_empty(fullname, 'full name'))
+    if (check_field_empty(name, 'full name'))
         return false;
     if (check_field_empty(nick, 'nick'))
         return false;
@@ -355,7 +469,7 @@ function validate_register() {
         "content" : [ {
             "email" : email
         }, {
-            "fullname" : fullname
+            "name" : name
         }, {
             "nick" : nick
         }, {
@@ -370,13 +484,13 @@ function validate_register() {
  */
 function validate_update_user() {
     var email = $('#email').val();
-    var fullname = $('#fullname').val();
+    var name = $('#name').val();
     var password = $('#password').val();
     var confirm_password = $('#confirm_password').val();
 
     if (check_field_empty(email, 'email'))
         return false;
-    if (check_field_empty(fullname, 'full name'))
+    if (check_field_empty(name, 'full name'))
         return false;
     if (check_field_empty(password, 'password'))
         return false;
@@ -393,7 +507,7 @@ function validate_update_user() {
         }, {
             "email" : email
         }, {
-            "fullname" : fullname
+            "name" : name
         }, {
             "password" : password
         } ]
@@ -404,7 +518,7 @@ function validate_update_user() {
 /**
  * Validate user update data and if successful, send it to server
  */
-function validate_create_game() {
+function validate_game_data() {
     var name = $('#name').val();
     var description = $('#description').val();
     var password = $('#password').val();
@@ -462,7 +576,14 @@ function validate_create_game() {
             "num_players" : num_players
         } ]
     };
-    call_server('create_game', dataObj);
+
+    if (page == 'reconfig_game') {
+        dataObj.content.push( {
+            "game_id" : $('#game_id').val()
+        });
+        call_server('reconfig_game', dataObj);
+    } else
+        call_server('create_game', dataObj);
 }
 
 /**
@@ -573,7 +694,15 @@ function delete_cookie() {
  * message to be set in the message box
  */
 function set_message(type, message) {
-    var msg = '<div class="' + type + '">' + message + '</div>';
+    if (type == undefined || type == "" || message == undefined
+            || message == "")
+        return false;
+
+    var msgDiv = $('#message');
+    var msg = '<div class="alert-message ' + type + '">'
+            + '<a class="close" href="javscript:void(0);" '
+            + 'onclick="delete_message(); return false;">&times;</a><p>'
+            + message + '</p>' + '</div>';
     msgDiv.html(msg).fadeIn('fast');
 }
 
@@ -583,9 +712,15 @@ function set_message(type, message) {
  * @return
  */
 function clear_message() {
+    var msgDiv = $('#message');
     setTimeout(function() {
         msgDiv.html('');
     }, delay);
+}
+
+function delete_message() {
+    var msgDiv = $('#message');
+    msgDiv.html('');
 }
 
 function msg_unsupported_browser() {

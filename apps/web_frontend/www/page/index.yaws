@@ -1,8 +1,4 @@
-<!-- Default page where data is loaded -->
-<div class="container">
-    <div id="message" class="prepend-6 span-12 append-6"></div>
-    <div class="clear"></div>
-    <div id="page" class="span-24">
-    DEFAULT CONTENT
-    </div>
+<div id="page">
+    <div id="message"></div>
+    <img class="preloader" src="/image/preloader.gif"/>
 </div>

@@ -1,11 +1,34 @@
 <!-- User home page after logging in -->
-<h2>Welcome to the game</h2>
-<p>Your options</p>
-<ul>
-    <li><a href="javascript:void(0);" onclick="load_update_user_page();">Update user</a></li>
-    <li><a href="javascript:void(0);" onclick="load_create_game_page();">Create a new game</a></li>
-    <li>---</li>
-    <li><a href="javascript:void(0);">Create a new game</a></li>
-    <li><a href="javascript:void(0);">Join a game</a></li>
-    <li><a href="javascript:void(0);">Search games</a></li>
-</ul>
+<div class="page-header">
+  <h1>Dashboard <small>User home page</small></h1>
+</div>
+<div id="message"></div>
+<div class="clear"></div>
+<div class="row">
+  <div class="span8">
+    <h2>Game options</h2>
+    <p>
+        <button class="btn primary" onclick="load_create_game_page();">Create a new game</button>
+    </p>
+    <fieldset class="span7">
+    <legend>Reconfig game</legend>
+    <form>
+        <div class="clearfix">
+            <label for="game_id">Game Id</label>
+            <div class="input">
+                <input id="game_id" name="game_id" type="text" />
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Reconfig game" onclick="validate_dashboard_reconfig(); return false;">
+        </div>
+    </form>
+    </fieldset>
+  </div>
+  <div class="span8">
+    <h2>User options</h2>
+    <p>
+        <button class="btn primary" onclick="load_update_user_page();">Change personal information</button>
+    </p>
+  </div>
+</div>

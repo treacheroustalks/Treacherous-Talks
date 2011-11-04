@@ -40,30 +40,15 @@ parse(RawData) ->
             {login,
              {ok, #user{nick = get_field("nick", Data),
                         password = get_field("password", Data)}}};
+        "get_session_user" ->
+            SessionId = list_to_integer(get_field("session_id", Data)),
+            {get_session_user, {ok, SessionId}};
         "register" ->
             {register,
              {ok, #user{nick = get_field("nick", Data),
                         password = get_field("password", Data),
                         email = get_field("email", Data),
-                        name = get_field("fullname", Data)}}};
-        "create_game" ->
-            SessionId = list_to_integer(get_field("session_id", Data)),
-            {create_game,
-             {ok,
-              SessionId,
-              #game{name = get_field("name", Data),
-                    description = get_field("description", Data),
-                    press = get_field("press", Data),
-                    password = get_field("password", Data),
-                    order_phase =
-                        list_to_integer(get_field("order_phase", Data)),
-                    retreat_phase =
-                        list_to_integer(get_field("retreat_phase", Data)),
-                    build_phase =
-                        list_to_integer(get_field("build_phase", Data)),
-                    waiting_time =
-                        list_to_integer(get_field("waiting_time", Data)),
-                    creator_id = undefined}}};
+                        name = get_field("name", Data)}}};
         "update_user" ->
             SessionId = list_to_integer(get_field("session_id", Data)),
             {update_user,
@@ -71,10 +56,51 @@ parse(RawData) ->
               SessionId,
               [{#user.password, get_field("password", Data)},
                {#user.email, get_field("email", Data)},
-               {#user.name, get_field("fullname", Data)}]}};
-        "get_session_user" ->
+               {#user.name, get_field("name", Data)}]}};
+        "get_game" ->
             SessionId = list_to_integer(get_field("session_id", Data)),
-            {get_session_user, {ok, SessionId}}
+            GameId = list_to_integer(get_field("game_id", Data)),
+            {get_game, {ok, SessionId, GameId}};
+        "create_game" ->
+            SessionId = list_to_integer(get_field("session_id", Data)),
+            OrderPhase = list_to_integer(get_field("order_phase", Data)),
+            RetreatPhase = list_to_integer(get_field("retreat_phase", Data)),
+            BuildPhase = list_to_integer(get_field("build_phase", Data)),
+            WaitingTime = list_to_integer(get_field("waiting_time", Data)),
+            NumPlayers = list_to_integer(get_field("num_players", Data)),
+            {create_game,
+             {ok,
+              SessionId,
+              #game{name = get_field("name", Data),
+                    description = get_field("description", Data),
+                    press = get_field("press", Data),
+                    password = get_field("password", Data),
+                    order_phase = OrderPhase,
+                    retreat_phase = RetreatPhase,
+                    build_phase = BuildPhase,
+                    waiting_time = WaitingTime,
+                    num_players = NumPlayers,
+                    creator_id = undefined}}};
+        "reconfig_game" ->
+            SessionId = list_to_integer(get_field("session_id", Data)),
+            GameId = list_to_integer(get_field("game_id", Data)),
+            OrderPhase = list_to_integer(get_field("order_phase", Data)),
+            RetreatPhase = list_to_integer(get_field("retreat_phase", Data)),
+            BuildPhase = list_to_integer(get_field("build_phase", Data)),
+            WaitingTime = list_to_integer(get_field("waiting_time", Data)),
+            NumPlayers = list_to_integer(get_field("num_players", Data)),
+            {reconfig_game,
+             {ok, SessionId, GameId,
+              [{#game.name, get_field("name", Data)},
+               {#game.press,  get_field("press", Data)},
+               {#game.order_phase, OrderPhase},
+               {#game.retreat_phase, RetreatPhase},
+               {#game.build_phase, BuildPhase},
+               {#game.waiting_time, WaitingTime},
+               {#game.description, get_field("description", Data)},
+               {#game.num_players, NumPlayers},
+               {#game.password, get_field("password", Data)},
+               {#game.creator_id, field_missing}]}}
     end.
 
 %% Get a specific field from a list of tuples

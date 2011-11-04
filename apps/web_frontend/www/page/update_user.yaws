@@ -1,29 +1,47 @@
 <!-- User update page -->
-<div class="span-11">
-    <h2>Update account information</h2>
+<div class="page-header">
+  <h1>Update account information <small>Update your personal details</small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
     <fieldset>
-        <legend>Update</legend>
-        <form id="update">
-            <p><label>All fields are mandatory</label></p>
-            <p>
-                <label>E-mail</label><br/>
-                <input id="email" type="text" class="title">
-            </p>
-            <p>
-                <label>Full Name</label><br/>
-                <input id="fullname" type="text" class="title" placeholder="John Doe">
-            </p>
-            <p>
-                <label>Password</label><br/>
-                <input id="password" type="password" class="title">
-            </p>
-            <p>
-                <label>Confirm Password</label><br/>
-                <input id="confirm_password" type="password" class="title">
-            </p>
-            <p>
-                <button type="button" onclick="validate();">Update</button>
-            </p>
-        </form>
+    <legend>Update</legend>
+    <form id="update">
+        <div class="span6 alert-message info">
+            <p>All the fields are mandatory</p>
+        </div>
+        <div class="clear"></div>
+        <div class="clearfix">
+            <label for="email">E-mail</label>
+            <div class="input">
+                <input id="email" name="email" type="text" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="name">Full Name</label>
+            <div class="input">
+                <input id="name" name="name" type="text" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="password">Password</label>
+            <div class="input">
+                <input id="password" name="password" type="password" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="confirm_password">Confirm password</label>
+            <div class="input">
+                <input id="confirm_password" name="confirm_password" type="password" />
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Update" onclick="validate(); return false;">&nbsp;
+            <button type="reset" class="btn" onclick="load_home_page();">Cancel</button>
+        </div>
+    </form>
     </fieldset>
+  </div>
 </div>
