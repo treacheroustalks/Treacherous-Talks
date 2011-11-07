@@ -28,6 +28,11 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
+%% ------------------------------------------------------------------
+%% eUnit exports - do no use!
+%% ------------------------------------------------------------------
+-export([resolve_user_conflict/2]).
+
 %% server state
 -record(state, {}).
 
@@ -85,10 +90,16 @@ handle_call(ping, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({register, User}, _From, State) ->
     Result = case user_management:create(User) of 
+                 {ok, User1 = #user{}} ->
+                     SessHist = session_history:create(User1#user.id),
+                     session_history:db_put(SessHist),
+                     {ok, User1};
+                 {error, nick_already_exists} ->
+                     {error, nick_already_exists};
                  {error, Error} ->
                      {error, Error};
-                 User1 = #user{} ->
-                     {ok, User1}
+                 Other ->
+                     {error, Other}
              end,
     {reply, Result, State};
 %%-------------------------------------------------------------------
@@ -105,13 +116,49 @@ handle_call({register, User}, _From, State) ->
 %%%         {reply, interger(), #state{}} | {reply, invalid, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({login, User}, _From, State) ->
-    Result = case user_management:is_valid(User#user.nick, User#user.password) of
-                 false ->
-                     {error, invalid_login_data};
-                 User1 = #user{} ->
-                     {ok, session:start(User1)}
-             end,
+handle_call({login, Login}, _From, State) ->
+    Result =
+        case user_management:get_by_idx(#user.nick, Login#user.nick) of
+            {ok, {index_list, _IdxList}} ->
+                % Multiple nicks in the db, not allowed ...
+                {error, nick_not_unique};
+            {ok, DbObj} ->
+                % user with nick exists
+                Id = id_from_user_siblings(DbObj),
+
+                {ok, HObj} = session_history:db_get(Id),
+                HistObj = session_history:resolve_history_siblings(HObj),
+                Hist = db_obj:get_value(HistObj),
+                % @todo kill old session ...
+
+                UserObj = resolve_user_conflict(Hist, DbObj),
+                User = db_obj:get_value(UserObj),
+
+                case User#user.password == Login#user.password of
+                    false ->
+                        {error, invalid_login_data};
+                    true ->
+                        SessId = session:start(User, Hist),
+                        NewHist = session_history:add(Hist, SessId),
+                        NewHistObj = db_obj:set_value(HistObj, NewHist),
+                        session_history:db_update(NewHistObj),
+                        {ok, CheckHistObj} = session_history:db_get(Id),
+                        case db_obj:has_siblings(CheckHistObj) of
+                            true ->
+                                % @todo kill all sibling sessions
+                                {error, simultaneous_login};
+                            false ->
+                                NewUser = User#user{last_session = SessId},
+                                NewUserObj = db_obj:set_value(UserObj, NewUser),
+                                db:put(NewUserObj),
+                                {ok, SessId}
+                        end
+                end;
+            {error, does_not_exist} ->
+                {error, invalid_login_data};
+            {error, Error} ->
+                {error, Error}
+        end,
     {reply, Result, State};
 %%-------------------------------------------------------------------
 %% @doc
@@ -151,4 +198,35 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+id_from_user_siblings(DbObj) ->
+    Obj = case db_obj:has_siblings(DbObj) of
+              false ->
+                  DbObj;
+              true ->
+                  % id never changes, so just pick the first obj
+                  [H|_] = db_obj:get_siblings(DbObj),
+                  H
+          end,
+    (db_obj:get_value(Obj))#user.id.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Resolves siblings with the help of the session history.
+%%
+%% @spec resolve_user_conflict(#session_history{}, #db_obj{}) -> #db_obj{}
+%% @end
+%%-------------------------------------------------------------------
+resolve_user_conflict(Hist, DbObj) ->
+    case db_obj:has_siblings(DbObj) of
+        false ->
+            DbObj;
+        true ->
+            Siblings = db_obj:get_siblings(DbObj),
+            LastSessions = lists:map(
+                             fun(SibObj) ->
+                                     (db_obj:get_value(SibObj))#user.last_session
+                             end, Siblings),
+            Pos = session_history:find_newest(Hist, LastSessions),
+            lists:nth(Pos, Siblings)
+    end.
 

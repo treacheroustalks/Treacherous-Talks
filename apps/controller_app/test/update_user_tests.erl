@@ -26,7 +26,7 @@ success(Callback, SessId) ->
 
     ?assertEqual({update_user, success}, CmdRes).
 
-invalid(Callback, SessId) ->
+invalid(_Callback, _SessId) ->
     % don't know how this could fail ...
     ok.
 %%-------------------------------------------------------------------

@@ -27,7 +27,8 @@ db_put_get_test_() ->
       ?_test(delete()),
       ?_test(put_get()),
       ?_test(get_index()),
-      ?_test(list_keys())
+      ?_test(list_keys()),
+      ?_test(get_index_with_siblings())
      ]
     }.
 
@@ -91,6 +92,42 @@ list_keys() ->
     ?assertEqual({ok, [Key]}, Result),
     db:delete(Bucket, Key).
     
+%% get_index test
+get_index_with_siblings() ->
+    Bucket = <<"index_siblings_test">>,
+    db:set_bucket(Bucket, [{allow_mult, true}]),
+    Id = db:get_unique_id(),
+    Key = db:int_to_bin(Id),
+    Val = {just, a_value},
+    Obj = db_obj:create(Bucket, Key, Val),
+
+    Idx = <<"index_bin">>,
+    IdxVal = list_to_binary("first_idx" ++ integer_to_list(Id)),
+    Obj2 = db_obj:add_index(Obj, {Idx, IdxVal}),
+
+    db:put(Obj2),
+
+    % created, now we get the object and create siblings
+    {ok, DbObj} = db:get(Bucket, Key),
+
+    IdxVal2 = list_to_binary("second_idx" ++ integer_to_list(Id)),
+    DbObj2 = db_obj:set_indices(DbObj, [{Idx, IdxVal2}]),
+    IdxVal3 = list_to_binary("third_idx" ++ integer_to_list(Id)),
+    DbObj3 = db_obj:set_indices(DbObj, [{Idx, IdxVal3}]),
+    db:put(DbObj2),
+    db:put(DbObj3),
+
+    {ok, Result1} = db:get_index(Bucket, {Idx, IdxVal}),
+    {ok, Result2} = db:get_index(Bucket, {Idx, IdxVal2}),
+    {ok, Result3} = db:get_index(Bucket, {Idx, IdxVal3}),
+    ?assertEqual([], Result1),
+    ?assertEqual([[Bucket, Key]], Result2),
+    ?assertEqual([[Bucket, Key]], Result3),
+
+    {ok, DbSib} = db:get(Bucket, Key),
+    [Sibling|_] = db_obj:get_siblings(DbSib),
+    ?assertEqual(Val, db_obj:get_value(Sibling)),
+    db:delete(Bucket, Key).
 
 %% test int_to_bin
 int_to_bin_test() ->

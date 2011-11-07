@@ -148,14 +148,16 @@ set_content_type(Obj, ContentType) ->
     Obj#db_obj{ctype=ContentType}.
 
 get_siblings(#wsib{bucket=Bucket, key=Key, vclock=Vclock, sibs=Siblings}) ->
-    [set_links(
-       set_content_type(
-         set_vclock(
-           create(Bucket, Key, Value),
-           Vclock),
-         ContentType),
-       Links)
-     || {ContentType, Links, Value} <- Siblings].
+    [set_indices(
+       set_links(
+         set_content_type(
+           set_vclock(
+             create(Bucket, Key, Value),
+             Vclock),
+           ContentType),
+         Links),
+       Indices)
+     || {ContentType, Indices, Links, Value} <- Siblings].
 
 has_siblings(#wsib{}) -> true;
 has_siblings(#db_obj{}) -> false.
@@ -197,12 +199,12 @@ from_riakc_obj(RCObj) ->
             end;
         RCSibs -> % siblings
             WSibs = [{dict:fetch(?MD_CTYPE, RCMD),
-                      case dict:find(?MD_LINKS, RCMD) of
-                          {ok, Links} -> Links;
-                          error       -> []
-                      end,
                       case dict:find(?MD_INDEX, RCMD) of
                           {ok, Indices} -> index_list_to_binary(Indices);
+                          error       -> []
+                      end,
+                      case dict:find(?MD_LINKS, RCMD) of
+                          {ok, Links} -> Links;
                           error       -> []
                       end,
                       decode_value(dict:fetch(?MD_CTYPE, RCMD),
