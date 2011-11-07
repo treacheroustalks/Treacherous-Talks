@@ -15,7 +15,7 @@
                   stdlib,
                   iconv,
                   gen_smtp,
-                  command_parser
+                  utils
                  ]},
   {mod, { smtp_frontend_app, []}},
   {env, [

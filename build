@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# erlang's os:cmd does not return the exit code, 
+# erlang's os:cmd does not return the exit code,
 #therefore this is implemented as bash script
 
 cwd=$(pwd)
@@ -9,7 +9,7 @@ ejdctl=ext_rel/xmpp_frontend/rel/xmpp_frontend/installation/sbin/ejabberdctl
 
 # Set manual build order for apps/ dir (note that anything in that directory not
 # mentioned here will still get built; but after the ones defined here).
-apps_to_build_first="datatypes service db"
+apps_to_build_first="datatypes service db utils"
 
 # Setup the shell to report errors even when piping commands. This allows sed
 # to operate on output while preserving the exit code from the previous

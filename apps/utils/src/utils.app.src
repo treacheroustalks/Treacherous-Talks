@@ -1,4 +1,4 @@
-{application, command_parser,
+{application, utils,
  [
   {description, ""},
   {vsn, "1.0.0"},

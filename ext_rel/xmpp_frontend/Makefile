@@ -2,8 +2,8 @@ reldir = rel/xmpp_frontend
 configs = config/ejabberd.cfg config/ejabberdctl.cfg config/inetrc
 beams = components/echo_bot.beam components/tt_bot.beam components/tt_xmpp_output.beam
 erls = components/echo_bot.erl components/tt_bot.erl components/tt_xmpp_output.erl
-deps-ext = ../../apps/controller_app ../../apps/command_parser ../../apps/service ../../apps/datatypes ../../apps/game
-deps = components/controller_app components/command_parser components/service components/datatypes components/game
+deps-ext = ../../apps/controller_app ../../apps/utils ../../apps/service ../../apps/datatypes ../../apps/game
+deps = components/controller_app components/utils components/service components/datatypes components/game
 
 all: build
 
@@ -14,7 +14,7 @@ build: ejabberd/ $(beams) $(configs)
 	cp -r ejabberd $(reldir)
 	cp -r config $(reldir)
 	mkdir -p $(reldir)/components
-	cp components/*/ebin/*.beam ebin
+	cp -rf components/*/ebin/*.beam ebin
 	rm -rf $(reldir)/ebin
 	cp -r ebin $(reldir)/ebin
 	cp install_Makefile $(reldir)/Makefile
@@ -48,7 +48,7 @@ ejabberd/:
 clean: clean-release
 	rm -rf ejabberd ejabberd-2.1.9.tar.gz
 	rm -rf ebin
-	rm -rf components/datatypes
+	rm -f components/*beam
 	rm -rf $(deps)
 	rm -rf deps
 
