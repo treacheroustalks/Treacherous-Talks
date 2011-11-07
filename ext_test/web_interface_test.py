@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
 
+import time
+
 address="http://localhost:8000"
 waittime=20
 
@@ -9,18 +11,19 @@ waittime=20
 def registerUser(driver, path, data, response):
     driver.get(path)
 
-    driver.find_element_by_partial_link_text("Register!").click()
+    driver.find_element_by_partial_link_text("Register").click()
 
     for element, value in data.iteritems():
         driver.find_element_by_id(element).send_keys(value)
 
-    driver.find_element_by_xpath("//form[@id='register']/p[7]/button").click()
+    registerButton = "//form[@id='register']/div[@class='actions']/input[@class='btn primary']"
+    driver.find_element_by_xpath(registerButton).click()
 
     # Loop until page has loaded completly (we'll get exceptions about stale
     # objects while it is not fully loaded).
     while True:
         try:
-            ret = driver.find_element_by_class_name("success").text
+            ret = driver.find_element_by_xpath("//p[text()='"+response+"']").text
             break
         except StaleElementReferenceException:
             continue
@@ -32,13 +35,14 @@ def login(driver, path, data, response):
     for element, value in data.iteritems():
         driver.find_element_by_id(element).send_keys(value)
 
-    driver.find_element_by_xpath("//form[@id='login']/p[4]/button").click()
+    loginButton = "//form[@id='login_form']/button[@class='btn']"
+    driver.find_element_by_xpath(loginButton).click()
 
     # Loop until page has loaded completly (we'll get exceptions about stale
     # objects while it is not fully loaded).
     while True:
         try:
-            ret = driver.find_element_by_xpath("//div[@id='page']/h2").text
+            ret = driver.find_element_by_partial_link_text(response).text
             break
         except StaleElementReferenceException:
             continue
@@ -48,7 +52,7 @@ def login(driver, path, data, response):
 ### Tests
 def registerUserTest(driver):
     data = {"reg_email": "a@a.com",
-            "reg_fullname": "Aa Aa",
+            "reg_name": "Aa Aa",
             "reg_nick": "aa",
             "reg_password": "1234",
             "reg_confirm_password": "1234"}
@@ -58,7 +62,7 @@ def registerUserTest(driver):
 def loginTest(driver):
     data = {"login_nick": "aa",
             "login_password": "1234"}
-    response = "Welcome to the game"
+    response = "Logout"
     login(driver, address, data, response)
 
 # Create a new (shared among tests) browser instance
@@ -70,6 +74,11 @@ driver.implicitly_wait(waittime)
 # Keep the try/except blocks around the tests so that we can close the browser
 # properly even when tests fail :-)
 try:
+    # Go to start page to load javascript before tests. Sleep afterwards since
+    # we cannot know when all javascript files are fully loaded...
+    driver.get(address)
+    time.sleep(2)
+
     registerUserTest(driver)
     loginTest(driver)
 except Exception, e:
