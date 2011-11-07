@@ -40,6 +40,17 @@ init(no_arg) ->
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
+
+
+handle_call({put_game_order, Key, GameMove}, _From, State) ->
+    Reply = put_game_order(Key, GameMove),
+    {reply, Reply, State};
+handle_call({update_game_order, Key, GameMove}, _From, State) ->
+    Reply = update_game_order(Key, GameMove),
+    {reply, Reply, State};
+handle_call({get_game_order, Key}, _From, State) ->
+    Reply = get_game_order(Key),
+    {reply, Reply, State};
 handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
     Reply = new_game(ID, Game),
     {ok, NewID} = Reply,
@@ -101,6 +112,21 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+put_game_order(ID, GameMoveRecList) ->
+    BinID = list_to_binary(ID),
+    DBGameMoveObj = db_obj:create (?B_GAME_ORDER, BinID, GameMoveRecList),
+    db:put (DBGameMoveObj),
+    {ok, ID}.
+
+update_game_order(ID, NewOrder) ->
+    case db:get(?B_GAME_ORDER, list_to_binary(ID)) of
+        {ok, Obj} ->
+            NewObj = db_obj:set_value(Obj, NewOrder),
+            db:put(NewObj),
+            {ok, NewOrder};
+        Error ->
+            {error, Error}
+    end.
 
 new_game(undefined, #game{} = Game) ->
     ID = db:get_unique_id(),
@@ -138,6 +164,9 @@ join_game(BinID, GameID, GameDBObj, UserID, Country) ->
             {error, country_not_available}
        end.
 
+
+
+
 get_game(ID)->
     BinID = db:int_to_bin(ID),
     DBReply = db:get(?B_GAME, BinID),
@@ -168,8 +197,7 @@ get_game_state(GameID, UserID) ->
                 GU = #game_user{} ->
                     get_game_map(GameID, #game_overview
                                                {country = GU#game_user.country})
-
-                    end;
+            end;
         Other ->
             Other
 
@@ -186,6 +214,7 @@ get_game_map(GameID, #game_overview{} = GameOverview) ->
         _ -> %TODO provide state for other type of games which are not waiting
             {error, game_not_waiting}
     end.
+
 
 phase_change(Game, NewPhase) ->
     case NewPhase of
@@ -207,4 +236,14 @@ phase_change(Game, NewPhase) ->
             update_game(Game#game.id, Game),
             %% do some other stuff that's needed...
             ok
+    end.
+
+get_game_order(ID)->
+    BinID = list_to_binary(ID),
+    DBReply = db:get(?B_GAME_ORDER, BinID),
+    case DBReply of
+        {ok, DBObj} ->
+            {ok, db_obj:get_value (DBObj)};
+        Other ->
+            Other
     end.

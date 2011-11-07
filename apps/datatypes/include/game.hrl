@@ -12,6 +12,7 @@
                     italy |
                     russia |
                     turkey.
+-type phase () ::  order | build | retreat.
 
 -define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
 -define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
@@ -37,19 +38,36 @@
                }).
 
 
--record (game_user, {id :: integer (),
-                     country :: country ()}).
+-record (game_user, {
+    id :: integer (),
+    country :: country (),
+    last_game_order_id :: integer()}).
 
--record (game_player, {id :: integer (),
-                players = [] :: [#game_user{}]}).
+-record (game_player, {
+    id :: integer (),
+    players = [] :: [#game_user{}]}).
 
--record (game_state, { id :: integer(),
-                       phase :: string(),
-                        map :: any()}).
+-record (game_state, {
+    id :: integer(),
+    year_season :: any(),
+    phase :: phase(),
+    map :: any()}).
 
--record(game_overview, {game_rec :: #game{},
-                        country :: country(),
-                        map :: any()}).
+-record(game_overview, {
+    game_rec :: #game{},
+    country :: country(),
+    map :: any()}).
+
+-record(game_order, {
+    id :: integer(),
+    game_id :: integer(),
+    user_id :: integer(),
+    country :: country(),
+    year_season :: any(),
+    phase :: phase(),
+    date_created = {date (), time ()} :: date (),
+    order_list :: any()}).
+
 
 -endif.
 %INDEX

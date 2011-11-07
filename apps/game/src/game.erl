@@ -7,7 +7,10 @@
           join_game/3,
           get_game_players/1,
           get_game_state/2,
-          phase_change/2
+          phase_change/2,
+          put_game_order/2,
+          update_game_order/2,
+          get_game_order/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -33,6 +36,33 @@
 -spec new_game (#game{}) -> ok.
 new_game(Game=#game{}) ->
     ?CALL_WORKER({new_game, Game}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  stores a list of game moves to the database
+%%
+%% @end
+%% -----------------------------------------------------------------------------
+put_game_order (Key, GameMove) ->
+    ?CALL_WORKER({put_game_order, Key, GameMove}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  get a list of game moves from the database
+%%
+%% @end
+%% -----------------------------------------------------------------------------
+get_game_order (Key) ->
+    ?CALL_WORKER({get_game_order, Key}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  stores a list of game moves to the database
+%%
+%% @end
+%% -----------------------------------------------------------------------------
+update_game_order (Key, GameMove) ->
+    ?CALL_WORKER({update_game_order, Key, GameMove}).
 
 %% -----------------------------------------------------------------------------
 %% @doc
