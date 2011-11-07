@@ -12,7 +12,9 @@
           put_game_order/3,
           put_game_order/2,
           update_game_order/2,
-          get_game_order/1
+          get_game_order/1,
+          get_current_game/1,
+          process_phase/2
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -98,6 +100,7 @@ get_keys_by_idx(Field, Value) ->
 %% -----------------------------------------------------------------------------
 delete_game(Key) ->
     ?CALL_WORKER({delete_game, Key}).
+
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  reconfig a game from the database asynchronously
@@ -144,10 +147,28 @@ get_game_players(GameID) ->
 %% -----------------------------------------------------------------------------
 get_game_state(GameID, UserID) ->
     ?CALL_WORKER({get_game_state, GameID, UserID}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  gets the current game information of a game from the database
+%%  will reply {ok, game_current{}} to the calling process in case of success
+%% @end
+%% ----------------------------------------------------------------------------
+get_current_game(ID) ->
+    ?CALL_WORKER({get_current_game, ID}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  Handles the game phase and updates the state of the game, replies
+%%  {ok, Phase} if the game is to continue or {ok, end} if the game has ended
+%% @end
+%% ----------------------------------------------------------------------------
+process_phase(ID, Phase) ->
+    ?CALL_WORKER({process_phase, ID, Phase}).
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  API for handling phase changes
 %% @end
 %% ----------------------------------------------------------------------------
 phase_change(Game, NewPhase) ->
-    ?CAST_WORKER({phase_change, Game, NewPhase}).
+    ?CALL_WORKER({phase_change, Game, NewPhase}).

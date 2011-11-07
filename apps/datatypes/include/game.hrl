@@ -13,11 +13,14 @@
                     russia |
                     turkey.
 -type phase () ::  order | build | retreat.
+-type season() :: spring | fall.
 
 -define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
 -define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
 %-define (REQUIRED, undefined).
 -define(GAME_PLAYER_LINK_USER, <<"user">>).
+-define(GAME_STATE_LINK_GAME, <<"game">>).
+-define(CURRENT_GAME_LINK_STATE, <<"game_state">>).
 
 -record (game, {id :: integer (),
                 creator_id :: integer (),
@@ -68,6 +71,11 @@
     date_created = {date (), time ()} :: date (),
     order_list :: any()}).
 
+-record(game_current,
+        {id :: integer(),
+         year_season :: {pos_integer(), season()},
+         current_phase :: phase(),
+         date_updated = {date (), time ()} :: date()}).
 
 -endif.
 %INDEX

@@ -18,3 +18,4 @@
 -define(B_GAME_PLAYER, <<"game_player">>).
 -define(B_GAME_ORDER, <<"game_order">>).
 -define(B_SESSION_HISTORY, <<"session_history">>).
+-define(B_GAME_STATE, <<"game_state">>).
