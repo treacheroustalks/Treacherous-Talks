@@ -5,9 +5,11 @@ erls = components/echo_bot.erl components/tt_bot.erl components/tt_xmpp_output.e
 deps-ext = ../../apps/controller_app ../../apps/command_parser ../../apps/service ../../apps/datatypes ../../apps/game
 deps = components/controller_app components/command_parser components/service components/datatypes components/game
 
-all: release
+all: build
 
-release: ejabberd $(beams) $(configs)
+release: clean build
+
+build: ejabberd/ $(beams) $(configs)
 	mkdir -p $(reldir)
 	cp -r ejabberd $(reldir)
 	cp -r config $(reldir)

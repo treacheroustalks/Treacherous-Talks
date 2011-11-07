@@ -80,10 +80,12 @@ if [ $dointegration -eq 1 ]; then
     sleep 5
     
     echo
+    echo "## releasing xmpp_frontend..."
+    ./release xmpp_frontend || errors=1
     echo "##### installing xmpp_frontend for frontend tests"
-    cd $cwd/ext_rel/xmpp_frontend/rel/xmpp_frontend
-    make install || errors=1
-    ejdctl=ext_rel/xmpp_frontend/rel/xmpp_frontend/installation/sbin/ejabberdctl
+    cd $cwd/system-release/xmpp_frontend
+    make clean install || errors=1
+    ejdctl=system-release/xmpp_frontend/installation/sbin/ejabberdctl
     cd $cwd
 
 
