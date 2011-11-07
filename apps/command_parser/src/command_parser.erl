@@ -16,9 +16,10 @@
 
 
 %% Public interface
--export([parse/1]).
+-export([parse/2]).
 
 -include("command_parser.hrl").
+-include_lib("datatypes/include/user.hrl").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -47,7 +48,7 @@
 %% @end
 %%-------------------------------------------------------------------
 % if no matched input, let it crash to detect the bug earlier
-parse(BinString) when is_binary(BinString) ->
+parse(BinString, Client) when is_binary(BinString) ->
     Commands =    "("?LOGIN
                   "|"?ORDER
                   "|"?CREATE
@@ -71,7 +72,18 @@ parse(BinString) when is_binary(BinString) ->
                 <<?RECONFIG>> ->
                     {reconfig_game, user_commands:parse_reconfig(Data)};
                 <<?REGISTER>> ->
-                    {register, user_commands:parse_register(Data)};
+                    ParsedData = case user_commands:parse_register(Data) of
+                                     {ok, User= #user{}} ->
+                                         case User#user.channel of
+                                             undefined ->
+                                                 {ok, User#user{channel=Client}};
+                                             _ ->
+                                                 {ok, User}
+                                         end;
+                                     Other ->
+                                         Other
+                                 end,
+                    {register, ParsedData};
                 <<?UPDATE>> ->
                     {update_user, user_commands:parse_update(Data)};
                 <<?OVERVIEW>> ->

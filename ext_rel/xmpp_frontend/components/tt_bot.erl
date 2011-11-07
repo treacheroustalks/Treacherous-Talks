@@ -185,12 +185,7 @@ route(From,
             ?INFO_MSG("Ignoring message because ~p. Packet:~n~p~n",
                       [Reason, Packet]);
         Body ->
-            ParsedCmd = case command_parser:parse(Body) of
-                            {register,{ok, #user{} = User}} ->
-                                {register,{ok, User#user{channel=xmpp}}};
-                            Other ->
-                                Other
-                        end,
+            ParsedCmd = command_parser:parse(Body, im),
             ?INFO_MSG("Body ~p parsed as command ~p.~n",
                       [Body, ParsedCmd]),
             Callback = {fun tt_xmpp_output:reply/3,[To,From]},

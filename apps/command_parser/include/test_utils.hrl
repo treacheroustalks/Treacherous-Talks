@@ -12,6 +12,21 @@ END\r
 adfadfasdfaldfad">>
 ).
 
+-define(SAMPLE_REGISTER_CHANNEL,
+<<"sddfaadfaff\r
+REGISTER\r
+NICKNAME: Lin\r
+PASSWORD: QWER\r
+\r
+CHANNEL: mail \r
+EMAIL: ss@lin.pcs\r
+asdfasdlfadf\r
+\r
+FULLNAME: Agner Erlang\r
+END\r
+adfadfasdfaldfad">>
+).
+
 -define(SAMPLE_LOGIN,
 <<"sddfaadfaff\r
 LOGIN\r

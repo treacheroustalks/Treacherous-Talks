@@ -11,7 +11,9 @@ parse_test_() ->
     [
      ?_test(check_parse(?SAMPLE_REGISTER,
                         {register, {ok, #user{nick = "Lin", password = "QWER",
-                                              email = "ss@lin.pcs", name = "Agner Erlang"}}
+                                              email = "ss@lin.pcs",
+                                              channel = im,
+                                              name = "Agner Erlang"}}
                         })),
      ?_test(check_parse(?SAMPLE_UPDATE,
                         {update_user, {ok, "123456",
@@ -40,11 +42,11 @@ parse_test_() ->
 check_parse(Sample, Expected) ->
     %io:format(user, "val=~p~n Exp: ~p~n", [command_parser:parse(Sample), Expected]),
     %?debugVal(Expected),
-    ?assertEqual(Expected, command_parser:parse(Sample)).
+    ?assertEqual(Expected, command_parser:parse(Sample, im)).
 
 
 reconfig_test_() ->
-    ActualOutput = command_parser:parse(?SAMPLE_RECONFIG),
+    ActualOutput = command_parser:parse(?SAMPLE_RECONFIG, im),
     Expected = {reconfig_game,{ok,"456123", {
                                     111222,
                                     [{4,"awesome_game"},
@@ -62,7 +64,7 @@ reconfig_test_() ->
     ].
 
 order_test_() ->
-    ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS1),
+    ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS1, test),
     Expected = {game_move,{ok,{session,1234341},
     {gameid,3958230945903},
     {[{move,fleet,mid_atlantic_ocean,north_atlantic_ocean,north_coast},

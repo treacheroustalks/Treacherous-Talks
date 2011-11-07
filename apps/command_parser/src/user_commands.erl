@@ -146,18 +146,30 @@ parse_reconfig(Data) ->
 %%------------------------------------------------------------------------------
 parse_register(Data) ->
     RequiredFields = [?NICKNAME, ?PASSWORD, ?EMAIL, ?FULLNAME],
-    Values = get_required_fields(RequiredFields, Data),
-    case lists:member(field_missing, Values) of
+    OptionalFields = [?CHANNEL],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
         true ->
             {error, {required_fields, RequiredFields}};
         false ->
-            [Nick, Pw, Mail, Name] = Values,
-
-            case get_error_list(Values,  get_check_type(RequiredFields),
-                                RequiredFields) of
+            [Nick, Pw, Mail, Name] = ReqValues,
+            [Channel] = get_required_fields(OptionalFields, Data),
+            LowerChannel = case Channel of
+                               field_missing ->
+                                   undefined;
+                               _ ->
+                                   string:to_lower(Channel)
+                           end,
+            case get_error_list(merge_list(ReqValues, [LowerChannel]),
+                    get_check_type(merge_list(RequiredFields, OptionalFields)),
+                                merge_list(RequiredFields, OptionalFields)) of
                 [] ->
                     {ok, #user{nick = Nick, password = Pw,
-                       email = Mail, name = Name}};
+                               email = Mail, name = Name,
+                               channel= case is_list(LowerChannel) of
+                                            true -> list_to_atom(LowerChannel);
+                                            false -> LowerChannel
+                                        end}};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end
@@ -309,6 +321,7 @@ parse_time_format(TimeFormat) ->
 %% @end
 %%------------------------------------------------------------------------------
 is_valid_value(_, field_missing) -> true;
+is_valid_value(_, undefined) -> true;
 is_valid_value(FieldType, Value) ->
     Check = fun(IfAny ,Pattern) ->
         case re:run(Value, Pattern) of
@@ -343,6 +356,8 @@ is_valid_value(FieldType, Value) ->
             Check(valid_pattern, "^[0-9A-Za-z]+@[0-9A-Za-z]+\.[A-Za-z]+$");
         password ->
             Check(valid_pattern, "^[\s-~]+$");
+        channel ->
+            Check(valid_pattern, "\s*(mail|im|web)\s*");
         duration_time ->
             Check(valid_pattern, "^([0-9]+D)*([0-9]+H)*([0-9]+M)*$")
     end.
@@ -396,6 +411,7 @@ get_check_type([H|Rest], AccCheckList) ->
         ?PASSWORD -> [password|AccCheckList];
         ?FULLNAME -> [alpha_space_only|AccCheckList];
         ?EMAIL -> [mail_addr|AccCheckList];
+        ?CHANNEL -> [channel|AccCheckList];
 
         ?DESCRIPTION -> [alpha_space_only|AccCheckList];
         ?GAMEID -> [num_only|AccCheckList];
