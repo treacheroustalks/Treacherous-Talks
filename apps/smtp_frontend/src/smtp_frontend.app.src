@@ -19,7 +19,7 @@
                  ]},
   {mod, { smtp_frontend_app, []}},
   {env, [
-    {domain, "andre.pcs"},
+    {domain, "dilshod.pcs"},
     {address, {0,0,0,0}},
     {port, 25},
     {protocol, tcp},
