@@ -42,21 +42,55 @@ if [ $dotar -eq 1 ]; then
         cd ..
     }
 
+    # Loops over a given dir (first arg) and runs do_rebar
+    do_loop_over_dir () {
+        cd $1
+        # For each app, get deps
+        for app in $(ls); do
+            do_rebar $app
+            # See if a deps subdir exists and get deps there as well
+            if [ -d $app/deps ]; then
+                cd $app/deps
+                for depapp in $(ls); do
+                    do_rebar $depapp
+                done
+                cd ../..
+            fi
+        done
+        cd ..
+    }
+
     # Get deps for each app
-    cd $cwd/apps
-    for app in $(ls); do
-        do_rebar $app
-    done
+    do_loop_over_dir $cwd/apps
+    do_loop_over_dir $cwd/deps
 
-    cd $cwd/deps
-    for app in $(ls); do
-        do_rebar $app
-    done
-
-    # Find & tar files
+    # Find files
     cd $cwd
     find . -mindepth 2 -newer $cwd/getdeps_timestamp \
         -print > depfiles.txt || errors=1
+
+    # Build some stuff to get app files in place
+    echo "##### Building some applications"
+    cd $cwd/deps/riakc
+    make all || errors=1
+    cd $cwd/apps/db
+    ./build || errors=1
+
+    # Reset timestamp
+    touch $cwd/getdeps_timestamp || errors=1
+
+    # Get deps again
+    echo "##### Getting dependencies again"
+    do_loop_over_dir $cwd/apps
+    do_loop_over_dir $cwd/ext_rel
+
+    # Find files again
+    cd $cwd
+    find . -mindepth 2 -newer $cwd/getdeps_timestamp \
+        -print >> depfiles.txt || errors=1
+
+    # Tar all found files
+    cd $cwd
     tar --no-recursion -czf dependencies.tar.gz -T depfiles.txt || errors=1
 
     rm $cwd/getdeps_timestamp || errors=1
