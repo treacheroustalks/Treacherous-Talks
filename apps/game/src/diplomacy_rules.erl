@@ -28,7 +28,7 @@
 %% -----------------------------------------------------------------------------
 -module (diplomacy_rules).
 
--export ([create/1,
+-export ([create/2,
           do_process/3]).
 
 -include_lib ("eunit/include/eunit.hrl").
@@ -73,64 +73,248 @@
 %% -----------------------------------------------------------------------------
 %% @doc
 %% creates the rules for a game type.
-%% The parameter decides the game type,
+%% The first parameter decides the game type, the second one the game phase
 %% currently, the only supported game type is the atom <pre>standard_game</pre>
 %% @end
 %% -----------------------------------------------------------------------------
--spec create (GameType) -> [tuple ()] when
-      GameType :: standard_game.
-create (standard_game) ->
+-spec create (GameType, GamePhase) -> [tuple ()] when
+      GameType :: standard_game,
+      GamePhase :: order_phase | retreat_phase | build_phase.
+create (standard_game, order_phase) ->
     [unit_exists_rule (),
-     unit_cannot_go_there_rule (),
+     convoy_rule (),
+     unit_can_go_there_rule (),
+     break_support_rule (),
      support_rule (),
      trade_places_rule (),
      bounce2_rule (),
-     hold_vs_move2_rule ()].
+     hold_vs_move2_rule ()];
+create (standard_game, retreat_phase) ->
+    [unit_exists_rule (),
+     unit_can_go_there_rule (),
+     trade_places_rule (),
+     bounce2_rule (),
+     hold_vs_move2_rule (),
+     remove_undislodged_units_rule (),
+     remove_dislodge_state_rule ()];
+create (standard_game, count_phase) ->
+    [no_orders_accepted_rule (),
+     count_units_rule ()
+     ];
+create (standard_game, build_phase) ->
+    [unit_can_build_there_rule ()].
 
-do_process (_Phase, Map, Order = {move, Unit, From, To}) ->
-    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
+do_process (_, Map, {move, Unit, From, To}) ->
+%    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
     map:move_unit (Map, Unit, From, To);
-do_process (_Phase, _Map, _Order) ->
+do_process (build_phase, Map, {build, Unit, Where}) ->
+    map:add_unit (Map, Unit, Where);
+do_process (_, Map, {destroy, Unit, From}) ->
+    map:remove_unit (Map, Unit, From);
+do_process (_, _Map, _Order) ->
     ok.
 
+%% remove orders for non-existing units
 unit_exists_rule () ->
     #rule{name = unit_exists,
           arity = 1,
           detector = fun unit_does_not_exist/2,
           actor = fun delete_orders_actor/2}.
 
+%% remove build-orders that are not supply centers with a matching
+%% original_owner attribute
+unit_can_build_there_rule () ->
+    #rule{name = unit_can_build_there,
+          arity = 1,
+          detector = fun unit_can_build_there_detector/2,
+          actor = fun unit_can_build_there_actor/2}.
+
+%% enable convoys across one fleet
+convoy_rule () ->
+    #rule{name = convoy,
+          arity = 2,
+          detector = fun simple_convoy_detector/2,
+          actor = fun simple_convoy_actor/2}.
+
+no_orders_accepted_rule () ->
+    #rule{name = no_orders_accepted,
+          arity = 1,
+          actor = fun delete_orders_actor/2}.
+
+count_units_rule () ->
+    #rule{name = count_units,
+          arity = 0,
+          actor = fun count_units_set_owner_actor/2}.
+%% remove units that where not dislodged yet
+remove_undislodged_units_rule () ->
+    #rule{name = remove_undislodged_units,
+          arity = 0,
+          actor = fun remove_undislodged_units_actor/2}.
+
+
+%% removes the 'dislodge' k/v pair from the unit dicts in
+%% case it contains 'true'
+remove_dislodge_state_rule () ->
+    #rule{name = remove_retreat_state,
+          arity = 1,
+          detector = fun (Map, Order) ->
+                             Unit = get_first_unit (Order),
+                             Where = get_first_from (Order),
+                             map:get_unit_info (Map, Unit, Where, false)
+                     end,
+          actor = fun (Map, {Order}) ->
+                          Unit = get_first_unit (Order),
+                          Where = get_first_from (Order),
+                          map:remove_unit_info (Map, Unit, Where, dislodge)
+                  end}.
+
+%% units can not exchange places without a convoy
 trade_places_rule () ->
     #rule{name = trade_places,
           arity = 2,
           detector = fun trade_places_detector/2,
-          actor = fun replace_by_hold_actor/2}.
+          actor = fun trade_places_actor/2}.
 
-unit_cannot_go_there_rule () ->
-    #rule{name = unit_cannot_go_there,
+%% remove orders where units can not move to the target province
+unit_can_go_there_rule () ->
+    #rule{name = unit_can_go_there,
           arity = 1,
-          detector = fun unit_cannot_go_there_detector/2,
+          detector = fun unit_can_go_there_detector/2,
           actor = fun replace_by_hold_actor/2}.
 
+%% remove orders where two equally strong units want to enter the same province
 bounce2_rule () ->
     #rule{name = bounce2,
           arity = 2,
           detector = fun bounce2_detector/2,
           actor = fun bounce2_actor/2}.
 
+%% remove orders, where a unit wants to move into an occupied province
 hold_vs_move2_rule () ->
     #rule{name = hold_vs_move2,
           arity = 2,
           detector = fun hold_vs_move2_detector/2,
           actor = fun hold_vs_move2_actor/2}.
 
+%% remove support orders when they are broken by a move:
+break_support_rule () ->
+    #rule{name = break_support,
+          arity = 2,
+          detector = fun break_support_detector/2,
+          actor = fun break_support_actor/2}.
+
+%% add support order to the supported unit's dict
 support_rule () ->
-    #rule{name = support_rule,
+    #rule{name = support,
           arity = 2,
           detector = fun support_detector/2,
           actor = fun support_actor/2}.
 
-%% {support, {army, austria}, {move, {army, germany}, munich, silesia}}
-%% {convoy, {fleet, england}, english_channel, {army, england}, wales, picardy}
+%% -----------------------------------------------------------------------------
+%% Implementation
+%% -----------------------------------------------------------------------------
+
+%% count the units in a map, count the owners of centers in a map and
+%% reply how much they have to build/remove
+count_units_set_owner_actor (Map, {}) ->
+    % count how many units each nation has
+    Dict =
+        lists:foldl (
+          fun ({Province, [{_Type, Nation}]}, Dict) ->
+                  map:set_province_info (Map, Province, owner, Nation),
+                  OldCnt = case dict:find (Nation, Dict) of
+                               {ok, Count} ->
+                                   Count;
+                               error ->
+                                   0
+                           end,
+                  dict:store (Nation, OldCnt - 1, Dict)
+          end,
+          dict:new (),
+          map:get_units (Map)),
+    Centers = lists:filter (fun (Province) ->
+                                    map:get_province_info (Map,
+                                                           Province,
+                                                           center) == true
+                            end,
+                           map:get_provinces (Map)),
+    Owners = lists:map (fun (Center) ->
+                                map:get_province_info (Map, Center, owner)
+                        end,
+                        Centers),
+    % now add the number of centers each nation holds:
+    BuildDict =
+        lists:foldl (
+          fun (Owner, DictAcc) ->
+                  OldCnt = case dict:find (Owner, DictAcc) of
+                               error -> 0;
+                               {ok, Value} -> Value
+                           end,
+                  dict:store (Owner, OldCnt + 1, DictAcc)
+          end,
+          Dict,
+          Owners),
+    % the difference is the number of builds the nation is entitled to:
+    lists:map (fun ({Nation, Builds}) ->
+                       {reply, {has_builds, Nation, Builds}}
+               end,
+               dict:to_list (BuildDict)).
+
+simple_convoy_detector (_Map, {{convoy, _, _, _, _, _},
+                               {move, _, _, _}}) ->
+    true;
+simple_convoy_detector (Map, {M = {move, _, _, _},
+                              C = {convoy, _, _, _, _, _}}) ->
+    simple_convoy_detector (Map, {C, M});
+simple_convoy_detector (_, _Other) ->
+    false.
+
+simple_convoy_actor (Map, {{move, _Army, _From, _To},
+                           C = {convoy, _Fleet, _Where, _Army, _From, _To}}) ->
+%    map:is_reachable (Map, From, Where, fleet) and
+%        map:is_reachable (Map, Where, To, fleet),
+    do_add_convoy (Map, C),
+    [].
+
+remove_undislodged_units_actor (Map, {}) ->
+    AllUnits = map:get_units (Map),
+    lists:foreach (
+      fun ({Province, Units}) ->
+              lists:foreach (
+                fun (Unit) ->
+                        case
+                            map:get_unit_info (Map,
+                                               Unit,
+                                               Province,
+                                               dislodge, false) of
+                            true ->
+                                map:remove_unit (Map,
+                                                 Unit,
+                                                 Province);
+                            _ ->
+                                ok
+                        end
+                end,
+                Units)
+      end,
+      AllUnits),
+    [].
+
+break_support_detector (Map, {{move, {UType, _Nation}, From, SupPlace},
+                              {support, _Unit2, SupPlace, _Order}}) ->
+    map:is_reachable (Map, From, SupPlace, UType);
+break_support_detector (Map, {S = {support, _, _, _}, M = {move, _, _, _}}) ->
+    break_support_detector (Map, {M, S});
+break_support_detector (_Map, _) ->
+    false.
+
+break_support_actor (Map, P={{move, {_Type, _Nation}, _From, SupPlace},
+                           S = {support, _Unit2, SupPlace, _Order}}) ->
+    ?debugVal (P),
+    ?debugVal (map:get_unit_info (Map, _Unit2, SupPlace, support_orders)),
+    do_remove_support (Map, S),
+    replace_by_hold_actor (Map, P).
+
 support_detector (_Map, {_Order, {support, _Unit, _Where, _Order}}) ->
     true;
 support_detector (_Map, {{support, _Unit, _Where, _Order}, _Order}) ->
@@ -185,6 +369,39 @@ is_supportable (_) ->
     false.
 
 
+%% todo: this is the simple implementation that covers no chains of convoys:
+is_covered_by_convoy (Map, {move, Army, From, To}) ->
+    ConvoyOrders = map:get_unit_info (Map, Army, From, convoys, []),
+    lists:any (fun ({convoy, _Fleet, _Where, CArmy, CFrom, CTo}) ->
+                       (Army == CArmy) and
+                                         (From == CFrom) and
+                                                           (To == CTo)
+               end,
+               ConvoyOrders).
+
+%% adds the convoy order to the Army's convoy attribute
+do_add_convoy (Map, ConvoyOrder = {convoy, _Fleet, _Where, Army, From, _To}) ->
+    ConvoyOrders = map:get_unit_info (Map, Army, From, convoys, []),
+    case lists:member (ConvoyOrder, ConvoyOrders) of
+        true ->
+            ok;
+        false ->
+            map:set_unit_info (Map, Army, From,
+                               convoys, [ConvoyOrder | ConvoyOrders])
+    end.
+
+do_remove_support (Map, SupportOrder = {support, _, _, SupportedOrder}) ->
+    SupportedUnit = get_moving_unit (SupportedOrder),
+    SupportedWhere = get_moving_from (SupportedOrder),
+    SupportingOrders =
+        map:get_unit_info (Map,
+                           SupportedUnit, SupportedWhere, support_orders, []),
+    ?debugVal (SupportingOrders),
+    ?debugVal (lists:delete (SupportOrder, SupportingOrders)),
+    map:set_unit_info (Map, SupportedUnit, SupportedWhere,
+                       support_orders,
+                       lists:delete (SupportOrder, SupportingOrders)).
+
 do_add_support (Map, SupportOrder = {support, _, _, SupportedOrder}) ->
     SupportedUnit = get_moving_unit (SupportedOrder),
     SupportedWhere = get_moving_from (SupportedOrder),
@@ -195,11 +412,12 @@ do_add_support (Map, SupportOrder = {support, _, _, SupportedOrder}) ->
         true ->
             ok;
         false ->
-            map:set_unit_info (Map, SupportedUnit, SupportedWhere, support_orders,
+            map:set_unit_info (Map, SupportedUnit, SupportedWhere,
+                               support_orders,
                                [SupportOrder | SupportingOrders])
     end.
 
-support_actor (Map, {OtherOrder, SupOrder = {support, _Unit, _Where, _Order}}) ->
+support_actor (Map, {OtherOrder, SupOrder = {support, _, _, _}}) ->
     support_actor (Map, {SupOrder, OtherOrder});
 support_actor (Map,
                {SupOrder = {support, {SupType, _}, SupPlace, _Order},
@@ -217,10 +435,6 @@ support_actor (Map,
         false ->
             [{remove, SupOrder}]
     end.
-
-%% -----------------------------------------------------------------------------
-%% Implementation
-%% -----------------------------------------------------------------------------
 
 hold_vs_move2_detector (_Map, {{move, _Unit1, _From1, To},
                                {hold, _Unit2, To}}) ->
@@ -240,6 +454,7 @@ hold_vs_move2_actor (Map, {HoldOrder = {hold, HoldUnit, HoldPlace},
             io:format (user, "emit ~p~n", [[{remove, MoveOrder}]]),
             replace_by_hold_actor (Map, {MoveOrder});
         true ->
+            map:set_unit_info (Map, HoldUnit, HoldPlace, dislodge, true),
             [{remove, HoldOrder}, {reply, {dislodge, HoldUnit, HoldPlace}}]
     end.
 
@@ -250,18 +465,13 @@ bounce2_detector (_Map, {_, _}) ->
     false.
 
 get_unit_strength (Map, Order) ->
-    ?debugMsg ("<<<<< get_unit_strength"),
-    ?debugVal (Order),
     %% supports are valid for a specific move only - we are counting them here:
     lists:foldl (
       fun (SupOrder, Sum) ->
-              ?debugVal (SupOrder),
               case SupOrder of
                   {support, _U, _W, Order} ->
-                      ?debugMsg ("+1"),
                       Sum+1;
                   _ ->
-                      ?debugMsg ("nuthin'"),
                       Sum
               end
       end,
@@ -290,10 +500,28 @@ bounce2_actor (Map,
             replace_by_hold_actor (Map, {O1, O2})
     end.
 
-unit_cannot_go_there_detector (Map, {{move, {Type, _Owner}, From, To}}) ->
+unit_can_build_there_detector (Map,
+                               {{build, {_Type, Nation}, Province}}) ->
+    case map:get_province_info (Map, Province, original_owner) of
+        Nation ->
+            false;
+        _ ->
+            case map:get_units (Map, Province) of
+                [] ->
+                    false;
+                _ ->
+                    true
+            end
+    end.
+
+unit_can_build_there_actor (_Map, Build) ->
+    [{remove, Build}].
+
+unit_can_go_there_detector (Map, {M = {move, {Type, _Owner}, From, To}}) ->
     not lists:member (To,
-                      map:get_reachable (Map, From, Type));
-unit_cannot_go_there_detector (_Map, _) ->
+                      map:get_reachable (Map, From, Type)) and
+        not is_covered_by_convoy (Map, M);
+unit_can_go_there_detector (_Map, _) ->
     false.
 
 unit_does_not_exist (Map, {Order}) ->
@@ -302,8 +530,30 @@ unit_does_not_exist (Map, {Order}) ->
 trade_places_detector (_Map, {{move, _Unit1, From, To},
                               {move, _Unit2, To, From}}) ->
     true;
-trade_places_detector (_Map, _Orders) ->
+trade_places_detector (_Map, _Other) ->
     false.
+
+trade_places_actor (Map, {M1, M2}) ->
+    S1 = get_unit_strength (Map, M1),
+    S2 = get_unit_strength (Map, M2),
+    ?debugVal (map:get_unit_info (Map, get_moving_unit (M1), get_moving_from (M1), support_orders)),
+    ?debugVal (map:get_unit_info (Map, get_moving_unit (M2), get_moving_from (M2), support_orders)),
+    ?debugVal (S1),
+    ?debugVal (M1),
+    ?debugVal (S2),
+    ?debugVal (M2),
+    if
+        S1 > S2 ->
+            ?debugMsg ("removing S2"),
+            [{remove, M2},
+             {reply, {dislodge, get_moving_unit (M2), get_moving_from (M2)}}];
+        S2 > S1 ->
+            ?debugMsg ("removing S1"),
+            [{remove, M1},
+             {reply, {dislodge, get_moving_unit (M1), get_moving_from (M1)}}];
+        true ->
+            replace_by_hold_actor (Map, {M1, M2})
+    end.
 
 delete_orders_actor (_Map, {A}) ->
     [{remove, A}];

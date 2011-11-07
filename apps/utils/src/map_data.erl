@@ -341,6 +341,31 @@ create (standard_game) ->
                                                                    ankara,
                                                                    constantinople,
                                                                    smyrna]],
+%% set original_owners (the nations which can build there)
+    [map:set_province_info (Map, Id, original_owner, Owner) || 
+        {Owner, Id} <- [{austria, budapest},
+                        {austria, trieste},
+                        {austria, vienna},
+                        {england, edinburgh},
+                        {england, liverpool},
+                        {england, london},
+                        {france, brest},
+                        {france, marseilles},
+                        {france, paris},
+                        {germany, berlin},
+                        {germany, kiel},
+                        {germany, munich},
+                        {italy, naples},
+                        {italy, rome},
+                        {italy, venice},
+                        {russia, moscow},
+                        {russia, sevastopol},
+                        {russia, st_petersburg},
+                        {russia, warsaw},
+                        {turkey, ankara},
+                        {turkey, constantinople},
+                        {turkey, smyrna}]],
+
     %% add province owner
     [map:set_province_info (Map, Prov, owner, Owner) || {Prov, Owner} <- [% Austria:
                                                     {bohemia,austria},

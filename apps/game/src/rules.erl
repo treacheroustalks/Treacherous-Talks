@@ -26,11 +26,9 @@
 %% -----------------------------------------------------------------------------
 -spec process (any (), map (), atom (), [order ()]) -> [tuple ()].
 process (Phase, Map, RULES_MOD, Orders) ->
-    Rules = apply (RULES_MOD, create, [standard_game]),
+    io:format (user, "#### process ~p~n", [Phase]),
+    Rules = RULES_MOD:create (standard_game, Phase),
     {Replies, Orders1} = execute_rules (Map, Rules, Orders),
-    ?debugVal (Orders),
-    ?debugVal (Orders1),
-    ?debugVal (Replies),
     lists:map (fun (Order) ->
                        apply (RULES_MOD,
                               do_process,
@@ -41,6 +39,8 @@ process (Phase, Map, RULES_MOD, Orders) ->
 
 -spec make_pairs ([any ()], Arity) -> [tuple ()] when
       Arity :: pos_integer ().
+make_pairs (_, 0) ->
+    [{}];
 make_pairs (List, 1) ->
     [{A} || A <- List];
 make_pairs (List, 2) ->
@@ -57,29 +57,26 @@ make_pairs (List, 2) ->
 %% an atom telling the execute_order function what to do with those rules
 %% (for instance: 'remove', 'add')
 %% @end
--spec execute_single_rule (Map, Rule, [Order]) -> [Order] when
+-spec execute_single_rule (Map, Rule, [Order]) -> {[Reply], [Order]} when
       Map :: map (),
       Rule :: #rule{},
+      Reply :: any (),
       Order :: order ().
 execute_single_rule (Map, Rule, Orders) ->
-%    ?debugMsg ("#### execute_single_rule"),
     Pairs = make_pairs (Orders, Rule#rule.arity),
     RuleResponse =
         lists:foldl (
           fun (Pair, Acc) ->
                   case (Rule#rule.detector) (Map, Pair) of
                       true ->
-                          ?debugMsg (io_lib:format
-                                     ("#### Rule '~p' running with ~p!",
-                                      [Rule#rule.name, Pair])),
-                          ?debugMsg (
-                             io_lib:format ("Emitting '~p'~n",
-                                            [(Rule#rule.actor) (Map, Pair)])),
-                          Ret = (Rule#rule.actor) (Map, Pair) ++ Acc,
-                          Ret;
+                          Emit = (Rule#rule.actor) (Map, Pair),
+                          io:format (user,
+                                     "Rule ~p: Emitting '~p'~n",
+                                     [Rule#rule.name,
+                                      Emit]),
+                          Emit ++ Acc;
                       false ->
-%                          ?debugMsg (io_lib:format ("Emitting ~p~n", [Acc])),
-                          Acc
+                              Acc
                   end
           end,
           [],
@@ -120,10 +117,10 @@ execute_single_rule (Map, Rule, Orders) ->
       Map :: map (),
       Rule :: #rule{},
       Order :: order ().
-execute_rules (Map, Rules, Orders) ->
-    case execute_rules_stage (Map, Rules, Orders) of
-        Orders ->
-            Orders;
+execute_rules (Map, Rules, OrdersAndReplies) ->
+    case execute_rules_stage (Map, Rules, OrdersAndReplies) of
+        OrdersAndReplies ->
+            OrdersAndReplies;
         ChangedOrders ->
             execute_rules (Map, Rules, ChangedOrders)
     end.
@@ -131,16 +128,21 @@ execute_rules (Map, Rules, Orders) ->
 %% executes all rules. This could lead to inconsistencies, because
 %% rules can add and remove Orders. This is why this function is looped
 %% by execute_rules
--spec execute_rules_stage (Map, [Rule], [Order]) -> any () when
+-spec execute_rules_stage (Map, [Rule], {[Reply], [Order]} | [Order]) ->
+                                  {[Reply], [Order]} when
       Map :: map (),
       Rule :: #rule{},
+      Reply :: any (),
       Order :: order ().
 execute_rules_stage (Map, [Rule | Rules], {Replies, Orders}) ->
     {NewReplies, NewOrders} =
-        execute_rules_stage(Map, Rules,
+        execute_rules_stage(Map,
+                            Rules,
                             execute_single_rule (Map, Rule, Orders)),
-    {NewReplies ++ Replies, NewOrders};
-execute_rules_stage (Map, Rules, Orders) when is_list (Orders) ->
-    execute_rules_stage (Map, Rules, {[], Orders});
-execute_rules_stage (_, [], RepliesAndOrders) ->
-    RepliesAndOrders.
+    {ordsets:from_list (NewReplies ++ Replies), ordsets:from_list (NewOrders)};
+execute_rules_stage (_, [], RepliesAndOrders = {_, _}) ->
+    RepliesAndOrders;
+execute_rules_stage (_, [], Orders) ->
+    {[], Orders};
+execute_rules_stage (Map, Rules, Orders) ->
+    execute_rules_stage (Map, Rules, {[], Orders}).

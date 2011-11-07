@@ -13,7 +13,7 @@ units_exist_test () ->
 
 unit_cannot_go_there_test () ->
     Map = map_data:create (standard_game),
-    rules:process (something, Map, diplomacy_rules,
+    rules:process (order_phase, Map, diplomacy_rules,
                    [{move, {army, austria}, budapest, tyrolia}]),
     ?assertEqual ([], map:get_units (Map, tyrolia)),
     ?assertEqual ([{army, austria}], map:get_units (Map, budapest)),
@@ -21,7 +21,7 @@ unit_cannot_go_there_test () ->
 
 bounce_test () ->
     Map = map_data:create (standard_game),
-    rules:process (something, Map, diplomacy_rules,
+    rules:process (order_phase, Map, diplomacy_rules,
                    [{move, {army, austria}, vienna, galicia},
                     {move, {army, russia}, warsaw, galicia}]),
     ?assertEqual ([], map:get_units (Map, galicia)),
@@ -31,7 +31,7 @@ hold_vs_move_test () ->
     Map = map_data:create (standard_game),
     ?assertEqual ([{fleet, austria}], map:get_units (Map, trieste)),
     ?assertEqual ([{army, italy}], map:get_units (Map, venice)),
-    rules:process (something, Map, diplomacy_rules,
+    rules:process (order_phase, Map, diplomacy_rules,
                    [{move, {fleet, austria}, trieste, venice},
                     {hold, {army, italy}, venice}]),
     ?assertEqual ([{fleet, austria}], map:get_units (Map, trieste)),
@@ -104,8 +104,18 @@ diagram_5_test () ->
     ?assertEqual ([{fleet, germany}], map:get_units (Map, kiel)),
     map_data:delete (Map).
 
-%% manual diagram 6
+%% manual diagram 6 - in a different location, for convenience
 diagram_6_test () ->
+    Map = map_data:create (standard_game),
+    rules:process (order_phase, Map, diplomacy_rules,
+                       [{move, {fleet, austria}, trieste, venice},
+                        {move, {army, italy}, venice, trieste}]),
+    ?assertEqual ([{fleet, austria}], map:get_units (Map, trieste)),
+    ?assertEqual ([{army, italy}], map:get_units (Map, venice)),
+    map_data:delete (Map).
+
+%% manual diagram 7
+diagram_7_test () ->
     Map = map_data:create (standard_game),
     rules:process (order_phase, Map, diplomacy_rules,
                    [{move, {fleet, germany}, kiel, holland},
@@ -125,16 +135,6 @@ diagram_6_test () ->
     ?assert (map:unit_exists (Map, holland, {fleet, england})),
     ?assert (map:unit_exists (Map, north_sea, {fleet, germany})),
     ?assert (map:unit_exists (Map, belgium, {army, germany})),
-    map_data:delete (Map).
-
-%% manual diagram 7 - in a different location, for convenience
-diagram_7_test () ->
-    Map = map_data:create (standard_game),
-    rules:process (order_phase, Map, diplomacy_rules,
-                       [{move, {fleet, austria}, trieste, venice},
-                        {move, {army, italy}, venice, trieste}]),
-    ?assertEqual ([{fleet, austria}], map:get_units (Map, trieste)),
-    ?assertEqual ([{army, italy}], map:get_units (Map, venice)),
     map_data:delete (Map).
 
 diagram_8_test () ->
@@ -192,7 +192,7 @@ diagram_10_test () ->
                          {move, {fleet, italy}, naples, tyrrhenian_sea}},
                         {move, {fleet, france}, gulf_of_lyon, tyrrhenian_sea},
                         {support, {fleet, france}, western_mediterranean,
-                         {move, {fleet, france}, gulf_of_lyon, 
+                         {move, {fleet, france}, gulf_of_lyon,
                           tyrrhenian_sea}}]),
     ?assert (map:unit_exists (Map, gulf_of_lyon, {fleet, france})),
     ?assert (map:unit_exists (Map, western_mediterranean, {fleet, france})),
@@ -219,7 +219,7 @@ diagram_11_test () ->
                          {hold, {fleet, italy}, tyrrhenian_sea}},
                         {move, {fleet, france}, gulf_of_lyon, tyrrhenian_sea},
                         {support, {fleet, france}, western_mediterranean,
-                         {move, {fleet, france}, gulf_of_lyon, 
+                         {move, {fleet, france}, gulf_of_lyon,
                           tyrrhenian_sea}}]),
     ?assert (map:unit_exists (Map, gulf_of_lyon, {fleet, france})),
     ?assert (map:unit_exists (Map, western_mediterranean, {fleet, france})),
@@ -228,7 +228,6 @@ diagram_11_test () ->
     map_data:delete (Map).
 
 diagram_12_test () ->
-%    ?debugMsg ("###################################### DIAGRAM 12"),
     Map = map_data:create (standard_game),
     map:add_unit (Map, {army, russia}, prussia),
     map:add_unit (Map, {army, austria}, bohemia),
@@ -239,7 +238,7 @@ diagram_12_test () ->
     ?assert (map:unit_exists (Map, warsaw, {army, russia})),
     ?assert (map:unit_exists (Map, bohemia, {army, austria})),
     ?assert (map:unit_exists (Map, tyrolia, {army, austria})),
-    Response =
+    _Response =
         rules:process (order_phase, Map, diplomacy_rules,
                        [{move, {army, austria}, bohemia, munich},
                         {support, {army, austria}, tyrolia,
@@ -250,11 +249,269 @@ diagram_12_test () ->
                         {move, {army, russia}, warsaw, silesia},
                         {support, {army, russia}, prussia,
                          {move, {army, russia}, warsaw, silesia}}]),
-%    ?assert (lists:member ({dislodge, {army, germany}, munich}, Response)),
     ?assert (map:unit_exists (Map, munich, {army, germany})),
     ?assert (map:unit_exists (Map, munich, {army, austria})),
     ?assert (map:unit_exists (Map, prussia, {army, russia})),
     ?assert (map:unit_exists (Map, warsaw, {army, russia})),
     ?assert (map:unit_exists (Map, tyrolia, {army, austria})),
-%    ?debugMsg ("###################################### DIAGRAM 12: DONE"),
     map_data:delete (Map).
+
+multiple_stages_test () ->
+    Map = map_data:create (standard_game),
+    rules:process (order_phase, Map, diplomacy_rules,
+                   [{move, {army, france}, paris, gascony},
+                    {move, {army, germany}, munich, burgundy}]),
+    ?assert (map:unit_exists (Map, gascony, {army, france})),
+    ?assert (map:unit_exists (Map, marseilles, {army, france})),
+    ?assert (map:unit_exists (Map, burgundy, {army, germany})),
+
+    Response = rules:process (order_phase, Map, diplomacy_rules,
+                              [{support, {army, france}, gascony,
+                                {move, {army, france}, marseilles, burgundy}},
+                               {move, {army, france}, marseilles, burgundy},
+                               {hold, {army, germany}, burgundy}]),
+    ?assert (lists:member ({dislodge, {army, germany}, burgundy}, Response)),
+    ?assert (map:unit_exists (Map, burgundy, {army, france})),
+    ?assert (map:unit_exists (Map, burgundy, {army, germany})),
+    ?assert (map:unit_exists (Map, gascony, {army, france})),
+    rules:process (retreat_phase, Map, diplomacy_rules, []),
+    ?assertEqual (false, map:unit_exists (Map, burgundy, {army, germany})),
+    map_data:delete (Map).
+
+build_reply_test () ->
+%    ?debugMsg ("###################################### BUILD-REPLY: START"),
+    Map = map_data:create (standard_game),
+    map:add_unit (Map, {army, austria}, spain),
+    map:remove_unit (Map, {fleet, england}, london),
+    Reply = rules:process (count_phase, Map, diplomacy_rules, []),
+    ?debugVal (Reply),
+    ?assert (lists:member ({has_builds, austria, -1}, Reply)),
+    ?assert (lists:member ({has_builds, england, 1}, Reply)),
+%    ?debugMsg ("###################################### BUILD-REPLY: DONE"),
+    map_data:delete (Map).
+
+
+-define (SUCCESSFUL_MOVE (U, Fr, To), {{move, U, Fr, To}, {U, To}}).
+-define (UNSUCCESSFUL_MOVE (U, Fr, To), {{move, U, Fr, To}, {U, Fr}}).
+-define (SUCCESSFUL_HOLD (U, Wh), {{hold, U, Wh}, {U, Wh}}).
+-define (SUCCESSFUL_CONVOY (Fleet, Wh, Army, Fr, To),
+         {{convoy, Fleet, Wh, Army, Fr, To}, {Army, To}}).
+-define (SUPPORT (U, Wh, Or), {{support, U, Wh, Or}, {U, Wh}}).
+-define (BUILD (U, Wh), {{build, U, Wh}, {U, Wh}}).
+
+-spec tmoat_data (Season, Phase, Year) -> [{Order, {Unit, IsWhere}}] when
+      Season :: atom (),
+      Phase :: atom (),
+      Year :: pos_integer (),
+      Order :: tuple (),
+      Unit :: tuple (),
+      IsWhere :: atom ().
+tmoat_data (spring, order_phase, 1901) ->
+    [?SUCCESSFUL_MOVE ({army, austria}, vienna, trieste),
+     ?UNSUCCESSFUL_MOVE ({army, austria}, budapest, galicia),
+     ?SUCCESSFUL_MOVE ({fleet, austria}, trieste, albania),
+     ?SUCCESSFUL_MOVE ({army, england}, liverpool, yorkshire),
+     ?SUCCESSFUL_MOVE ({fleet, england}, london, north_sea),
+     ?SUCCESSFUL_MOVE ({fleet, england}, edinburgh, norwegian_sea),
+     ?SUCCESSFUL_MOVE ({army, france}, paris, burgundy),
+     ?SUCCESSFUL_MOVE ({army, france}, marseilles, spain),
+     ?SUCCESSFUL_MOVE ({fleet, france}, brest, picardy),
+     ?SUCCESSFUL_MOVE ({army, germany}, berlin, kiel),
+     ?SUCCESSFUL_MOVE ({army, germany}, munich, ruhr),
+     ?SUCCESSFUL_MOVE ({fleet, germany}, kiel, denmark),
+     ?SUCCESSFUL_MOVE ({army, italy}, venice, piedmont),
+     ?SUCCESSFUL_MOVE ({army, italy}, rome, venice),
+     ?SUCCESSFUL_MOVE ({fleet, italy}, naples, ionian_sea),
+     ?SUCCESSFUL_MOVE ({army, russia}, moscow, ukraine),
+     ?UNSUCCESSFUL_MOVE ({army, russia}, warsaw, galicia),
+     ?SUCCESSFUL_MOVE ({fleet, russia}, st_petersburg, gulf_of_bothnia),
+     ?UNSUCCESSFUL_MOVE ({fleet, russia}, sevastopol, black_sea),
+     ?SUCCESSFUL_MOVE ({army, turkey}, constantinople, bulgaria),
+     ?SUCCESSFUL_MOVE ({army, turkey}, smyrna, constantinople),
+     ?UNSUCCESSFUL_MOVE ({fleet, turkey}, ankara, black_sea)
+];
+tmoat_data (fall, order_phase, 1901) ->
+    [?SUCCESSFUL_HOLD ({army, austria}, trieste),
+     ?UNSUCCESSFUL_MOVE ({army, austria}, budapest, serbia),
+     ?SUCCESSFUL_MOVE ({fleet, austria}, albania, greece),
+     ?SUCCESSFUL_MOVE ({army, england}, yorkshire, norway),
+     ?SUCCESSFUL_CONVOY ({fleet, england}, north_sea,
+                         {army, england}, yorkshire, norway),
+     ?SUCCESSFUL_MOVE ({fleet, england}, norwegian_sea, barents_sea),
+     ?UNSUCCESSFUL_MOVE ({army, france}, burgundy, marseilles),
+     ?SUCCESSFUL_MOVE ({army, france}, spain, portugal),
+     ?UNSUCCESSFUL_MOVE ({fleet, france}, picardy, belgium),
+     ?SUCCESSFUL_MOVE ({army, germany}, kiel, holland),
+     ?UNSUCCESSFUL_MOVE ({army, germany}, ruhr, belgium),
+     ?SUCCESSFUL_HOLD ({fleet, germany}, denmark),
+     ?SUCCESSFUL_HOLD ({army, italy}, venice),
+     ?UNSUCCESSFUL_MOVE ({army, italy}, piedmont, marseilles),
+     ?SUCCESSFUL_MOVE ({fleet, italy}, ionian_sea, tunis),
+     ?SUPPORT ({army, russia}, ukraine,
+               {move, {army, russia}, sevastopol, rumania}),
+     ?SUCCESSFUL_MOVE ({army, russia}, warsaw, galicia),
+     ?SUCCESSFUL_MOVE ({fleet, russia}, sevastopol, rumania),
+     ?SUCCESSFUL_MOVE ({fleet, russia}, gulf_of_bothnia, sweden),
+     ?UNSUCCESSFUL_MOVE ({army, turkey}, bulgaria, serbia),
+     ?UNSUCCESSFUL_MOVE ({army, turkey}, constantinople, bulgaria),
+     ?SUCCESSFUL_MOVE ({fleet, turkey}, ankara, black_sea)];
+tmoat_data (fall, build_phase, 1901) ->
+    [?BUILD ({fleet, england}, edinburgh),
+     ?BUILD ({fleet, germany}, kiel),
+     ?BUILD ({army, germany}, munich),
+     ?BUILD ({army, russia}, st_petersburg),
+     ?BUILD ({army, russia}, sevastopol),
+     ?BUILD ({army, turkey}, smyrna),
+     ?BUILD ({army, austria}, vienna),
+     ?BUILD ({fleet, italy}, naples),
+     ?BUILD ({fleet, france}, marseilles)];
+tmoat_data (spring, order_phase, 1902) ->
+    [?UNSUCCESSFUL_MOVE ({army, austria}, trieste, budapest),
+     ?UNSUCCESSFUL_MOVE ({army, austria}, vienna, budapest),
+     ?SUCCESSFUL_MOVE ({army, austria}, budapest, serbia),
+     ?SUCCESSFUL_HOLD ({fleet, austria}, greece),
+     ?UNSUCCESSFUL_MOVE ({army, england}, norway, st_petersburg),
+     ?UNSUCCESSFUL_MOVE ({fleet, england}, north_sea, norway),
+     ?SUPPORT ({fleet, england}, barents_sea,
+               {move, {army, england}, norway, st_petersburg}),
+     ?SUPPORT ({army, france}, burgundy,
+               {move, {fleet, france}, picardy, belgium}),
+     ?SUCCESSFUL_MOVE ({army, france}, portugal, spain),
+     ?UNSUCCESSFUL_MOVE ({fleet, france}, picardy, belgium),
+     ?SUCCESSFUL_HOLD ({fleet, france}, marseilles),
+     ?SUCCESSFUL_MOVE ({army, germany}, holland, belgium),
+     ?SUPPORT ({army, germany}, ruhr,
+               {move, {army, germany}, holland, belgium}),
+     ?UNSUCCESSFUL_MOVE ({army, germany}, munich, burgundy),
+     ?SUCCESSFUL_HOLD ({fleet, germany}, denmark),
+     ?SUCCESSFUL_MOVE ({fleet, germany}, kiel, holland),
+     ?SUCCESSFUL_HOLD ({army, italy}, venice),
+     ?UNSUCCESSFUL_MOVE ({army, italy}, piedmont, marseilles),
+     ?SUCCESSFUL_MOVE ({fleet, italy}, tunis, western_mediterranean),
+     ?SUCCESSFUL_MOVE ({fleet, italy}, naples, tyrrhenian_sea),
+     ?SUPPORT ({army, russia}, ukraine,
+               {hold, {fleet, russia}, rumania}),
+     ?UNSUCCESSFUL_MOVE ({army, russia}, galicia, budapest),
+     ?UNSUCCESSFUL_MOVE ({army, russia}, st_petersburg, norway),
+     ?SUPPORT ({army, russia}, sevastopol,
+               {hold, {fleet, russia}, rumania}),
+     ?SUPPORT ({fleet, russia}, sweden,
+               {move, {army, russia}, st_petersburg, norway}),
+     ?SUCCESSFUL_HOLD ({fleet, russia}, rumania),
+     ?UNSUCCESSFUL_MOVE ({army, turkey}, bulgaria, rumania),
+     ?UNSUCCESSFUL_MOVE ({army, turkey}, constantinople, bulgaria),
+     ?SUCCESSFUL_MOVE ({army, turkey}, smyrna, armenia),
+     ?SUPPORT ({fleet, turkey}, black_sea,
+               {move, {army, turkey}, bulgaria, rumania})];
+tmoat_data (fall, order_phase, 1902) ->
+    [?UNSUCCESSFUL_MOVE ({army, austria}, vienna, galicia),
+     ?SUCCESSFUL_MOVE ({army, austria}, trieste, budapest),
+     ?SUPPORT ({army, austria}, serbia,
+               {move, {army, turkey}, bulgaria, rumania}),
+     ?SUCCESSFUL_HOLD ({fleet, austria}, greece),
+     ?SUCCESSFUL_MOVE ({army, england}, norway, st_petersburg),
+     ?SUPPORT ({fleet, england}, barents_sea,
+               {move, {army, england}, norway, st_petersburg}),
+     ?SUCCESSFUL_MOVE ({fleet, england}, north_sea, norway),
+     ?SUCCESSFUL_MOVE ({fleet, england}, edinburgh, north_sea),
+     ?SUCCESSFUL_MOVE ({army, england}, norway, st_petersburg),
+     ?UNSUCCESSFUL_MOVE ({army, france}, burgundy, belgium),
+     ?SUPPORT ({fleet, france}, picardy,
+               {move, {army, france}, burgundy, belgium}),
+     ?SUPPORT ({army, france}, spain,
+               {hold, {fleet, france}, marseilles}),
+     ?SUPPORT ({fleet, france}, marseilles,
+               {hold, {army, france}, spain}), %% unsuccessful support due to IT
+     ?SUCCESSFUL_MOVE ({army, germany}, ruhr, burgundy),
+     ?SUPPORT ({army, germany}, munich,
+               {move, {army, germany}, ruhr, burgundy}),
+     ?SUPPORT ({army, germany}, belgium,
+               {move, {army, germany}, ruhr, burgundy}),
+     ?UNSUCCESSFUL_MOVE ({fleet, germany}, denmark, sweden),
+     ?SUPPORT ({fleet, germany}, holland,
+               {hold, {army, germany}, belgium}),
+     ?UNSUCCESSFUL_MOVE ({army, italy}, venice, piedmont),
+     ?UNSUCCESSFUL_MOVE ({army, italy}, piedmont, marseilles),
+     ?SUCCESSFUL_MOVE ({fleet, italy}, western_mediterranean, north_africa),
+     ?SUCCESSFUL_MOVE ({fleet, italy}, tyrrhenian_sea, gulf_of_lyon),
+     ?UNSUCCESSFUL_MOVE ({army, russia}, st_petersburg, norway),
+     ?SUPPORT ({fleet, russia}, sweden,
+               {move, {army, russia}, st_petersburg, norway}),
+     ?SUPPORT ({fleet, russia}, rumania,
+               {hold, {army, russia}, sevastopol}),
+     ?SUCCESSFUL_HOLD ({army, russia}, sevastopol),
+     ?SUPPORT ({army, russia}, sevastopol,
+               {hold, {fleet, russia}, rumania}),
+     ?SUPPORT ({army, russia}, galicia,
+               {hold, {fleet, russia}, rumania}),
+     ?SUPPORT ({army, russia}, ukraine,
+               {hold, {army, russia}, sevastopol}),
+     ?SUCCESSFUL_MOVE ({army, turkey}, bulgaria, rumania),
+     ?SUCCESSFUL_MOVE ({army, turkey}, constantinople, bulgaria),
+     ?UNSUCCESSFUL_MOVE ({army, turkey}, armenia, sevastopol),
+     ?SUPPORT ({fleet, turkey}, black_sea,
+               {move, {army, turkey}, bulgaria, rumania})];
+tmoat_data (_, _, _) ->
+    [].
+
+%% The game that is sketched on the last pages of the manual (starting on
+%% page 20)
+the_mother_of_all_tests_test_disable () ->
+    ?debugMsg ("############## TMOAT!"),
+    Map = map_data:create (standard_game),
+    lists:foreach (fun (Year) -> tmoat_year (Map, Year) end,
+                   [1901,
+                    1902]),
+    ?debugMsg ("############## TMOAT: done"),
+    map_data:delete (Map).
+
+check_results (Description, Map, Results) ->
+    ?debugMsg (
+       io_lib:format ("########## check_results for ~p", [Description])),
+    io:format (user, "units after ~p: ~p~n",
+               [Description, ordsets:from_list (map:get_units (Map))]),
+    lists:foreach (fun ({Unit, ShouldBe}) ->
+                           ?debugMsg (
+                              io_lib:format ("asserting that ~p exists..",
+                                             [{Unit, ShouldBe}])),
+                           ?assert (map:unit_exists (Map, ShouldBe, Unit))
+                   end,
+                   Results).
+
+tmoat_year (Map, Year) ->
+    ?debugMsg (io_lib:format ("running year ~p", [Year])),
+    ?debugMsg ("spring"),
+    {SpringOrders, SpringResults} =
+        lists:unzip (
+          tmoat_data (spring, order_phase, Year)),
+    rules:process (order_phase, Map, diplomacy_rules, SpringOrders),
+    check_results ({spring, Year}, Map, SpringResults),
+
+    ?debugMsg ("spring retreat"),
+    {SpringRetreatOrders, SpringRetreatResults} =
+        lists:unzip (
+          tmoat_data (spring, retreat_phase, Year)),
+    rules:process (retreat_phase, Map, diplomacy_rules, SpringRetreatOrders),
+    check_results ({spring_retreat, Year}, Map, SpringRetreatResults),
+
+    ?debugMsg ("fall"),
+    {FallOrders, FallResults} =
+        lists:unzip (tmoat_data (fall, order_phase, Year)),
+    rules:process (order_phase, Map, diplomacy_rules, FallOrders),
+    check_results ({fall_retreat, Year}, Map, FallResults),
+
+    ?debugMsg ("fall retreat"),
+    {FallRetreatOrders, FallRetreatResults} =
+        lists:unzip (
+          tmoat_data (fall, retreat_phase, Year)),
+    rules:process (retreat_phase, Map, diplomacy_rules, FallRetreatOrders),
+    check_results ({fall_retreat, Year}, Map, FallRetreatResults),
+
+    ?debugMsg ("build"),
+    {BuildOrders, BuildResults} =
+        lists:unzip (
+          tmoat_data (fall, build_phase, Year)),
+    rules:process (build_phase, Map, diplomacy_rules, BuildOrders),
+    check_results ({fall_build, Year}, Map, BuildResults).
+
+

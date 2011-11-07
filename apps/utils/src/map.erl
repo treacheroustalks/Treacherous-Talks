@@ -28,6 +28,7 @@
           get_unit_info/4,
           get_unit_info/5,
           set_unit_info/5,
+          remove_unit_info/4,
           get_reachable/3,
           get_reachable/4,
           is_reachable/4]).
@@ -133,6 +134,10 @@ get_unit_info (Map, Unit, Id, Key, Default) ->
         _Other ->
             Default
     end.
+
+remove_unit_info (Map, Unit, Id, Key) ->
+    NewDict = dict:erase (Key, get_unit_dict (Map, Unit, Id)),
+    set_unit_dict (Map, Unit, Id, NewDict).
 
 set_unit_info (Map, Unit, Id, Key, Value) ->
     NewDict = dict:store (Key, Value, get_unit_dict (Map, Unit, Id)),
