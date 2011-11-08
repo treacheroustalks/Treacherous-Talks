@@ -4,6 +4,9 @@
 %% The rules have an arity that says how many orders are involved in a rule's
 %% handling.
 %%
+%% Orders the rule-engine/diplomacy rules can process are documented as 
+%% type specs in this file
+%%
 %% Example #1: unit_exists: arity=1 because I can decide for every order on
 %% its own, whether it complies with the unit_exists-rule. It does not need
 %% to be compared.
@@ -34,41 +37,47 @@
 -include_lib ("eunit/include/eunit.hrl").
 -include_lib ("game/include/rule.hrl").
 
-%-type province () :: atom ().
-%-type unit_type () :: army | fleet.
+-type nation () :: russia
+                   | turkey
+                   | austria
+                   | italy
+                   | germany
+                   | france
+                   | england.
 
-%-type unit () :: {unit_type (), nation ()}.
+-type province () :: atom ().
+-type unit_type () :: army | fleet.
 
-%-type phase () :: order_phase | retreat_phase | build_phase.
+-type unit () :: {unit_type (), nation ()}.
 
-%-type year () :: reference ().
+-type phase () :: order_phase | retreat_phase | count_phase | build_phase.
 
-%-type game_time () :: {phase (), year ()}.
+-type map () :: digraph ().
+
 
 %% e.g.:
 %% {move, {army, austria}, vienna, galicia}
 %% {support, {army, austria}, {move, {army, germany}, munich, silesia}}
 %% {convoy, {fleet, england}, english_channel, {army, england}, wales, picardy}
+-type hold_order () :: {hold, unit ()}.
+-type build_order () :: {build, unit (), province ()}.
+-type destroy_order () :: {destroy, unit (), province ()}.
+-type move_order () :: {move, unit (), From :: province (), To :: province ()}.
+-type support_order () :: {support, Fleet :: unit (), Province :: province (),
+                           MoveOrHold :: order ()}.
+-type convoy_order () :: {convoy,
+                          Fleet :: unit (), Where :: province (),
+                          Army :: unit (),
+                          From :: province (),
+                          To :: province ()}.
+-type order () :: hold_order () |
+                  build_order () |
+                  destroy_order () |
+                  move_order () |
+                  support_order () |
+                  convoy_order ().
 
-%-type hold_order () :: {hold, unit ()}.
-%-type move_order () :: {move, unit (), province (), province ()}.
-%-type support_order () :: {support, unit (), province (), order ()}.
-%-type convoy_order () :: {convoy, unit (), province (), unit (),
-%                          province (), province ()}.
-%-type order () :: hold_order () |
-%                  move_order () |
-%                  support_order () |
-%                  convoy_order ().
 
-
-
-%-type nation () :: russia
-%                   | turkey
-%                   | austria
-%                   | italy
-%                   | germany
-%                   | france
-%                   | england.
 
 %% -----------------------------------------------------------------------------
 %% @doc
@@ -104,6 +113,7 @@ create (standard_game, count_phase) ->
 create (standard_game, build_phase) ->
     [unit_can_build_there_rule ()].
 
+-spec do_process (phase (), map (), order ()) -> any ().
 do_process (_, Map, {move, Unit, From, To}) ->
 %    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
     map:move_unit (Map, Unit, From, To);
@@ -269,8 +279,8 @@ simple_convoy_detector (Map, {M = {move, _, _, _},
 simple_convoy_detector (_, _Other) ->
     false.
 
-simple_convoy_actor (Map, {{move, _Army, _From, _To},
-                           C = {convoy, _Fleet, _Where, _Army, _From, _To}}) ->
+simple_convoy_actor (Map, {{move, _, _, _},
+                           C = {convoy, _, _, _, _, _}}) ->
 %    map:is_reachable (Map, From, Where, fleet) and
 %        map:is_reachable (Map, Where, To, fleet),
     do_add_convoy (Map, C),
@@ -308,12 +318,10 @@ break_support_detector (Map, {S = {support, _, _, _}, M = {move, _, _, _}}) ->
 break_support_detector (_Map, _) ->
     false.
 
-break_support_actor (Map, P={{move, {_Type, _Nation}, _From, SupPlace},
+break_support_actor (Map, {{move, {_Type, _Nation}, _From, SupPlace},
                            S = {support, _Unit2, SupPlace, _Order}}) ->
-    ?debugVal (P),
-    ?debugVal (map:get_unit_info (Map, _Unit2, SupPlace, support_orders)),
     do_remove_support (Map, S),
-    replace_by_hold_actor (Map, P).
+    replace_by_hold_actor (Map, {S}).
 
 support_detector (_Map, {_Order, {support, _Unit, _Where, _Order}}) ->
     true;
@@ -536,19 +544,11 @@ trade_places_detector (_Map, _Other) ->
 trade_places_actor (Map, {M1, M2}) ->
     S1 = get_unit_strength (Map, M1),
     S2 = get_unit_strength (Map, M2),
-    ?debugVal (map:get_unit_info (Map, get_moving_unit (M1), get_moving_from (M1), support_orders)),
-    ?debugVal (map:get_unit_info (Map, get_moving_unit (M2), get_moving_from (M2), support_orders)),
-    ?debugVal (S1),
-    ?debugVal (M1),
-    ?debugVal (S2),
-    ?debugVal (M2),
     if
         S1 > S2 ->
-            ?debugMsg ("removing S2"),
             [{remove, M2},
              {reply, {dislodge, get_moving_unit (M2), get_moving_from (M2)}}];
         S2 > S1 ->
-            ?debugMsg ("removing S1"),
             [{remove, M1},
              {reply, {dislodge, get_moving_unit (M1), get_moving_from (M1)}}];
         true ->

@@ -456,27 +456,22 @@ tmoat_data (_, _, _) ->
 
 %% The game that is sketched on the last pages of the manual (starting on
 %% page 20)
-the_mother_of_all_tests_test_disable () ->
-    ?debugMsg ("############## TMOAT!"),
+the_mother_of_all_tests_test () ->
     Map = map_data:create (standard_game),
     lists:foreach (fun (Year) -> tmoat_year (Map, Year) end,
                    [1901,
                     1902]),
-    ?debugMsg ("############## TMOAT: done"),
     map_data:delete (Map).
 
 check_results (Description, Map, Results) ->
-    ?debugMsg (
-       io_lib:format ("########## check_results for ~p", [Description])),
-    io:format (user, "units after ~p: ~p~n",
-               [Description, ordsets:from_list (map:get_units (Map))]),
+    io:format (user, "asserting existence: ", []),
     lists:foreach (fun ({Unit, ShouldBe}) ->
-                           ?debugMsg (
-                              io_lib:format ("asserting that ~p exists..",
-                                             [{Unit, ShouldBe}])),
+                           io:format (user, "of ~p.. | ",
+                                      [{Unit, ShouldBe}]),
                            ?assert (map:unit_exists (Map, ShouldBe, Unit))
                    end,
-                   Results).
+                   Results),
+    io:format (user, "~n", []).
 
 tmoat_year (Map, Year) ->
     ?debugMsg (io_lib:format ("running year ~p", [Year])),
@@ -484,27 +479,29 @@ tmoat_year (Map, Year) ->
     {SpringOrders, SpringResults} =
         lists:unzip (
           tmoat_data (spring, order_phase, Year)),
-    rules:process (order_phase, Map, diplomacy_rules, SpringOrders),
+    ?debugVal (rules:process (order_phase, Map, diplomacy_rules, SpringOrders)),
     check_results ({spring, Year}, Map, SpringResults),
 
     ?debugMsg ("spring retreat"),
     {SpringRetreatOrders, SpringRetreatResults} =
         lists:unzip (
           tmoat_data (spring, retreat_phase, Year)),
-    rules:process (retreat_phase, Map, diplomacy_rules, SpringRetreatOrders),
+    ?debugVal (
+       rules:process (retreat_phase, Map, diplomacy_rules,
+                      SpringRetreatOrders)),
     check_results ({spring_retreat, Year}, Map, SpringRetreatResults),
 
     ?debugMsg ("fall"),
     {FallOrders, FallResults} =
         lists:unzip (tmoat_data (fall, order_phase, Year)),
-    rules:process (order_phase, Map, diplomacy_rules, FallOrders),
+    ?debugVal (rules:process (order_phase, Map, diplomacy_rules, FallOrders)),
     check_results ({fall_retreat, Year}, Map, FallResults),
 
     ?debugMsg ("fall retreat"),
     {FallRetreatOrders, FallRetreatResults} =
         lists:unzip (
           tmoat_data (fall, retreat_phase, Year)),
-    rules:process (retreat_phase, Map, diplomacy_rules, FallRetreatOrders),
+    ?debugVal (rules:process (retreat_phase, Map, diplomacy_rules, FallRetreatOrders)),
     check_results ({fall_retreat, Year}, Map, FallRetreatResults),
 
     ?debugMsg ("build"),
