@@ -99,9 +99,9 @@ game_test_ () ->
     {setup,
      fun app_started_setup/0,
      fun app_started_teardown/1,
-     [ping_tst_ (),
-      new_get_game_tst_ (),
-      delete_game_tst_ (),
+     [ping_tst_(),
+      new_get_game_tst_(),
+      delete_game_tst_(),
       game_timer_create_tst_(),
       game_timer_state_tst_(),
       game_update_tst_(),
@@ -115,7 +115,6 @@ game_test_ () ->
 %%  "testlet", pinging the worker
 %% @end
 %%------------------------------------------------------------------------------
-
 ping_tst_ () ->
     [fun () -> {pong, _Pid} = game_worker:ping () end].
 
@@ -126,12 +125,18 @@ ping_tst_ () ->
 %%------------------------------------------------------------------------------
 new_get_game_tst_ () ->
     [fun () ->
-             OrigGame = test_game (),
-             Key = sync_new (OrigGame),
+             OrigGame = test_game(),
+             Key = sync_new(OrigGame),
              % OrigGame is actually updated with an ID
              OrigGameWithId = OrigGame#game{id = Key},
-             OrigGameWithId = sync_get (Key),
-             Key
+             OrigGameWithId = sync_get (Key)
+     end,
+     fun () ->
+             OrigGame = test_game (),
+             Key = sync_new(OrigGame),
+             Game = sync_get(Key),
+             {ok, Keys} = game:get_keys_by_idx(#game.status, Game#game.status),
+             ?assertEqual(true, lists:member(Key, Keys))
      end].
 
 %%------------------------------------------------------------------------------
@@ -141,10 +146,27 @@ new_get_game_tst_ () ->
 %%------------------------------------------------------------------------------
 delete_game_tst_ () ->
     [fun () ->
-             [Get]=new_get_game_tst_ (),
-             Key=Get (),
-             sync_delete (Key),
-             ?assertException (error, _, sync_get (Key))
+             OrigGame = test_game(),
+             Key = sync_new(OrigGame),
+             sync_delete(Key),
+             ?assertException(error, _, sync_get (Key))
+     end,
+     fun () ->
+             % create a game
+             OrigGame = test_game (),
+             Key = sync_new(OrigGame),
+             Game = sync_get(Key),
+
+             % prove that we can find it
+             {ok, Keys} = game:get_keys_by_idx(#game.status, Game#game.status),
+             ?assertEqual(true, lists:member(Key, Keys)),
+
+             % delete it
+             sync_delete(Key),
+
+             % prove that we don't find it
+             {ok, Keys2} = game:get_keys_by_idx(#game.status, Game#game.status),
+             ?assertEqual(false, lists:member(Key, Keys2))
      end].
 
 %%--------------------------------------------------------------------
@@ -214,7 +236,54 @@ game_update_tst_() ->
               %% status = ongoing, change that before assert
               ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
               ?debugMsg("Update game test end")
-      end].
+      end,
+      fun () ->
+             % create a game
+             OrigGame = test_game (),
+             Key = sync_new(OrigGame),
+             Game = sync_get(Key),
+
+             % prove that we can find it
+             {ok, Keys} = game:get_keys_by_idx(#game.press, Game#game.press),
+             ?assertEqual(true, lists:member(Key, Keys)),
+
+             % update it
+             ModifiedGame = Game#game{press = white_press},
+             game:reconfig_game(ModifiedGame),
+             timer:sleep(50),
+
+             % prove that we find it
+             {ok, Keys2} = game:get_keys_by_idx(#game.press, white_press),
+             ?assertEqual(true, lists:member(Key, Keys2)),
+
+             % prove that we don't find it
+             {ok, Keys3} = game:get_keys_by_idx(#game.press, black_press),
+             ?assertEqual(false, lists:member(Key, Keys3))
+     end,
+      fun () ->
+             % create a game
+             OrigGame = test_game (),
+             Key = sync_new(OrigGame),
+             Game = sync_get(Key),
+
+             % prove that we can find it
+             {ok, Keys} = game:get_keys_by_idx(#game.status, waiting),
+             ?assertEqual(true, lists:member(Key, Keys)),
+
+             % game changes status
+             % based on how game timer changes from waiting to ongoing
+             OngoingGame = Game#game{status = ongoing},
+             game:phase_change(OngoingGame, started),
+             timer:sleep(50),
+
+             % prove that we find it
+             {ok, Keys2} = game:get_keys_by_idx(#game.status, ongoing),
+             ?assertEqual(true, lists:member(Key, Keys2)),
+
+             % prove that we don't find it
+             {ok, Keys3} = game:get_keys_by_idx(#game.status, waiting),
+             ?assertEqual(false, lists:member(Key, Keys3))
+     end].
 
 %%------------------------------------------------------------------------------
 %% test translate game order functionality
@@ -350,8 +419,7 @@ get_game_state_tst_ () ->
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},
                           game:join_game(1234, 1122, england))
-     end
-     ].
+     end].
 
 %%------------------------------------------------------------------------------
 %% Helpers

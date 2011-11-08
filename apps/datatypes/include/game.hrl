@@ -22,7 +22,7 @@
 -record (game, {id :: integer (),
                 creator_id :: integer (),
                 ?REQUIRED (name) :: string (),
-                description :: string (),
+                description = "" :: string (),
                 status = waiting :: waiting | ongoing | stopped | finished,
                 ?REQUIRED (press) :: press (),
                 ?REQUIRED (order_phase) :: pos_integer (),

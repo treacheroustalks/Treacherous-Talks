@@ -26,9 +26,9 @@ parse_test_() ->
                                        #game{name = "awesome_game", press = "white",
                                              order_phase = 240, retreat_phase = 210,
                                              build_phase = 160, waiting_time = 3200,
-                                             description = field_missing,
+                                             description = "",
                                              password = "1234",
-                                             num_players = field_missing,
+                                             num_players = 0,
                                              creator_id = undefined}}
                         })),
      ?_test(check_parse(?SAMPLE_LOGIN,
@@ -49,16 +49,16 @@ reconfig_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_RECONFIG, im),
     Expected = {reconfig_game,{ok,"456123", {
                                     111222,
-                                    [{4,"awesome_game"},
+                                    [{4,"awesome_game"},    % name
                                      {7,"white"},
                                      {8,240},
                                      {9,210},
                                      {10,160},
                                      {14,3200},
-                                     {5,field_missing},
-                                     {11,field_missing},
+                                     {5,field_missing},     % description
+                                     {11,field_missing},    % num_players
                                      {12,"1234"},
-                                     {3,field_missing}]}}},
+                                     {3,field_missing}]}}}, % creator_id
     [
         ?_assertEqual(Expected, ActualOutput)
     ].

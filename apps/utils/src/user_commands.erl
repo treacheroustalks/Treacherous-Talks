@@ -29,7 +29,6 @@
 -include("include/records.hrl").% -record(reg_info,{})
 -include("include/command_parser.hrl").% User command keyword
 
-
 %%------------------------------------------------------------------------------
 %% @doc parse_login/1
 %%
@@ -79,14 +78,18 @@ parse_create(Data) ->
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
-                    {ok, Session,
-                     #game{name = Name, press = Press,
-                           order_phase = parse_time_format(OrdPhase),
-                           retreat_phase = parse_time_format(RetPhase),
-                           build_phase = parse_time_format(BldPhase),
-                           waiting_time = parse_time_format(WaitTime),
-                           description = Description, num_players = NumPlayers,
-                           password = Pw, creator_id = undefined}};
+                    GameWithRequired = #game{
+                        name = Name, press = Press,
+                        order_phase = parse_time_format(OrdPhase),
+                        retreat_phase = parse_time_format(RetPhase),
+                        build_phase = parse_time_format(BldPhase),
+                        waiting_time = parse_time_format(WaitTime),
+                        creator_id = undefined},
+                    PropList = [{#game.description, Description},
+                                {#game.num_players, NumPlayers},
+                                {#game.password, Pw}],
+                    Game = proplist:update_record(GameWithRequired, PropList),
+                    {ok, Session, Game};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end
@@ -105,7 +108,7 @@ parse_create(Data) ->
 parse_reconfig(Data) ->
     RequiredFields = [?GAMEID, ?SESSION],
     OptionalFields = [?GAMENAME, ?PRESSTYPE, ?ORDERCIRCLE, ?RETREATCIRCLE,
-                      ?GAINLOSTCIRCLE, ?WAITTIME,?PASSWORD,
+                      ?GAINLOSTCIRCLE, ?WAITTIME, ?PASSWORD,
                       ?DESCRIPTION, ?NUMBEROFPLAYERS],
     ReqValues = get_required_fields(RequiredFields, Data),
 
@@ -116,8 +119,7 @@ parse_reconfig(Data) ->
             [GameIdStr, Session] = ReqValues,
             OptionalValues = get_required_fields(OptionalFields, Data),
             [Name, Press, OrdPhase, RetPhase, BldPhase, WaitTime, Pw,
-                Description, NumPlayers] = OptionalValues,
-
+             Description, NumPlayers] = OptionalValues,
             case get_error_list(merge_list(ReqValues, OptionalValues),
                     get_check_type(merge_list(RequiredFields, OptionalFields)),
                                 merge_list(RequiredFields, OptionalFields)) of
@@ -427,6 +429,8 @@ get_check_type([H|Rest], AccCheckList) ->
         ?COUNTRY -> [alpha_space_only|AccCheckList]
     end,
     get_check_type(Rest, UpdatedCheckList).
+
+
 
 %%------------------------------------------------------------------------------
 %% @doc attach two list of strings

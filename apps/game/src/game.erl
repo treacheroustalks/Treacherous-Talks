@@ -2,6 +2,7 @@
 
 -export ([new_game/1,
           get_game/1,
+          get_keys_by_idx/2,
           delete_game/1,
           reconfig_game/1,
           join_game/3,
@@ -79,6 +80,17 @@ get_game(Key) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
+%% Gets Field and Value as arguments, returns {ok, [Key1, Key2, ..., KeyN]}
+%% or {error, Error}.
+%% Field is #record.field,
+%% Value is the value to search for.
+%% @end
+%% -----------------------------------------------------------------------------
+get_keys_by_idx(Field, Value) ->
+    ?CALL_WORKER({get_keys_by_idx, Field, Value}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
 %%  deletes a game from the database asynchronously
 %%
 %%  will reply ok to the calling process in case of success
@@ -97,7 +109,7 @@ delete_game(Key) ->
 reconfig_game(Game = #game{}) ->
     ?CALL_WORKER({reconfig_game, Game}).
 
-% -----------------------------------------------------------------------------
+%% -----------------------------------------------------------------------------
 %% @doc
 %%  join a player to a game from the database asynchronously
 %%
@@ -108,6 +120,7 @@ reconfig_game(Game = #game{}) ->
 %% -----------------------------------------------------------------------------
 join_game(GameID, UserID, Country) ->
     ?CALL_WORKER({join_game, GameID, UserID, Country}).
+
 
 %% -----------------------------------------------------------------------------
 %% @doc

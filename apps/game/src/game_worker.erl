@@ -74,6 +74,10 @@ handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
 handle_call({get_game, ID}, _From, State) ->
     Reply = get_game(ID),
     {reply, Reply, State};
+handle_call({get_keys_by_idx, Field, Value}, _From, State) ->
+    Reply = get_keys_by_idx(Field, Value),
+    {reply, Reply, State};
+
 handle_call({join_game, GameID, UserID, Country}, _From, State) ->
     Reply = game_join_proc:join_game(GameID, UserID, Country),
     {reply, Reply, State};
@@ -241,19 +245,35 @@ new_game(undefined, #game{} = Game) ->
     new_game(ID, Game#game{id = ID});
 new_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
-    DBGameObj=db_obj:create (?B_GAME, BinID, Game),
+    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
-    db:put (DBGameObj),
-    db:put (DBGamePlayerObj),
-    {ok, _Pid} = game_join_proc:start(ID),
-    {ok, ID}.
+    GameObjWithIndex = db_obj:set_indices(DBGameObj, create_idx_list(Game)),
+    GamePutResult = db:put (GameObjWithIndex),
+    case GamePutResult of
+        {error, _} = Error ->
+            Error;
+        _ ->
+            PlayersPutResult = db:put (DBGamePlayerObj),
+            case PlayersPutResult of
+                {error, _} = Error ->
+                    Error;
+                _ ->
+                    {ok, _Pid} = game_join_proc:start(ID),
+                    {ok, ID}
+            end
+    end.
 
 update_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
-    DBGameObj=db_obj:create (?B_GAME, BinID, Game),
-    db:put (DBGameObj),
-    {ok, ID}.
-
+    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
+    GameObjWithIndex = db_obj:set_indices(DBGameObj, create_idx_list(Game)),
+    GamePutResult = db:put (GameObjWithIndex),
+    case GamePutResult of
+        {error, _} = Error ->
+            Error;
+        _ ->
+            {ok, ID}
+    end.
 
 get_game(ID)->
     BinID = db:int_to_bin(ID),
@@ -264,6 +284,28 @@ get_game(ID)->
         Other ->
             Other
     end.
+
+get_keys_by_idx(Field, Val) ->
+    case create_idx(Field, Val) of
+        {error, field_not_indexed} ->
+            {error, field_not_indexed};
+        Idx ->
+            case db:get_index(?B_GAME, Idx) of
+                {ok, Matches} ->
+                    Keys = index_result_keys(Matches),
+                    {ok, Keys};
+                Other ->
+                    {error, Other}
+            end
+    end.
+
+index_result_keys([]) ->
+    [];
+index_result_keys([[?B_GAME, KeyBin] | Rest]) ->
+    Key = list_to_integer(binary_to_list(KeyBin)),
+    [ Key | index_result_keys(Rest) ];
+index_result_keys([[_, _] | Rest]) ->
+    index_result_keys(Rest).
 
 get_game_player(GameID)->
     BinID = db:int_to_bin(GameID),
@@ -343,3 +385,28 @@ get_game_order(ID)->
             Other
     end.
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates the index list for the database
+%% @end
+%%-------------------------------------------------------------------
+create_idx_list(#game{status=Status, press=Press, num_players=NumPlayers}) ->
+    [
+     create_idx(#game.status, Status),
+     create_idx(#game.press, Press),
+     create_idx(#game.num_players, NumPlayers)
+    ].
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates an index tuple for the database.
+%% @end
+%%-------------------------------------------------------------------
+create_idx(#game.status, Status) ->
+    {<<"status_bin">>, term_to_binary(Status)};
+create_idx(#game.press, Press) ->
+    {<<"press_bin">>, term_to_binary(Press)};
+create_idx(#game.num_players, NumPlayers) ->
+    {<<"num_players_int">>, NumPlayers};
+create_idx(_, _) ->
+    {error, field_not_indexed}.

@@ -62,7 +62,7 @@ if [ $dointegration -eq 1 ]; then
     echonormal "starting backend and waiting 5 seconds"
     run_wrapper "$backend start"
     sleep 5
-    
+
     echonormal "releasing xmpp_frontend..."
     run_wrapper "./release xmpp_frontend"
     echonormal "installing xmpp_frontend for frontend tests"
@@ -71,11 +71,11 @@ if [ $dointegration -eq 1 ]; then
     ejdctl=system-release/xmpp_frontend/installation/sbin/ejabberdctl
     cd $cwd
 
-
     echonormal "running xmpp_frontend tests"
-    echonormal "starting ejabberd and waiting 5 seconds"
+    echonormal "starting ejabberd and waiting 10 seconds"
     run_wrapper "$cwd/$ejdctl start"
-    sleep 5
+    sleep 10 # TODO: Use erik's pinging blocking script instead of naive sleep.
+
     echo "ejabberd status:"
     $cwd/$ejdctl status || errors=1
     cd ext_test/ejabberd_echo || errors=1

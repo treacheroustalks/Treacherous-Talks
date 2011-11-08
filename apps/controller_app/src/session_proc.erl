@@ -29,11 +29,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
-%% ------------------------------------------------------------------
-%% Exports for eUnit - do not use!
-%% ------------------------------------------------------------------
--export([update_rec_by_proplist/2]).
-
 %% server state
 -record(state, {user, session_id, history}).
 
@@ -95,7 +90,7 @@ handle_call({game_order, {GameId, GameOrderList}}, _From,
 %%-------------------------------------------------------------------
 handle_call({update_user, PropList}, _From,
             State = #state{session_id=Id, user=User}) ->
-    User1 = update_rec_by_proplist(User, PropList),
+    User1 = proplist:update_record(User, PropList),
     User2 = User1#user{last_session=Id},
     Reply = case user_management:update(User2) of
                 {error, Error} ->
@@ -153,7 +148,7 @@ handle_call({reconfig_game, {GameId, PropList}}, _From,
                         Game#game.creator_id /= UserId ->
                             {error, not_game_creator};
                         true ->
-                            NewGame = update_rec_by_proplist(Game, PropList),
+                            NewGame = proplist:update_record(Game, PropList),
                             NewGame2 = NewGame#game{last_session = Id},
                             game:reconfig_game(NewGame2)
                     end;
@@ -226,19 +221,3 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-
-%%------------------------------------------------------------------------------
-%% @doc update record via a proplist
-%%  Input: Arg1: OldUser#user
-%%         Arg2: [{#user.name, "username"}, {#user.password, "xxxx"}]
-%%
-%%  Output: #user{name="username", password="xxxx"}
-%% @end
-%%------------------------------------------------------------------------------
-update_rec_by_proplist(Old, [{_, field_missing}|Rest]) ->
-    update_rec_by_proplist(Old, Rest);
-update_rec_by_proplist(Old, [{Field, Value}|Rest]) ->
-    update_rec_by_proplist(setelement(Field, Old, Value), Rest);
-update_rec_by_proplist(Updated, []) ->
-    Updated.
-

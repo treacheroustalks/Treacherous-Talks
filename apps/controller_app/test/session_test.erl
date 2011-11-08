@@ -82,15 +82,3 @@ create_user() ->
           score = 0,
           date_created = {{2011, 10, 18}, {10, 42, 15}},
           date_updated = {{2011, 10, 18}, {10, 42, 16}}}.
-
-
-update_rec_by_proplist_test_() ->
-    [
-       ?_assertEqual(
-          #user{nick="lin", name="agner"},
-          session_proc:update_rec_by_proplist(
-              #user{nick="lin"},
-              [{#user.password, field_missing}, {#user.name, "agner"}]
-       )
-     )].
-
