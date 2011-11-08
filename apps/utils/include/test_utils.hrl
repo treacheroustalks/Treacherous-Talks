@@ -245,3 +245,24 @@ adfadfasdfaldfad">>
 
     adfadfasdfaldfad">>
 ).
+
+-define(SAMPLE_TEST_ORDERS2,
+<<"
+    asdfasdfasdfasdf
+    ORDER
+
+    SESSION: 1234341
+    GAMEID: 3958230945903
+
+    A Lon-Nrg
+    Lon-Nrg
+    A Lon -> Nrg nc
+    Army Lon move Nrg
+
+    F Nth C A Lon-Nrg
+    F Nth Convoy A Lon move Nrg
+
+    END
+    2563564565asdfa
+">>
+).

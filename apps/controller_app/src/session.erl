@@ -29,7 +29,8 @@
          create_game/2,
          reconfig_game/2,
          game_overview/2,
-         join_game/2
+         join_game/2,
+         game_order/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -61,7 +62,7 @@
 start(User=#user{}) ->
     {ok, Pid} = session_proc:start(User),
     session_id:from_pid(Pid).
-    
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -72,7 +73,7 @@ start(User=#user{}) ->
 %%-------------------------------------------------------------------
 stop(SessionId) ->
     exit(session_id:to_pid(SessionId), shutdown).
-    
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Checks if a session with the given ID exists
@@ -81,7 +82,7 @@ stop(SessionId) ->
 %% @end
 %%-------------------------------------------------------------------
 alive(SessionId) ->
-    case session_id:to_pid(SessionId) of 
+    case session_id:to_pid(SessionId) of
         {error, _} ->
             false;
         Pid ->
@@ -128,7 +129,7 @@ create_game(SessionId, Game) ->
 %% @spec reconfig_game(string(), {integer(), #game{}}) -> #game{}
 %% @end
 %%-------------------------------------------------------------------
-reconfig_game(SessionId, Data={_GameId, _PropList}) ->
+reconfig_game(SessionId, Data = {_GameId, _PropList}) ->
     ?SESSION_CALL(SessionId, reconfig_game, Data).
 
 %%-------------------------------------------------------------------
@@ -145,9 +146,19 @@ game_overview(SessionId, GameId) ->
 %% @doc join_game/2
 %% API for updating a game
 %%
-%% @spec join_game(string(), {integer(), atom()}) -> 
+%% @spec join_game(string(), {integer(), atom()}) ->
 %%         {ok, integer()} | {error, country_not_available}
 %% @end
 %%-------------------------------------------------------------------
-join_game(SessionId, Data={_GameId, _Country}) ->
+join_game(SessionId, Data = {_GameId, _Country}) ->
     ?SESSION_CALL(SessionId, join_game, Data).
+
+%%-------------------------------------------------------------------
+%% @doc game_order/2
+%% API for sending a list game order
+%%
+%% @end
+%%-------------------------------------------------------------------
+game_order(SessionId, Data = {_GameId, _OrderList}) ->
+    ?SESSION_CALL(SessionId, game_order, Data).
+

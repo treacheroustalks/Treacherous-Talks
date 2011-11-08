@@ -48,6 +48,7 @@
 %%              update_user |
 %%              create_game |
 %%              update_game |
+%%              game_order |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data | invalid_session | error.
@@ -61,7 +62,7 @@
 %%               SessionId::Integer()) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
-handle_action({Command, {ok, Data}}, {CallbackFun, Args}) 
+handle_action({Command, {ok, Data}}, {CallbackFun, Args})
   when Command == register;
        Command == login ->
     case controller:Command(Data) of
@@ -70,13 +71,14 @@ handle_action({Command, {ok, Data}}, {CallbackFun, Args})
         {ok, Result} ->
             CallbackFun(Args, {Command, success}, Result)
     end;
-handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args}) 
+handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
   when Command == update_user;
        Command == get_session_user;
        Command == create_game;
        Command == reconfig_game;
        Command == game_overview;
-       Command == join_game ->
+       Command == join_game;
+       Command == game_order->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

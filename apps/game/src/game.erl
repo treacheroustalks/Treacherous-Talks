@@ -8,6 +8,7 @@
           get_game_players/1,
           get_game_state/2,
           phase_change/2,
+          put_game_order/3,
           put_game_order/2,
           update_game_order/2,
           get_game_order/1
@@ -43,8 +44,10 @@ new_game(Game=#game{}) ->
 %%
 %% @end
 %% -----------------------------------------------------------------------------
-put_game_order (Key, GameMove) ->
-    ?CALL_WORKER({put_game_order, Key, GameMove}).
+put_game_order (GameId, UserId, GameOrder) ->
+    ?CALL_WORKER({put_game_order, GameId, UserId, GameOrder}).
+put_game_order (Key, GameOrder) ->
+    ?CALL_WORKER({put_game_order, Key, GameOrder}).
 
 %% -----------------------------------------------------------------------------
 %% @doc
@@ -61,8 +64,8 @@ get_game_order (Key) ->
 %%
 %% @end
 %% -----------------------------------------------------------------------------
-update_game_order (Key, GameMove) ->
-    ?CALL_WORKER({update_game_order, Key, GameMove}).
+update_game_order (Key, GameOrder) ->
+    ?CALL_WORKER({update_game_order, Key, GameOrder}).
 
 %% -----------------------------------------------------------------------------
 %% @doc

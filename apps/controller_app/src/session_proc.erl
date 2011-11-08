@@ -69,6 +69,22 @@ init(User) ->
 
 %%-------------------------------------------------------------------
 %% @doc
+%% Handles call for game order
+%% @end
+%% [@spec handle_call({game_order::atom(), {GameId::string(), {list(), list()}},
+%%                     From::{pid(), Tag}, #state{}) -> {reply,Reply,#state{}}.]
+%%
+%% succeed return {ok, GameOrderList}
+%% fail return {error, {"some error exists", ErrorList}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({game_order, {GameId, GameOrderList}}, _From,
+                                                 State = #state{user=User}) ->
+    Reply = game:put_game_order(GameId, User#user.id, GameOrderList),
+    {reply, Reply, State};
+
+%%-------------------------------------------------------------------
+%% @doc
 %% Handles call for updating a user
 %% @end
 %% [@spec handle_call({create_user::atom(), #user{}},

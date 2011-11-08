@@ -16,8 +16,13 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
+%% export for eunit
+-export([get_game_order/2]).
+
 %% server state
 -record(state, {}).
+
+
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -41,11 +46,16 @@ init(no_arg) ->
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 
-handle_call({put_game_order, Key, GameMove}, _From, State) ->
-    Reply = put_game_order(Key, GameMove),
+
+handle_call({put_game_order, Key, GameOrderList}, _From, State) ->
+    Reply = put_game_order(Key, GameOrderList),
     {reply, Reply, State};
-handle_call({update_game_order, Key, GameMove}, _From, State) ->
-    Reply = update_game_order(Key, GameMove),
+handle_call({put_game_order, GameId, UserId, GameOrderList}, _From, State) ->
+    Reply = put_game_order(GameId, UserId, GameOrderList),
+    {reply, Reply, State};
+
+handle_call({update_game_order, Key, GameOrderList}, _From, State) ->
+    Reply = update_game_order(Key, GameOrderList),
     {reply, Reply, State};
 handle_call({get_game_order, Key}, _From, State) ->
     Reply = get_game_order(Key),
@@ -57,20 +67,16 @@ handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
     game_timer_sup:create_timer(NewGame),
     game_timer:event(NewID, start),
     {reply, Reply, State};
-
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
     Reply = update_game(ID, Game),
     game_timer:event(ID, {reconfig, Game}),
     {reply, Reply, State};
-
 handle_call({get_game, ID}, _From, State) ->
     Reply = get_game(ID),
     {reply, Reply, State};
-
 handle_call({join_game, GameID, UserID, Country}, _From, State) ->
     Reply = game_join_proc:join_game(GameID, UserID, Country),
     {reply, Reply, State};
-
 handle_call({get_game_player, GameID}, _From, State) ->
     Reply = get_game_player(GameID),
     {reply, Reply, State};
@@ -83,7 +89,6 @@ handle_call({delete_game, Key}, _From, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
     Reply = db:delete(?B_GAME, BinKey),
     {reply, Reply, State};
-
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -91,7 +96,6 @@ handle_call(_Request, _From, State) ->
 handle_cast({phase_change, Game, NewPhase}, State) ->
     phase_change(Game, NewPhase),
     {noreply, State};
-
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
@@ -110,11 +114,18 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-put_game_order(ID, GameMoveRecList) ->
-    BinID = list_to_binary(ID),
-    DBGameMoveObj = db_obj:create (?B_GAME_ORDER, BinID, GameMoveRecList),
-    db:put (DBGameMoveObj),
-    {ok, ID}.
+put_game_order(GameId, _UserId, GameOrderList) ->
+    YearSeason = "1900-fall",
+    Phase = "phase",
+    Country = "country",
+    Key = integer_to_list(GameId) ++ YearSeason ++ Phase ++ Country,
+    put_game_order(Key, GameOrderList).
+
+put_game_order(Key, GameOrderList) ->
+    BinID = list_to_binary(Key),
+    DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, GameOrderList),
+    db:put (DBGameOrderObj),
+    {ok, Key}.
 
 update_game_order(ID, NewOrder) ->
     case db:get(?B_GAME_ORDER, list_to_binary(ID)) of
@@ -143,6 +154,7 @@ update_game(ID, #game{} = Game) ->
     DBGameObj=db_obj:create (?B_GAME, BinID, Game),
     db:put (DBGameObj),
     {ok, ID}.
+
 
 get_game(ID)->
     BinID = db:int_to_bin(ID),
@@ -216,6 +228,12 @@ phase_change(Game, NewPhase) ->
             ok
     end.
 
+get_game_order(GameId, _UserId)->
+    YearSeason = "1900-fall",
+    Phase = "phase",
+    Country = "country",
+    Key = integer_to_list(GameId) ++ YearSeason ++ Phase ++ Country,
+    get_game_order(Key).
 get_game_order(ID)->
     BinID = list_to_binary(ID),
     DBReply = db:get(?B_GAME_ORDER, BinID),

@@ -59,10 +59,13 @@ parse_orders (EmailBody) ->
           OrderList = interpret_str_orders(RawOrderList),
           ResultOrders = lists:partition(fun(X)->
                                         element(1, X) /= error end, OrderList),
-          io:format(user, "~p~n", [ResultOrders]),
-          {ok, {session, list_to_integer(SessionId)},
-               {gameid, list_to_integer(GameId)},
-               ResultOrders}
+          % ResultOrders = {[order], [error]}
+          case ResultOrders of
+              {GameOrderList, []} ->
+                  {ok, SessionId, {GameId, GameOrderList}};
+              {_, Error} ->
+                  {error,{invalid_input, Error}}
+          end
     end.
 
 % this function should be only used by parse_orders/1

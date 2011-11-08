@@ -90,6 +90,17 @@ controller_joined_game_test_() ->
      fun joined_game_test_instantiator/1
     }.
 
+controller_game_order_test_() ->
+    {setup,
+     fun() ->
+             app_start(),
+             game_order_setup()
+     end,
+     fun app_stop/1,
+     fun game_order_test_instantiator/1
+    }.
+
+
 %%-------------------------------------------------------------------
 %% Unknown command tests
 %%-------------------------------------------------------------------
@@ -106,7 +117,7 @@ parse_error(Callback) ->
     Commands = [
                 login, register, update_user, get_session_user,
                 create_game, reconfig_game, game_overview,
-                join_game
+                join_game, game_order
                ],
 
     lists:foreach(fun(Cmd) ->
@@ -122,7 +133,7 @@ parse_error(Callback) ->
 invalid_session(Callback) ->
     Commands = [
                 update_user, get_session_user, create_game,
-                reconfig_game, game_overview, join_game
+                reconfig_game, game_overview, join_game, game_order
                ],
     InvalidId = session_id:from_pid(list_to_pid("<0.1.0>")),
 
@@ -240,6 +251,46 @@ joined_game_test_instantiator(Mods) ->
                                  Mod:invalid(Callback, SessId, GameId)]
                         end
                 end, Mods)).
+
+%%-------------------------------------------------------------------
+%% game_order tests
+%%-------------------------------------------------------------------
+
+
+game_order_setup() ->
+    Mods = [game_order_tests],
+    Callback = callback(),
+
+    User = create_user(),
+    Register = {register, {ok, User}},
+    NewUser= controller:handle_action(Register,
+                                      {fun(_,_,Data) -> Data end, []}),
+
+    Login = {login, {ok, NewUser}},
+    SessId = controller:handle_action(Login,
+                                      {fun(_,_,Data) -> Data end, []}),
+
+    NewGame = create_game(),
+    GameCreate = {create_game, {ok, SessId, NewGame}},
+    GameId = controller:handle_action(GameCreate,
+                                      {fun(_,_,Data) -> Data end, []}),
+
+    JoinGame = {join_game, {ok, SessId, {GameId, germany}}},
+    controller:handle_action(JoinGame,
+                             {fun(_,_,Data) -> Data end, []}),
+    lists:map(fun(Mod) ->
+                      {Mod, Callback, SessId, GameId}
+              end, Mods).
+
+game_order_test_instantiator(Mods) ->
+    lists:flatten(
+      lists:map(fun({Mod, Callback, SessId, GameId}) ->
+                        fun() ->
+                                [Mod:success(Callback, SessId, GameId),
+                                 Mod:invalid(Callback, SessId, GameId)]
+                        end
+                end, Mods)).
+
 
 %%-------------------------------------------------------------------
 %% Test data
