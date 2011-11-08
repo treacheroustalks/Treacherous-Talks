@@ -118,6 +118,22 @@ handle_call({create_game, Game}, _From,
     {reply, {ok, GameId}, State};
 %%-------------------------------------------------------------------
 %% @doc
+%% Handles call for getting a game
+%% @end
+%% [@spec handle_call({get_game::GameId::Integer()},
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({get_game, GameId}, _From, State) ->
+    Reply = case game:get_game(GameId) of
+                {ok, Game} when is_record(Game, game) ->
+                    {ok, Game};
+                _ ->
+                    {error, game_does_not_exist}
+    end,
+    {reply, Reply, State};
+%%-------------------------------------------------------------------
+%% @doc
 %% Handles call for updating a game
 %% @end
 %% [@spec handle_call({reconfig_game::atom(), #game{}},

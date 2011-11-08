@@ -8,7 +8,7 @@
     <div class="clear"></div>
     <fieldset>
     <legend>Update</legend>
-    <form id="update">
+    <form id="update_user_form">
         <div class="span6 alert-message info">
             <p>All the fields are mandatory</p>
         </div>

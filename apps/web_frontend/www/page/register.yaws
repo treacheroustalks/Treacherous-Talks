@@ -8,39 +8,39 @@
     <div class="clear"></div>
     <fieldset>
     <legend>Register</legend>
-    <form id="register">
+    <form id="register_form">
         <div class="span6 alert-message info">
             <p>All the fields are mandatory</p>
         </div>
         <div class="clear"></div>
         <div class="clearfix">
-            <label for="reg_email">E-mail</label>
+            <label for="email">E-mail</label>
             <div class="input">
-                <input id="reg_email" name="reg_email" type="text" />
+                <input id="email" name="email" type="text" />
             </div>
         </div>
         <div class="clearfix">
-            <label for="reg_name">Full Name</label>
+            <label for="name">Full Name</label>
             <div class="input">
-                <input id="reg_name" name="reg_name" type="text" />
+                <input id="name" name="name" type="text" />
             </div>
         </div>
         <div class="clearfix">
-            <label for="reg_nick">Nick</label>
+            <label for="nick">Nick</label>
             <div class="input">
-                <input id="reg_nick" name="reg_nick" type="text" />
+                <input id="nick" name="nick" type="text" />
             </div>
         </div>
         <div class="clearfix">
-            <label for="reg_password">Password</label>
+            <label for="password">Password</label>
             <div class="input">
-                <input id="reg_password" name="reg_password" type="password" />
+                <input id="password" name="password" type="password" />
             </div>
         </div>
         <div class="clearfix">
-            <label for="reg_confirm_password">Confirm password</label>
+            <label for="confirm_password">Confirm password</label>
             <div class="input">
-                <input id="reg_confirm_password" name="reg_confirm_password" type="password" />
+                <input id="confirm_password" name="confirm_password" type="password" />
             </div>
         </div>
         <div class="actions">

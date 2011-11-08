@@ -29,7 +29,9 @@ parser_test_() ->
       fun get_game/0,
       fun create_game/0,
       fun get_session_user/0,
-      fun reconfig_game/0
+      fun reconfig_game/0,
+      fun join_game/0,
+      fun game_overview/0
      ]}.
 
 login() ->
@@ -60,6 +62,15 @@ reconfig_game() ->
     ?assertEqual(reconfig_game_exp_data(),
                  web_parser:parse(reconfig_game_data())).
 
+join_game() ->
+    ?assertEqual(join_game_exp_data(),
+                 web_parser:parse(join_game_data())).
+
+game_overview() ->
+    ?assertEqual(game_overview_exp_data(),
+                 web_parser:parse(game_overview_data())).
+
+
 %% Expected data
 login_exp_data() ->
    {login,
@@ -76,7 +87,7 @@ register_exp_data() ->
 update_exp_data() ->
    {update_user,
     {ok,
-     123456,
+     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
      [{#user.password, "hunter2"},
       {#user.email, "maximus@hotmail.com"},
       {#user.name, "Maximus Decimus Meridius"}]}}.
@@ -84,7 +95,7 @@ update_exp_data() ->
 create_game_exp_data() ->
     {create_game,
      {ok,
-      123456,
+      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
       #game{name = "War of the world",
             press = "grey",
             password = "hunter2",
@@ -96,14 +107,17 @@ create_game_exp_data() ->
             creator_id = undefined}}}.
 
 get_session_user_exp_data() ->
-    {get_session_user, {ok, 123456}}.
+    {get_session_user, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                        dummy}}.
 
 get_game_exp_data() ->
-    {get_game, {ok, 123456, 654321}}.
+    {get_game, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
 
 reconfig_game_exp_data() ->
     {reconfig_game,
-     {ok, 123456, 654321,
+     {ok,
+      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+      {654321,
       [{#game.name, "War of worlds"},
        {#game.press,  "white"},
        {#game.order_phase, 120},
@@ -113,7 +127,16 @@ reconfig_game_exp_data() ->
        {#game.description, "Game description"},
        {#game.num_players, 7},
        {#game.password, "pass"},
-       {#game.creator_id, field_missing}]}}.
+       {#game.creator_id, field_missing}]}}}.
+
+join_game_exp_data() ->
+    {join_game, {ok,
+                 "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                 {654321, germany}}}.
+
+game_overview_exp_data() ->
+    {game_overview, {ok,
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
 
 %% Input data
 login_data() ->
@@ -139,7 +162,8 @@ update_data() ->
      [{"action","update_user"},
       {"data",
        {array,
-           [{struct,[{"session_id","123456"}]},
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"email","maximus@hotmail.com"}]},
             {struct,[{"name","Maximus Decimus Meridius"}]},
             {struct,[{"password","hunter2"}]}]}}]}}.
@@ -149,7 +173,8 @@ create_game_data() ->
      [{"action","create_game"},
       {"data",
        {array,
-           [{struct,[{"session_id","123456"}]},
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"name","War of the world"}]},
             {struct,[{"description",""}]},
             {struct,[{"press","grey"}]},
@@ -165,14 +190,16 @@ get_session_user_data() ->
      [{"action","get_session_user"},
       {"data",
        {array,
-           [{struct,[{"session_id","123456"}]}]}}]}}.
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
 
 get_game_data() ->
     {ok,{struct,
      [{"action","get_game"},
       {"data",
        {array,
-           [{struct,[{"session_id","123456"}]},
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]}]}}]}}.
 
 reconfig_game_data() ->
@@ -180,7 +207,8 @@ reconfig_game_data() ->
      [{"action","reconfig_game"},
       {"data",
        {array,
-           [{struct,[{"session_id","123456"}]},
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]},
             {struct,[{"name","War of worlds"}]},
             {struct,[{"description","Game description"}]},
@@ -191,3 +219,22 @@ reconfig_game_data() ->
             {struct,[{"build_phase","360"}]},
             {struct,[{"waiting_time","420"}]},
             {struct,[{"num_players","7"}]}]}}]}}.
+
+join_game_data() ->
+    {ok,{struct,
+     [{"action","join_game"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"country","germany"}]},
+            {struct,[{"game_id","654321"}]}]}}]}}.
+
+game_overview_data() ->
+    {ok,{struct,
+     [{"action","game_overview"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"game_id","654321"}]}]}}]}}.

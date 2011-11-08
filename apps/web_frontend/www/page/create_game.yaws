@@ -7,7 +7,7 @@
     <div class="clear"></div>
     <fieldset>
     <legend>Create game</legend>
-    <form id="create_game">
+    <form id="create_game_form">
         <div class="clearfix">
             <label for="name">Game name</label>
             <div class="input">
@@ -56,13 +56,13 @@
             </div>
         </div>
         <div class="clearfix">
-            <label for="password">Build time</label>
+            <label for="build_phase">Build time</label>
             <div class="input">
                 <input id="build_phase" name="build_phase" type="text" />
             </div>
         </div>
         <div class="clearfix">
-            <label for="password">Waiting time</label>
+            <label for="waiting_time">Waiting time</label>
             <div class="input">
                 <input id="waiting_time" name="waiting_time" type="text" />
             </div>

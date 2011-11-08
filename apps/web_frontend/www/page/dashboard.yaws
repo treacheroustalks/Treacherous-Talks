@@ -12,7 +12,7 @@
     </p>
     <fieldset class="span7">
     <legend>Reconfig game</legend>
-    <form>
+    <form id="reconfig_form">
         <div class="clearfix">
             <label for="game_id">Game Id</label>
             <div class="input">
@@ -21,6 +21,49 @@
         </div>
         <div class="actions">
             <input type="submit" class="btn primary" value="Reconfig game" onclick="validate_dashboard_reconfig(); return false;">
+        </div>
+    </form>
+    </fieldset>
+    <fieldset class="span7">
+    <legend>Join game</legend>
+    <form id="join_game_form">
+        <div class="clearfix">
+            <label for="game_id">Game Id</label>
+            <div class="input">
+                <input id="game_id" name="game_id" type="text" />
+            </div>
+        </div>
+        <div class="clearfix">
+            <label for="country">Country</label>
+            <div class="input">
+                <select class="large" name="country" id="country">
+                    <option value="">Select Country</option>
+                    <option value="england">England</option>
+                    <option value="germany">Germany</option>
+                    <option value="france">France</option>
+                    <option value="austria">Austria</option>
+                    <option value="italy">Italy</option>
+                    <option value="russia">Russia</option>
+                    <option value="turkey">Turkey</option>
+                </select>
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Join game" onclick="validate_dashboard_join(); return false;">
+        </div>
+    </form>
+    </fieldset>
+    <fieldset class="span7">
+    <legend>Game overview</legend>
+    <form id="game_overview_form">
+        <div class="clearfix">
+            <label for="game_id">Game Id</label>
+            <div class="input">
+                <input id="game_id" name="game_id" type="text" />
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Get game overview" onclick="validate_dashboard_overview(); return false;">
         </div>
     </form>
     </fieldset>

@@ -8,8 +8,8 @@
     <div class="clear"></div>
     <fieldset>
     <legend id="game_legend">Reconfigure game: </legend>
-    <form id="create_game">
-        <input type="hidden" id="game_id" />
+    <form id="reconfig_game_form">
+        <input type="hidden" id="game_id" name="game_id"/>
         <div class="clearfix">
             <label for="name">Game name</label>
             <div class="input">
@@ -28,7 +28,7 @@
         <div class="clearfix">
             <label for="password">Game password</label>
             <div class="input">
-                <input id="password" name="password" type="text" />
+                <input id="pass" name="password" type="text" />
                 <span class="help-block">
                     Password for the game (Optional)
                 </span>
@@ -58,13 +58,13 @@
             </div>
         </div>
         <div class="clearfix">
-            <label for="password">Build time</label>
+            <label for="build_phase">Build time</label>
             <div class="input">
                 <input id="build_phase" name="build_phase" type="text" />
             </div>
         </div>
         <div class="clearfix">
-            <label for="password">Waiting time</label>
+            <label for="waiting_time">Waiting time</label>
             <div class="input">
                 <input id="waiting_time" name="waiting_time" type="text" />
             </div>

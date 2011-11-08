@@ -146,7 +146,15 @@ update_msg(Msg, Value, Label, Default) ->
         Default ->
             Msg;
         _ ->
-            Val = io_lib:format("~s: ~s ~n", [Label, Value]),
+            NewValue = case type_of(Value) of
+                           integer -> integer_to_list(Value);
+                           float -> float_to_list(Value);
+                           tuple -> tuple_to_list(Value);
+                           binary -> binary_to_list(Value);
+                           atom -> atom_to_list(Value);
+                           _ -> Value
+                       end,
+            Val = io_lib:format("~s: ~s ~n", [Label, NewValue]),
             string:concat(Msg, Val)
     end.
 
@@ -242,3 +250,23 @@ rec_filter(PropList, {Format, RequiredFields}) ->
         % Default proplist
         _ -> FilterPL
     end.
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Get the type of the variable
+%% @end
+%%-------------------------------------------------------------------
+type_of(X) when is_integer(X)   -> integer;
+type_of(X) when is_float(X)     -> float;
+type_of(X) when is_list(X)      -> list;
+type_of(X) when is_tuple(X)     -> tuple;
+type_of(X) when is_bitstring(X) -> bitstring;  % will fail before e12
+type_of(X) when is_binary(X)    -> binary;
+type_of(X) when is_boolean(X)   -> boolean;
+type_of(X) when is_function(X)  -> function;
+type_of(X) when is_pid(X)       -> pid;
+type_of(X) when is_port(X)      -> port;
+type_of(X) when is_reference(X) -> reference;
+type_of(X) when is_atom(X)      -> atom;
+type_of(_X)                     -> unknown.

@@ -75,6 +75,7 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
   when Command == update_user;
        Command == get_session_user;
        Command == create_game;
+       Command == get_game;
        Command == reconfig_game;
        Command == game_overview;
        Command == join_game;

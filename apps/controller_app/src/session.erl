@@ -27,6 +27,7 @@
          get_session_user/2,
          update_user/2,
          create_game/2,
+         get_game/2,
          reconfig_game/2,
          game_overview/2,
          join_game/2,
@@ -121,6 +122,16 @@ update_user(SessionId, PropList) ->
 %%-------------------------------------------------------------------
 create_game(SessionId, Game) ->
     ?SESSION_CALL(SessionId, create_game, Game).
+
+%%-------------------------------------------------------------------
+%% @doc get_game/2
+%% API to get a game
+%%
+%% @spec get_game(string(), #game{}) -> #game{}
+%% @end
+%%-------------------------------------------------------------------
+get_game(SessionId, GameId) ->
+    ?SESSION_CALL(SessionId, get_game, GameId).
 
 %%-------------------------------------------------------------------
 %% @doc reconfig_game/2

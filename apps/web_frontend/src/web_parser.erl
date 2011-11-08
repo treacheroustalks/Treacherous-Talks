@@ -41,8 +41,7 @@ parse(RawData) ->
              {ok, #user{nick = get_field("nick", Data),
                         password = get_field("password", Data)}}};
         "get_session_user" ->
-            SessionId = list_to_integer(get_field("session_id", Data)),
-            {get_session_user, {ok, SessionId}};
+            {get_session_user, {ok, get_field("session_id", Data), dummy}};
         "register" ->
             {register,
              {ok, #user{nick = get_field("nick", Data),
@@ -50,19 +49,16 @@ parse(RawData) ->
                         email = get_field("email", Data),
                         name = get_field("name", Data)}}};
         "update_user" ->
-            SessionId = list_to_integer(get_field("session_id", Data)),
             {update_user,
              {ok,
-              SessionId,
+              get_field("session_id", Data),
               [{#user.password, get_field("password", Data)},
                {#user.email, get_field("email", Data)},
                {#user.name, get_field("name", Data)}]}};
         "get_game" ->
-            SessionId = list_to_integer(get_field("session_id", Data)),
             GameId = list_to_integer(get_field("game_id", Data)),
-            {get_game, {ok, SessionId, GameId}};
+            {get_game, {ok, get_field("session_id", Data), GameId}};
         "create_game" ->
-            SessionId = list_to_integer(get_field("session_id", Data)),
             OrderPhase = list_to_integer(get_field("order_phase", Data)),
             RetreatPhase = list_to_integer(get_field("retreat_phase", Data)),
             BuildPhase = list_to_integer(get_field("build_phase", Data)),
@@ -70,7 +66,7 @@ parse(RawData) ->
             NumPlayers = list_to_integer(get_field("num_players", Data)),
             {create_game,
              {ok,
-              SessionId,
+              get_field("session_id", Data),
               #game{name = get_field("name", Data),
                     description = get_field("description", Data),
                     press = get_field("press", Data),
@@ -82,7 +78,6 @@ parse(RawData) ->
                     num_players = NumPlayers,
                     creator_id = undefined}}};
         "reconfig_game" ->
-            SessionId = list_to_integer(get_field("session_id", Data)),
             GameId = list_to_integer(get_field("game_id", Data)),
             OrderPhase = list_to_integer(get_field("order_phase", Data)),
             RetreatPhase = list_to_integer(get_field("retreat_phase", Data)),
@@ -90,7 +85,9 @@ parse(RawData) ->
             WaitingTime = list_to_integer(get_field("waiting_time", Data)),
             NumPlayers = list_to_integer(get_field("num_players", Data)),
             {reconfig_game,
-             {ok, SessionId, GameId,
+             {ok,
+              get_field("session_id", Data),
+              {GameId,
               [{#game.name, get_field("name", Data)},
                {#game.press,  get_field("press", Data)},
                {#game.order_phase, OrderPhase},
@@ -100,7 +97,14 @@ parse(RawData) ->
                {#game.description, get_field("description", Data)},
                {#game.num_players, NumPlayers},
                {#game.password, get_field("password", Data)},
-               {#game.creator_id, field_missing}]}}
+               {#game.creator_id, field_missing}]}}};
+        "join_game" ->
+            GameId = list_to_integer(get_field("game_id", Data)),
+            Country = list_to_atom(get_field("country", Data)),
+            {join_game, {ok, get_field("session_id", Data), {GameId, Country}}};
+        "game_overview" ->
+            GameId = list_to_integer(get_field("game_id", Data)),
+            {game_overview, {ok, get_field("session_id", Data), GameId}}
     end.
 
 %% Get a specific field from a list of tuples

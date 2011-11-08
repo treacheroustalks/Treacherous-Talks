@@ -116,7 +116,7 @@ unknown_command(Callback) ->
 parse_error(Callback) ->
     Commands = [
                 login, register, update_user, get_session_user,
-                create_game, reconfig_game, game_overview,
+                create_game, get_game, reconfig_game, game_overview,
                 join_game, game_order
                ],
 
@@ -132,7 +132,7 @@ parse_error(Callback) ->
 %%-------------------------------------------------------------------
 invalid_session(Callback) ->
     Commands = [
-                update_user, get_session_user, create_game,
+                update_user, get_session_user, create_game, get_game,
                 reconfig_game, game_overview, join_game, game_order
                ],
     InvalidId = session_id:from_pid(list_to_pid("<0.1.0>")),
@@ -181,7 +181,7 @@ session_test_instantiator(Mods) ->
 %%-------------------------------------------------------------------
 pre_game_setup() ->
     Mods = [
-            reconfig_game_tests, join_game_tests
+            reconfig_game_tests, join_game_tests, get_game_tests
            ],
     Callback = callback(),
 

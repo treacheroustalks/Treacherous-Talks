@@ -1,5 +1,5 @@
 /**
- * Treacherous Talks web client
+ * Treacherous Talks web client - main
  *
  * COPYRIGHT
  *
@@ -117,8 +117,8 @@ function on_connect() {
  * Handle messages sent from the server
  */
 function callback(msg) {
-    print("Server response - Msg");
-    print(msg.data);
+    print("Server response - Msg -> " + msg.data);
+    print("");
     var data = jQuery.parseJSON(msg.data);
     handle_event(data);
 }
@@ -127,9 +127,9 @@ function callback(msg) {
  * Send messages to the server
  */
 function call_server(command, dataObj) {
-    print("Server call - Command, DataObject");
-    print(command);
-    print(dataObj);
+    print("Server call - Command, DataObject -> " + command + " "
+            + JSON.stringify(dataObj));
+    print("");
     var msg = {
         "action" : command,
         "data" : dataObj.content
@@ -145,109 +145,6 @@ function logout() {
     home_page = initial_page;
     logout_update_elements();
     page = home_page;
-    load_page();
-}
-
-function login_update_elements() {
-    $("#login_form").hide();
-    $("#logout").show();
-    $("#register_menu").hide();
-}
-
-function logout_update_elements() {
-    $("#logout").hide();
-    $("#login_form").show();
-    $("#register_menu").show();
-}
-
-/**
- * Load page on the browser
- */
-function load_page(callback) {
-    var page_url = window.document.location + 'page/' + page + '.yaws';
-    $.get(page_url, function(data) {
-        pageDiv.html(data);
-        if (callback != undefined)
-            callback();
-    });
-}
-
-/**
- * Load the registration page
- */
-function load_register_page() {
-    page = 'register';
-    load_page();
-}
-
-/**
- * Load the registration page
- */
-function load_home_page() {
-    page = home_page;
-    load_page();
-}
-
-/**
- * Load the login page
- */
-function load_login_page() {
-    page = 'login';
-    load_page();
-}
-
-/**
- * Load the update_user page
- */
-function load_update_user_page() {
-    page = 'update_user';
-    load_page(load_update_user_data);
-}
-
-/**
- * Update the user data on update_user page
- *
- * @return
- */
-function load_update_user_data() {
-    $('#email').val(userObj.email);
-    $('#name').val(userObj.name);
-}
-
-/**
- * Load the reconfig_game page
- */
-function load_reconfig_game_page(page_data) {
-    page = 'reconfig_game';
-    load_page(function() {
-        load_reconfig_game_data(page_data)
-    });
-}
-
-/**
- * Update the game data on reconfig_game page
- *
- * @return
- */
-function load_reconfig_game_data(page_data) {
-    $('#game_legend').append(page_data.id)
-    $('#game_id').val(page_data.id)
-    $('#name').val(page_data.name);
-    $('#description').val(page_data.description);
-    $('#password').val(page_data.password);
-    $('#press').val(page_data.press);
-    $('#order_phase').val(page_data.order_phase);
-    $('#retreat_phase').val(page_data.retreat_phase);
-    $('#build_phase').val(page_data.build_phase);
-    $('#waiting_time').val(page_data.waiting_time);
-    $('#num_players').val(page_data.num_players);
-}
-
-/**
- * Load the create_game page
- */
-function load_create_game_page() {
-    page = 'create_game';
     load_page();
 }
 
@@ -322,10 +219,6 @@ function event_action(data) {
     case "register_invalid_data":
         clear_message();
         break;
-    case "get_session_user_invalid_data":
-        clear_message();
-        logout();
-        break;
     case "get_session_user_success":
         if (is_empty_page(data.page) && page == dash_page) {
             // This case occurs when a logged in user reloads a page
@@ -334,9 +227,14 @@ function event_action(data) {
             home_page = dash_page;
         } else
             handle_event_page_load(data);
-        // Update local userObj
         load_userObj(event_data);
         clear_message();
+        break;
+    case "get_session_user_invalid_data":
+        logout();
+        break;
+    case "get_session_user_invalid_session":
+        logout();
         break;
     case "update_user_success":
         clear_message();
@@ -345,15 +243,19 @@ function event_action(data) {
     case "update_user_invalid_data":
         clear_message();
         break;
-    case "get_game_invalid_data":
-        clear_message();
-        $('#game_id').val("");
     case "get_game_success":
         if (is_empty_page(data.page) && dash_page) {
             // This case occurs when a game is to be reconfigured from dashboard
             load_reconfig_game_page(event_data);
         } else
             handle_event_page_load(data);
+        break;
+    case "get_game_invalid_data":
+        clear_message();
+        break;
+    case "game_overview_success":
+        load_game_overview_data(event_data);
+        break;
 
     default:
         break;
@@ -362,378 +264,6 @@ function event_action(data) {
 
 function is_empty_page(pg) {
     return pg == undefined || pg == "" || pg == page;
-}
-
-/*------------------------------------------------------------------------------
- Validation functions
- -----------------------------------------------------------------------------*/
-/**
- * Validate form data
- */
-function validate() {
-    handle_enter();
-}
-
-/**
- * Handles all events when the Enter key is pressed
- */
-function handle_enter() {
-    switch (page) {
-    case 'register':
-        validate_register();
-        break;
-    case 'update_user':
-        validate_update_user();
-        break;
-    case 'create_game':
-        validate_game_data();
-        break;
-    case 'reconfig_game':
-        validate_game_data();
-        break;
-    default:
-        break;
-    }
-}
-
-/**
- * Validate user login data and if successful, send it to server
- */
-function validate_login() {
-    var nick = $('#login_nick').val();
-    var password = $('#login_password').val();
-
-    if (check_field_empty(nick, 'nick'))
-        return false;
-    if (check_field_empty(password, 'password'))
-        return false;
-
-    var dataObj = {
-        "content" : [ {
-            "nick" : nick
-        }, {
-            "password" : password
-        } ]
-    };
-    call_server('login', dataObj);
-}
-
-/**
- * Validate temporary form on dashboard to get game_id
- */
-function validate_dashboard_reconfig() {
-    var game_id = $('#game_id').val();
-
-    if (check_field_empty(game_id, 'Game Id'))
-        return false;
-
-    if (check_field_int(game_id, 'Game Id'))
-        return false;
-
-    var dataObj = {
-        "content" : [ {
-            "session_id" : get_cookie()
-        }, {
-            "game_id" : game_id
-        } ]
-    };
-    call_server('get_game', dataObj);
-}
-
-/**
- * Validate user registration data and if successful, send it to server
- */
-function validate_register() {
-    var email = $('#reg_email').val();
-    var name = $('#reg_name').val();
-    var nick = $('#reg_nick').val();
-    var password = $('#reg_password').val();
-    var confirm_password = $('#reg_confirm_password').val();
-
-    if (check_field_empty(email, 'email'))
-        return false;
-    if (check_field_empty(name, 'full name'))
-        return false;
-    if (check_field_empty(nick, 'nick'))
-        return false;
-    if (check_field_empty(password, 'password'))
-        return false;
-    if (check_field_empty(confirm_password, 'password confirmation'))
-        return false;
-    if (check_field_email(email))
-        return false;
-    if (check_field_password(password, confirm_password))
-        return false;
-
-    var dataObj = {
-        "content" : [ {
-            "email" : email
-        }, {
-            "name" : name
-        }, {
-            "nick" : nick
-        }, {
-            "password" : password
-        } ]
-    };
-    call_server('register', dataObj);
-}
-
-/**
- * Validate user update data and if successful, send it to server
- */
-function validate_update_user() {
-    var email = $('#email').val();
-    var name = $('#name').val();
-    var password = $('#password').val();
-    var confirm_password = $('#confirm_password').val();
-
-    if (check_field_empty(email, 'email'))
-        return false;
-    if (check_field_empty(name, 'full name'))
-        return false;
-    if (check_field_empty(password, 'password'))
-        return false;
-    if (check_field_empty(confirm_password, 'password confirmation'))
-        return false;
-    if (check_field_email(email))
-        return false;
-    if (check_field_password(password, confirm_password))
-        return false;
-
-    var dataObj = {
-        "content" : [ {
-            "session_id" : get_cookie()
-        }, {
-            "email" : email
-        }, {
-            "name" : name
-        }, {
-            "password" : password
-        } ]
-    };
-    call_server('update_user', dataObj);
-}
-
-/**
- * Validate user update data and if successful, send it to server
- */
-function validate_game_data() {
-    var name = $('#name').val();
-    var description = $('#description').val();
-    var password = $('#password').val();
-    var press = $('#press').val();
-    var order_phase = $('#order_phase').val();
-    var retreat_phase = $('#retreat_phase').val();
-    var build_phase = $('#build_phase').val();
-    var waiting_time = $('#waiting_time').val();
-    var num_players = $('#num_players').val();
-
-    if (check_field_empty(name, 'name'))
-        return false;
-    if (check_field_empty(press, 'press'))
-        return false;
-    if (check_field_empty(order_phase, 'order_phase'))
-        return false;
-    if (check_field_empty(retreat_phase, 'retreat_phase'))
-        return false;
-    if (check_field_empty(build_phase, 'build_phase'))
-        return false;
-    if (check_field_empty(waiting_time, 'waiting_time'))
-        return false;
-    if (check_field_empty(num_players, 'num_players'))
-        return false;
-
-    if (check_field_int(order_phase, 'order_phase'))
-        return false;
-    if (check_field_int(retreat_phase, 'retreat_phase'))
-        return false;
-    if (check_field_int(build_phase, 'build_phase'))
-        return false;
-    if (check_field_int(waiting_time, 'waiting_time'))
-        return false;
-
-    var dataObj = {
-        "content" : [ {
-            "session_id" : get_cookie()
-        }, {
-            "name" : name
-        }, {
-            "description" : description
-        }, {
-            "password" : password
-        }, {
-            "press" : press
-        }, {
-            "order_phase" : order_phase
-        }, {
-            "retreat_phase" : retreat_phase
-        }, {
-            "build_phase" : build_phase
-        }, {
-            "waiting_time" : waiting_time
-        }, {
-            "num_players" : num_players
-        } ]
-    };
-
-    if (page == 'reconfig_game') {
-        dataObj.content.push( {
-            "game_id" : $('#game_id').val()
-        });
-        call_server('reconfig_game', dataObj);
-    } else
-        call_server('create_game', dataObj);
-}
-
-/**
- * Check if a given field is empty and display appropriate message
- *
- * @param field
- * @param name
- * @param message
- * @return Boolean
- */
-function check_field_empty(field, name, message) {
-    if (message != undefined)
-        var msg = message;
-    else
-        var msg = 'Please enter ' + name;
-
-    if (field == '') {
-        set_message('error', msg);
-        clear_message();
-        return true;
-    } else
-        return false;
-}
-
-/**
- * Check is the given email is valid
- *
- * @param email
- * @return Boolean
- */
-function check_field_email(email) {
-    var regex = /^([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-    if (!regex.test(email)) {
-        set_message('error', 'Invalid email. Please enter a valid email.');
-        clear_message();
-        return true;
-    }
-    return false;
-}
-
-/**
- * Check if passwords match
- *
- * @param password
- * @param confirm_password
- * @return Boolean
- */
-function check_field_password(password, confirm_password) {
-    if (password != confirm_password) {
-        set_message('error', 'Passwords don\'t match. Please try again.');
-        clear_message();
-        return true;
-    }
-    return false;
-}
-
-/**
- * Check if the given field is an integer
- *
- * @param field
- * @return
- */
-function check_field_int(field, name) {
-    if (isNaN(field) || parseInt(field) != field) {
-        set_message('error', name + ' should be an integer.');
-        clear_message();
-        return true;
-    } else
-        return false;
-}
-
-/*------------------------------------------------------------------------------
- Cookie functions
- -----------------------------------------------------------------------------*/
-/**
- * Get cookie from the browser
- */
-function get_cookie() {
-    var cookie = $.cookie(cookie_name);
-    if (cookie == null)
-        return false;
-    else
-        return $.cookie(cookie_name);
-}
-
-/**
- * Set cookie in the browser
- */
-function set_cookie(cookie_data) {
-    $.cookie(cookie_name, cookie_data, {
-        expires : cookie_expire_days,
-        path : '/'
-    });
-}
-
-/**
- * Remove cookie from the browser
- */
-function delete_cookie() {
-    $.cookie(cookie_name, null);
-}
-
-/*------------------------------------------------------------------------------
- Message functions
- -----------------------------------------------------------------------------*/
-/**
- * Show message in the message box type: success, error, warning message:
- * message to be set in the message box
- */
-function set_message(type, message) {
-    if (type == undefined || type == "" || message == undefined
-            || message == "")
-        return false;
-
-    var msgDiv = $('#message');
-    var msg = '<div class="alert-message ' + type + '">'
-            + '<a class="close" href="javscript:void(0);" '
-            + 'onclick="delete_message(); return false;">&times;</a><p>'
-            + message + '</p>' + '</div>';
-    msgDiv.html(msg).fadeIn('fast');
-}
-
-/**
- * Clear message div after "delay" time
- *
- * @return
- */
-function clear_message() {
-    var msgDiv = $('#message');
-    setTimeout(function() {
-        msgDiv.html('');
-    }, delay);
-}
-
-function delete_message() {
-    var msgDiv = $('#message');
-    msgDiv.html('');
-}
-
-function msg_unsupported_browser() {
-    set_message('error', 'Unsupported browser!');
-}
-
-function msg_connect_success() {
-    set_message('success', 'Connected to server via websockets');
-    clear_message();
-}
-
-function msg_connect_close() {
-    set_message('error', 'Connection to server closed');
 }
 
 /*------------------------------------------------------------------------------

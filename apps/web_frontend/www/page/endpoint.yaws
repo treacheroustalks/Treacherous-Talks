@@ -4,8 +4,9 @@
 %%% COPYRIGHT
 %%% @end
 %%%-------------------------------------------------------------------
+%%% @author Sukumar Yethadka <sbhat7@gmail.com>
+%%%
 %%% @doc Websocket endpoint
-%%% @end
 %%%
 %%% @since : 25 Oct 2011 by Bermuda Triangle
 %%% @end
@@ -61,73 +62,42 @@ socket_server(WebSocket, ProtocolVersion) ->
         socket_server(WebSocket, ProtocolVersion)
     end.
 
-
-%% Convert data from websocket (JSON) to erlang terms
-json_decode(Data) ->
-    json2:decode_string(binary_to_list(Data)).
-
-
-%% Convert erlang terms to JSON
-json_encode(Data) ->
-    list_to_binary(json2:encode(json2:obj_from_list(Data))).
-
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Callback functions that gets called by controller
 %% @end
 %%-------------------------------------------------------------------
-reply([WebSocket, ProtocolVersion], {register, success}, User) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, register_success());
-reply([WebSocket, ProtocolVersion], {register, invalid_data}, Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
-
-reply([WebSocket, ProtocolVersion], {login, success}, Session) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, login_success(Session));
-reply([WebSocket, ProtocolVersion], {login, invalid_data}, _Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, login_invalid_data());
-
-reply([WebSocket, ProtocolVersion], {get_session_user, success}, User) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            get_session_user_success(User));
-reply([WebSocket, ProtocolVersion], {get_session_user, invalid_data}, _Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            get_session_user_invalid_data());
-
-reply([WebSocket, ProtocolVersion], {update_user, success}, User) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            update_user_success(User));
-reply([WebSocket, ProtocolVersion], {update_user, invalid_data}, _Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            update_user_invalid_data());
-
-reply([WebSocket, ProtocolVersion], {get_game, success}, Game) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            get_game_success(Game));
-reply([WebSocket, ProtocolVersion], {get_game, invalid_data}, _Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            get_game_invalid_data());
-
-reply([WebSocket, ProtocolVersion], {create_game, success}, GameData) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            create_game_success(GameData));
-reply([WebSocket, ProtocolVersion], {create_game, invalid_data}, _Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            create_game_invalid_data());
-
-reply([WebSocket, ProtocolVersion], {reconfig_game, success}, Game) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            reconfig_game_success(Game));
-reply([WebSocket, ProtocolVersion], {reconfig_game, invalid_data}, _Info) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion,
-                            reconfig_game_invalid_data());
-
-reply([WebSocket, ProtocolVersion], {Cmd, parse_error}, Error) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
-
 reply([WebSocket, ProtocolVersion], unknown_command, Data) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode("")).
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
+reply([WebSocket, ProtocolVersion], Msg, Data) ->
+    Reply = get_reply(Msg, Data),
+    yaws_api:websocket_send(WebSocket, ProtocolVersion, Reply).
 
+get_reply(Msg, Data) ->
+    case Msg of
+        {register, success} -> register_success();
+        {register, invalid_data} ->	json_encode("");
+        {login, success} -> login_success(Data);
+        {login, invalid_data} -> login_invalid_data();
+        {get_session_user, success} -> get_session_user_success(Data);
+        {get_session_user, invalid_data} -> get_session_user_invalid_data();
+        {get_session_user,invalid_session} ->
+            get_session_user_invalid_session();
+        {update_user, success} -> update_user_success(Data);
+        {update_user, invalid_data} -> update_user_invalid_data();
+        {get_game, success} -> get_game_success(Data);
+        {get_game, invalid_data} -> get_game_invalid_data();
+        {create_game, success} -> create_game_success(Data);
+        {create_game, invalid_data} -> create_game_invalid_data();
+        {reconfig_game, success} -> reconfig_game_success(Data);
+        {reconfig_game, invalid_data} -> reconfig_game_invalid_data();
+        {join_game, success} -> join_game_success(Data);
+        {join_game, error} -> join_game_error(Data);
+        {join_game,invalid_data} -> join_game_invalid_data(Data);
+        {game_overview, success} -> game_overview_success(Data);
+        {Cmd, parse_error} -> json_encode("");
+        _ -> io:format("Unimplemented call ~p~n", [Msg])
+    end.
 
 %%-------------------------------------------------------------------
 %% Functions that handle return data
@@ -175,7 +145,7 @@ login_success(Session) ->
 login_invalid_data() ->
     R = [{"event", "login_invalid_data"},
          {"event_data", ""},
-         {"page", "login"},
+         {"page", ""},
          {"message_type", "error"},
          {"message_value", "Invalid login data."
                            " Please check your nick and password"}],
@@ -183,7 +153,7 @@ login_invalid_data() ->
 
 get_session_user_success(User) ->
     RequiredFields = ["nick", "email", "name"],
-    Data = userrec_to_proplist(User, RequiredFields),
+    Data = data_format:userrec_to_proplist(User, {string, RequiredFields}),
     R = [{"event", "get_session_user_success"},
          {"event_data", json2:obj_from_list(Data)},
          {"page", "dashboard"},
@@ -200,9 +170,18 @@ get_session_user_invalid_data() ->
                            " Please login to continue."}],
     json_encode(R).
 
+get_session_user_invalid_session() ->
+    R = [{"event", "get_session_user_invalid_session"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", "Session invalid."
+                           " Please login to continue."}],
+    json_encode(R).
+
 update_user_success(User) ->
     RequiredFields = ["nick", "email", "name"],
-    Data = userrec_to_proplist(User, RequiredFields),
+    Data = data_format:userrec_to_proplist(User, {string, RequiredFields}),
     R = [{"event", "update_user_success"},
          {"event_data", json2:obj_from_list(Data)},
          {"page", "dashboard"},
@@ -224,7 +203,7 @@ get_game_success(Game) ->
     RequiredFields = ["id", "creator_id", "name", "description", "password",
                       "press", "order_phase", "retreat_phase", "build_phase",
                       "waiting_time", "num_players", "result"],
-    Data = gamerec_to_proplist(Game, RequiredFields),
+    Data = data_format:gamerec_to_proplist(Game, {string, RequiredFields}),
     R = [{"event", "get_game_success"},
          {"event_data", json2:obj_from_list(Data)},
          {"page", ""},
@@ -241,12 +220,8 @@ get_game_invalid_data() ->
     json_encode(R).
 
 reconfig_game_success(Game) ->
-    RequiredFields = ["id", "creator_id", "name", "description", "status",
-                      "press", "order_phase", "retreat_phase", "build_phase",
-                      "waiting_time", "num_players", "result"],
-    Data = gamerec_to_proplist(Game, RequiredFields),
     R = [{"event", "reconfig_game_success"},
-         {"event_data", json2:obj_from_list(Data)},
+         {"event_data", ""},
          {"page", "dashboard"},
          {"message_type", "success"},
          {"message_value", "Game reconfigured successfully."}],
@@ -261,8 +236,7 @@ reconfig_game_invalid_data() ->
                            " Please try again after some time"}],
     json_encode(R).
 
-create_game_success(GameData) ->
-    {ok, GameId} = GameData,
+create_game_success(GameId) ->
     Msg = string:concat("Game created successfully, GameId = ",
                         integer_to_list(GameId)),
     R = [{"event", "create_game_success"},
@@ -283,27 +257,59 @@ create_game_invalid_data() ->
     json_encode(R).
 
 
-%% Utility functions
+join_game_success(GameId) ->
+    Msg = string:concat("Game joined successfully, GameId = ",
+                        integer_to_list(GameId)),
+    R = [{"event", "join_game_success"},
+         {"event_data", ""},
+         {"page", "dashboard"},
+         {"message_type", "success"},
+         {"message_value", Msg}],
+    json_encode(R).
 
-%% Converts game record to proplist
-%% RequiredFields is used so as to avoid sending all data to user
-gamerec_to_proplist(Game, RequiredFields) ->
-    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, game)],
-    PropList = lists:zip(RecordInfo, tl(tuple_to_list(Game))),
-    FilterPL = [{X, Y} || {X, Y} <- PropList, lists:member(X, RequiredFields)],
-    lists:map(fun({X, Y}) -> {X, case is_atom(Y) of
-                                     true -> atom_to_list(Y);
-                                      false -> Y
-                                 end} end, FilterPL).
+join_game_error(_Error) ->
+    R = [{"event", "join_game_error"},
+         {"event_data", ""},
+         {"page", "dashboard"},
+         {"message_type", "error"},
+         {"message_value", "Unknown error occurred. Please try again."}],
+    json_encode(R).
 
-%% Converts user record to proplist
-userrec_to_proplist(User, RequiredFields) ->
-    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, user)],
-    PropList = lists:zip(RecordInfo, tl(tuple_to_list(User))),
-    FilterPL = [{X, Y} || {X, Y} <- PropList, lists:member(X, RequiredFields)],
-    lists:map(fun({X, Y}) -> {X, case is_atom(Y) of
-                                     true -> atom_to_list(Y);
-                                      false -> Y
-                                 end} end, FilterPL).
+join_game_invalid_data(Error) ->
+    case Error of
+        country_not_available ->
+            Msg = "The selected country is already taken. Choose another.";
+        user_already_joined ->
+            Msg = "You have already joined this game.";
+        _ ->
+            Msg = "Unknown error. Please try again."
+    end,
+    R = [{"event", "join_game_invalid_data"},
+         {"event_data", ""},
+         {"page", "dashboard"},
+         {"message_type", "error"},
+         {"message_value", Msg}],
+    json_encode(R).
 
+game_overview_success(GOv) ->
+    {Country, Game, Provinces, Units} = data_format:game_overview_to_text(GOv),
+    Data = [{"country", atom_to_list(Country)},
+            {"game", lists:flatten(Game)},
+            {"provinces", lists:flatten(Provinces)},
+            {"units", lists:flatten(Units)}],
+    R = [{"event", "game_overview_success"},
+         {"event_data", json2:obj_from_list(Data)},
+         {"page", "game_overview"},
+         {"message_type", ""},
+         {"message_value", ""}],
+    json_encode(R).
+
+%% Convert data from websocket (JSON) to erlang terms
+json_decode(Data) ->
+    json2:decode_string(binary_to_list(Data)).
+
+
+%% Convert erlang terms to JSON
+json_encode(Data) ->
+    list_to_binary(json2:encode(json2:obj_from_list(Data))).
 </erl>
