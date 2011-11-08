@@ -28,6 +28,13 @@ parse_register_test_() ->
         ?_assertEqual(Expected, ActualOutput)
     ].
 
+parse_register_channel_test_() ->
+    ActualOutput = user_commands:parse_register(?SAMPLE_REGISTER_CHANNEL),
+    Expected = {ok, #user{nick = "Lin", password = "QWER", channel = mail,
+                          email = "ss@lin.pcs", name = "Agner Erlang"}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
 
 parse_update_test_() ->
     ActualOutput = user_commands:parse_update(?SAMPLE_UPDATE),
