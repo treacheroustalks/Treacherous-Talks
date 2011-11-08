@@ -51,10 +51,11 @@ parse_orders (EmailBody) ->
     % error will be throw out from get_field_value/2
     catch begin
           [RawSessionId|RestLines] = MailLines,
-          SessionId = get_field_value(RawSessionId, ?SESSION":\s*([0-9]*)\s*"),
+          SessionId = get_field_value(RawSessionId, ?SESSION":\s*(.*)\s*"),
 
           [RawGameId|RawOrderList] = RestLines,
-          GameId = get_field_value(RawGameId, ?GAMEID":\s*([0-9]*)\s*"),
+          GameIdStr = get_field_value(RawGameId, ?GAMEID":\s*([0-9]*)\s*"),
+          GameId = list_to_integer(GameIdStr),
 
           OrderList = interpret_str_orders(RawOrderList),
           ResultOrders = lists:partition(fun(X)->

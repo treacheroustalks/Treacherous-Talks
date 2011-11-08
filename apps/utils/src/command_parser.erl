@@ -66,7 +66,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                 <<?LOGIN>> ->
                     {login, user_commands:parse_login(Data)};
                 <<?ORDER>> ->
-                    {game_move, player_orders:parse_orders(Data)};
+                    {game_order, player_orders:parse_orders(Data)};
                 <<?CREATE>> ->
                     {create_game, user_commands:parse_create(Data)};
                 <<?RECONFIG>> ->

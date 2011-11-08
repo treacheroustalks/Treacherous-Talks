@@ -36,6 +36,15 @@
 %% [@spec reply([From, To], {Cmd, Result}, Data) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
+reply([From, To], {game_order, success}, OrderInfo) ->
+    send_chat(From, To,
+              "Game order was successfully sent.~n~p~n",
+              [OrderInfo]);
+reply([From, To], {game_order, invalid_data}, Info) ->
+    send_chat(From, To,
+              "Invalid game order.~n~p~n",
+              [Info]);
+
 reply([From, To], {register, success}, User) ->
     send_chat(From, To,
               "Registration was successful.~n~p~n",

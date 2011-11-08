@@ -16,7 +16,7 @@ parse_orders_test_() ->
     ActualOutput = player_orders:parse_orders(Out),
     %io:format(user, "~p~n", [ActualOutput]),
     Expected = {ok,"1234341",
-    {"3958230945903",
+    {3958230945903,
      [{convoy,fleet,north_sea,army,london,norwegian_sea},
       {convoy,fleet,north_sea,army,london,norwegian_sea},
       {move,army,london,norwegian_sea,any_coast},

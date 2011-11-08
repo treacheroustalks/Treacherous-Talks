@@ -66,8 +66,8 @@ reconfig_test_() ->
 order_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS2, test),
     %io:format(user, "~p~n", [ActualOutput]),
-    Expected = {game_move,{ok,"1234341",
-               {"3958230945903",
+    Expected = {game_order,{ok,"1234341",
+               {3958230945903,
                 [{convoy,fleet,north_sea,army,london,norwegian_sea},
                  {convoy,fleet,north_sea,army,london,norwegian_sea},
                  {move,army,london,norwegian_sea,any_coast},
