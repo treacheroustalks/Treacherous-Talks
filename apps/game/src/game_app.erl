@@ -12,6 +12,8 @@
 
 start(_StartType, _StartArgs) ->
     io:format ("[~p] starting~n", [?MODULE]),
+    ok = mnesia:start(),
+    ok = game_join_proc_map:init(),
     game_sup:start_link().
 
 stop(_State) ->

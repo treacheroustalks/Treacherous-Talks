@@ -37,7 +37,7 @@ invalid(Callback, SessId, GameId) ->
 
     ?assertEqual({join_game, invalid_data}, CmdRes),
 
-    ?assertEqual(country_not_available, ResultData).
+    ?assertEqual(user_already_joined, ResultData).
 
 %%-------------------------------------------------------------------
 %% Test data
