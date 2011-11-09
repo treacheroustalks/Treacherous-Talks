@@ -33,12 +33,11 @@ var userObj = {
  jQuery Events
  -----------------------------------------------------------------------------*/
 /**
- * Event for "Enter" key
+ * Event for handling "Enter" key in forms
  */
-$(document).keypress(function(e) {
-    if (e.keyCode == 13) {
+$("input").keypress(function(e) {
+    if (e.which == 13)
         handle_enter();
-    }
 });
 
 /*------------------------------------------------------------------------------
@@ -256,7 +255,10 @@ function event_action(data) {
     case "game_overview_success":
         load_game_overview_data(event_data);
         break;
-
+    case "game_order_success":
+        clear_message();
+        clear_game_orders();
+        break;
     default:
         break;
     }

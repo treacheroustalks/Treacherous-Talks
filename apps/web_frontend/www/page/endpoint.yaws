@@ -95,6 +95,9 @@ get_reply(Msg, Data) ->
         {join_game, error} -> join_game_error(Data);
         {join_game,invalid_data} -> join_game_invalid_data(Data);
         {game_overview, success} -> game_overview_success(Data);
+        {game_overview, invalid_data} -> game_overview_invalid_data(Data);
+        {game_order, success} -> game_order_success();
+        {game_order, invalid_data} -> game_order_invalid_data();
         {Cmd, parse_error} -> json_encode("");
         _ -> io:format("Unimplemented call ~p~n", [Msg])
     end.
@@ -292,17 +295,51 @@ join_game_invalid_data(Error) ->
     json_encode(R).
 
 game_overview_success(GOv) ->
-    {Country, Game, Provinces, Units} = data_format:game_overview_to_text(GOv),
-    Data = [{"country", atom_to_list(Country)},
+    {GameId, Country, Game, Provinces, Units} =
+        data_format:game_overview_to_text(GOv),
+    Data = [{"game_id", integer_to_list(GameId)},
+            {"country", atom_to_list(Country)},
             {"game", lists:flatten(Game)},
             {"provinces", lists:flatten(Provinces)},
             {"units", lists:flatten(Units)}],
     R = [{"event", "game_overview_success"},
          {"event_data", json2:obj_from_list(Data)},
-         {"page", "game_overview"},
+         {"page", "game"},
          {"message_type", ""},
          {"message_value", ""}],
     json_encode(R).
+
+game_overview_invalid_data(Error) ->
+    case Error of
+        user_not_playing_this_game ->
+            Msg = "You need to join this game before you can play it.";
+        _ ->
+            Msg = "Unknown error. Please try again."
+    end,
+    R = [{"event", "game_overview_invalid_data"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", Msg}],
+    json_encode(R).
+
+game_order_success() ->
+    R = [{"event", "game_order_success"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "success"},
+         {"message_value", "Game orders sent successfully."}],
+    json_encode(R).
+
+game_order_invalid_data() ->
+    R = [{"event", "game_order_invalid_data"},
+         {"event_data", ""},
+         {"page", ""},
+         {"message_type", "error"},
+         {"message_value", "Problem sending game order."
+                           "Please check your order or try after some time."}],
+    json_encode(R).
+
 
 %% Convert data from websocket (JSON) to erlang terms
 json_decode(Data) ->

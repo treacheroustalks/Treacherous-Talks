@@ -104,7 +104,16 @@ parse(RawData) ->
             {join_game, {ok, get_field("session_id", Data), {GameId, Country}}};
         "game_overview" ->
             GameId = list_to_integer(get_field("game_id", Data)),
-            {game_overview, {ok, get_field("session_id", Data), GameId}}
+            {game_overview, {ok, get_field("session_id", Data), GameId}};
+        "game_order" ->
+            GameId = list_to_integer(get_field("game_id", Data)),
+            OrderLines = string:tokens(get_field("game_order", Data), "\r\n,"),
+            GameOrders = player_orders:interpret_str_orders(OrderLines),
+            % Remove error orders
+            ResultOrders = lists:filter(fun(X)-> element(1, X) /= error end,
+                                           GameOrders),
+            {game_order, {ok, get_field("session_id", Data),
+                          {GameId, ResultOrders}}}
     end.
 
 %% Get a specific field from a list of tuples

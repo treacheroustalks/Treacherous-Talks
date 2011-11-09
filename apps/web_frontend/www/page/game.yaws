@@ -1,11 +1,31 @@
 <!-- Game overview page -->
 <div class="page-header">
-  <h1>Game overview<small></small></h1>
+  <h1>Game overview and play<small></small></h1>
 </div>
 <div class="row">
   <div class="span15">
   <div id="message"></div>
     <div class="clear"></div>
+    <fieldset>
+    <legend>Play game</legend>
+    <form id="play_game_form">
+        <div class="clearfix">
+            <label for="game_order">Game orders</label>
+            <input type="hidden" id="game_id" name="game_id" value=""/>
+            <div class="input">
+              <textarea class="xlarge" id="game_order" name="game_order" rows="5"></textarea>
+              <span class="help-block">
+                  Game orders for this phase (Optional)
+              </span>
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Submit game orders" onclick="validate(); return false;">&nbsp;
+            <input type="reset" class="btn" value="Reset">&nbsp;
+        </div>
+    </form>
+    </fieldset>
+
     <table>
     <thead>
         <tr>

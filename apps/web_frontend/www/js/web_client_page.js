@@ -81,6 +81,7 @@ function load_reconfig_game_page(page_data) {
  * Update the game overview page with event data
  */
 function load_game_overview_data(page_data) {
+    $('#game_id').val(page_data.game_id);
     $('#country').html(page_data.country);
     $('#game').html(nl2br(page_data.game));
     $('#provinces').html(nl2br(page_data.provinces));
@@ -93,8 +94,8 @@ function load_game_overview_data(page_data) {
  * @return
  */
 function load_reconfig_game_data(page_data) {
-    $('#game_legend').append(page_data.id)
-    $('#game_id').val(page_data.id)
+    $('#game_legend').append(page_data.id);
+    $('#game_id').val(page_data.id);
     $('#name').val(page_data.name);
     $('#description').val(page_data.description);
     $('#pass').val(page_data.password);
@@ -133,6 +134,13 @@ function logout_update_elements() {
 }
 
 /*------------------------------------------------------------------------------
+ Form cleanup functions
+ -----------------------------------------------------------------------------*/
+function clear_game_orders() {
+    $("#game_order").val("");
+}
+
+/*------------------------------------------------------------------------------
  Validation functions
  -----------------------------------------------------------------------------*/
 /**
@@ -158,6 +166,9 @@ function handle_enter() {
         break;
     case 'reconfig_game':
         validate_game_data();
+        break;
+    case 'game':
+        validate_game();
         break;
     default:
         break;
@@ -399,6 +410,27 @@ function validate_game_data() {
     default:
         return false;
     }
+}
+
+function validate_game() {
+    var form = get_form_data('#play_game_form');
+
+    if (check_field_empty(form.game_order, 'game_order'))
+        return false;
+    if (check_field_empty(form.game_id, 'game_id'))
+        return false;
+
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "game_id" : form.game_id
+        }, {
+            "game_order" : form.game_order
+        } ]
+    };
+
+    call_server('game_order', dataObj);
 }
 
 /**
