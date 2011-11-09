@@ -274,6 +274,7 @@ multiple_stages_test () ->
     ?assert (map:unit_exists (Map, burgundy, {army, france})),
     ?assert (map:unit_exists (Map, burgundy, {army, germany})),
     ?assert (map:unit_exists (Map, gascony, {army, france})),
+    %% germany fails to retreat A burgundy - it is destroyed:
     rules:process (retreat_phase, Map, diplomacy_rules, []),
     ?assertEqual (false, map:unit_exists (Map, burgundy, {army, germany})),
     map_data:delete (Map).
@@ -284,7 +285,6 @@ build_reply_test () ->
     map:add_unit (Map, {army, austria}, spain),
     map:remove_unit (Map, {fleet, england}, london),
     Reply = rules:process (count_phase, Map, diplomacy_rules, []),
-    ?debugVal (Reply),
     ?assert (lists:member ({has_builds, austria, -1}, Reply)),
     ?assert (lists:member ({has_builds, england, 1}, Reply)),
 %    ?debugMsg ("###################################### BUILD-REPLY: DONE"),
@@ -479,29 +479,28 @@ tmoat_year (Map, Year) ->
     {SpringOrders, SpringResults} =
         lists:unzip (
           tmoat_data (spring, order_phase, Year)),
-    ?debugVal (rules:process (order_phase, Map, diplomacy_rules, SpringOrders)),
+    rules:process (order_phase, Map, diplomacy_rules, SpringOrders),
     check_results ({spring, Year}, Map, SpringResults),
 
     ?debugMsg ("spring retreat"),
     {SpringRetreatOrders, SpringRetreatResults} =
         lists:unzip (
           tmoat_data (spring, retreat_phase, Year)),
-    ?debugVal (
-       rules:process (retreat_phase, Map, diplomacy_rules,
-                      SpringRetreatOrders)),
+    rules:process (retreat_phase, Map, diplomacy_rules,
+                   SpringRetreatOrders),
     check_results ({spring_retreat, Year}, Map, SpringRetreatResults),
 
     ?debugMsg ("fall"),
     {FallOrders, FallResults} =
         lists:unzip (tmoat_data (fall, order_phase, Year)),
-    ?debugVal (rules:process (order_phase, Map, diplomacy_rules, FallOrders)),
+    rules:process (order_phase, Map, diplomacy_rules, FallOrders),
     check_results ({fall_retreat, Year}, Map, FallResults),
 
     ?debugMsg ("fall retreat"),
     {FallRetreatOrders, FallRetreatResults} =
         lists:unzip (
           tmoat_data (fall, retreat_phase, Year)),
-    ?debugVal (rules:process (retreat_phase, Map, diplomacy_rules, FallRetreatOrders)),
+    rules:process (retreat_phase, Map, diplomacy_rules, FallRetreatOrders),
     check_results ({fall_retreat, Year}, Map, FallRetreatResults),
 
     ?debugMsg ("build"),
@@ -511,4 +510,10 @@ tmoat_year (Map, Year) ->
     rules:process (build_phase, Map, diplomacy_rules, BuildOrders),
     check_results ({fall_build, Year}, Map, BuildResults).
 
-
+implicit_hold_test () ->
+    Map = map_data:create (empty),
+    map:add_province (Map, vienna),
+    map:add_unit (Map, {army, austria}, vienna),
+    Reply = rules:process (order_phase, Map, diplomacy_rules, []),
+    ?assertEqual ([{added, {hold, {army, austria}, vienna}}], Reply),
+    map_data:delete (Map).

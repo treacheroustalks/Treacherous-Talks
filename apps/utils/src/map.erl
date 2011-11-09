@@ -66,7 +66,9 @@ get_units (Map) ->
                   [] ->
                       Acc;
                   Units ->
-                      [{Province, Units} | Acc]
+                      lists:map (fun (Unit) ->
+                                         {Province, Unit}
+                                 end, Units) ++ Acc
               end
       end,
       [],
