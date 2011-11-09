@@ -96,6 +96,38 @@ SESSION: " ++ Session ++ "
 GAMEID: " ++ GameID ++ "
 END").
 
+-define(GAME_ORDER_COMMAND(Session, GameID),
+"sddfaadfaff
+
+ORDER
+
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+
+A Lon-Nrg
+Lon-Nrg
+A Lon -> Nrg nc
+Army Lon move Nrg
+
+END
+adfadfasdfaldfad").
+
+-define(GAME_ORDER_COMMAND_WRONG(Session, GameID),
+"sddfaadfaff
+
+ORDER
+
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+
+A Nrg
+Lon-Nrg
+A Lon -> Nrg nc
+Army Lon move Nrg
+
+END
+adfadfasdfaldfad").
+
 %%------------------------------------------------------------------
 %% Responses
 %%------------------------------------------------------------------
@@ -123,6 +155,10 @@ Supported commands are:").
 
 -define(GAME_OVERVIEW_RESPONSE_SUCCESS,"\nGame Overview:\n").
 -define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"You are not playing this game").
+
+-define(GAME_ORDER_RESPONSE_SUCCESS, "Game order was successfully sent.").
+-define(GAME_ORDER_RESPONSE_INVALID_INPUT, "The command [game_order] could not be interpreted correctly:
+Invalid input to the following:").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -186,6 +222,15 @@ setup_session_instantiator() ->
                                 [{capture, all_but_first, list}]),
     ?debugVal(GameID),
     [
+     
+     {?GAME_ORDER_COMMAND(Session, GameID),
+       ?GAME_ORDER_RESPONSE_SUCCESS,
+      "game order successfully sent"},
+     {?GAME_ORDER_COMMAND_WRONG(Session, GameID),
+       ?GAME_ORDER_RESPONSE_INVALID_INPUT,
+       "game order with invalid input"},
+
+
      {?UPDATE_COMMAND_CORRECT(Session),
       ?UPD_RESPONSE_SUCCESS,
       "valid update attempt"},
