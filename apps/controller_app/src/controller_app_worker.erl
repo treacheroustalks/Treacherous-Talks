@@ -129,7 +129,7 @@ handle_call({login, Login}, _From, State) ->
                 {ok, HObj} = session_history:db_get(Id),
                 HistObj = session_history:resolve_history_siblings(HObj),
                 Hist = db_obj:get_value(HistObj),
-                % @todo kill old session ...
+                session:stop(session_history:latest(Hist)),
 
                 UserObj = resolve_user_conflict(Hist, DbObj),
                 User = db_obj:get_value(UserObj),
@@ -145,7 +145,7 @@ handle_call({login, Login}, _From, State) ->
                         {ok, CheckHistObj} = session_history:db_get(Id),
                         case db_obj:has_siblings(CheckHistObj) of
                             true ->
-                                % @todo kill all sibling sessions
+                                stop_sessions(CheckHistObj),
                                 {error, simultaneous_login};
                             false ->
                                 NewUser = User#user{last_session = SessId},
@@ -230,3 +230,18 @@ resolve_user_conflict(Hist, DbObj) ->
             lists:nth(Pos, Siblings)
     end.
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Stop the last session in all siblings.
+%%
+%% @spec stop_sessions(#db_obj{}) -> ok
+%% @end
+%%-------------------------------------------------------------------
+stop_sessions(DbObj) ->
+    Siblings = db_obj:get_siblings(DbObj),
+    lists:foreach(fun(SibObj) ->
+                          Hist = db_obj:get_value(SibObj),
+                          Session = session_history:latest(Hist),
+                          session:stop(Session)
+                  end, Siblings),
+    ok.

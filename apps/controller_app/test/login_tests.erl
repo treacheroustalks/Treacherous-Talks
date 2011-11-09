@@ -20,7 +20,8 @@
          success/1,
          mult_nicks/1,
          user_not_existing/1,
-         wrong_password/1
+         wrong_password/1,
+         kill_old_session/1
         ]).
 
 tests(Callback) ->
@@ -36,9 +37,12 @@ tests(Callback) ->
 success(Callback) ->
     Cmd = {login, {ok, get_test_data(success)}},
     Result = controller:handle_action(Cmd, Callback),
-    {CmdRes, _SessionId} = Result,
+    {CmdRes, SessionId} = Result,
 
-    ?assertEqual({login, success}, CmdRes).
+    ?assertEqual({login, success}, CmdRes),
+
+    SessResult = session:alive(SessionId),
+    ?assertEqual(true, SessResult).
 
 mult_nicks(Callback) ->
     User = get_test_data(mult_nicks),
@@ -66,6 +70,21 @@ wrong_password(Callback) ->
     {CmdRes, Info} = Result,
     ?assertEqual({login, invalid_data}, CmdRes),
     ?assertEqual(invalid_login_data, Info).
+
+kill_old_session(Callback) ->
+    {User, Session} = get_test_data(kill_old_session),
+    Cmd = {login, {ok, User}},
+    Result = controller:handle_action(Cmd, Callback),
+    {CmdRes, SessionId} = Result,
+    AliveResult = session:alive(SessionId),
+    ?assertEqual(true, AliveResult),
+
+    ?assertEqual({login, success}, CmdRes),
+    
+    MonitorRef = monitor(process, session_id:to_pid(Session)),
+    receive {'DOWN', MonitorRef, _Type, _Object, _Info} -> ok end,
+    SessResult = session:alive(Session),
+    ?assertEqual(false, SessResult).
 
 %%-------------------------------------------------------------------
 %% Test data
@@ -101,4 +120,11 @@ get_test_data(user_not_existing) ->
           password = "jksbnaugh29 RANDOM"};
 get_test_data(wrong_password) ->
     User = get_test_data(success),
-    User#user{password = User#user.password ++ "-"}.
+    User#user{password = User#user.password ++ "-"};
+get_test_data(kill_old_session) ->
+    User = get_test_data(success),
+    Cmd = {login, {ok, User}},
+    Session = controller:handle_action(
+                Cmd,{fun(_,_,Data) -> Data end, []}),
+    {User, Session}.
+    

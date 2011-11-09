@@ -61,6 +61,9 @@ start_stop_t() ->
     ?assertEqual(true, Alive),
 
     session:stop(SessionId),
+    % wait for it to stop
+    MonitorRef = monitor(process, session_id:to_pid(SessionId)),
+    receive {'DOWN', MonitorRef, _Type, _Object, _Info} -> ok end,
     StopAlive = session:alive(SessionId),
     ?assertEqual(false, StopAlive).
 

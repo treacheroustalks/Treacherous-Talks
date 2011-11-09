@@ -201,13 +201,13 @@ handle_call(get_session_user, _From,
     Reply = {ok, User},
     {reply, Reply, State};
 
-% @todo get_session_user
-
 handle_call(Request, _From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, _From, State}]),
     {noreply, ok, State}.
 
 
+handle_cast(stop, State) ->
+    {stop, normal, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
