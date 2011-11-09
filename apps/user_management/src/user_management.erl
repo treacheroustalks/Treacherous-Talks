@@ -70,7 +70,16 @@ create(#user{id = IdIn} = UserIn) ->
 update(#user{id = Id} = NewUser) when is_integer(Id) ->
     case db:get(?B_USER, db:int_to_bin(Id)) of
         {ok, Obj} ->
-            NewObj = db_obj:set_value(Obj, NewUser),
+            Obj2 = case db_obj:has_siblings(Obj) of
+                       false ->
+                           Obj;
+                       true ->
+                           % If we get siblings at this stage (after login),
+                           % we have an old session writing => overwrite it
+                           [H|_] = db_obj:get_siblings(Obj),
+                           H
+                   end,
+            NewObj = db_obj:set_value(Obj2, NewUser),
             NewObj2 = db_obj:set_indices(NewObj, create_idx_list(NewUser)),
             db:put(NewObj2),
             {ok, NewUser};
