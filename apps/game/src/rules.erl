@@ -2,7 +2,48 @@
 %% @doc
 %% rules implements abstract game rules. The module relies
 %% on a seperate module (name is supplied to process) to implement
-%% the specific rules.
+%% the specific rules, furtheron called the 'rule implementation'.
+%%
+%% a `#rule' is a strategy-like record,
+%% that has a name, an arity, a detector function and an actor function.
+%% The detector function receives a Map and an arity-tuple of orders and
+%% has to return true if the actor function needs to run. By convention,
+%% a detector function should run side effect free.
+%%
+%% The detector function receives a Map and the tuple that made the detector
+%% function return true. It's responsibility is to enforce the rule it
+%% implements.
+%% For this, it transforms the _whole_ orders list by returning a
+%% [tuple()]
+%% legal tuples are:
+%%  <pre>{add, Order}</pre> - adds an order to the orders list
+%%  <pre>{remove, Order}</pre> - removes an order from the orders list
+%%  <pre>{reply, ErlangTerm}</pre> - `ErlangTerm' will end up in the return value of
+%%                          {@link rules:process/4} - this can be used to
+%%                          request user actions like retreat orders.
+%%
+%% the `arity' field has a special case, if it is set to `all_orders', then
+%% the detector/actor will be called with the whole order-list as argument.
+%% This can be used to handle units that received no orders, for instance.
+%%
+%% The expected signature of the detector/actor funs depends on the arity as
+%% well:
+%% <pre>
+%% arity = 0 --> spec: actor_and_detector(Map, {})
+%% arity = 1 --> spec: actor_and_detector(Map, {Order})
+%% arity = 2 --> spec: actor_and_detector(Map, {Order})
+%% arity = all_units --> spec: actor_and_detector(Map, [Order])</pre>
+%%
+%% the rule engine will receive the `[#rule]' from the rule implementation
+%% by calling it's create/2 function with the game type and game phase as
+%% arguments.
+%%
+%% The rule engine will apply the rules from the rule implementation until there
+%% are no changes to the order list any more.
+%% After that, the remaining order list will be executed by calling
+%% the rule implementation's `do_process/2' function.
+%% This function receives the Map and an order and executes this order through
+%% applying sideeffectful operations to the map.
 %%
 %% @author <stephan.brandauer@gmail.com>
 %% @end
@@ -21,7 +62,7 @@
 %% -----------------------------------------------------------------------------
 %% @doc
 %% processes a list of orders according to the rules and returns the messages
-%% the RULES_MOD left.
+%% the `RULES_MOD' left.
 %% @end
 %% -----------------------------------------------------------------------------
 -spec process (any (), map (), atom (), [order ()]) -> [tuple ()].

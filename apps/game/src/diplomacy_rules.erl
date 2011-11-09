@@ -1,33 +1,33 @@
 %% -----------------------------------------------------------------------------
 %% @doc
-%% The rules are defined here, the rule engine merely executes them.
-%% The rules have an arity that says how many orders are involved in a rule's
-%% handling.
+%% The rules are implemented here, the rule engine merely executes them.
 %%
-%% Orders the rule-engine/diplomacy rules can process are documented as 
-%% type specs in this file
+%% Possible Orders:
+%% `diplomacy_rules' can process a certain syntax of rules.
+%% They  are documented as type specs in this file, go to the "Data Types"
+%% section below.
 %%
-%% Example #1: unit_exists: arity=1 because I can decide for every order on
-%% its own, whether it complies with the unit_exists-rule. It does not need
-%% to be compared.
+%% `rules:process/4' will return replies that are implemented in this module.
+%% depending on the game phase, we have different possibilities.
+%% Most important are:
 %%
-%% Example #2: trade_places_rule: arity=2 because I have to compare 2 orders to
-%% decide, whether they are a violation or not.
-%% It needs to be compared with every other Order.
+%% <table border="1">
+%%   <tr>
+%%     <td>`order_phase'</td>
+%%     <td>`[{dislodge, unit(), province ()}]'</td>
+%%     <td>
+%%       the unit needs to be moved in retreat phase or it will be destroyed
+%%     </td>
+%%   </tr>
+%%   <tr>
+%%     <td>`count_phase'</td>
+%%     <td>`[{has_builds, nation(), integer()}]'</td>
+%%     <td>the nation is allowed to build / has to destroy that many units</td>
+%%   </tr>
+%% </table>
 %%
-%% Based on the arity, the rule engine will use the rule to
-%% compare every possible combination of arity-tuples of Orders.
-%%
-%% The detector function receives a arity-tuple of orders and has to return
-%% true, if a violation of the rule is found, false otherwise.
-%% If a violation is found, the actor-function will be called with the offending
-%% tuple in the arguments. The actor function's job is to resolve the violation.
-%% It can signal changes to the rule engine, by emitting a list of
-%% {order, Order}-tuples. As for now, only {remove, Order} is valid as an order
-%% but this is easily extended. Look at {@link delete_orders_actor}
-%% to see an example.
-%% order_phase returns: [{dislodge, unit(), province ()}]
-%% count_phase returns: [{has_builds, nation(), integer()}]
+%% look for return values with {reply, Something} to if you wonder why stuff is
+%% in {@link rules:process/4}'s return list.
 %%
 %% @end
 %% -----------------------------------------------------------------------------

@@ -342,7 +342,7 @@ create (standard_game) ->
                                                                    constantinople,
                                                                    smyrna]],
 %% set original_owners (the nations which can build there)
-    [map:set_province_info (Map, Id, original_owner, Owner) || 
+    [map:set_province_info (Map, Id, original_owner, Owner) ||
         {Owner, Id} <- [{austria, budapest},
                         {austria, trieste},
                         {austria, vienna},
