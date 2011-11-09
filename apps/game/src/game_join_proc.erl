@@ -48,7 +48,7 @@ stop(GameId) ->
             ok = game_join_proc_map:delete_pid(GameId),
             case is_alive(Pid) of
                 true ->
-                    gen_server:call(Pid, stop),
+                    gen_server:cast(Pid, {stop, self()}),
                     ok;
                 false ->
                     ok
@@ -119,10 +119,6 @@ init([GameId]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(stop, From, State) ->
-    io:format("game_join_proc ~p being stopped by ~p~n", [self(), From]),
-    {stop, normal, State};
-
 handle_call({join_game, GameId, UserId, Country}, _From,
             GamePlayersRec=#game_player{id=GameId}) ->
     case do_join_game(GamePlayersRec, UserId, Country) of
@@ -151,6 +147,9 @@ handle_call(Request, _From, GamePlayersRec) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({stop, Killer}, State) ->
+    io:format("game_join_proc ~p being stopped by ~p~n", [self(), Killer]),
+    {stop, normal, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
