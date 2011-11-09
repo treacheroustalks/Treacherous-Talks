@@ -31,7 +31,8 @@ parser_test_() ->
       fun get_session_user/0,
       fun reconfig_game/0,
       fun join_game/0,
-      fun game_overview/0
+      fun game_overview/0,
+      fun game_order/0
      ]}.
 
 login() ->
@@ -69,6 +70,10 @@ join_game() ->
 game_overview() ->
     ?assertEqual(game_overview_exp_data(),
                  web_parser:parse(game_overview_data())).
+
+game_order() ->
+    ?assertEqual(game_order_exp_data(),
+                 web_parser:parse(game_order_data())).
 
 
 %% Expected data
@@ -137,6 +142,14 @@ join_game_exp_data() ->
 game_overview_exp_data() ->
     {game_overview, {ok,
                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
+
+game_order_exp_data() ->
+    {game_order, {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                  {654321,
+                   [{move,army,london,norwegian_sea,any_coast},
+                    {move,army,london,norwegian_sea,north_coast},
+                    {move,any_unit,london,norwegian_sea,any_coast},
+                    {move,army,london,norwegian_sea,any_coast}]}}}.
 
 %% Input data
 login_data() ->
@@ -238,3 +251,13 @@ game_overview_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]}]}}]}}.
+
+game_order_data() ->
+    {ok,{struct,
+     [{"action","game_order"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"game_id","654321"}]},
+            {struct,[{"game_order", "A Lon-Nrg\r\nLon-Nrg\r\nA Lon -> Nrg nc\r\nArmy Lon move Nrg"}]}]}}]}}.

@@ -168,7 +168,8 @@ strip_bom(C) -> C.
 %% @end
 %%-------------------------------------------------------------------
 game_overview(#game_overview{} = GOV)->
-    {Country, Game, Provinces, Units} = data_format:game_overview_to_text(GOV),
+    {_GameId, Country, Game, Provinces, Units} =
+        data_format:game_overview_to_text(GOV),
     Msg1 = io_lib:format("~nYou are playing as ~s ~nGame Information:~n",
                          [Country]),
     Msg2 = io_lib:format("in game_overview after msg: ~s~n ", [Game]),
