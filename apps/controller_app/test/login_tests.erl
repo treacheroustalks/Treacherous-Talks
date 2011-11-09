@@ -12,9 +12,24 @@
 -module(login_tests).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--export([success/1, invalid/1]).
+-export([
+         tests/1,
+         success/1,
+         mult_nicks/1,
+         user_not_existing/1,
+         wrong_password/1
+        ]).
+
+tests(Callback) ->
+    [
+     ?_test(success(Callback)),
+     ?_test(mult_nicks(Callback)),
+     ?_test(user_not_existing(Callback)),
+     ?_test(wrong_password(Callback))
+    ].
 %%-------------------------------------------------------------------
 %% Login tests
 %%-------------------------------------------------------------------
@@ -25,8 +40,26 @@ success(Callback) ->
 
     ?assertEqual({login, success}, CmdRes).
 
-invalid(Callback) ->
-    User = get_test_data(invalid),
+mult_nicks(Callback) ->
+    User = get_test_data(mult_nicks),
+    Cmd = {login, {ok, User}},
+
+    Result = controller:handle_action(Cmd, Callback),
+    {CmdRes, Info} = Result,
+    ?assertEqual({login, invalid_data}, CmdRes),
+    ?assertEqual(nick_not_unique, Info).
+
+user_not_existing(Callback) ->
+    User = get_test_data(user_not_existing),
+    Cmd = {login, {ok, User}},
+
+    Result = controller:handle_action(Cmd, Callback),
+    {CmdRes, Info} = Result,
+    ?assertEqual({login, invalid_data}, CmdRes),
+    ?assertEqual(invalid_login_data, Info).
+
+wrong_password(Callback) ->
+    User = get_test_data(wrong_password),
     Cmd = {login, {ok, User}},
 
     Result = controller:handle_action(Cmd, Callback),
@@ -42,6 +75,30 @@ get_test_data(success) ->
     Register = {register, {ok, User}},
     controller:handle_action(Register,
                              {fun(_,_,Data) -> Data end, []});
-get_test_data(invalid) ->
-    #user{nick = "u9hvawebf802bv82 RANDOM",
-          password = "jksbnaugh29 RANDOM"}.
+get_test_data(mult_nicks) ->
+    % create artificial scenario of multiple entries for one nick
+    User = controller_tests:create_user(),
+
+    Id1 = db:get_unique_id(),
+    User1 = User#user{id = Id1},
+    BinId1 = db:int_to_bin(Id1),
+    DbObj1 = db_obj:add_index(
+               db_obj:create(?B_USER, BinId1, User1),
+               {<<"nick_bin">>, list_to_binary(User#user.nick)}),
+    db:put(DbObj1),
+
+    Id2 = db:get_unique_id(),
+    User2 = User#user{id = Id2},
+    BinId2 = db:int_to_bin(Id2),
+    DbObj2 = db_obj:add_index(
+               db_obj:create(?B_USER, BinId2, User2),
+               {<<"nick_bin">>, list_to_binary(User#user.nick)}),
+    db:put(DbObj2),
+    
+    User;
+get_test_data(user_not_existing) ->
+    #user{nick = "u9hvawebf802bv82 ",
+          password = "jksbnaugh29 RANDOM"};
+get_test_data(wrong_password) ->
+    User = get_test_data(success),
+    User#user{password = User#user.password ++ "-"}.

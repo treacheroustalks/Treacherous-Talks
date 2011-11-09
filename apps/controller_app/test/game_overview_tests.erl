@@ -14,7 +14,13 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/game.hrl").
 
--export([success/3, invalid/3]).
+-export([tests/3, success/3, invalid/3]).
+
+tests(Callback, SessId, GameId) ->
+    [
+     ?_test(success(Callback, SessId, GameId)),
+     ?_test(invalid(Callback, SessId, GameId))
+    ].
 %%-------------------------------------------------------------------
 %% Update user tests
 %%-------------------------------------------------------------------

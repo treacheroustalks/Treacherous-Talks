@@ -14,7 +14,13 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--export([success/3, invalid/3]).
+-export([tests/3, success/3, invalid/3]).
+
+tests(Callback, SessId, GameId) ->
+    [
+     ?_test(success(Callback, SessId, GameId)),
+     ?_test(invalid(Callback, SessId, GameId))
+    ].
 %%-------------------------------------------------------------------
 %% Update user tests
 %%-------------------------------------------------------------------
@@ -26,7 +32,7 @@ success(Callback, SessId, GameId) ->
 
     ?assertEqual({game_order,success}, CmdRes).
 
-invalid(Callback, SessId, GameId) ->
+invalid(_Callback, _SessId, _GameId) ->
     % don't know how this could fail ...
     ok.
 %%-------------------------------------------------------------------

@@ -14,7 +14,13 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--export([success/1, invalid/1]).
+-export([tests/1, success/1, invalid/1]).
+
+tests(Callback) ->
+    [
+     ?_test(success(Callback)),
+     ?_test(invalid(Callback))
+    ].
 %%-------------------------------------------------------------------
 %% Register tests
 %%-------------------------------------------------------------------
@@ -31,16 +37,12 @@ invalid(Callback) ->
     User = get_test_data(invalid),
     Cmd = {register, {ok, User}},
 
-    % @todo if checks for nickname duplicates exist remove the meck stuff
-    meck:new(user_management, [passthrough]),
-    meck:expect(user_management, create, 1, {error, nick_exists_already}),
-
+    {{register, success}, _User} = controller:handle_action(Cmd, Callback),
+    % register again with that nick has to fail
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
     ?assertEqual({register, invalid_data}, CmdRes),
-    ?assertEqual(nick_exists_already, Info),
-
-    meck:unload(user_management).
+    ?assertEqual(nick_already_exists, Info).
 
 %%-------------------------------------------------------------------
 %% Test data
