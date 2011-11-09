@@ -73,7 +73,7 @@ start(User=#user{}, Hist) ->
 %% @end
 %%-------------------------------------------------------------------
 stop(SessionId) ->
-    exit(session_id:to_pid(SessionId), shutdown).
+    ?SESSION_CAST(SessionId, stop).
 
 %%-------------------------------------------------------------------
 %% @doc
