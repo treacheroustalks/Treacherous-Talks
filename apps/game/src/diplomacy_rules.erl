@@ -26,6 +26,8 @@
 %% {order, Order}-tuples. As for now, only {remove, Order} is valid as an order
 %% but this is easily extended. Look at {@link delete_orders_actor}
 %% to see an example.
+%% order_phase returns: [{dislodge, unit(), province ()}]
+%% count_phase returns: [{has_builds, nation(), integer()}]
 %%
 %% @end
 %% -----------------------------------------------------------------------------
@@ -93,6 +95,7 @@ create (standard_game, order_phase) ->
     [unit_exists_rule (),
      convoy_rule (),
      unit_can_go_there_rule (),
+     implicit_hold_rule (),
      break_support_rule (),
      support_rule (),
      trade_places_rule (),
@@ -101,6 +104,7 @@ create (standard_game, order_phase) ->
 create (standard_game, retreat_phase) ->
     [unit_exists_rule (),
      unit_can_go_there_rule (),
+     implicit_hold_rule (),
      trade_places_rule (),
      bounce2_rule (),
      hold_vs_move2_rule (),
@@ -161,13 +165,37 @@ remove_undislodged_units_rule () ->
           arity = 0,
           actor = fun remove_undislodged_units_actor/2}.
 
+%% go through all units and check if there is an order for them. if not: add a
+%% hold order
+implicit_hold_rule () ->
+    #rule{name = implicit_hold_rule,
+          arity = all_orders,
+          actor = fun implicit_hold_rule_actor/2}.
+
+implicit_hold_rule_actor (Map, Orders) when is_list (Orders) ->
+    UnitsWoOrders =
+        lists:foldl (
+          fun (Order, Units) ->
+                  lists:delete ({get_first_from (Order),
+                                 get_first_unit (Order)}, Units)
+          end,
+          map:get_units (Map),
+          Orders),
+    lists:foldl (fun ({Province, Unit}, ReplyAcc) ->
+                         [{add, {hold, Unit, Province}},
+                          {reply, {added, {hold, Unit, Province}}} | ReplyAcc]
+                 end,
+                 [],
+                 UnitsWoOrders);
+implicit_hold_rule_actor (_Map, Orders) ->
+    erlang:error ({error, unhandled, Orders}).
 
 %% removes the 'dislodge' k/v pair from the unit dicts in
 %% case it contains 'true'
 remove_dislodge_state_rule () ->
     #rule{name = remove_retreat_state,
           arity = 1,
-          detector = fun (Map, Order) ->
+          detector = fun (Map, {Order}) ->
                              Unit = get_first_unit (Order),
                              Where = get_first_from (Order),
                              map:get_unit_info (Map, Unit, Where, false)
@@ -230,7 +258,7 @@ count_units_set_owner_actor (Map, {}) ->
     % count how many units each nation has
     Dict =
         lists:foldl (
-          fun ({Province, [{_Type, Nation}]}, Dict) ->
+          fun ({Province, {_Type, Nation}}, Dict) ->
                   map:set_province_info (Map, Province, owner, Nation),
                   OldCnt = case dict:find (Nation, Dict) of
                                {ok, Count} ->
@@ -289,23 +317,19 @@ simple_convoy_actor (Map, {{move, _, _, _},
 remove_undislodged_units_actor (Map, {}) ->
     AllUnits = map:get_units (Map),
     lists:foreach (
-      fun ({Province, Units}) ->
-              lists:foreach (
-                fun (Unit) ->
-                        case
-                            map:get_unit_info (Map,
-                                               Unit,
-                                               Province,
-                                               dislodge, false) of
-                            true ->
-                                map:remove_unit (Map,
-                                                 Unit,
-                                                 Province);
-                            _ ->
-                                ok
-                        end
-                end,
-                Units)
+      fun ({Province, Unit}) ->
+              case
+                  map:get_unit_info (Map,
+                                     Unit,
+                                     Province,
+                                     dislodge, false) of
+                  true ->
+                      map:remove_unit (Map,
+                                       Unit,
+                                       Province);
+                  _ ->
+                      ok
+              end
       end,
       AllUnits),
     [].
@@ -404,8 +428,6 @@ do_remove_support (Map, SupportOrder = {support, _, _, SupportedOrder}) ->
     SupportingOrders =
         map:get_unit_info (Map,
                            SupportedUnit, SupportedWhere, support_orders, []),
-    ?debugVal (SupportingOrders),
-    ?debugVal (lists:delete (SupportOrder, SupportingOrders)),
     map:set_unit_info (Map, SupportedUnit, SupportedWhere,
                        support_orders,
                        lists:delete (SupportOrder, SupportingOrders)).

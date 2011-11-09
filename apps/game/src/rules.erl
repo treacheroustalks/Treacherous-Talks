@@ -11,7 +11,7 @@
 
 -export ([process/4]).
 
--include_lib ("eunit/include/eunit.hrl").
+%-include_lib ("eunit/include/eunit.hrl").
 -include_lib ("game/include/rule.hrl").
 
 -type order () :: tuple ().
@@ -38,13 +38,15 @@ process (Phase, Map, RULES_MOD, Orders) ->
     Replies.
 
 -spec make_pairs ([any ()], Arity) -> [tuple ()] when
-      Arity :: pos_integer ().
+      Arity :: pos_integer () | all_orders.
 make_pairs (_, 0) ->
     [{}];
 make_pairs (List, 1) ->
     [{A} || A <- List];
 make_pairs (List, 2) ->
-    [{A, B} || A <- List, B <- List, A < B].
+    [{A, B} || A <- List, B <- List, A < B];
+make_pairs (List, all_orders) ->
+    [List].
 
 %% @doc
 %% The function execute_single_rule is quite central to the module.
@@ -70,12 +72,12 @@ execute_single_rule (Map, Rule, Orders) ->
                   case (Rule#rule.detector) (Map, Pair) of
                       true ->
                           Emit = (Rule#rule.actor) (Map, Pair),
-                          io:format (user,
-                                     "Rule ~p: Emitting '~p'~n",
-                                     [Rule#rule.name,
-                                      Emit]),
+                          io_lib:format (
+                            "Rule ~p: Emitting '~p'~n",
+                            [Rule#rule.name,
+                             Emit]),
                           Emit ++ Acc;
-                      false ->
+                      _Other ->
                               Acc
                   end
           end,
