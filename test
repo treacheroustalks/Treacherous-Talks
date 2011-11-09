@@ -15,104 +15,85 @@ do
     case "$1" in
         -ni) dointegration=0;;
         -nl) dolocal=0;;
-        -*)  echo >&2 "usage: $0 [-ni] [-nl] [app_name]"
+        -*)  echo >&2 "usage: $0 [-ni] [-nl]"
              echo >&2 "       -ni      do not run integration tests"
              echo >&2 "       -nl      do not run local (unit) tests"
-             echo >&2 "       app_name name of specific project to test"
              exit 1;;
         *)   break;;
     esac
-    shift
 done
 
-# Set app_name
-app_name=$1
+# Color definitions
+c_red="\033[31m"
+c_brown="\033[33m"
+c_reset="\033[0m"
 
 # Convenience function for echoing to stderr
-function echoerr() { echo -e "$@" 1>&2; }
+function echoerr() { echo -e $c_red##### "$@" 1>&2 $c_reset; }
+# Convenience function for normal echoing with brown color
+function echonormal() { echo -e $c_brown##### "$@" $c_reset; }
 
-# This function tests each subdirectory in directory $1 (the first argument). If
-# the script is called with a specific app_name, then it will only run tests in
-# that directory.
-do_test () {
-    cd $1
-    for app in $(ls); do
-        if [ ! -d $app ]; then
-            echo $app is not a dir
-            pwd
-            continue
-        fi
-
-        cd $app
-        if [ -z "$app_name" -o "$app_name" == $app ]; then
-            # Look for test script
-            if [ -x dotest ]; then
-                echo "####################################"
-                echo "##### executing " $(pwd)"/dotest"
-                ./dotest
-                case $? in
-                    0)  echo -e "##### Exit status: success\n" ;;
-                    *)  echoerr "##### Exit status: ERROR\n"
-                        errors=1 ;;
-                esac
-            fi
-        fi
-        cd ..
-    done
-    cd $cwd
+# This is a wrapper function that takes one argument, the command to run, and
+# executes it.
+function run_wrapper () {
+    $1
+    case "$?" in
+        0) echonormal "Exit status: success\n" ;;
+        *) echoerr "Exit status: ERROR\n"
+           errors=1 ;;
+    esac
 }
 
-# Do unit (local) tests
+#################################
+
+# Do eunit (local) tests
 if [ $dolocal -eq 1 ]; then
-    do_test $cwd/apps
+    echonormal "running eunit tests"
+    run_wrapper "rebar eunit skip_deps=true"
 fi
 
 # Do integration tests
-# TODO: Should these be run when testing a single app?
 if [ $dointegration -eq 1 ]; then
 
     cd $cwd
-    echo "## releasing backend..."
-    ./release backend || errors=1
+    echonormal "releasing backend"
+    run_wrapper "./release backend"
     backend=system-release/backend/bin/backend
-    echo "## starting backend and waiting 5 seconds ... "
-    $backend start || errors=1
+    echonormal "starting backend and waiting 5 seconds"
+    run_wrapper "$backend start"
     sleep 5
     
-    echo
-    echo "## releasing xmpp_frontend..."
-    ./release xmpp_frontend || errors=1
-    echo "##### installing xmpp_frontend for frontend tests"
+    echonormal "releasing xmpp_frontend..."
+    run_wrapper "./release xmpp_frontend"
+    echonormal "installing xmpp_frontend for frontend tests"
     cd $cwd/system-release/xmpp_frontend
-    make clean install || errors=1
+    run_wrapper "make clean install"
     ejdctl=system-release/xmpp_frontend/installation/sbin/ejabberdctl
     cd $cwd
 
 
-    echo "##### Running xmpp_frontend tests"
-    echo Starting ejabberd and waiting 5 seconds...
-    $cwd/$ejdctl start || errors=1
+    echonormal "running xmpp_frontend tests"
+    echonormal "starting ejabberd and waiting 5 seconds"
+    run_wrapper "$cwd/$ejdctl start"
     sleep 5
-    echo ejabberd status:
+    echo "ejabberd status:"
     $cwd/$ejdctl status || errors=1
     cd ext_test/ejabberd_echo || errors=1
-    rebar eunit skip_deps=true || errors=1
-    echo Stopping ejabberd...
-    $cwd/$ejdctl stop || errors=1
+    run_wrapper "rebar eunit skip_deps=true"
+    echonormal "stopping ejabberd"
+    run_wrapper "$cwd/$ejdctl stop"
     cd $cwd
-    echo
-    echo
 
-    echo "## stop backend ..."
-    $backend stop || errors=1
+    echonormal "stopping backend"
+    run_wrapper "$backend stop"
 
 fi
 
 
 if (( errors )); then
-    echoerr "##### Test run was NOT successfull."
+    echoerr "Test run was NOT successfull."
 else
-    echo "##### Test run was successfull."
+    echonormal "Test run was successfull."
 fi
 
 exit $errors

@@ -115,7 +115,7 @@ cd $sysrel
 for dir in $(ls); do
     if [ -d $dir -a $dotar -eq 1 ]; then
         echo "Tarring release files in $dir..."
-        tar -czf $dir-release-$date-$commit.tar.gz $dir || errors=1
+        tar -czf $date-$dir-release-$commit.tar.gz $dir || errors=1
     fi
 done
 cd $cwd

@@ -31,63 +31,22 @@ if [ $dotar -eq 1 ]; then
     # Touch a file to record the time when the get-deps script started
     touch $cwd/getdeps_timestamp || errors=1
 
-    # Get global deps
-    echo "##### Getting global dependencies"
+    # Get external deps
+    echo "##### Getting external dependencies"
     rebar get-deps || errors=1
 
-    do_rebar () {
-        echo "##### Entering $1"
-        cd $1
-        rebar get-deps || errors=1
-        cd ..
-    }
-
-    # Loops over a given dir (first arg) and runs do_rebar
-    do_loop_over_dir () {
-        cd $1
-        # For each app, get deps
-        for app in $(ls); do
-            do_rebar $app
-            # See if a deps subdir exists and get deps there as well
-            if [ -d $app/deps ]; then
-                cd $app/deps
-                for depapp in $(ls); do
-                    do_rebar $depapp
-                done
-                cd ../..
-            fi
-        done
-        cd ..
-    }
-
-    # Get deps for each app
-    do_loop_over_dir $cwd/apps
-    do_loop_over_dir $cwd/deps
+    # Special case: yaws
+    echo "##### Getting yaws"
+    cd deps
+    git clone https://github.com/ahilsend/yaws.git
+    cd yaws
+    git checkout websocket_hy10 || errors=1
+    cd $cwd
 
     # Find files
     cd $cwd
     find . -mindepth 2 -newer $cwd/getdeps_timestamp \
         -print > depfiles.txt || errors=1
-
-    # Build some stuff to get app files in place
-    echo "##### Building some applications"
-    cd $cwd/deps/riakc
-    make all || errors=1
-    cd $cwd/apps/db
-    ./build || errors=1
-
-    # Reset timestamp
-    touch $cwd/getdeps_timestamp || errors=1
-
-    # Get deps again
-    echo "##### Getting dependencies again"
-    do_loop_over_dir $cwd/apps
-    do_loop_over_dir $cwd/ext_rel
-
-    # Find files again
-    cd $cwd
-    find . -mindepth 2 -newer $cwd/getdeps_timestamp \
-        -print >> depfiles.txt || errors=1
 
     # Tar all found files
     cd $cwd
@@ -101,7 +60,7 @@ fi
 if [ $dountar -eq 1 ]; then
     cd $cwd
     echo "##### Downloading dependency file and untarring it"
-    wget -nv 'http://buildbot.pcs/mirror/dependencies.tar.gz' || errors=1
+    wget -nv 'http://buildbot.pcs/mirror/dependencies.tar.gz' 2>&1 || errors=1
 
     # If no errors, untar
     if [ $errors -eq 0 ]; then
