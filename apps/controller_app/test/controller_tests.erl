@@ -50,14 +50,10 @@ controller_test_() ->
       [
        ?_test(parse_error(callback())),
        ?_test(unknown_command(callback())),
-       ?_test(invalid_session(callback())),
-
-       ?_test(register_tests:success(callback())),
-       ?_test(register_tests:invalid(callback())),
-
-       ?_test(login_tests:success(callback())),
-       ?_test(login_tests:invalid(callback()))
-      ]
+       ?_test(invalid_session(callback()))
+      ] ++
+      register_tests:tests(callback()) ++
+      login_tests:tests(callback())
      }}.
 
 controller_session_test_() ->
@@ -171,8 +167,7 @@ session_test_instantiator(Mods) ->
     lists:flatten(
       lists:map(fun({Mod, Callback, SessId}) ->
                         fun() ->
-                                [Mod:success(Callback, SessId),
-                                 Mod:invalid(Callback, SessId)]
+                                Mod:tests(Callback, SessId)
                         end
                 end, Mods)).
 
@@ -207,8 +202,7 @@ pre_game_test_instantiator(Mods) ->
     lists:flatten(
       lists:map(fun({Mod, Callback, SessId, GameId}) ->
                         fun() ->
-                                [Mod:success(Callback, SessId, GameId),
-                                 Mod:invalid(Callback, SessId, GameId)]
+                                Mod:tests(Callback, SessId, GameId)
                         end
                 end, Mods)).
 
@@ -247,8 +241,7 @@ joined_game_test_instantiator(Mods) ->
     lists:flatten(
       lists:map(fun({Mod, Callback, SessId, GameId}) ->
                         fun() ->
-                                [Mod:success(Callback, SessId, GameId),
-                                 Mod:invalid(Callback, SessId, GameId)]
+                                Mod:tests(Callback, SessId, GameId)
                         end
                 end, Mods)).
 
