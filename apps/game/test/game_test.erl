@@ -50,6 +50,37 @@ test_game3 () ->
            password="pass",
            waiting_time = 5}.
 
+% input and output for test game order
+test_order_list() ->
+    {[{convoy,fleet,north_sea,army,liverpool,norwegian_sea},
+      {convoy,fleet,north_sea,army,rome,norwegian_sea},
+      {move,army,london,norwegian_sea,any_coast},
+      {move,army,edinburg,norwegian_sea,north_coast},
+      {move,any_unit,london,norwegian_sea,any_coast},
+      {move,army,london,norwegian_sea,any_coast},
+      {hold, army, paris},
+      {hold, fleet, kiel},
+      {support_move, army, london, army, berlin, munich, any_coast},
+      {support_hold, army, london, army, moscow},
+      {support_hold, army, london, army, bohemia},
+      {build, army, stockholm, any_coast},
+      {remove, army, munich}
+     ],
+     %% expected output
+     [{destroy,{army,england},munich},
+      {build,{army,england},stockholm},
+      {support,{army,england},london,{hold,{army,russia},moscow}},
+      {support,{army,england},london,{move,{army,germany},berlin,munich}},
+      {hold,{fleet,england},kiel},
+      {hold,{army,england},paris},
+      {move,{army,england},london,norwegian_sea},
+      {move,{any_unit,england},london,norwegian_sea},
+      {move,{army,england},edinburg,norwegian_sea},
+      {move,{army,england},london,norwegian_sea},
+      {convoy,{fleet,england},north_sea,{army,italy},rome,norwegian_sea},
+      {convoy,{fleet,england},north_sea,{army,england},liverpool,norwegian_sea}]
+    }.
+
 %%------------------------------------------------------------------------------
 %% @doc
 %%  check, that the test_game record is built correctly. if not, it would throw
@@ -75,7 +106,8 @@ game_test_ () ->
       game_timer_state_tst_(),
       game_update_tst_(),
       join_game_tst_(),
-      get_game_state_tst_()
+      get_game_state_tst_(),
+      translate_game_order_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -183,6 +215,26 @@ game_update_tst_() ->
               ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
               ?debugMsg("Update game test end")
       end].
+
+%%------------------------------------------------------------------------------
+%% test translate game order functionality
+%%------------------------------------------------------------------------------
+translate_game_order_tst_() ->
+    [fun() ->
+              ?debugMsg("translate game order test"),
+              GameRecord = test_game(),
+              % Create a new Game
+              Game = sync_get(sync_new(GameRecord)),
+              % join new player with id=1122 and country=england
+              JoinResult = game:join_game(Game#game.id, 1122, england),
+              ?assertEqual({ok, Game#game.id}, JoinResult),
+              {GameOrderList, ExpectedOutput} = test_order_list(),
+              Result = game_worker:translate_game_order(Game#game.id,
+                                                        GameOrderList,england),
+              ?assertEqual(ExpectedOutput, Result),
+              ?debugMsg("successful translate game order test")
+      end
+     ].
 
 %%------------------------------------------------------------------------------
 %% Tests the join game functionality

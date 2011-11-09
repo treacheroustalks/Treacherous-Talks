@@ -159,7 +159,7 @@ Supported commands are:").
 -define(GAME_ORDER_RESPONSE_SUCCESS, "Game order was successfully sent.").
 -define(GAME_ORDER_RESPONSE_INVALID_INPUT, "The command [game_order] could not be interpreted correctly:
 Invalid input to the following:").
-
+-define(GAME_ORDER_RESPONSE_INVALID_DATA,"Invalid game order.").
 %%-------------------------------------------------------------------
 %% @doc
 %%-------------------------------------------------------------------
@@ -237,13 +237,13 @@ setup_session_instantiator() ->
                                 [{capture, all_but_first, list}]),
     ?debugVal(GameID),
     [
-     
+
      {?GAME_ORDER_COMMAND(Session, GameID),
-       ?GAME_ORDER_RESPONSE_SUCCESS,
-      "game order successfully sent"},
+       ?GAME_ORDER_RESPONSE_INVALID_DATA,
+      "game order invalid data"},
      {?GAME_ORDER_COMMAND_WRONG(Session, GameID),
        ?GAME_ORDER_RESPONSE_INVALID_INPUT,
-       "game order with invalid input"},
+       "game order invalid input"},
 
 
      {?UPDATE_COMMAND_CORRECT(Session),
@@ -284,7 +284,11 @@ setup_session_instantiator() ->
       "invalid join game data"},
     {?GAME_OVERVIEW_COMMAND(Session, GameID),
       ?GAME_OVERVIEW_RESPONSE_SUCCESS,
-      "successful game overview"}
+      "successful game overview"},
+
+    {?GAME_ORDER_COMMAND(Session, GameID),
+       ?GAME_ORDER_RESPONSE_SUCCESS,
+      "game order successfully sent"}
 
     ].
 
