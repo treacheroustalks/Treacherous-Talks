@@ -54,7 +54,8 @@ alive_t() ->
 
 start_stop_t() ->
     User = create_user(),
-    SessionId = session:start(User),
+    Id = User#user.id,
+    SessionId = session:start(User, session_history:create(Id)),
 
     Alive = session:alive(SessionId),
     ?assertEqual(true, Alive),

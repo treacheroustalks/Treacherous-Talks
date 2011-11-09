@@ -21,6 +21,7 @@
 -export([
          create/1,
          get/1, get/2,
+         get_by_idx/2,
          update/1,
          is_valid/2
         ]).
@@ -29,40 +30,79 @@
 %%-------------------------------------------------------------------
 %% @doc
 %% Creates a new user and returns the result to the Client.
+%%
+%% @spec create(#user{}) ->
+%%         {ok, #user{}} |
+%%         {error, nick_already_exists} |
+%%         {error, any()}
 %% @end
 %%-------------------------------------------------------------------
 create(#user{id = IdIn} = UserIn) ->
-    Id = case IdIn of
-             undefined ->
-                 db:get_unique_id();
-             IdIn ->
-                 IdIn
-         end,
-    User = UserIn#user{id = Id},
+    case get_by_idx(#user.nick, UserIn#user.nick) of
+        {ok, _CurUser} ->
+            {error, nick_already_exists};
+        {error, does_not_exist} ->
+            Id = case IdIn of
+                     undefined ->
+                         db:get_unique_id();
+                     IdIn ->
+                         IdIn
+                 end,
+            User = UserIn#user{id = Id},
 
-% @todo check if user with nick already exists
-    BinId = db:int_to_bin(Id),
-    DBVal = db_obj:create(?B_USER, BinId, User),
-    db:put(DBVal),
-    {ok, ReadItem} = db:get(?B_USER, BinId),
-    db_obj:get_value(ReadItem).
+            BinId = db:int_to_bin(Id),
+            DbObj = db_obj:create(?B_USER, BinId, User),
+            DbObj2 = db_obj:set_indices(DbObj, create_idx_list(User)),
+            db:put(DbObj2),
+            {ok, User};
+        Other ->
+            {error, Other}
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Updates an existing user and returns the result to the Client.
 %%
-%% @spec update(NewUser::#user{}) -> ok | {error, any()}
+%% @spec update(NewUser::#user{}) ->
+%%         {ok, #user{}} | {error, doesn_not_exist} | {error, any()}
 %% @end
 %%-------------------------------------------------------------------
 update(#user{id = Id} = NewUser) when is_integer(Id) ->
     case db:get(?B_USER, db:int_to_bin(Id)) of
         {ok, Obj} ->
             NewObj = db_obj:set_value(Obj, NewUser),
-            db:put(NewObj),
+            NewObj2 = db_obj:set_indices(NewObj, create_idx_list(NewUser)),
+            db:put(NewObj2),
             {ok, NewUser};
+        {error, notfound} ->
+            {error, does_not_exist};
         Error ->
             {error, Error}
     end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Queries a user by index.
+%% @end
+%%-------------------------------------------------------------------
+get_by_idx(Field, Val) ->
+    case create_idx(Field, Val) of
+        {error, field_not_indexed} ->
+            {error, field_not_indexed};
+        Idx ->
+            case db:get_index(?B_USER, Idx) of
+                {ok, [[?B_USER, Key]]} ->
+                    {ok, DbObj} = db:get(?B_USER, Key),
+                    {ok, DbObj};
+                {ok, []} ->
+                    {error, does_not_exist};
+                {ok, List} ->
+                    {ok, {index_list, List}};
+                Other ->
+                    {error, Other}
+            end
+    end.
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Gets user from the database.
@@ -129,3 +169,35 @@ is_valid(Nick, Password) ->
         [User | _] ->
             User
     end.
+
+%% ------------------------------------------------------------------
+%% Internal Functions
+%% ------------------------------------------------------------------
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates the index list for the database
+%% @end
+%%-------------------------------------------------------------------
+create_idx_list(#user{nick=Nick, role=Role, score=Score, email=Mail}) ->
+    [
+     create_idx(#user.nick, Nick),
+     create_idx(#user.role, Role),
+     create_idx(#user.score, Score),
+     create_idx(#user.email, Mail)
+    ].
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates an index tuple for the database.
+%% @end
+%%-------------------------------------------------------------------
+create_idx(#user.nick, Nick) ->
+    {<<"nick_bin">>, list_to_binary(Nick)};
+create_idx(#user.role, Role) ->
+    {<<"role_bin">>, term_to_binary(Role)};
+create_idx(#user.score, Score) ->
+    {<<"score_int">>, Score};
+create_idx(#user.email, Mail) ->
+    {<<"email_bin">>, list_to_binary(Mail)};
+create_idx(_, _) ->
+    {error, field_not_indexed}.

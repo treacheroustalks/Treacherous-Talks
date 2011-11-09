@@ -21,7 +21,7 @@
 %% Interface Function Exports
 %% ------------------------------------------------------------------
 -export([
-         start/1,
+         start/2,
          stop/1,
          alive/1,
          get_session_user/2,
@@ -57,11 +57,11 @@
 %% @doc
 %% Starts a new session for the given user and returns the session id.
 %%
-%% @spec start(User::#user{}) -> string()
+%% @spec start(User::#user{}, #session_history{}) -> string()
 %% @end
 %%-------------------------------------------------------------------
-start(User=#user{}) ->
-    {ok, Pid} = session_proc:start(User),
+start(User=#user{}, Hist) ->
+    {ok, Pid} = session_proc:start(User, Hist),
     session_id:from_pid(Pid).
 
 

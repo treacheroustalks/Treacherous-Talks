@@ -35,7 +35,7 @@ invalid(Callback, SessId, _GameId) ->
 
     Cmd = {game_overview, {ok, SessId, NewGameId}},
     Result = controller:handle_action(Cmd, Callback),
-    {CmdRes, ResultData} = Result,
+    {CmdRes, _ResultData} = Result,
 
     ?assertEqual({game_overview, invalid_data}, CmdRes).
 

@@ -21,7 +21,7 @@
 %% ------------------------------------------------------------------
 %% Internal API Function Exports
 %% ------------------------------------------------------------------
--export([start/1]).
+-export([start/2]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -35,7 +35,7 @@
 -export([update_rec_by_proplist/2]).
 
 %% server state
--record(state, {user, session_id}).
+-record(state, {user, session_id, history}).
 
 
 %% ------------------------------------------------------------------
@@ -45,12 +45,12 @@
 %% @doc
 %% Starts a new gen_server and links it to its parent
 %% @end
-%% [@spec start_link() -> {ok, #state{}}.
+%% [@spec start(#user{}, session_history{}) -> {ok, #state{}}.
 %% @end]
 %%-------------------------------------------------------------------
--spec start(#user{}) -> {ok, #state{}}.
-start(User=#user{}) ->
-    gen_server:start(?MODULE, User, []).
+%-spec start(#user{}) -> {ok, #state{}}.
+start(User=#user{}, History) ->
+    gen_server:start(?MODULE, [User, History], []).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -63,9 +63,11 @@ start(User=#user{}) ->
 %% @end]
 %%-------------------------------------------------------------------
 -spec init(#user{}) -> {ok, #state{}}.
-init(User) ->
+init([User, History]) ->
     Id = session_id:from_pid(self()),
-    {ok, #state{user = User, session_id = Id}}.
+    {ok, #state{user = User,
+                session_id = Id,
+                history = session_history:add(History, Id)}}.
 
 %%-------------------------------------------------------------------
 %% @doc

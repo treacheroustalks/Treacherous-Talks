@@ -25,21 +25,21 @@
 %% Requests
 %%-------------------------------------------------------------------
 -define(ECHO_TEST_MSG, "Echo test message").
--define(REGISTER_COMMAND_CORRECT,
+-define(REGISTER_COMMAND_CORRECT(Nick),
 "REGISTER
-NICKNAME: nickname
+NICKNAME: " ++ Nick ++ "
 PASSWORD: pass
 FULLNAME: Full Name
 EMAIL: sth@sth
 END").
--define(LOGIN_COMMAND_CORRECT,
+-define(LOGIN_COMMAND_CORRECT(Nick),
 "LOGIN
-NICKNAME: nickname
+NICKNAME: " ++ Nick ++ "
 PASSWORD: pass
 END").
--define(LOGIN_COMMAND_BAD_PASSWORD,
+-define(LOGIN_COMMAND_BAD_PASSWORD(Nick),
 "LOGIN
-NICKNAME: nickname
+NICKNAME: " ++ Nick ++ "
 PASSWORD: wrongpwd
 END").
 -define(LOGIN_COMMAND_BAD_NICK,
@@ -163,16 +163,31 @@ setup_basic() ->
 setup_reg_login_instantiator() ->
     ?debugMsg("Setting up xmpp tests. "),
     xmpp_client:start_link(),
-    [{?REGISTER_COMMAND_CORRECT, ?REG_RESPONSE_SUCCESS, "valid registration attempt"},
-     {"REGISTER fdg END", ?REG_RESPONSE_BAD_SYNTAX, "register command with missing fields"},
-     {"register me", ?RESPONSE_COMMAND_UNKNOWN, "request matching no command"},
-     {?LOGIN_COMMAND_CORRECT, ?LOGIN_RESPONSE_SUCCESS, "valid login attempt"},
-     {?LOGIN_COMMAND_BAD_PASSWORD, "Invalid login data.", "login request with invalid password"},
-     {?LOGIN_COMMAND_BAD_NICK, "Invalid login data.","login request with invalid nickname"}].
+    Nick = random_nick(),
+    [{?REGISTER_COMMAND_CORRECT(Nick),
+      ?REG_RESPONSE_SUCCESS,
+      "valid registration attempt"},
+     {"REGISTER fdg END",
+      ?REG_RESPONSE_BAD_SYNTAX,
+      "register command with missing fields"},
+     {"register me",
+      ?RESPONSE_COMMAND_UNKNOWN,
+      "request matching no command"},
+     {?LOGIN_COMMAND_CORRECT(Nick),
+      ?LOGIN_RESPONSE_SUCCESS,
+      "valid login attempt"},
+     {?LOGIN_COMMAND_BAD_PASSWORD(Nick),
+      "Invalid login data.",
+      "login request with invalid password"},
+     {?LOGIN_COMMAND_BAD_NICK,
+      "Invalid login data.",
+      "login request with invalid nickname"}].
 
 setup_session_instantiator() ->
     xmpp_client:start_link(),
-    Response = xmpp_client:xmpp_call(?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT),
+    Nick = random_nick(),
+    xmpp_client:xmpp_call(?SERVICE_BOT, ?REGISTER_COMMAND_CORRECT(Nick)),
+    Response = xmpp_client:xmpp_call(?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick)),
     {match, [Session]} = re:run(Response,
                                 ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
                                 [{capture, all_but_first, list}]),
@@ -302,3 +317,10 @@ response_prefix("", _Actual) ->
 response_prefix(Expected, Actual) ->
     lists:sublist(Actual, length(Expected)).
 
+random_nick() ->
+    "testNick" ++ integer_to_list(random_id()).
+
+random_id() ->
+    {{Y,Mo,D},{H,Mi,S}} = erlang:universaltime(),
+    {_,_,NowPart} = now(),
+    erlang:phash2([Y,Mo,D,H,Mi,S,node(),NowPart]).
