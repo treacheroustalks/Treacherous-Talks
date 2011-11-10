@@ -23,6 +23,7 @@
 %% -----------------------------------------------------------------
 -export([ping_riak/0,
          get/2, get/3,
+         get_resolve/4, get_resolve/5,
          get_index/2,
          put/1, put/2,
          delete/2, delete/3,
@@ -85,6 +86,40 @@ get(Bucket, Key) ->
 get(Bucket, Key, Options) ->
     ?CALL_WORKER({get, Bucket, Key, Options}).
 
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Same as get/2, but tries to resolve siblings with the session 
+%% history, if any. Where Field is the position where the session is
+%% stored in the record.
+%%
+%% @spec
+%%  get_resolve(Bucket::binary(), Key::binary(), #session_history{}, integer()) ->
+%%     {ok, db_obj()} | {error, notfound}
+%% @end
+%%-------------------------------------------------------------------
+get_resolve(Bucket, Key, Hist, Field) ->
+    case get(Bucket, Key) of
+        {ok, DbObj} ->
+            {ok, session_history:resolve_conflict(Hist, DbObj, Field)};
+        Other ->
+            Other
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Same as get/3, but tries to resolve siblings with the session 
+%% history, if any.
+%%
+%% @end
+%%-------------------------------------------------------------------
+get_resolve(Bucket, Key, Options, Hist, Field) ->
+    case get(Bucket, Key, Options) of
+        {ok, DbObj} ->
+            {ok, session_history:resolve_conflict(Hist, DbObj, Field)};
+        Other ->
+            Other
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc

@@ -28,11 +28,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
-%% ------------------------------------------------------------------
-%% eUnit exports - do no use!
-%% ------------------------------------------------------------------
--export([resolve_user_conflict/2]).
-
 %% server state
 -record(state, {}).
 
@@ -131,7 +126,8 @@ handle_call({login, Login}, _From, State) ->
                 Hist = db_obj:get_value(HistObj),
                 session:stop(session_history:latest(Hist)),
 
-                UserObj = resolve_user_conflict(Hist, DbObj),
+                UserObj = session_history:resolve_conflict(
+                            Hist, DbObj, #user.last_session),
                 User = db_obj:get_value(UserObj),
 
                 case User#user.password == Login#user.password of
@@ -208,27 +204,6 @@ id_from_user_siblings(DbObj) ->
                   H
           end,
     (db_obj:get_value(Obj))#user.id.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Resolves siblings with the help of the session history.
-%%
-%% @spec resolve_user_conflict(#session_history{}, #db_obj{}) -> #db_obj{}
-%% @end
-%%-------------------------------------------------------------------
-resolve_user_conflict(Hist, DbObj) ->
-    case db_obj:has_siblings(DbObj) of
-        false ->
-            DbObj;
-        true ->
-            Siblings = db_obj:get_siblings(DbObj),
-            LastSessions = lists:map(
-                             fun(SibObj) ->
-                                     (db_obj:get_value(SibObj))#user.last_session
-                             end, Siblings),
-            Pos = session_history:find_newest(Hist, LastSessions),
-            lists:nth(Pos, Siblings)
-    end.
 
 %%-------------------------------------------------------------------
 %% @doc

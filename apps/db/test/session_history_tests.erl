@@ -38,7 +38,8 @@ session_history_test_() ->
       ?_test(history_create()),
       ?_test(history_add_get_latest()),
       ?_test(history_db()),
-      ?_test(history_find_newest())
+      ?_test(history_find_newest()),
+      ?_test(resolve_conflict())
      ]
     }.
 
@@ -112,21 +113,31 @@ history_find_newest() ->
     NewestEmpty = session_history:find_newest(get_history(), Sessions),
     ?assertEqual(history_empty, NewestEmpty).
 
+
+resolve_conflict() ->
+    {_Bucket, _Key, _InitVal, Sib1Val, Sib2Val,
+     LastSessField, Hist, ReverseHist, DbObj} =
+        db_test:create_siblings(),
+
+    % perform the resolution test
+    ResultObj = session_history:resolve_conflict(
+                  Hist, DbObj, LastSessField),
+    ResultVal = db_obj:get_value(ResultObj),
+    ?assertEqual(Sib2Val, ResultVal),
+
+    ReverseResultObj = session_history:resolve_conflict(
+                         ReverseHist, DbObj, LastSessField),
+    ReverseResultVal = db_obj:get_value(ReverseResultObj),
+    ?assertEqual(Sib1Val, ReverseResultVal).
+
+
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------
 get_history() ->
     session_history:create(db:get_unique_id()).
 
-get_pids(Count) ->
-    lists:map(fun(No) ->
-                      list_to_pid("<0." ++ integer_to_list(No) ++ ".0>")
-              end, lists:seq(1, Count)).
-
-pids_to_sessions(Pids) ->
-    lists:map(fun(Pid) ->
-                      session_id:from_pid(Pid)
-              end, Pids).
-
 get_sessions(Count) ->
-    pids_to_sessions(get_pids(Count)).
+    lists:map(fun(No) ->
+                      "JustSomeString" ++ integer_to_list(No)
+              end, lists:seq(1, Count)).
