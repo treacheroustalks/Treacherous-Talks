@@ -31,7 +31,8 @@
           remove_unit_info/4,
           get_reachable/3,
           get_reachable/4,
-          is_reachable/4]).
+          is_reachable/4,
+          get_distance/3]).
 
 -type prov_id () :: any ().
 
@@ -265,15 +266,55 @@ get_reachable (Map, From, UnitType, 1) ->
       lists:foldl (fun (E, Acc) ->
                            {_E, From, To, #connection_info{types=Types}} =
                                digraph:edge (Map, E),
-                           case lists:member (UnitType, Types) of
-                               true ->
+                           case UnitType of
+                               '_' ->
                                    [To | Acc];
-                               false ->
-                                   Acc
+                               UnitType ->
+                                   case lists:member (UnitType, Types) of
+                                       true ->
+                                           [To | Acc];
+                                       false ->
+                                           Acc
+                                   end
                            end
                    end,
                    [From],
                    digraph:out_edges (Map, From))).
+
+%% @doc
+%%  a pretty naive distance algorithm.
+%%  returns the distance between two provinces disregarding unit types)
+%% @end
+get_distance (_, [], _, _) ->
+    not_found;
+get_distance (_, [{_B, Dis} | _], _B, _Visited) ->
+    Dis;
+get_distance (Map, [{A, Dis} | Rest], B, Visited) ->
+%    ?debugVal ({get_distance, 'Map', [A | Rest], B}),
+%    Visiting = A,
+%    ?debugVal (Visiting),
+    Q = Rest ++ lists:map (fun (Prov) -> {Prov, Dis+1} end,
+                    map:get_reachable (Map, A, '_')),
+%    ?debugVal (Q),
+    FilteredQ = lists:filter (fun ({Prov, _Dis}) ->
+                                      Prov =/= A
+                              end,
+                              Q),
+%    ?debugVal (FilteredQ),
+    get_distance (Map, FilteredQ, B, [{A, Dis} | Visited]).
+
+get_distance (Map, A, B) ->
+    get_distance (Map, [{A, 0}], B, []).
+
+get_distance_test () ->
+    Map = map_data:create (standard_game),
+%    ?assertEqual (1,
+%                  get_distance (Map, vienna, bohemia)),
+    ?assertEqual (2,
+                  get_distance (Map, paris, spain)),
+    ?debugMsg ("!"),
+    ?debugVal (get_distance (Map, bohemia, naples)),
+    map_data:delete (Map).
 
 %% -----------------------------------------------------------------------------
 %% @doc

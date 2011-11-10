@@ -313,58 +313,91 @@ create (standard_game) ->
                           {tyrrhenian_sea, western_mediterranean, [fleet]}]],
                                                 % set centers:
     [map:set_province_info (Map, Id, center, true) || Id <- [% Austria:
-                                                                   budapest,
-                                                                   trieste,
-                                                                   vienna,
-                                                               % England:
-                                                                   edinburgh,
-                                                                   liverpool,
-                                                                   london,
-                                                               % France:
-                                                                   brest,
-                                                                   marseilles,
-                                                                   paris,
-                                                               % Germany:
-                                                                   berlin,
-                                                                   kiel,
-                                                                   munich,
-                                                               % Italy:
-                                                                   naples,
-                                                                   rome,
-                                                                   venice,
-                                                               % Russia:
-                                                                   moscow,
-                                                                   sevastopol,
-                                                                   st_petersburg,
-                                                                   warsaw,
-                                                               % Turkey:
-                                                                   ankara,
-                                                                   constantinople,
-                                                                   smyrna]],
+                                                             budapest,
+                                                             trieste,
+                                                             vienna,
+                                                % England:
+                                                             edinburgh,
+                                                             liverpool,
+                                                             london,
+                                                % France:
+                                                             brest,
+                                                             marseilles,
+                                                             paris,
+                                                % Germany:
+                                                             berlin,
+                                                             kiel,
+                                                             munich,
+                                                % Italy:
+                                                             naples,
+                                                             rome,
+                                                             venice,
+                                                % Russia:
+                                                             moscow,
+                                                             sevastopol,
+                                                             st_petersburg,
+                                                             warsaw,
+                                                % Turkey:
+                                                             ankara,
+                                                             constantinople,
+                                                             smyrna,
+                                                % Neutral:
+                                                             belgium,
+                                                             bulgaria,
+                                                             denmark,
+                                                             greece,
+                                                             holland,
+                                                             norway,
+                                                             portugal,
+                                                             rumania,
+                                                             serbia,
+                                                             spain,
+                                                             sweden,
+                                                             tunis]],
 %% set original_owners (the nations which can build there)
     [map:set_province_info (Map, Id, original_owner, Owner) ||
-        {Owner, Id} <- [{austria, budapest},
+        {Owner, Id} <- [{austria, bohemia},
+                        {austria, budapest},
+                        {austria, galicia},
                         {austria, trieste},
+                        {austria, tyrolia},
                         {austria, vienna},
+                        {england, clyde},
                         {england, edinburgh},
                         {england, liverpool},
                         {england, london},
+                        {england, wales},
+                        {england, yorkshire},
                         {france, brest},
+                        {france, burgundy},
+                        {france, gascony},
                         {france, marseilles},
                         {france, paris},
+                        {france, picardy},
                         {germany, berlin},
                         {germany, kiel},
                         {germany, munich},
+                        {germany, prussia},
+                        {germany, ruhr},
+                        {germany, silesia},
+                        {italy, apulia},
                         {italy, naples},
+                        {italy, piedmont},
                         {italy, rome},
+                        {italy, tuscany},
                         {italy, venice},
+                        {russia, finland},
+                        {russia, livonia},
                         {russia, moscow},
                         {russia, sevastopol},
                         {russia, st_petersburg},
+                        {russia, ukraine},
                         {russia, warsaw},
                         {turkey, ankara},
+                        {turkey, armenia},
                         {turkey, constantinople},
-                        {turkey, smyrna}]],
+                        {turkey, smyrna},
+                        {turkey, syria}]],
 
     %% add province owner
     [map:set_province_info (Map, Prov, owner, Owner) || {Prov, Owner} <- [% Austria:
@@ -452,3 +485,4 @@ create (standard_game) ->
 delete (Map) ->
     true = digraph:delete (Map),
     ok.
+

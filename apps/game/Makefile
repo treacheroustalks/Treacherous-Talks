@@ -27,9 +27,9 @@ test:
 	cp -r .eunit/*.html doc/coverage
 
 dia:
-	dialyzer -Wno_return -I ../ --src src
+	dialyzer -Wno return -I ../ --src src ~/pcs.plt
 
-complete: small_clean deps compile test docs dia
+complete: small_clean deps compile test docs
 	@echo ok
 
 .PHONY: all small_clean clean compile test docs dia complete

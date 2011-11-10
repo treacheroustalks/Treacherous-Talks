@@ -52,7 +52,7 @@
 
 -export ([process/4]).
 
-%-include_lib ("eunit/include/eunit.hrl").
+-include_lib ("eunit/include/eunit.hrl").
 -include_lib ("game/include/rule.hrl").
 
 -type order () :: tuple ().
@@ -70,13 +70,21 @@ process (Phase, Map, RULES_MOD, Orders) ->
     io:format (user, "#### process ~p~n", [Phase]),
     Rules = RULES_MOD:create (standard_game, Phase),
     {Replies, Orders1} = execute_rules (Map, Rules, Orders),
-    lists:map (fun (Order) ->
-                       apply (RULES_MOD,
-                              do_process,
-                              [Phase, Map, Order])
-               end,
-               Orders1),
-    Replies.
+    ProcessAnswer =
+        lists:foldl (fun (Order, Acc) ->
+                             RULES_MOD:do_process (Phase, Map, Order) ++ Acc
+                     end,
+                     [],
+                     Orders1),
+    {ProcessReplies, _} = seperate_orders_and_replies (ProcessAnswer),
+    lists:foldl (fun (Item, Acc) ->
+                         case Item of
+                             ok -> Acc;
+                             Other -> [Other | Acc]
+                         end
+                 end,
+                 [],
+                 ProcessReplies ++ Replies).
 
 -spec make_pairs ([any ()], Arity) -> [tuple ()] when
       Arity :: pos_integer () | all_orders.
@@ -88,6 +96,41 @@ make_pairs (List, 2) ->
     [{A, B} || A <- List, B <- List, A < B];
 make_pairs (List, all_orders) ->
     [List].
+
+transform_orders (Orders, RuleResponse) ->
+        lists:foldl (
+          fun (Order, Acc) ->
+                  case Order of
+                      {remove, O} ->
+                          lists:delete (O, Acc);
+                      {add, O} ->
+                          [O | Acc];
+                      {reply, Term} ->
+                          [{reply, Term} | Acc];
+                      ok ->
+                          Acc;
+                      Other -> erlang:error ({error, unhandled_clause,
+                                              Other,
+                                              ?MODULE, ?LINE})
+                  end
+          end,
+          Orders,
+          RuleResponse).
+
+seperate_orders_and_replies (TransformedResponse) ->
+    lists:foldl (
+      fun (Item, {RepliesAcc, OrdersAcc}) ->
+              case Item of
+                  {reply, Left} ->
+                      {[Left | RepliesAcc], OrdersAcc};
+                  ok ->
+                      {RepliesAcc, OrdersAcc};
+                  Right ->
+                      {RepliesAcc, [Right | OrdersAcc]}
+              end
+      end,
+      {[],[]},
+      TransformedResponse).
 
 %% @doc
 %% The function execute_single_rule is quite central to the module.
@@ -107,13 +150,14 @@ make_pairs (List, all_orders) ->
       Order :: order ().
 execute_single_rule (Map, Rule, Orders) ->
     Pairs = make_pairs (Orders, Rule#rule.arity),
+    io:format (user, "execute rule ~p~n", [Rule#rule.name]),
     RuleResponse =
         lists:foldl (
           fun (Pair, Acc) ->
                   case (Rule#rule.detector) (Map, Pair) of
                       true ->
                           Emit = (Rule#rule.actor) (Map, Pair),
-                          io_lib:format (
+                          io:format (user,
                             "Rule ~p: Emitting '~p'~n",
                             [Rule#rule.name,
                              Emit]),
@@ -124,36 +168,12 @@ execute_single_rule (Map, Rule, Orders) ->
           end,
           [],
           Pairs),
+%    io:format (user, "executing ~p done~n", [Rule#rule.name]),
     %% execute the instructions from the actors:
     TransformedResponse =
-        lists:foldl (
-          fun (Order, Acc) ->
-                  case Order of
-                      {remove, O} ->
-                          lists:delete (O, Acc);
-                      {add, O} ->
-                          [O | Acc];
-                      {reply, Term} ->
-                          [{reply, Term} | Acc];
-                      Other -> erlang:error ({error, unhandled_clause,
-                                              Other,
-                                              ?MODULE, ?LINE})
-                  end
-          end,
-          Orders,
-          RuleResponse),
-    %% distinguish orders and replies:
-    lists:foldl (
-      fun (Item, {RepliesAcc, OrdersAcc}) ->
-              case Item of
-                  {reply, Reply} ->
-                      {[Reply | RepliesAcc], OrdersAcc};
-                  DistOrder ->
-                      {RepliesAcc, [DistOrder | OrdersAcc]}
-              end
-      end,
-      {[],[]},
-      TransformedResponse).
+        transform_orders (Orders, RuleResponse),
+    %%make an {[Replies],[Orders]} tuple:
+    seperate_orders_and_replies (TransformedResponse).
 
 %% loops over the execute_rules_stage method until a fixpoint is reached
 -spec execute_rules (Map, [Rule], [Order]) -> any () when
@@ -168,8 +188,8 @@ execute_rules (Map, Rules, OrdersAndReplies) ->
             execute_rules (Map, Rules, ChangedOrders)
     end.
 
-%% executes all rules. This could lead to inconsistencies, because
-%% rules can add and remove Orders. This is why this function is looped
+%% executes all rules. This could lead to incomplete evaluation of all rules,
+%% because rules can add and remove Orders. This is why this function is looped
 %% by execute_rules
 -spec execute_rules_stage (Map, [Rule], {[Reply], [Order]} | [Order]) ->
                                   {[Reply], [Order]} when

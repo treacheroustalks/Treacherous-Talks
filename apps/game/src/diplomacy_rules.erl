@@ -26,7 +26,7 @@
 %%   </tr>
 %% </table>
 %%
-%% look for return values with {reply, Something} to if you wonder why stuff is
+%% look for return values with {reply, Something} if you wonder why stuff is
 %% in {@link rules:process/4}'s return list.
 %%
 %% @end
@@ -79,8 +79,6 @@
                   support_order () |
                   convoy_order ().
 
-
-
 %% -----------------------------------------------------------------------------
 %% @doc
 %% creates the rules for a game type.
@@ -90,7 +88,7 @@
 %% -----------------------------------------------------------------------------
 -spec create (GameType, GamePhase) -> [tuple ()] when
       GameType :: standard_game,
-      GamePhase :: order_phase | retreat_phase | build_phase.
+      GamePhase :: order_phase | retreat_phase | count_phase | build_phase.
 create (standard_game, order_phase) ->
     [unit_exists_rule (),
      convoy_rule (),
@@ -115,18 +113,68 @@ create (standard_game, count_phase) ->
      count_units_rule ()
      ];
 create (standard_game, build_phase) ->
-    [unit_can_build_there_rule ()].
+    [unit_can_build_there_rule (),
+     can_build_rule (),
+     civil_disorder_rule ()].
 
 -spec do_process (phase (), map (), order ()) -> any ().
 do_process (_, Map, {move, Unit, From, To}) ->
 %    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
-    map:move_unit (Map, Unit, From, To);
-do_process (build_phase, Map, {build, Unit, Where}) ->
-    map:add_unit (Map, Unit, Where);
+    map:move_unit (Map, Unit, From, To),
+    [];
+do_process (_, _Map, {hold, _, _}) ->
+    [];
+do_process (build_phase, Map, {build, Unit = {_Type, _Nation}, Where}) ->
+    map:add_unit (Map, Unit, Where),
+    [];
 do_process (_, Map, {destroy, Unit, From}) ->
-    map:remove_unit (Map, Unit, From);
-do_process (_, _Map, _Order) ->
-    ok.
+%    ?debugMsg (io_lib:format ("destroying ~p, ~p", [Unit, From])),
+    map:remove_unit (Map, Unit, From),
+    [];
+do_process (_, _, {support, _, _, _}) ->
+    [];
+do_process (_, _, {convoy, _, _, _, _, _}) ->
+    [];
+do_process (build_phase, Map, {destroy_furthest_units, Nation, ToDestroy}) ->
+%    io:format (user, "destroy_furthest_unit, ~p~n", [Nation]),
+    Units = map:get_units (Map),
+    FilteredUnits = lists:filter (fun ({_Province, {_, Owner}}) ->
+                          Owner == Nation
+                  end,
+                  Units),
+    TaggedUnits =
+        ordsets:from_list (
+          lists:map (fun ({Province, Unit}) ->
+                             MinDist =
+                                 lists:foldl (
+                                   fun (HomeProvince, Acc) ->
+                                           Dist = map:get_distance (Map,
+                                                                    Province,
+                                                                    HomeProvince),
+                                           case Acc of
+                                               infinity ->
+                                                   Dist;
+                                               _Other ->
+                                                   lists:min ([Acc, Dist])
+                                           end
+                                   end,
+                                   infinity,
+                                   get_home_provinces (Map, Nation)),
+                             {MinDist, Province, Unit}
+                     end,
+                     FilteredUnits)),
+    {_, FurthestUnits} =
+        lists:split (length (TaggedUnits) - ToDestroy, TaggedUnits),
+    lists:foreach (fun ({_, TargetProv, TargetUnit}) ->
+                           do_process (build_phase,
+                                       Map,
+                                       {destroy, TargetUnit, TargetProv})
+                   end,
+                  FurthestUnits),
+    [];
+do_process (Phase, _Map, Order) ->
+    erlang:error ({error,
+                   {unhandled_case, ?MODULE, ?LINE, [Phase, 'Map', Order]}}).
 
 %% remove orders for non-existing units
 unit_exists_rule () ->
@@ -159,6 +207,62 @@ count_units_rule () ->
     #rule{name = count_units,
           arity = 0,
           actor = fun count_units_set_owner_actor/2}.
+
+can_build_rule () ->
+    #rule {name = can_build,
+           arity = 1,
+           detector = fun can_build_detector/2,
+           actor = fun can_build_actor/2}.
+
+can_build_detector (Map, {{build, {_Type, Nation}, _Somewhere}}) ->
+    {ok, License} = dict:find (Nation, get_build_licenses (Map)),
+    License =< 0;
+can_build_detector (_, _) ->
+    false.
+
+can_build_actor (Map, {BuildOrder}) ->
+    [{reply, {no_builds_left, BuildOrder}} |
+      delete_orders_actor (Map, {BuildOrder})].
+
+civil_disorder_rule () ->
+    #rule {name = civil_disorder,
+           arity = all_orders,
+           actor = fun civil_disorder_actor/2}.
+
+civil_disorder_actor (Map, Orders) ->
+    CorrectedLicenses =
+        lists:foldl (fun (Order, Acc) ->
+                             case Order of
+                                 {build, {_, Nation}, _Province} ->
+                                     %% DANGER, Val not changed
+%                                     erlang:error ({error, 'VAL'}),
+                                     {ok, Val} = dict:find (Nation, Acc),
+                                     dict:store (Nation, Val, Acc);
+%                                 {destroy_furthest_unit, Nation} ->
+%                                     {ok, Val} = dict:find (Nation, Acc),
+%                                     dict:store (Nation, Val + 1, Acc);
+                                 {destroy, {_, Nation}, _Province} ->
+                                     {ok, Val} = dict:find (Nation, Acc),
+                                     dict:store (Nation, Val + 1, Acc);
+                                 _ -> Acc
+                             end
+                     end,
+                     get_build_licenses (Map),
+                     Orders),
+    NeedToDestroy =
+        lists:filter (
+          fun ({_Nation, Counter}) ->
+                  Counter < 0
+          end,
+          dict:to_list (CorrectedLicenses)),
+    %% now emit the destroy-furthest-units orders:
+    lists:map (fun ({Nation, Counter}) ->
+                       {add,
+                        {destroy_furthest_units,
+                         Nation, -Counter}}
+               end,
+               NeedToDestroy).
+
 %% remove units that where not dislodged yet
 remove_undislodged_units_rule () ->
     #rule{name = remove_undislodged_units,
@@ -171,24 +275,6 @@ implicit_hold_rule () ->
     #rule{name = implicit_hold_rule,
           arity = all_orders,
           actor = fun implicit_hold_rule_actor/2}.
-
-implicit_hold_rule_actor (Map, Orders) when is_list (Orders) ->
-    UnitsWoOrders =
-        lists:foldl (
-          fun (Order, Units) ->
-                  lists:delete ({get_first_from (Order),
-                                 get_first_unit (Order)}, Units)
-          end,
-          map:get_units (Map),
-          Orders),
-    lists:foldl (fun ({Province, Unit}, ReplyAcc) ->
-                         [{add, {hold, Unit, Province}},
-                          {reply, {added, {hold, Unit, Province}}} | ReplyAcc]
-                 end,
-                 [],
-                 UnitsWoOrders);
-implicit_hold_rule_actor (_Map, Orders) ->
-    erlang:error ({error, unhandled, Orders}).
 
 %% removes the 'dislodge' k/v pair from the unit dicts in
 %% case it contains 'true'
@@ -255,48 +341,29 @@ support_rule () ->
 %% count the units in a map, count the owners of centers in a map and
 %% reply how much they have to build/remove
 count_units_set_owner_actor (Map, {}) ->
-    % count how many units each nation has
-    Dict =
-        lists:foldl (
-          fun ({Province, {_Type, Nation}}, Dict) ->
-                  map:set_province_info (Map, Province, owner, Nation),
-                  OldCnt = case dict:find (Nation, Dict) of
-                               {ok, Count} ->
-                                   Count;
-                               error ->
-                                   0
-                           end,
-                  dict:store (Nation, OldCnt - 1, Dict)
-          end,
-          dict:new (),
-          map:get_units (Map)),
-    Centers = lists:filter (fun (Province) ->
-                                    map:get_province_info (Map,
-                                                           Province,
-                                                           center) == true
-                            end,
-                           map:get_provinces (Map)),
-    Owners = lists:map (fun (Center) ->
-                                map:get_province_info (Map, Center, owner)
-                        end,
-                        Centers),
-    % now add the number of centers each nation holds:
-    BuildDict =
-        lists:foldl (
-          fun (Owner, DictAcc) ->
-                  OldCnt = case dict:find (Owner, DictAcc) of
-                               error -> 0;
-                               {ok, Value} -> Value
-                           end,
-                  dict:store (Owner, OldCnt + 1, DictAcc)
-          end,
-          Dict,
-          Owners),
     % the difference is the number of builds the nation is entitled to:
     lists:map (fun ({Nation, Builds}) ->
                        {reply, {has_builds, Nation, Builds}}
                end,
-               dict:to_list (BuildDict)).
+               dict:to_list (get_build_licenses (Map))).
+
+implicit_hold_rule_actor (Map, Orders) when is_list (Orders) ->
+    UnitsWoOrders =
+        lists:foldl (
+          fun (Order, Units) ->
+                  lists:delete ({get_first_from (Order),
+                                 get_first_unit (Order)}, Units)
+          end,
+          map:get_units (Map),
+          Orders),
+    lists:foldl (fun ({Province, Unit}, ReplyAcc) ->
+                         [{add, {hold, Unit, Province}},
+                          {reply, {added, {hold, Unit, Province}}} | ReplyAcc]
+                 end,
+                 [],
+                 UnitsWoOrders);
+implicit_hold_rule_actor (_Map, Orders) ->
+    erlang:error ({error, unhandled, Orders}).
 
 simple_convoy_detector (_Map, {{convoy, _, _, _, _, _},
                                {move, _, _, _}}) ->
@@ -332,7 +399,7 @@ remove_undislodged_units_actor (Map, {}) ->
               end
       end,
       AllUnits),
-    [].
+      [].
 
 break_support_detector (Map, {{move, {UType, _Nation}, From, SupPlace},
                               {support, _Unit2, SupPlace, _Order}}) ->
@@ -400,6 +467,50 @@ is_supportable ({hold, _, _}) ->
 is_supportable (_) ->
     false.
 
+%% return a dict, that contains nation()/integer() pairs,
+%% denoting the numbers of builds (if integer is positive) a nation has
+%% or the number of units it must destroy (if integer is negative)
+get_build_licenses (Map) ->
+    % count how many units each nation has and set province owners
+    Dict =
+        lists:foldl (
+          fun ({Province, {_Type, Nation}}, Dict) ->
+                  map:set_province_info (Map, Province, owner, Nation),
+                  OldCnt = case dict:find (Nation, Dict) of
+                               {ok, Count} ->
+                                   Count;
+                               error ->
+                                   0
+                           end,
+                  dict:store (Nation, OldCnt - 1, Dict)
+          end,
+          dict:new (),
+          map:get_units (Map)),
+    Centers = lists:filter (fun (Province) ->
+                                    map:get_province_info (Map,
+                                                           Province,
+                                                           center) == true
+                            end,
+                           map:get_provinces (Map)),
+    Owners = lists:map (fun (Center) ->
+                                map:get_province_info (Map, Center, owner)
+                        end,
+                        Centers),
+    % now add the number of centers each nation holds:
+    lists:foldl (
+      fun (Owner, DictAcc) ->
+              case Owner of
+                  undefined -> DictAcc;
+                  Owner ->
+                      OldCnt = case dict:find (Owner, DictAcc) of
+                                   error -> 0;
+                                   {ok, Value} -> Value
+                               end,
+                      dict:store (Owner, OldCnt + 1, DictAcc)
+              end
+      end,
+      Dict,
+      Owners).
 
 %% todo: this is the simple implementation that covers no chains of convoys:
 is_covered_by_convoy (Map, {move, Army, From, To}) ->
@@ -481,7 +592,6 @@ hold_vs_move2_actor (Map, {HoldOrder = {hold, HoldUnit, HoldPlace},
     MoveStrength = get_unit_strength (Map, MoveOrder),
     if
         HoldStrength >= MoveStrength ->
-            io:format (user, "emit ~p~n", [[{remove, MoveOrder}]]),
             replace_by_hold_actor (Map, {MoveOrder});
         true ->
             map:set_unit_info (Map, HoldUnit, HoldPlace, dislodge, true),
@@ -514,13 +624,8 @@ get_unit_strength (Map, Order) ->
 bounce2_actor (Map,
                {O1 = {move, _, _, To},
                 O2 = {move, _, _, To}}) ->
-%    ?debugMsg ("######## bounce2_actor"),
-%    ?debugVal (O1),
-%    ?debugVal (O2),
     Strength1 = get_unit_strength (Map, O1),
     Strength2 = get_unit_strength (Map, O2),
-%    ?debugVal (Strength1),
-%    ?debugVal (Strength2),
     if
         Strength1 > Strength2 ->
             replace_by_hold_actor (Map, {O2});
@@ -542,7 +647,9 @@ unit_can_build_there_detector (Map,
                 _ ->
                     true
             end
-    end.
+    end;
+unit_can_build_there_detector (_, _) ->
+    false.
 
 unit_can_build_there_actor (_Map, Build) ->
     [{remove, Build}].
@@ -596,3 +703,17 @@ replace_by_hold_actor (_Map, {A,B,C}) ->
      {add, {hold, get_first_unit (A), get_first_from (A)}},
      {add, {hold, get_first_unit (B), get_first_from (B)}},
      {add, {hold, get_first_unit (C), get_first_from (C)}}].
+
+get_home_provinces (Map, Nation) ->
+    ordsets:from_list (
+      lists:filter (fun (Province) ->
+                            Nation == map:get_province_info (Map, Province,
+                                                             original_owner)
+                    end,
+                    map:get_provinces (Map))).
+
+get_home_provinces_test () ->
+    Map = map_data:create (standard_game),
+    ?assertEqual ([bohemia, budapest, galicia, trieste, tyrolia, vienna],
+                  get_home_provinces (Map, austria)),
+    map_data:delete (Map).

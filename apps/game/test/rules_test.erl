@@ -282,7 +282,7 @@ multiple_stages_test () ->
 build_reply_test () ->
 %    ?debugMsg ("###################################### BUILD-REPLY: START"),
     Map = map_data:create (standard_game),
-    map:add_unit (Map, {army, austria}, spain),
+    map:add_unit (Map, {army, austria}, albania),
     map:remove_unit (Map, {fleet, england}, london),
     Reply = rules:process (count_phase, Map, diplomacy_rules, []),
     ?assert (lists:member ({has_builds, austria, -1}, Reply)),
@@ -474,15 +474,14 @@ check_results (Description, Map, Results) ->
     io:format (user, "~n", []).
 
 tmoat_year (Map, Year) ->
-    ?debugMsg (io_lib:format ("running year ~p", [Year])),
-    ?debugMsg ("spring"),
+    ?debugMsg (io_lib:format ("spring ~p orders", [Year])),
     {SpringOrders, SpringResults} =
         lists:unzip (
           tmoat_data (spring, order_phase, Year)),
     rules:process (order_phase, Map, diplomacy_rules, SpringOrders),
     check_results ({spring, Year}, Map, SpringResults),
 
-    ?debugMsg ("spring retreat"),
+    ?debugMsg (io_lib:format ("spring ~p retreat", [Year])),
     {SpringRetreatOrders, SpringRetreatResults} =
         lists:unzip (
           tmoat_data (spring, retreat_phase, Year)),
@@ -490,20 +489,23 @@ tmoat_year (Map, Year) ->
                    SpringRetreatOrders),
     check_results ({spring_retreat, Year}, Map, SpringRetreatResults),
 
-    ?debugMsg ("fall"),
+    ?debugMsg (io_lib:format ("fall ~p orders", [Year])),
     {FallOrders, FallResults} =
         lists:unzip (tmoat_data (fall, order_phase, Year)),
     rules:process (order_phase, Map, diplomacy_rules, FallOrders),
     check_results ({fall_retreat, Year}, Map, FallResults),
 
-    ?debugMsg ("fall retreat"),
+    ?debugMsg (io_lib:format ("fall ~p retreat", [Year])),
     {FallRetreatOrders, FallRetreatResults} =
         lists:unzip (
           tmoat_data (fall, retreat_phase, Year)),
     rules:process (retreat_phase, Map, diplomacy_rules, FallRetreatOrders),
     check_results ({fall_retreat, Year}, Map, FallRetreatResults),
 
-    ?debugMsg ("build"),
+    ?debugMsg (io_lib:format ("fall ~p count", [Year])),
+    rules:process (count_phase, Map, diplomacy_rules, []),
+
+    ?debugMsg (io_lib:format ("fall ~p build", [Year])),
     {BuildOrders, BuildResults} =
         lists:unzip (
           tmoat_data (fall, build_phase, Year)),
@@ -517,3 +519,43 @@ implicit_hold_test () ->
     Reply = rules:process (order_phase, Map, diplomacy_rules, []),
     ?assertEqual ([{added, {hold, {army, austria}, vienna}}], Reply),
     map_data:delete (Map).
+
+%% check that no build orders are accepted that go above what the nation is
+%% allowed to do
+limit_builds_test () ->
+    Map = map_data:create (standard_game),
+    rules:process (order_phase, Map, diplomacy_rules,
+                   [{move, {army, austria}, vienna, galicia}]),
+    ?assertEqual ([], map:get_units (Map, vienna)),
+    ?debugVal (rules:process (count_phase, Map, diplomacy_rules,[])),
+    Reply = rules:process (build_phase, Map, diplomacy_rules,
+                   [{build, {army, austria}, vienna}]),
+    ?assertEqual ([], map:get_units (Map, vienna)),
+    ?assertEqual ([{no_builds_left, {build, {army, austria}, vienna}}], Reply),
+    map:remove_unit (Map, {army, austria}, galicia),
+    Reply2 = rules:process (build_phase, Map, diplomacy_rules,
+                   [{build, {army, austria}, vienna}]),
+    ?assertEqual ([], Reply2),
+    ?assert (map:unit_exists (Map, vienna, {army, austria})),
+    map_data:delete (Map).
+
+civil_disorder_test () ->
+    Map = map_data:create (standard_game),
+    map:add_unit (Map, {army, austria}, albania),
+    map:add_unit (Map, {army, austria}, serbia),
+    map:add_unit (Map, {fleet, austria}, north_africa),
+    ?debugMsg ("counting:"),
+    rules:process (count_phase, Map, diplomacy_rules, []),
+    %% austria has now 4 supply centers (home country and serbia),
+    %% but 6 units (home country + serbia, albania, north_africa),
+    %% this means two have to go.
+    rules:process (build_phase, Map, diplomacy_rules, []),
+    %% oops, no destroy orders! --> civil disorder rule came into affect!
+
+    %% A Serbia is removed, A Albania is equally far, but lexical order places
+    %% Serbia behind Albania, F North Africa is removed because it is very far
+    %% away:
+    ?assertEqual ([], map:get_units (Map, north_africa)),
+    ?assertEqual ([{army, austria}], map:get_units (Map, albania)),
+    ?assertEqual ([], map:get_units (Map, serbia)),
+        map_data:delete (Map).
