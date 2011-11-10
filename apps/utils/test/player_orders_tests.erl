@@ -15,7 +15,7 @@ parse_orders_test_() ->
                          [{capture, all_but_first, list}, dotall]),
     ActualOutput = player_orders:parse_orders(Out),
     %io:format(user, "~p~n", [ActualOutput]),
-    Expected = {ok,"1234341",
+    Expected = {ok,?SESSION_ID,
     {3958230945903,
      [{convoy,fleet,north_sea,army,london,norwegian_sea},
       {convoy,fleet,north_sea,army,london,norwegian_sea},

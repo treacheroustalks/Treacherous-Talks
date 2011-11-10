@@ -1,3 +1,5 @@
+-define(SESSION_ID, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==").
+
 -define(SAMPLE_REGISTER,
 <<"sddfaadfaff\r
 REGISTER\r
@@ -39,7 +41,7 @@ adfadfasdfaldfad">>
 -define(SAMPLE_UPDATE,
 <<"sddfaadfaff\r
 UPDATE\r
-SESSION: 123456\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 PASSWORD: QWER\r
 FULLNAME: Agner Erlang\r
 END\r
@@ -50,7 +52,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 CREATE\r
 ----Required Fields---------\r
-SESSION: 987654\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r
 ORDERCIRCLE: 4H\r
@@ -85,7 +87,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 RECONFIG\r
 ----Required Fields---------\r
-SESSION: 456123\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 GAMEID: 111222  \r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r
@@ -104,7 +106,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 RECONFIG\r
 ----Required Fields---------\r
-SESSION: 456123\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 GAMEID: 111222  \r
 GAMENAME: awesome_game\r
 PRESSTYPE: white\r
@@ -139,7 +141,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 OVERVIEW\r
 ----Required Fields---------\r
-SESSION: 123456789\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 GAMEID: 111222 \r
 \r
 END\r
@@ -150,7 +152,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 JOIN\r
 ----Required Fields---------\r
-SESSION: 123456789\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 GAMEID: 111222 \r
 COUNTRY: England
 \r
@@ -163,7 +165,7 @@ adfadfasdfaldfad">>
 <<"sddfaadfaff\r
 JOIN\r
 ----Required Fields---------\r
-SESSION: 123456789\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
 GAMEID: 111222 \r
 COUNTRY: Dummyland
 \r
@@ -177,7 +179,7 @@ adfadfasdfaldfad">>
 
     ORDER
 
-    SESSION: 1234341
+    SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
     GAMEID: 3958230945903
 
 ------move----------------
@@ -235,7 +237,7 @@ adfadfasdfaldfad">>
 -define(SAMPLE_TEST_ORDERS_ID_SESSION,
 <<"  ORDER
 
-    SESSION: 1234341
+    SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
     GAMEID: 3958230945903
 
 ------move----------------
@@ -251,7 +253,7 @@ adfadfasdfaldfad">>
     asdfasdfasdfasdf
     ORDER
 
-    SESSION: 1234341
+    SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
     GAMEID: 3958230945903
 
     A Lon-Nrg

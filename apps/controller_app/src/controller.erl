@@ -28,7 +28,8 @@
 -include_lib("datatypes/include/game.hrl").
 
 -define(WORKER, controller_app_worker).
--define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER), Cmd)).
+-define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER),
+                                          Cmd)).
 
 %% ------------------------------------------------------------------
 %% External API Function Definitions
@@ -40,18 +41,42 @@
 %% with the results of the given command. The callback function
 %% must be of arity 3:
 %%
-%% CallbackFun(Args, {Type::command(), Result::result()}, ResultData::any()) -> ok.
+%% CallbackFun(Args, {Type::command(), Result::result()},
+%%                    ResultData::any()) -> ok.
 %%
 %% command() :: register |
 %%              login |
 %%              get_session_user |
 %%              update_user |
 %%              create_game |
-%%              update_game |
+%%              get_game |
+%%              reconfig_game |
 %%              game_order |
+%%              join_game |
+%%              game_overview |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data | invalid_session | error.
+%%
+%% Standard return (error) values for invalid_data
+%% register ->          [nick_already_exists]
+%% login ->             [nick_not_unique,
+%%                       invalid_login_data,
+%%                       simultaneous_login]
+%% get_session_user ->  []
+%% update_user ->       [does_not_exist]
+%% create_game ->       []
+%% get_game ->          [game_does_not_exist]
+%% reconfig_game ->     [game_does_not_exist,
+%%                       game_started_already,
+%%                       not_game_creator]
+%% game_order ->         [game_id_not_exist,
+%%                       user_not_playing_this_game,
+%%                       game_not_waiting]
+%% join_game ->         [country_not_available,
+%%                       user_already_joined]
+%% game_overview ->     [user_not_playing_this_game]
+%%
 %% @end
 %%
 %% [@spec

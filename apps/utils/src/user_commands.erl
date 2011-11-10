@@ -347,7 +347,7 @@ is_valid_value(FieldType, Value) ->
         alpha_num_only ->% only allow alphabets and number
             Check(invalid_pattern, "[^A-Za-z0-9_]");
         base64 ->
-            Check(invalid_pattern, "[^A-Za-z0-9=]");
+            Check(valid_pattern, "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$");
         begin_with_alpha ->% The first character must be alphabetic
             Check(valid_pattern, "(^[A-Za-z][A-Za-z0-9_]*$)");
         num_only ->% forbids non-number characters

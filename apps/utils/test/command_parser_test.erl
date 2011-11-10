@@ -6,7 +6,6 @@
 
 -include("test_utils.hrl").
 
-
 parse_test_() ->
     [
      ?_test(check_parse(?SAMPLE_REGISTER,
@@ -16,13 +15,13 @@ parse_test_() ->
                                               name = "Agner Erlang"}}
                         })),
      ?_test(check_parse(?SAMPLE_UPDATE,
-                        {update_user, {ok, "123456",
+                        {update_user, {ok, ?SESSION_ID,
                                        [{#user.password,"QWER"},
                                         {#user.email,field_missing},
                                         {#user.name,"Agner Erlang"}]}
                         })),
      ?_test(check_parse(?SAMPLE_CREATE,
-                        {create_game, {ok, "987654",
+                        {create_game, {ok, ?SESSION_ID,
                                        #game{name = "awesome_game", press = "white",
                                              order_phase = 240, retreat_phase = 210,
                                              build_phase = 160, waiting_time = 3200,
@@ -34,9 +33,9 @@ parse_test_() ->
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}})),
      ?_test(check_parse(?SAMPLE_GAME_OVERVIEW,
-                        {game_overview, {ok, "123456789", 111222}})),
+                        {game_overview, {ok, ?SESSION_ID, 111222}})),
      ?_test(check_parse(?SAMPLE_JOIN_GAME,
-                        {join_game, {ok, "123456789", {111222, england}}}))
+                        {join_game, {ok, ?SESSION_ID, {111222, england}}}))
     ].
 
 check_parse(Sample, Expected) ->
@@ -47,7 +46,7 @@ check_parse(Sample, Expected) ->
 
 reconfig_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_RECONFIG, im),
-    Expected = {reconfig_game,{ok,"456123", {
+    Expected = {reconfig_game,{ok,?SESSION_ID, {
                                     111222,
                                     [{4,"awesome_game"},    % name
                                      {7,"white"},
@@ -66,7 +65,7 @@ reconfig_test_() ->
 order_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS2, test),
     %io:format(user, "~p~n", [ActualOutput]),
-    Expected = {game_order,{ok,"1234341",
+    Expected = {game_order,{ok,?SESSION_ID,
                {3958230945903,
                 [{convoy,fleet,north_sea,army,london,norwegian_sea},
                  {convoy,fleet,north_sea,army,london,norwegian_sea},
