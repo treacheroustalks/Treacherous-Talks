@@ -454,21 +454,6 @@ get_game_state_tst_ () ->
              ?debugMsg("User does not play this game")
      end,
      fun() ->
-             GameRecord = test_game(),
-             GameRecord2 = GameRecord#game{status = ongoing},
-             % Create a new Game
-             Game = sync_get(sync_new(GameRecord2)),
-             % join new player with id=1122 and country=england
-             UserID = 1122,
-             Country = england,
-             game:join_game(Game#game.id, UserID, Country),
-             timer:sleep(50),
-             Reply = sync_get_game_state (Game#game.id, UserID),
-             ?assertEqual(game_not_waiting, Reply),
-             ?debugMsg("Game is not in waiting phase"),
-             ?debugMsg("get game state test end")
-     end,
-     fun() ->
              ?debugMsg("Test joining a game which doesn't exist"),
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},
@@ -489,14 +474,6 @@ sync_get(ID) ->
 sync_get_game_player(ID) ->
     {ok, GamePlayer} = game:get_game_players(ID),
     GamePlayer.
-
-sync_join_game_player(GameID, UserID, Country) ->
-    case game:join_game(GameID, UserID, Country) of
-        {ok, GamePlayer} ->
-            GamePlayer;
-        {error, country_not_available} ->
-            country_not_available
-    end.
 
 sync_get_game_state(GameID, UserID) ->
     case game:get_game_state(GameID, UserID) of

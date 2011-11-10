@@ -17,7 +17,7 @@
          code_change/3]).
 
 %% export for eunit
--export([get_game_order/2,translate_game_order/3]).
+-export([get_game_order/1, translate_game_order/3]).
 
 %% server state
 -record(state, {}).
@@ -49,20 +49,10 @@ init(no_arg) ->
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 
-
-handle_call({put_game_order, Key, GameOrderList}, _From, State) ->
-    Reply = put_game_order(Key, GameOrderList),
-    {reply, Reply, State};
 handle_call({put_game_order, GameId, UserId, GameOrderList}, _From, State) ->
     Reply = put_game_order(GameId, UserId, GameOrderList),
     {reply, Reply, State};
 
-handle_call({update_game_order, Key, GameOrderList}, _From, State) ->
-    Reply = update_game_order(Key, GameOrderList),
-    {reply, Reply, State};
-handle_call({get_game_order, Key}, _From, State) ->
-    Reply = get_game_order(Key),
-    {reply, Reply, State};
 handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
     Reply = new_game(ID, Game),
     {ok, NewID} = Reply,
@@ -140,17 +130,31 @@ get_player_country (GameID, UserID) ->
 
     end.
 
+%% ------------------------------------------------------------------
+%% @doc
+%% GameId::integer(), UserId::integer()
+%%
+%% @end
+%% ------------------------------------------------------------------
 put_game_order(GameId, UserId, GameOrderList) ->
     case get_game(GameId) of
         {ok, _Game = #game{} } ->
-            YearSeason = "1900-fall",
-            Phase = "phase",
             case get_player_country(GameId, UserId) of
                 {ok, Country} ->
-                    Key = integer_to_list(GameId) ++ YearSeason ++
-                                                  Phase ++ atom_to_list(Country),
-                    put_game_order(Key,
-                           translate_game_order(GameId, GameOrderList,Country));
+                    YearSeasonPhase = "-1900-fall-order-",
+                    Key = integer_to_list(GameId) ++ YearSeasonPhase ++
+                          atom_to_list(Country),
+                    NewOrder = translate_game_order(GameId, GameOrderList,
+                                                    Country),
+                    % if player hasn't sent any order, use put, otherwise update
+                    case get_game_order (Key) of
+                        {ok, _} ->
+                            update_game_order(Key, NewOrder);
+                        {error, notfound} ->
+                            put_game_order(Key, NewOrder);
+                        Error ->
+                            Error
+                    end;
                 Error ->
                     Error
             end;
@@ -324,20 +328,16 @@ get_game_state(GameID, UserID) ->
             end;
         Other ->
             Other
-
     end.
 
 get_game_map(GameID, #game_overview{} = GameOverview) ->
-    {ok, Game=#game{status= Status}} = get_game(GameID),
-    case Status of
-        waiting ->
-            Map = map_data:create (standard_game),
-            GameOV = GameOverview#game_overview{game_rec= Game,
-                                                map = digraph_io:to_erlang_term(Map)},
-            {ok, GameOV};
-        _ -> %TODO provide state for other type of games which are not waiting
-            {error, game_not_waiting}
-    end.
+    % @TODO get game map from database
+    {ok, Game=#game{status= _Status}} = get_game(GameID),
+    Map = map_data:create (standard_game),
+    GameOV = GameOverview#game_overview{game_rec= Game,
+                                        map = digraph_io:to_erlang_term(Map)},
+    {ok, GameOV}.
+
 
 
 phase_change(Game = #game{id = ID}, started) ->
@@ -365,12 +365,12 @@ phase_change(ID, Phase) ->
     NewCurrentGame = update_current_game(ID, Phase),
     new_state(NewCurrentGame, OldState#game_state.map).
 
-get_game_order(GameId, _UserId)->
-    YearSeason = "1900-fall",
-    Phase = "phase",
-    Country = "country",
-    Key = integer_to_list(GameId) ++ YearSeason ++ Phase ++ Country,
-    get_game_order(Key).
+%% ------------------------------------------------------------------
+%% @doc
+%% Key: "3457892458-1900-fall-order-england"
+%%
+%% @end
+%% ------------------------------------------------------------------
 get_game_order(ID)->
     get_DB_obj(?B_GAME_ORDER, ID).
 

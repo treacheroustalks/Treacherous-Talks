@@ -16,27 +16,42 @@ app_started_setup () ->
 app_started_teardown (_) ->
     [application:stop (App) || App <- lists:reverse (apps ())].
 
-test_key() ->
-    "5527647769861816329-1905-spring-order-russia".
-
-test_order_list() ->
+input_test_order_list() ->
     [
-     {hold, {army, russia}, prussia},
-     {move, {army, germany}, berlin, prussia},
-     {move, {fleet, germany}, kiel, berlin},
-     {support,
-      {army, austria}, budapest,
-      {move, {army, austria}, vienna, galicia}},
-     {move, {army, austria}, vienna, galicia},
-     {move, {army, russia}, warsaw, galicia}
+     {hold, army, prussia},
+     {move, army, berlin, prussia, nc},
+     {move, fleet, kiel, berlin, nc},
+     {support_move, army, budapest, army, vienna, galicia, nc},
+     {move, army, vienna, galicia, nc},
+     {move, army, warsaw, galicia, nc}
     ].
 
-updated_order_list() ->
+input_updated_order_list() ->
+    [
+     {support_move, army, budapest, army, vienna, galicia, nc}
+    ].
+
+expected_test_order_list() ->
+    lists:reverse([
+     {hold, {army, england}, prussia},
+     {move, {army, england}, berlin, prussia},
+     {move, {fleet, england}, kiel, berlin},
+     {support,
+      {army, england}, budapest,
+      {move, {army, austria}, vienna, galicia}},
+     {move, {army, england}, vienna, galicia},
+     {move, {army, england}, warsaw, galicia}
+    ]).
+
+expected_updated_order_list() ->
     [
      {support,
-      {army, austria}, budapest,
+      {army, england}, budapest,
       {move, {army, austria}, vienna, galicia}}
     ].
+
+expected_key(Id) ->
+    integer_to_list(Id) ++ "-1900-fall-order-england".
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -49,45 +64,79 @@ move_get_put_test_ () ->
      fun app_started_teardown/1,
      [ping_tst_ (),
       get_game_order_tst_ (),
-      update_game_order_tst_()
+      put_game_order_tst_()
      ]}.
 
 ping_tst_ () ->
     [fun()-> {pong, _Pid} = game_worker:ping () end].
 
+test_game () ->
+    #game{creator_id=123,
+          name="game name",
+          description="lorem ipsum dolor sit amet",
+          press = black_press,
+          order_phase = 12*60,
+          retreat_phase = 12*60,
+          build_phase = 12*60,
+          password="pass",
+          waiting_time = 50*60}.
+
 %%------------------------------------------------------------------------------
 %% Tests the get game state functionality
 %%------------------------------------------------------------------------------
-get_game_order_tst_ () ->
+
+sync_new(Game=#game{}) ->
+    {ok, Id} = game:new_game(Game),
+    Id.
+
+sync_get(ID) ->
+    {ok, Game} = game:get_game(ID),
+    Game.
+
+put_game_order_tst_ () ->
     [fun() ->
-     Key = sync_put_order (test_key(), test_order_list()),
-     ?assertEqual(test_key(), Key),
-     Move = sync_get_order(test_key()),
-     ?assertEqual(test_order_list(), Move)
+             GameRecord = test_game(),
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             UserID = 1122,
+             Country = england,
+             game:join_game(Game#game.id, UserID, Country),
+             timer:sleep(50),
+             Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
+             ?assertEqual(expected_key(Game#game.id), Key),
+             sync_put_order (Game#game.id, UserID, input_updated_order_list()),
+             Move = sync_get_order(Key),
+             ?assertEqual(expected_updated_order_list(), Move)
      end].
 
-update_game_order_tst_ () ->
+get_game_order_tst_ () ->
     [fun() ->
-     Key = sync_put_order (test_key(), test_order_list()),
-     ?assertEqual(test_key(), Key),
-     Updated = sync_update_order (test_key(), updated_order_list()),
-     Move = sync_get_order(test_key()),
-     ?assertEqual(updated_order_list(), Move)
+             GameRecord = test_game(),
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             UserID = 1122,
+             Country = england,
+             game:join_game(Game#game.id, UserID, Country),
+             timer:sleep(50),
+             Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
+             ?assertEqual(expected_key(Game#game.id), Key),
+             Move = sync_get_order(Key),
+             ?assertEqual(expected_test_order_list(), Move)
      end].
 
 %%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
-sync_put_order (ID, OrderList) ->
-    {ok, Key} = game:put_game_order(ID, OrderList),
+sync_put_order (GameId, UserId, OrderList) ->
+    {ok, Key} = game:put_game_order(GameId, UserId, OrderList),
     Key.
 
-sync_get_order (ID) ->
-    case game:get_game_order (ID) of
+sync_get_order (Key) ->
+    case game_worker:get_game_order (Key) of
         {ok, Order} ->
-            Order
+            Order;
+        Error ->
+            Error
     end.
-
-sync_update_order (ID, OrderList) ->
-    {ok, Key} = game:update_game_order (ID, OrderList),
-    Key.
