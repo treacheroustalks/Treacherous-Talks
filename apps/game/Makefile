@@ -1,23 +1,27 @@
-all: deps compile docs
+# Generic app Makefile for Treacherous Talks
+
+REBAR=../../rebar
+
+all: small_clean deps compile docs
 
 docs:
-	rebar skip_deps=true doc
+	$(REBAR) skip_deps=true doc
 
 deps:
-	rebar get-deps
+	$(REBAR) get-deps
 
 small_clean:
-	rebar skip_deps=true clean
+	$(REBAR) skip_deps=true clean
 
 clean:
-	rebar clean
+	$(REBAR) clean
 
 compile:
 	rm -rf .eunit
-	rebar compile
+	$(REBAR) compile
 
 test:
-	rebar skip_deps=true eunit
+	$(REBAR) skip_deps=true eunit
 	rm -rf doc/coverage
 	mkdir doc/coverage
 	cp -r .eunit/*.html doc/coverage

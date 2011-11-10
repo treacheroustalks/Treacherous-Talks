@@ -33,7 +33,7 @@ if [ $dotar -eq 1 ]; then
 
     # Get external deps
     echo "##### Getting external dependencies"
-    rebar get-deps || errors=1
+    ./rebar get-deps || errors=1
 
     # Special case: yaws
     echo "##### Getting yaws"

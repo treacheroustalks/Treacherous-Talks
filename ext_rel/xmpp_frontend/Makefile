@@ -28,8 +28,8 @@ $(beams): $(deps) ejabberd-beams components/*.erl
 
 deps: $(deps)
 $(deps):
-	rebar get-deps
-	rebar compile
+	../../rebar get-deps
+	../../rebar compile
 	cp -rf $(deps-ext) components
 
 # The ejabberd beams are only needed in our component building step because we implement

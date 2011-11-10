@@ -75,7 +75,7 @@ do_release () {
                 relcommand="make release"
                 finddir="rel"
             elif [ -a reltool.config ]; then
-                relcommand="rebar generate"
+                relcommand="$cwd/rebar generate"
                 finddir="."
             fi
             # If such a file was found, then do the release

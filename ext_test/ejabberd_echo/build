@@ -27,12 +27,12 @@ for dep in $(ls deps); do
     dir=deps/$dep
     cd $dir
     echo $dir
-    rebar compile
+    ../../rebar compile
     cd $cwd
 done
-rebar get-deps || errors=1
-rebar clean skip_deps=true || errors=1
-rebar compile skip_deps=true || errors=1
+../../rebar get-deps || errors=1
+../../rebar clean skip_deps=true || errors=1
+../../rebar compile skip_deps=true || errors=1
 
 # For testing, run rebar eunit skip_deps=true
 

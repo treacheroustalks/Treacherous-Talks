@@ -49,7 +49,7 @@ function run_wrapper () {
 # Do eunit (local) tests
 if [ $dolocal -eq 1 ]; then
     echonormal "running eunit tests"
-    run_wrapper "rebar eunit skip_deps=true"
+    run_wrapper "./rebar eunit skip_deps=true"
 fi
 
 # Do integration tests
@@ -79,7 +79,7 @@ if [ $dointegration -eq 1 ]; then
     echo "ejabberd status:"
     $cwd/$ejdctl status || errors=1
     cd ext_test/ejabberd_echo || errors=1
-    run_wrapper "rebar eunit skip_deps=true"
+    run_wrapper "$cwd/rebar eunit skip_deps=true"
     echonormal "stopping ejabberd"
     run_wrapper "$cwd/$ejdctl stop"
     cd $cwd
