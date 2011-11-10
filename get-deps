@@ -2,14 +2,14 @@
 # This script will either get all dependencies and tar them to a file or load
 # dependencies from such a tar file (the default).
 
+# Get common functions
+source common_bash_functions.sh
+
 # Internal variables
 cwd=$(pwd)
 errors=0
 dotar=0
 dountar=1
-
-# Convenience function for echoing to stderr
-function echoerr() { echo -e "$@" 1>&2; }
 
 # Get command-line arguments
 while [ $# -gt 0 ]
@@ -27,16 +27,15 @@ do
 done
 
 if [ $dotar -eq 1 ]; then
-    echo "##### Getting dependencies and creating a tar.gz file"
+    echonormal "Getting dependencies and creating a tar.gz file"
     # Touch a file to record the time when the get-deps script started
     touch $cwd/getdeps_timestamp || errors=1
 
     # Get external deps
-    echo "##### Getting external dependencies"
-    ./rebar get-deps || errors=1
+    run_script "Getting external dependencies" "./rebar get-deps"
 
     # Special case: yaws
-    echo "##### Getting yaws"
+    echonormal "Getting yaws"
     cd deps
     git clone https://github.com/ahilsend/yaws.git
     cd yaws
@@ -59,22 +58,17 @@ fi
 
 if [ $dountar -eq 1 ]; then
     cd $cwd
-    echo "##### Downloading dependency file and untarring it"
+    echonormal "Downloading dependency file and untarring it"
     wget -nv 'http://buildbot.pcs/mirror/dependencies.tar.gz' 2>&1 || errors=1
 
     # If no errors, untar
     if [ $errors -eq 0 ]; then
-        echo "##### Untarring..."
-        tar -xf dependencies.tar.gz || errors=1
-        echo "##### Deleting tar file"
-        rm dependencies.tar.gz || errors=1
+        run_script "Untarring" "tar -xf dependencies.tar.gz"
+        run_script "Deleting tar file" "rm dependencies.tar.gz"
     fi
 fi
 
 
-echo
-if (( errors )); then
-    echoerr "##### Get-deps was NOT successfull."
-else
-    echo "##### Get-deps was successfull."
-fi
+# Exit
+print_exit_status "Get-deps" $errors
+exit $errors
