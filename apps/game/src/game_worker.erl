@@ -17,7 +17,7 @@
          code_change/3]).
 
 %% export for eunit
--export([get_game_order/2]).
+-export([get_game_order/2,translate_game_order/3]).
 
 %% server state
 -record(state, {}).
@@ -114,12 +114,111 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-put_game_order(GameId, _UserId, GameOrderList) ->
-    YearSeason = "1900-fall",
-    Phase = "phase",
-    Country = "country",
-    Key = integer_to_list(GameId) ++ YearSeason ++ Phase ++ Country,
-    put_game_order(Key, GameOrderList).
+get_player_country (GameID, UserID) ->
+    case get_game_player(GameID) of
+        {ok, GPRec = #game_player{}} ->
+            case lists:keyfind(UserID, #game_user.id,
+                               GPRec#game_player.players) of
+                false ->
+                    {error, user_not_playing_this_game};
+                GU = #game_user{} ->
+                    {ok, GU#game_user.country}
+            end;
+        Other ->
+            Other
+
+    end.
+
+put_game_order(GameId, UserId, GameOrderList) ->
+    case get_game(GameId) of
+        {ok, _Game = #game{} } ->
+            YearSeason = "1900-fall",
+            Phase = "phase",
+            case get_player_country(GameId, UserId) of
+                {ok, Country} ->
+                    Key = integer_to_list(GameId) ++ YearSeason ++
+                                                  Phase ++ atom_to_list(Country),
+                    put_game_order(Key,
+                           translate_game_order(GameId, GameOrderList,Country));
+                Error ->
+                    Error
+            end;
+        _ ->
+            {error, game_id_not_exist}
+    end.
+
+%%------------------------------------------------------------------------------
+%% @doc
+%%   to translate the pasred user entry for order to agree with our rule engine
+%% @end
+%%------------------------------------------------------------------------------
+translate_game_order(GameId, GameOrderList,Country) ->
+    case get_game_map(GameId, #game_overview{}) of
+        {ok, _GOV = #game_overview{map = MapTerm}} ->
+            Map = digraph_io:from_erlang_term(MapTerm),
+            translate_game_order(GameId, GameOrderList,Country, [], Map);
+        Error ->
+            Error
+    end.
+
+translate_game_order(_GameId, [],_Country, Acc, _Map) ->
+    Acc;
+translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
+    Type=element(1,H),
+    TranslatedOrder =
+        case Type of
+            move ->
+                {_, Unit, From, To, _} = H,
+                {move, {Unit, Country}, From, To};
+            hold ->
+                {_, Unit, Wh} = H,
+                {hold, {Unit, Country}, Wh};
+            support_move ->
+                {_, SupUnit, SupportWh, _, From, To, _} = H,
+                case map:get_units(Map, From) of
+                    [] ->
+                        [];
+                    Result when length(Result) > 1 ->
+                        [];
+                    [{Unit, UConutry}] ->
+                        {support, {SupUnit, Country}, SupportWh,
+                         {move, {Unit, UConutry}, From, To}}
+                end;
+            support_hold ->
+                {_, SupUnit, SupportWh, _, Wh} = H,
+                case map:get_units(Map, Wh) of
+                    [] ->
+                        [];
+                    Result when length(Result) > 1 ->
+                        [];
+                    [{Unit, UConutry}] ->
+                        {support, {SupUnit, Country}, SupportWh,
+                         {hold, {Unit, UConutry}, Wh}}
+                end;
+            convoy ->
+                {_, Fleet, Wh, _, From, To} = H,
+                case map:get_units(Map, From) of
+                    [] ->
+                        [];
+                    Result when length(Result) > 1 ->
+                        [];
+                    [{Army, UConutry}] ->
+                        {convoy, {Fleet, Country}, Wh,
+                         {Army, UConutry}, From, To}
+                end;
+            build ->
+                {_, Unit, Wh, _} = H,
+                {build, {Unit, Country}, Wh};
+            remove ->
+                {_, Unit, Wh} = H,
+                {destroy, {Unit, Country}, Wh}
+        end,
+    case TranslatedOrder of
+        [] ->
+            translate_game_order(GameId, Rest,Country, Acc, Map);
+        _->
+            translate_game_order(GameId, Rest,Country, [TranslatedOrder|Acc], Map)
+    end.
 
 put_game_order(Key, GameOrderList) ->
     BinID = list_to_binary(Key),

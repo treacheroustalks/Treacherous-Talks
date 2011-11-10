@@ -40,10 +40,10 @@ invalid(_Callback, _SessId, _GameId) ->
 %%-------------------------------------------------------------------
 game_order_sample(success) ->
     [{move,fleet,mid_atlantic_ocean,north_atlantic_ocean,north_coast},
-       {waive},
+  %     {waive},
        {build,fleet,munich,north_coast},
        {remove,army,munich},
-       {disband,army,munich},
+  %     {disband,army,munich},
        {support_move,army,munich,fleet,kiel,berlin,any_coast},
        {support_move,army,munich,fleet,kiel,berlin,any_coast},
        {support_hold,fleet,finland,any_unit,brest},
