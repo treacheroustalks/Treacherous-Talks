@@ -30,7 +30,8 @@
          db_update/1,
          db_get/1,
          resolve_history_siblings/1,
-         find_newest/2
+         find_newest/2,
+         resolve_conflict/3
         ]).
 
 %% ------------------------------------------------------------------
@@ -203,6 +204,31 @@ find_newest_list([H|History], Sessions) ->
             Pos;
         {false, _} ->
             find_newest_list(History, Sessions)
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Resolves siblings with the help of the session history.
+%% Field indicates the position of last_session in the record.
+%%
+%% @spec resolve_conflict(#session_history{},
+%%                        #db_obj{},
+%%                        integer()) ->
+%%               #db_obj{}
+%% @end
+%%-------------------------------------------------------------------
+resolve_conflict(Hist, DbObj, Field) ->
+    case db_obj:has_siblings(DbObj) of
+        false ->
+            DbObj;
+        true ->
+            Siblings = db_obj:get_siblings(DbObj),
+            LastSessions = lists:map(
+                             fun(SibObj) ->
+                                     element(Field, db_obj:get_value(SibObj))
+                             end, Siblings),
+            Pos = find_newest(Hist, LastSessions),
+            lists:nth(Pos, Siblings)
     end.
 
 %% ------------------------------------------------------------------
