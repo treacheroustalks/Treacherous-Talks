@@ -95,7 +95,7 @@ waiting_phase(timeout, State) ->
     %% This is where we "move" on to the next state!
     NewState = State#state{phase = order_phase,
                            game = State#state.game#game{status = ongoing}},
-    game:phase_change(State#state.game, started),
+    game:phase_change(NewState#state.game, started),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     {next_state, order_phase, NewState, Timeout};
 waiting_phase(_Event, State) ->
