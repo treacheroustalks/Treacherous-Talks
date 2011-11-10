@@ -7,7 +7,7 @@
           reconfig_game/1,
           join_game/3,
           get_game_players/1,
-          get_game_state/2,
+          get_game_overview/2,
           phase_change/2,
           get_current_game/1,
           process_phase/2,
@@ -122,8 +122,8 @@ get_game_players(GameID) ->
 %% waiting, it will reply {error, game_not_waiting}
 %% @end
 %% -----------------------------------------------------------------------------
-get_game_state(GameID, UserID) ->
-    ?CALL_WORKER({get_game_state, GameID, UserID}).
+get_game_overview(GameID, UserID) ->
+    ?CALL_WORKER({get_game_overview, GameID, UserID}).
 
 %% -----------------------------------------------------------------------------
 %% @doc

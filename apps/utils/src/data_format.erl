@@ -32,10 +32,11 @@
 game_overview_to_text(#game_overview{} = GOV)->
     Country = GOV#game_overview.country,
     GameRec = GOV#game_overview.game_rec,
+    Orders = GOV#game_overview.order_list,
     Game = game_to_text(GameRec),
     Map = digraph_io:from_erlang_term(GOV#game_overview.map),
     {Provinces, Units} = map_to_text(Map, Country),
-    {GameRec#game.id, Country, Game, Provinces, Units}.
+    {GameRec#game.id, Country, Game, Provinces, Units, Orders}.
 
 
 %%-------------------------------------------------------------------

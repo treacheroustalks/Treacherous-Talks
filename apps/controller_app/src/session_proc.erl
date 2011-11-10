@@ -166,7 +166,7 @@ handle_call({reconfig_game, {GameId, PropList}}, _From,
 %%-------------------------------------------------------------------
 handle_call({game_overview, GameId}, _From,
             State = #state{user=User}) ->
-    Overview = game:get_game_state(GameId, User#user.id),
+    Overview = game:get_game_overview(GameId, User#user.id),
     {reply, Overview, State};
 %%-------------------------------------------------------------------
 %% @doc

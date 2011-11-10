@@ -463,7 +463,7 @@ the_mother_of_all_tests_test () ->
                     1902]),
     map_data:delete (Map).
 
-check_results (Description, Map, Results) ->
+check_results (_Description, Map, Results) ->
     io:format (user, "asserting existence: ", []),
     lists:foreach (fun ({Unit, ShouldBe}) ->
                            io:format (user, "of ~p.. | ",

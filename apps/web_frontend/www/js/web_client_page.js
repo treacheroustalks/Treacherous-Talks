@@ -86,6 +86,7 @@ function load_game_overview_data(page_data) {
     $('#game').html(nl2br(page_data.game));
     $('#provinces').html(nl2br(page_data.provinces));
     $('#units').html(nl2br(page_data.units));
+    $('#orders').html(nl2br(page_data.orders));
 }
 
 /**

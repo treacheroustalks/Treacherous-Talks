@@ -17,7 +17,9 @@
          code_change/3]).
 
 %% export for eunit
--export([get_game_order/1, translate_game_order/3]).
+-export([phase_change/2,
+        get_game_order_key/2,
+         get_keyprefix/1, get_game_order/1, translate_game_order/3, get_all_orders/1]).
 
 %% server state
 -record(state, {}).
@@ -77,8 +79,8 @@ handle_call({join_game, GameID, UserID, Country}, _From, State) ->
 handle_call({get_game_player, GameID}, _From, State) ->
     Reply = get_game_player(GameID),
     {reply, Reply, State};
-handle_call({get_game_state, GameID, UserID}, _From, State) ->
-    Reply =get_game_state(GameID, UserID),
+handle_call({get_game_overview, GameID, UserID}, _From, State) ->
+    Reply =get_game_overview(GameID, UserID),
     {reply, Reply, State};
 handle_call({delete_game, Key}, _From, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
@@ -141,19 +143,15 @@ put_game_order(GameId, UserId, GameOrderList) ->
         {ok, _Game = #game{} } ->
             case get_player_country(GameId, UserId) of
                 {ok, Country} ->
-                    YearSeasonPhase = "-1900-fall-order-",
-                    Key = integer_to_list(GameId) ++ YearSeasonPhase ++
-                          atom_to_list(Country),
+                    Key = get_game_order_key(GameId, Country),
                     NewOrder = translate_game_order(GameId, GameOrderList,
                                                     Country),
                     % if player hasn't sent any order, use put, otherwise update
                     case get_game_order (Key) of
-                        {ok, _} ->
-                            update_game_order(Key, NewOrder);
-                        {error, notfound} ->
+                        [] ->
                             put_game_order(Key, NewOrder);
-                        Error ->
-                            Error
+                        _GO ->
+                            update_game_order(Key, NewOrder)
                     end;
                 Error ->
                     Error
@@ -162,16 +160,23 @@ put_game_order(GameId, UserId, GameOrderList) ->
             {error, game_id_not_exist}
     end.
 
+put_game_order(Key, GameOrderList) ->
+    BinID = list_to_binary(Key),
+    DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, #game_order{order_list=GameOrderList}),
+    db:put (DBGameOrderObj),
+    {ok, Key}.
+
+
 %%------------------------------------------------------------------------------
 %% @doc
 %%   to translate the pasred user entry for order to agree with our rule engine
 %% @end
 %%------------------------------------------------------------------------------
 translate_game_order(GameId, GameOrderList,Country) ->
-    case get_game_map(GameId, #game_overview{}) of
-        {ok, _GOV = #game_overview{map = MapTerm}} ->
-            Map = digraph_io:from_erlang_term(MapTerm),
-            translate_game_order(GameId, GameOrderList,Country, [], Map);
+    case get_game_map(GameId) of
+        {ok, Map} ->
+            translate_game_order(GameId, GameOrderList,Country, [],
+                                 to_rule_map(Map));
         Error ->
             Error
     end.
@@ -235,18 +240,12 @@ translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
             translate_game_order(GameId, Rest,Country, [TranslatedOrder|Acc], Map)
     end.
 
-put_game_order(Key, GameOrderList) ->
-    BinID = list_to_binary(Key),
-    DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, GameOrderList),
-    db:put (DBGameOrderObj),
-    {ok, Key}.
-
 update_game_order(ID, NewOrder) ->
     case db:get(?B_GAME_ORDER, list_to_binary(ID)) of
         {ok, Obj} ->
-            NewObj = db_obj:set_value(Obj, NewOrder),
+            NewObj = db_obj:set_value(Obj, #game_order{order_list=NewOrder}),
             db:put(NewObj),
-            {ok, NewOrder};
+            {ok, ID};
         Error ->
             {error, Error}
     end.
@@ -275,8 +274,6 @@ new_game(ID, #game{} = Game) ->
     end.
 
 update_game(ID, #game{} = Game) ->
-    ?debugMsg("Update game"),
-    ?debugVal(Game),
     BinID = db:int_to_bin(ID),
     DBGameObj=db_obj:create(?B_GAME, BinID, Game),
     GameObjWithIndex = db_obj:set_indices(DBGameObj, create_idx_list(Game)),
@@ -317,39 +314,84 @@ get_game_player(GameID)->
     get_DB_obj(?B_GAME_PLAYER, GameID).
 
 
-get_game_state(GameID, UserID) ->
-    case get_game_player(GameID) of
+get_game_overview(GameID, UserID) ->
+    catch
+        begin
+            GameValue = get_game(GameID),
+            is_valid(GameValue) orelse throw({error, game_not_started}),
+            {ok, Game} = GameValue,
+            is_game_started(Game) orelse throw({error, game_not_started}),
+
+            GameUserValue = get_game_user(GameID, UserID),
+            is_valid(GameUserValue) orelse throw(GameUserValue),
+            {ok, GameUser} = GameUserValue,
+
+            UserCountry = GameUser#game_user.country,
+            Key = get_game_order_key(GameID, UserCountry),
+
+            GameOrder = get_game_order(Key),
+
+            MapValue = get_game_map(GameID),
+            is_valid(MapValue) orelse throw(MapValue),
+            {ok, Map} = MapValue,
+            {ok, #game_overview{game_rec=Game, map=Map, order_list = GameOrder,
+                                country = UserCountry}}
+    end.
+
+get_game_user(GameId, UserId) ->
+    case get_game_player(GameId) of
         {ok, GPRec = #game_player{}} ->
-            case lists:keyfind(UserID, #game_user.id,
+            case lists:keyfind(UserId, #game_user.id,
                                GPRec#game_player.players) of
                 false ->
                     {error, user_not_playing_this_game};
                 GU = #game_user{} ->
-                    get_game_map(GameID, #game_overview
-                                               {country = GU#game_user.country})
+                    {ok, GU}
             end;
         Other ->
             Other
     end.
 
-get_game_map(GameID, #game_overview{} = GameOverview) ->
-    {ok, Game=#game{status= Status}} = get_game(GameID),
+is_game_started(#game{status=Status}) ->
     case Status of
         waiting ->
-            Map = digraph_io:to_erlang_term(map_data:create (standard_game)),
-            GameOV = GameOverview#game_overview{game_rec= Game,
-                                                map = Map},
-            {ok, GameOV};
-        ongoing ->
-            case  get_DB_obj(?B_GAME_STATE, get_keyprefix({id, GameID})) of
-                {ok, State} ->
-                    Map = State#game_state.map,
-                    GameOV = GameOverview#game_overview{game_rec = Game,
-                                                        map = Map},
-                    {ok, GameOV}
-            end;
-        _ -> {error, game_not_found}
+            false;
+        _ ->
+            true
     end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Get the game map from game state of current phase
+%%
+%% GameID :: integer()
+%% Output-> {ok, Map::term()}
+%% @end
+%% ------------------------------------------------------------------
+get_game_map(GameID) ->
+    case  get_DB_obj(?B_GAME_STATE, get_keyprefix({id, GameID})) of
+        {ok, State} ->
+            {ok, State#game_state.map};
+        Error ->
+            Error
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Update game map in the game overview
+%%
+%% GameID :: integer(), GameOverView :: #game_overview{}
+%% Output-> {ok, NewOverview :: #game_over_view{}}
+%% @end
+%% ------------------------------------------------------------------
+get_default_map() ->
+    map_data:create (standard_game).
+
+to_mapterm(RuleHandle) ->
+    digraph_io:to_erlang_term(RuleHandle).
+
+to_rule_map(MapTerm) ->
+    digraph_io:from_erlang_term(MapTerm).
 
 
 phase_change(Game = #game{id = ID}, started) ->
@@ -366,7 +408,7 @@ phase_change(ID, build_phase) ->
     case GameState#game_state.year_season of
         {_Year, spring} -> {ok, skip};
         _Other ->
-            Map = digraph_io:from_erlang_term(GameState#game_state.map),
+            Map = to_rule_map(GameState#game_state.map),
             _Result = rules:process(count_phase, Map, ?RULES, []),
             %% inform players of Result
             NewCurrentGame = update_current_game(ID, build_phase),
@@ -387,15 +429,21 @@ phase_change(ID, Phase) ->
 %% @end
 %% ------------------------------------------------------------------
 get_game_order(ID)->
-    get_DB_obj(?B_GAME_ORDER, ID).
+    GameOrder = get_DB_obj(?B_GAME_ORDER, ID),
+    case GameOrder of
+        {ok, GO} ->
+            GO#game_order.order_list;
+        {error, notfound} ->
+            []
+    end.
 
 setup_game(ID) ->
     %% create initial game state
-    Map = digraph_io:to_erlang_term(map_data:create(standard_game)),
+    Map = get_default_map(),
     GameState = #game_state{id = ID,
                             phase = order_phase,
                             year_season = {?START_YEAR, spring},
-                            map = Map},
+                            map = to_mapterm(Map)},
     StateKey = list_to_binary(integer_to_list(ID) ++
                               "-" ++ integer_to_list(?START_YEAR) ++
                               "-" ++ "spring" ++
@@ -454,21 +502,24 @@ get_all_orders(ID) ->
     Keyprefix = get_keyprefix({id, ID}),
     Countries = [england, germany, france, austria, italy, russia, turkey],
     ListOrders = fun(Country, Acc) ->
-                         case get_game_order(Keyprefix ++ "-" ++
-                                             atom_to_list(Country)) of
-                             {ok, Orders} ->
-                                 lists:merge(Acc,
-                                             Orders#game_order.order_list);
-                             _Other ->
-                                 Acc
-                         end
+                         Orders = get_game_order(Keyprefix ++ "-" ++
+                                                     atom_to_list(Country)),
+                         lists:merge(Acc, Orders)
                  end,
     lists:foldl(ListOrders, [], Countries).
 
 
+get_game_order_key(Id, Country) ->
+    get_keyprefix({id, Id}) ++ "-" ++ atom_to_list(Country).
+
 get_keyprefix({id, ID}) ->
-    {ok, Current} = get_current_game(ID),
-    get_keyprefix({game_current, Current});
+    case get_current_game(ID) of
+        {ok, Current} ->
+            get_keyprefix({game_current, Current});
+        {error, notfound} ->
+            % This case occurs when the game is in the wait state
+            integer_to_list(ID) ++ "-1900-spring-order_phase"
+    end;
 get_keyprefix({game_current, Current}) ->
     {Year, Season} = Current#game_current.year_season,
     Key = integer_to_list(Current#game_current.id) ++ "-"
@@ -527,12 +578,11 @@ create_idx(_, _) ->
 process_phase(ID, Phase) ->
     Key = get_keyprefix({id, ID}),
     {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
-    Map = digraph_io:from_erlang_term(GameState#game_state.map),
+    Map = to_rule_map(GameState#game_state.map),
     ?debugVal(Orders = get_all_orders(ID)),
     io:format("Received orders: ~p~n", [Orders]),
     Result = rules:process(Phase, Map, ?RULES, Orders),
-    update_state(Key, GameState#game_state{
-                        map = digraph_io:to_erlang_term(Map)}),
+    update_state(Key, GameState#game_state{map = to_mapterm(Map)}),
     %% we probably want to handle the result in some way
     %% like informing the users
     {ok, Result}.
@@ -556,3 +606,13 @@ new_state(CurrentGame, Map) ->
                                          db:int_to_bin(CurrentGame#game_current.id)},
                                         ?GAME_STATE_LINK_GAME}),
     db:put(GameStateLinkObj).
+
+
+%% Check if the given field is valid
+is_valid(Data) ->
+    case Data of
+        {ok, _Value} ->
+            true;
+        {error, _Error} ->
+            false
+    end.

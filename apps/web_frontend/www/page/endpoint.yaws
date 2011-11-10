@@ -174,13 +174,14 @@ get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret#ret{page="dashboard"});
 
 get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
-    {GameId, Country, Game, Provinces, Units} =
+    {GameId, Country, Game, Provinces, Units, Orders} =
         data_format:game_overview_to_text(GOv),
     Data = [{"game_id", integer_to_list(GameId)},
             {"country", atom_to_list(Country)},
             {"game", lists:flatten(Game)},
             {"provinces", lists:flatten(Provinces)},
-            {"units", lists:flatten(Units)}],
+            {"units", lists:flatten(Units)},
+            {"orders", lists:flatten(Orders)}],
     EventData = json2:obj_from_list(Data),
     msg_success(Ret#ret{event_data = EventData,
                         page="game"});

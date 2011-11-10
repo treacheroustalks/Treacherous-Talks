@@ -153,10 +153,10 @@ Supported commands are:").
 -define(JOIN_GAME_RESPONSE_SUCCESS,"Join game was successful.\n").
 -define(JOIN_GAME_RESPONSE_INVALID_DATA,"You have already joined this game.\n").
 
--define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Game Overview:\n\n").
--define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"Only game players can view the game overview.\n").
+-define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Unhandled error.").
+-define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"Unhandled error.\ngame_not_started\n").
 
--define(GAME_ORDER_RESPONSE_SUCCESS, "Game order sent successfully.\n").
+-define(GAME_ORDER_RESPONSE_SUCCESS, "Game order sent successfully:\n").
 -define(GAME_ORDER_RESPONSE_INVALID_INPUT, "Invalid input for the given command.\n").
 -define(GAME_ORDER_RESPONSE_INVALID_DATA,"You cannot send orders to a game you are not playing.\n").
 %%-------------------------------------------------------------------
@@ -236,7 +236,6 @@ setup_session_instantiator() ->
                                 [{capture, all_but_first, list}]),
     ?debugVal(GameID),
     [
-
      {?GAME_ORDER_COMMAND(Session, GameID),
        ?GAME_ORDER_RESPONSE_INVALID_DATA,
       "game order invalid data"},

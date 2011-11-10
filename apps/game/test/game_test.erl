@@ -95,7 +95,7 @@ game_test_ () ->
       game_timer_state_tst_(),
       game_update_tst_(),
       join_game_tst_(),
-      get_game_state_tst_(),
+      get_game_overview_tst_(),
       translate_game_order_tst_(),
       game_current_tst_()
      ]}.
@@ -355,6 +355,10 @@ translate_game_order_tst_() ->
               JoinResult = game:join_game(Game#game.id, 1122, england),
               ?assertEqual({ok, Game#game.id}, JoinResult),
               {GameOrderList, ExpectedOutput} = test_order_list(),
+
+              % start the game
+              game_worker:phase_change(Game, started),
+
               Result = game_worker:translate_game_order(Game#game.id,
                                                         GameOrderList,england),
               ?assertEqual(ExpectedOutput, Result),
@@ -422,11 +426,11 @@ join_game_tst_() ->
              ?assertEqual(none, game_join_proc_map:get_pid(GameId))
      end].
 %%------------------------------------------------------------------------------
-%% Tests the get game state functionality
+%% Tests the get game overview functionality
 %%------------------------------------------------------------------------------
-get_game_state_tst_ () ->
+get_game_overview_tst_ () ->
     [fun() ->
-             ?debugMsg("start get game state test ..."),
+             ?debugMsg("Get game overview test. Case: VALID"),
              GameRecord = test_game(),
              % Create a new Game
              Game = sync_get(sync_new(GameRecord)),
@@ -434,19 +438,23 @@ get_game_state_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
-             timer:sleep(50),
-             GOV = sync_get_game_state (Game#game.id, UserID),
+             game_worker:phase_change(Game#game{status=ongoing}, started),
+             GOV = sync_get_game_overview (Game#game.id, UserID),
+             ?debugMsg("1Game Overview -------------------------->>"),
+             ?debugVal(GOV),
              ?assertEqual(Country, GOV#game_overview.country),
              ?debugMsg("game state retrieved")
      end,
      fun() ->
+             ?debugMsg("Get game overview test. Case: INVALID USER"),
              GameRecord = test_game(),
              % Create a new Game
              Game = sync_get(sync_new(GameRecord)),
-             % join new player with id=1122 and country=england
-             UserID = 1122,
-             timer:sleep(50),
-             Reply = sync_get_game_state (Game#game.id, UserID),
+             UserID = 11223,
+             game_worker:phase_change(Game#game{status=ongoing}, started),
+             Reply = sync_get_game_overview (Game#game.id, UserID),
+             ?debugMsg("2Game Overview -------------------------->>"),
+             ?debugVal(Reply),
              ?assertEqual(user_not_playing_this_game, Reply),
              ?debugMsg("User does not play this game")
      end,
@@ -458,8 +466,10 @@ get_game_state_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
-             game_timer:sync_event(Game#game.id, timeout),
-             Reply = sync_get_game_state (Game#game.id, UserID),
+             game_worker:phase_change(Game#game{status=ongoing}, started),
+             Reply = sync_get_game_overview (Game#game.id, UserID),
+             ?debugMsg("3Game Overview -------------------------->>"),
+             ?debugVal(Reply),
              StandardMap = digraph_io:to_erlang_term(
                              map_data:create(standard_game)),
              StoredMap = Reply#game_overview.map,
@@ -489,16 +499,16 @@ sync_get_game_player(ID) ->
     {ok, GamePlayer} = game:get_game_players(ID),
     GamePlayer.
 
-sync_get_game_state(GameID, UserID) ->
-    case game:get_game_state(GameID, UserID) of
+sync_get_game_overview(GameID, UserID) ->
+    case game:get_game_overview(GameID, UserID) of
         {ok, GameOverview} ->
+            ?debugMsg("Getting game overview ---------------------->>"),
+            ?debugVal(GameOverview),
             GameOverview;
-        {error, user_not_playing_this_game} ->
-            user_not_playing_this_game;
-        {error, game_not_waiting} ->
-            game_not_waiting;
+        {error, Error} ->
+            Error;
         Other ->
-            erlang:error ({error, {{received, Other}, {expected, {ok, key}}}})
+            unknown_error
     end.
 
 sync_delete(ID) ->

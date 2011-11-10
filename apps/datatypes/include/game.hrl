@@ -59,7 +59,8 @@
 -record(game_overview, {
     game_rec :: #game{},
     country :: country(),
-    map :: any()}).
+    map :: any(),
+    order_list :: any()}).
 
 -record(game_order, {
     id :: integer(),

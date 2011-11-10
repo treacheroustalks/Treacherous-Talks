@@ -21,9 +21,13 @@ input_test_order_list() ->
      {hold, army, prussia},
      {move, army, berlin, prussia, nc},
      {move, fleet, kiel, berlin, nc},
+     {convoy, army, budapest, army, vienna, galicia},
      {support_move, army, budapest, army, vienna, galicia, nc},
+     {support_hold, army, budapest, army, vienna},
      {move, army, vienna, galicia, nc},
-     {move, army, warsaw, galicia, nc}
+     {move, army, warsaw, galicia, nc},
+     {build, army, warsaw, nc},
+     {remove, army, warsaw}
     ].
 
 input_updated_order_list() ->
@@ -36,11 +40,19 @@ expected_test_order_list() ->
      {hold, {army, england}, prussia},
      {move, {army, england}, berlin, prussia},
      {move, {fleet, england}, kiel, berlin},
+     {convoy,
+      {army, england}, budapest,
+      {army, austria}, vienna, galicia},
      {support,
       {army, england}, budapest,
       {move, {army, austria}, vienna, galicia}},
+     {support,
+      {army, england}, budapest,
+      {hold, {army, austria}, vienna}},
      {move, {army, england}, vienna, galicia},
-     {move, {army, england}, warsaw, galicia}
+     {move, {army, england}, warsaw, galicia},
+     {build, {army, england}, warsaw},
+     {destroy, {army, england}, warsaw}
     ]).
 
 expected_updated_order_list() ->
@@ -51,7 +63,7 @@ expected_updated_order_list() ->
     ].
 
 expected_key(Id) ->
-    integer_to_list(Id) ++ "-1900-fall-order-england".
+    game_worker:get_game_order_key(Id, england).
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -64,7 +76,8 @@ move_get_put_test_ () ->
      fun app_started_teardown/1,
      [ping_tst_ (),
       get_game_order_tst_ (),
-      put_game_order_tst_()
+      put_game_order_tst_(),
+      get_all_orders_tst_()
      ]}.
 
 ping_tst_ () ->
@@ -103,10 +116,43 @@ put_game_order_tst_ () ->
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
              timer:sleep(50),
+             % start the game
+             game_worker:phase_change(Game, started),
+             timer:sleep(50),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
              Move = sync_get_order(Key),
+             ?assertEqual(expected_updated_order_list(), Move)
+     end].
+
+get_all_orders_tst_ () ->
+    [fun() ->
+             GameRecord = test_game(),
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             %% ENGLAND
+             UserID = 1122,
+             Country = england,
+             game:join_game(Game#game.id, UserID, Country),
+             timer:sleep(50),
+             %% AUSTRIA
+             UserID1 = 1123,
+             Country1 = austria,
+             game:join_game(Game#game.id, UserID1, Country1),
+             timer:sleep(50),
+
+             % start the game
+             game_worker:phase_change(Game, started),
+             timer:sleep(50),
+             Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
+             ?assertEqual(expected_key(Game#game.id), Key),
+             sync_put_order (Game#game.id, UserID, input_updated_order_list()),
+             sync_put_order (Game#game.id, UserID1, input_updated_order_list()),
+             Move = sync_get_order(Key),
+             ?debugMsg("GETALL------------------->>"),
+             ?debugVal(game_worker:get_all_orders(Game#game.id)),
              ?assertEqual(expected_updated_order_list(), Move)
      end].
 
@@ -119,6 +165,9 @@ get_game_order_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
+             timer:sleep(50),
+             % start the game
+             game_worker:phase_change(Game#game{status=ongoing}, started),
              timer:sleep(50),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
