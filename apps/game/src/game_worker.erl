@@ -22,7 +22,10 @@
 %% server state
 -record(state, {}).
 
-
+%% define start year
+-define(START_YEAR, 1900).
+%% define rules module
+-define(RULES, diplomacy_rules).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -84,22 +87,26 @@ handle_call({join_game, GameID, UserID, Country}, _From, State) ->
 handle_call({get_game_player, GameID}, _From, State) ->
     Reply = get_game_player(GameID),
     {reply, Reply, State};
-
 handle_call({get_game_state, GameID, UserID}, _From, State) ->
     Reply =get_game_state(GameID, UserID),
     {reply, Reply, State};
-
 handle_call({delete_game, Key}, _From, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
     Reply = db:delete(?B_GAME, BinKey),
+    {reply, Reply, State};
+handle_call({process_phase, ID, Phase}, _From, State) ->
+    Reply = process_phase(ID, Phase),
+    {reply, Reply, State};
+handle_call({get_current_game, ID}, _From, State) ->
+    Reply = get_current_game(ID),
+    {reply, Reply, State};
+handle_call({phase_change, Game, NewPhase},_From, State) ->
+    Reply = phase_change(Game, NewPhase),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
-handle_cast({phase_change, Game, NewPhase}, State) ->
-    phase_change(Game, NewPhase),
-    {noreply, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
@@ -276,14 +283,7 @@ update_game(ID, #game{} = Game) ->
     end.
 
 get_game(ID)->
-    BinID = db:int_to_bin(ID),
-    DBReply = db:get(?B_GAME, BinID),
-    case DBReply of
-        {ok, DBObj} ->
-            {ok, db_obj:get_value (DBObj)};
-        Other ->
-            Other
-    end.
+    get_DB_obj(?B_GAME, db:int_to_bin(ID)).
 
 get_keys_by_idx(Field, Val) ->
     case create_idx(Field, Val) of
@@ -308,14 +308,8 @@ index_result_keys([[_, _] | Rest]) ->
     index_result_keys(Rest).
 
 get_game_player(GameID)->
-    BinID = db:int_to_bin(GameID),
-    DBReply = db:get (?B_GAME_PLAYER, BinID),
-    case DBReply of
-        {ok, DBObj} ->
-            {ok, db_obj:get_value (DBObj)};
-        Other ->
-            Other
-    end.
+    get_DB_obj(?B_GAME_PLAYER, GameID).
+
 
 get_game_state(GameID, UserID) ->
     case get_game_player(GameID) of
@@ -346,28 +340,30 @@ get_game_map(GameID, #game_overview{} = GameOverview) ->
     end.
 
 
-phase_change(Game, NewPhase) ->
-    case NewPhase of
-        order_phase ->
-            ok;
-        retreat_phase ->
-            %% after evaluating the orders, and retreat phase is not needed
-            %% send back an event game_timer(Gameid, Event)
-            %% to skip retreat phase: game_timer:event(Game#game.id, skip);
-            ok;
-        build_phase ->
-            %% check if build phase is needed, if not, send an event
-            %% to the game_timer
-            %% to skip phase if not needed: game_timer:event(Game#game.id, skip)
-            ok;
-        started ->
-            %% update the game in the db (it is now ongoing)
-            %% this is only the first time, continue as the order_phase case
-            update_game(Game#game.id, Game),
-            %% do some other stuff that's needed...
-            game_join_proc:stop(Game#game.id),
-            ok
-    end.
+phase_change(Game = #game{id = ID}, started) ->
+    %% maybe tell the users about game start?
+    update_game(ID, Game),
+    setup_game(ID),
+    game_join_proc:stop(ID);
+phase_change(ID, build_phase) ->
+    Key = get_keyprefix({id, ID}),
+    {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
+    % skip count phase if it is not fall
+    case GameState#game_state.year_season of
+        {_Year, spring} -> {ok, skip};
+        _Other ->
+            Map = digraph_io:from_erlang_term(GameState#game_state.map),
+            _Result = rules:process(count_phase, Map, ?RULES, []),
+            %% inform players of Result
+            NewCurrentGame = update_current_game(ID, build_phase),
+            new_state(NewCurrentGame, GameState#game_state.map),
+            {ok, true}
+    end;
+phase_change(ID, Phase) ->
+    Key = get_keyprefix({id, ID}),
+    {ok, OldState} = get_DB_obj(?B_GAME_STATE, Key),
+    NewCurrentGame = update_current_game(ID, Phase),
+    new_state(NewCurrentGame, OldState#game_state.map).
 
 get_game_order(GameId, _UserId)->
     YearSeason = "1900-fall",
@@ -376,11 +372,112 @@ get_game_order(GameId, _UserId)->
     Key = integer_to_list(GameId) ++ YearSeason ++ Phase ++ Country,
     get_game_order(Key).
 get_game_order(ID)->
-    BinID = list_to_binary(ID),
-    DBReply = db:get(?B_GAME_ORDER, BinID),
+    get_DB_obj(?B_GAME_ORDER, ID).
+
+setup_game(ID) ->
+    %% create initial game state
+    Map = digraph_io:to_erlang_term(map_data:create(standard_game)),
+    GameState = #game_state{id = ID,
+                            phase = order_phase,
+                            year_season = spring,
+                            map = Map},
+    StateKey = list_to_binary(integer_to_list(ID) ++
+                              "-" ++ integer_to_list(?START_YEAR) ++
+                              "-" ++ "spring" ++
+                              "-" ++ "order_phase"),
+    DBGameState = db_obj:create(?B_GAME_STATE, StateKey, GameState),
+    %% Link the game state to its game
+    GameStateLinkObj = db_obj:add_link(DBGameState,
+                                       {{?B_GAME,
+                                         db:int_to_bin(ID)},
+                                        ?GAME_STATE_LINK_GAME}),
+    db:put(GameStateLinkObj),
+    %% create first current game
+    CurrentGame = #game_current{id = ID,
+                                year_season = {?START_YEAR, spring},
+                                current_phase = order_phase},
+    CurrentKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
+    DBCurrentGame = db_obj:create(?B_GAME, CurrentKey, CurrentGame),
+    %% Link the current game to its gamestate
+    CurrentGameLinkObj = db_obj:add_link(DBCurrentGame,
+                                         {{?B_GAME_STATE, StateKey},
+                                          ?CURRENT_GAME_LINK_STATE}),
+    db:put(CurrentGameLinkObj).
+
+
+update_current_game(ID, Phase) ->
+    BinKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
+    DBReply = db:get(?B_GAME, BinKey),
+    case DBReply of
+        {ok, CurrentGameObj} ->
+            CurrGame = db_obj:get_value(CurrentGameObj),
+            case Phase of
+                order_phase ->
+                    case CurrGame#game_current.year_season of
+                        {Year, fall} ->
+                            NewCurrGame =  CurrGame#game_current{
+                                             year_season = {Year+1, spring},
+                                             current_phase = Phase};
+                        {Year, spring} ->
+                            NewCurrGame = CurrGame#game_current{
+                                            year_season = {Year, fall},
+                                            current_phase = Phase}
+                    end;
+                _OtherPhase ->
+                    NewCurrGame = CurrGame#game_current{
+                                    current_phase = Phase}
+            end,
+            DBCurrGameObj=db_obj:set_value(CurrentGameObj, NewCurrGame),
+            db:put (DBCurrGameObj),
+            NewCurrGame;
+        Other ->
+            Other
+    end.
+
+%% This gets the orders for all countries in a phase
+get_all_orders(ID) ->
+    Keyprefix = get_keyprefix({id, ID}),
+    Countries = [england, germany, france, austria, italy, russia, turkey],
+    ListOrders = fun(Country, Acc) ->
+                         case get_game_order(Keyprefix ++ "-" ++
+                                             atom_to_list(Country)) of
+                             {ok, Orders} ->
+                                 lists:merge(Acc,
+                                             Orders#game_order.order_list);
+                             _Other ->
+                                 Acc
+                         end
+                 end,
+    lists:foldl(ListOrders, [], Countries).
+
+
+get_keyprefix({id, ID}) ->
+    {ok, Current} = get_current_game(ID),
+    get_keyprefix({game_current, Current});
+get_keyprefix({game_current, Current}) ->
+    {Year, Season} = Current#game_current.year_season,
+    Key = integer_to_list(Current#game_current.id) ++ "-"
+        ++ integer_to_list(Year) ++ "-"
+        ++ atom_to_list(Season) ++ "-"
+        ++ atom_to_list(Current#game_current.current_phase),
+    Key.
+
+get_current_game(ID) ->
+    get_DB_obj(?B_GAME, integer_to_list(ID) ++ "-" ++ "current").
+
+
+get_DB_obj(Bucket, Key) ->
+    if
+        is_binary(Key) -> BinKey = Key;
+        is_integer(Key) -> BinKey = db:int_to_bin(Key);
+        is_list(Key) -> BinKey = list_to_binary(Key);
+        is_atom(Key) -> BinKey = list_to_binary(atom_to_list(Key));
+        true -> BinKey = Key % don't know what else it could be!
+    end,
+    DBReply = db:get(Bucket, BinKey),
     case DBReply of
         {ok, DBObj} ->
-            {ok, db_obj:get_value (DBObj)};
+            {ok, db_obj:get_value(DBObj)};
         Other ->
             Other
     end.
@@ -410,3 +507,36 @@ create_idx(#game.num_players, NumPlayers) ->
     {<<"num_players_int">>, NumPlayers};
 create_idx(_, _) ->
     {error, field_not_indexed}.
+
+
+process_phase(ID, Phase) ->
+    Key = get_keyprefix({id, ID}),
+    {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
+    Map = digraph_io:from_erlang_term(GameState#game_state.map),
+    Orders = get_all_orders(ID),
+    Result = rules:process(Phase, Map, ?RULES, Orders),
+    update_state(Key, GameState#game_state{
+                        map = digraph_io:to_erlang_term(Map)}),
+    %% we probably want to handle the result in some way
+    %% like informing the users
+    {ok, Result}.
+
+
+update_state(Key, NewState) ->
+    {ok, OldStateObj} = db:get(?B_GAME_STATE, Key),
+    DBGameObj=db_obj:set_value(OldStateObj, NewState),
+    db:put(DBGameObj).
+
+new_state(CurrentGame, Map) ->
+    Key = get_keyprefix({game_current, CurrentGame}),
+    GameState = #game_state{id = CurrentGame#game_current.id,
+                            year_season = CurrentGame#game_current.year_season,
+                            phase = CurrentGame#game_current.current_phase,
+                            map = Map},
+    DBGameState = db_obj:create(?B_GAME_STATE, Key, GameState),
+    %% Link the game state to its game
+    GameStateLinkObj = db_obj:add_link(DBGameState,
+                                       {{?B_GAME,
+                                         db:int_to_bin(CurrentGame#game_current.id)},
+                                        ?GAME_STATE_LINK_GAME}),
+    db:put(GameStateLinkObj).

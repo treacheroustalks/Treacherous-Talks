@@ -1,10 +1,12 @@
 -module(game_timer).
 -behaviour(gen_fsm).
 -include_lib("datatypes/include/game.hrl").
+-include_lib ("eunit/include/eunit.hrl").
 %% ------------------------------------------------------------------
 %% Ecternal API Function Exports
 %% ------------------------------------------------------------------
--export([start_link/1, event/2, current_state/1, get_game_state/1, stop/1]).
+-export([start_link/1, event/2, sync_event/2,
+         current_state/1, get_game_state/1, stop/1]).
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Exports
@@ -24,7 +26,7 @@
 %%---------------------------------------------------------------------
 -record(state, {game, phase = init}).
 
--define(GAME(State), (State#state.game)#game).
+-define(ID(State),(State#state.game)#game.id).
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
@@ -42,6 +44,9 @@ start_link(Game) ->
 -spec event(pid(), atom()) -> ok.
 event(Timer, Event) ->
     gen_fsm:send_event({global, {?MODULE, Timer}}, Event).
+
+sync_event(Timer, Event) ->
+    gen_fsm:sync_send_event({global, {?MODULE, Timer}}, Event).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -79,71 +84,93 @@ stop(Timer) ->
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 init(Game) ->
-    io:format("A brand new game timer ~p for ~p~n", [self(), Game]),
     Timeout = timer:minutes(Game#game.waiting_time),
     {ok, waiting_phase, #state{game = Game, phase = waiting_phase}, Timeout}.
 
 
 waiting_phase({reconfig, UpdatedGame}, State) ->
-    %UpdatedGame = get_game(State#state.game),
     Timeout = timer:minutes(UpdatedGame#game.waiting_time),
     {next_state, waiting_phase, State#state{game = UpdatedGame}, Timeout};
 waiting_phase(timeout, State) ->
     %% This is where we "move" on to the next state!
     NewState = State#state{phase = order_phase,
                            game = State#state.game#game{status = ongoing}},
-    game:phase_change(NewState#state.game, started),
+    game:phase_change(State#state.game, started),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     {next_state, order_phase, NewState, Timeout};
 waiting_phase(_Event, State) ->
     %% any other event than timeout or reconfig
     Timeout = timer:minutes((State#state.game)#game.waiting_time),
     {next_state, waiting_phase, State, Timeout}.
-waiting_phase(_Event, _From, State) ->
+waiting_phase(_Event, From, State) ->
+    syncevent(waiting_phase, From, State).
     %% TODO: This currently only restarts the phase
-    Reply = {waiting_phase, State},
-    {reply, Reply, waiting_phase, State}.
+    %{reply, {waiting_phase, State}, waiting_phase, State}.
 
 
 %% All events are handled in the same way
 order_phase(_Event, State) ->
-    %% Inform game that phase has changed
-    game:phase_change(State#state.game, retreat_phase),
-    Timeout = timer:minutes((State#state.game)#game.retreat_phase),
-    {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}.
+    {ok, Data} = game:process_phase(?ID(State), order_phase),
+    %% order phase is handled and we move to retreat phase
+    case Data of
+        [] -> % skip retreat phase
+            case game:phase_change(?ID(State), build_phase) of
+                {ok, true} ->
+                    Timeout = timer:minutes((State#state.game)#game.build_phase),
+                    {next_state, build_phase, State#state{phase = build_phase}, Timeout};
+                {ok, skip} ->
+                    game:phase_change(?ID(State), order_phase),
+                    Timeout = timer:minutes((State#state.game)#game.order_phase),
+                    {next_state, order_phase, State#state{phase = order_phase}, Timeout}
+            end;
+        _Orders -> % we have some conflicts - need retreat phase
+            game:phase_change(?ID(State), retreat_phase),
+            Timeout = timer:minutes((State#state.game)#game.retreat_phase),
+            {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}
+    end.
 % TODO: Currently "restarts" the phase
-order_phase(_Event, _From, State) ->
-    Reply = {order_phase, State},
-    {reply, Reply, order_phase, State}.
-
+order_phase(_Event, From, State) ->
+    syncevent(order_phase, From, State).
+    %Reply = {order_phase, State},
+    %{reply, Reply, order_phase, State}.
 
 %% All events are handled equally
 retreat_phase(_Event, State) ->
-    %% unknown event
-    game:phase_change(State#state.game, build_phase),
-    Timeout = timer:minutes((State#state.game)#game.build_phase),
-    {next_state, build_phase, State#state{phase = build_phase}, Timeout}.
+    game:process_phase(?ID(State), retreat_phase),
+    %% retreat is handled and we enter count phase
+    case game:phase_change(?ID(State), build_phase) of
+        {ok, true} ->
+            Timeout = timer:minutes((State#state.game)#game.build_phase),
+            {next_state, build_phase, State#state{phase = build_phase}, Timeout};
+        {ok, skip} ->
+            game:phase_change(?ID(State), order_phase),
+            Timeout = timer:minutes((State#state.game)#game.order_phase),
+            {next_state, order_phase, State#state{phase = order_phase}, Timeout}
+    end.
 % TODO: Currently "restarts" the phase
-retreat_phase(_Event, _From, State) ->
-    Reply = {retreat_phase, State},
-    {reply, Reply, retreat_phase, State}.
+retreat_phase(_Event, From, State) ->
+    syncevent(retreat_phase, From, State).
+    %Reply = {retreat_phase, State},
+    %{reply, Reply, retreat_phase, State}.
 
 
 build_phase(_Event, State) ->
-    game:phase_change(State#state.game, order_phase),
+    game:process_phase(?ID(State), build_phase),
+    game:phase_change(?ID(State), order_phase),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
 % TODO: Currently "restarts" the phase
-build_phase(_Event, _From, State) ->
-    Reply = {build_state, State},
-    {reply, Reply, build_phase, State}.
+build_phase(_Event, From, State) ->
+    syncevent(build_phase, From, State).
+    %Reply = {build_state, State},
+    %{reply, Reply, build_phase, State}.
 
 
 handle_event(_Event, StateName, State) ->
     {next_state, StateName, State}.
 
 handle_sync_event(stop, _From, _StateName, State) ->
-    io:format("Stopping timer for ~p...~n", [?GAME(State).id]),
+    io:format("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
     {stop, stop, ok, State};
 handle_sync_event(statename, _From, StateName, State) ->
     %% for this to pick up where it was, we need to recalculate
@@ -172,3 +199,55 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+syncevent(waiting_phase, From, State) ->
+    %% This is where we "move" on to the next state!
+    NewState = State#state{phase = order_phase,
+                           game = State#state.game#game{status = ongoing}},
+    game:phase_change(State#state.game, started),
+    Timeout = timer:minutes((State#state.game)#game.order_phase),
+    gen_fsm:reply(From, ok),
+    {next_state, order_phase, NewState, Timeout};
+syncevent(order_phase, From, State) ->
+    ?debugMsg("Received order_phase sync event"),
+    {ok, Data} = game:process_phase(?ID(State), order_phase),
+    %% order phase is handled and we move to retreat phase
+    case Data of
+        [] -> % skip retreat phase
+            case game:phase_change(?ID(State), build_phase) of
+                {ok, true} ->
+                    Timeout = timer:minutes((State#state.game)#game.build_phase),
+                    {next_state, build_phase, State#state{phase = build_phase}, Timeout};
+                {ok, skip} ->
+                    game:phase_change(?ID(State), order_phase),
+                    Timeout = timer:minutes((State#state.game)#game.order_phase),
+                    gen_fsm:reply(From, ok),
+                    {next_state, order_phase, State#state{phase = order_phase}, Timeout}
+            end;
+        _Orders -> % we have some conflicts - need retreat phase
+            game:phase_change(?ID(State), retreat_phase),
+            Timeout = timer:minutes((State#state.game)#game.retreat_phase),
+            gen_fsm:reply(From, ok),
+            {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}
+    end;
+syncevent(retreat_phase, From, State) ->
+    ?debugMsg("Received retreat_phase sync event"),
+    game:process_phase(?ID(State), retreat_phase),
+    %% retreat is handled and we enter count phase
+    case game:phase_change(?ID(State), build_phase) of
+        {ok, true} ->
+            Timeout = timer:minutes((State#state.game)#game.build_phase),
+            gen_fsm:reply(From, ok),
+            {next_state, build_phase, State#state{phase = build_phase}, Timeout};
+        {ok, skip} ->
+            game:phase_change(?ID(State), order_phase),
+            Timeout = timer:minutes((State#state.game)#game.order_phase),
+            gen_fsm:reply(From, ok),
+            {next_state, order_phase, State#state{phase = order_phase}, Timeout}
+    end;
+syncevent(build_phase, From, State) ->
+    ?debugMsg("Received build_phase sync event"),
+    game:process_phase(?ID(State), build_phase),
+    game:phase_change(?ID(State), order_phase),
+    Timeout = timer:minutes((State#state.game)#game.order_phase),
+    gen_fsm:reply(From, ok),
+    {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
