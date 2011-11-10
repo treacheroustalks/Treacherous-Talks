@@ -1,6 +1,9 @@
 #!/bin/bash
 # This script will run local (unit/application) tests and/or integration tests.
 
+# Get common functions
+source common_bash_functions.sh
+
 # Default settings (can be changed with command line options)
 dolocal=1
 dointegration=1
@@ -21,79 +24,52 @@ do
              exit 1;;
         *)   break;;
     esac
+    shift
 done
-
-# Color definitions
-c_red="\033[31m"
-c_brown="\033[33m"
-c_reset="\033[0m"
-
-# Convenience function for echoing to stderr
-function echoerr() { echo -e $c_red##### "$@" 1>&2 $c_reset; }
-# Convenience function for normal echoing with brown color
-function echonormal() { echo -e $c_brown##### "$@" $c_reset; }
-
-# This is a wrapper function that takes one argument, the command to run, and
-# executes it.
-function run_wrapper () {
-    $1
-    case "$?" in
-        0) echonormal "Exit status: success\n" ;;
-        *) echoerr "Exit status: ERROR\n"
-           errors=1 ;;
-    esac
-}
 
 #################################
 
 # Do eunit (local) tests
 if [ $dolocal -eq 1 ]; then
-    echonormal "running eunit tests"
-    run_wrapper "./rebar eunit skip_deps=true"
+    run_script "running eunit tests" "./rebar eunit skip_deps=true"
 fi
 
 # Do integration tests
 if [ $dointegration -eq 1 ]; then
 
     cd $cwd
-    echonormal "releasing backend"
-    run_wrapper "./release backend"
-    backend=system-release/backend/bin/backend
-    echonormal "starting backend and waiting 5 seconds"
-    run_wrapper "$backend start"
-    sleep 5
 
-    echonormal "releasing xmpp_frontend..."
-    run_wrapper "./release xmpp_frontend"
-    echonormal "installing xmpp_frontend for frontend tests"
+    # Release and start backend
+    run_script "releasing backend" "./release -nd backend"
+    backend=system-release/backend/bin/backend
+    run_script "starting backend" "$backend start"
+
+    # Release and install xmpp_frontend
+    run_script "releasing xmpp_frontend" "./release -nd xmpp_frontend"
     cd $cwd/system-release/xmpp_frontend
-    run_wrapper "make clean install"
+    run_script "installing xmpp_frontend for frontend tests" "make clean install"
     ejdctl=system-release/xmpp_frontend/installation/sbin/ejabberdctl
     cd $cwd
 
+    # Start xmpp_frontend
     echonormal "running xmpp_frontend tests"
-    echonormal "starting ejabberd and waiting 10 seconds"
-    run_wrapper "$cwd/$ejdctl start"
+    run_script "starting ejabberd and waiting 10 seconds" "$cwd/$ejdctl start"
     sleep 10 # TODO: Use erik's pinging blocking script instead of naive sleep.
-
     echo "ejabberd status:"
     $cwd/$ejdctl status || errors=1
+
+    # Run tests
     cd ext_test/ejabberd_echo || errors=1
-    run_wrapper "$cwd/rebar eunit skip_deps=true"
-    echonormal "stopping ejabberd"
-    run_wrapper "$cwd/$ejdctl stop"
+    run_script "running tests" "$cwd/rebar eunit skip_deps=true"
+
+    # Stop backend and xmpp_frontend
+    run_script "stopping ejabberd" "$cwd/$ejdctl stop"
     cd $cwd
-
-    echonormal "stopping backend"
-    run_wrapper "$backend stop"
+    stop_release "system-release" "backend"
 
 fi
 
 
-if (( errors )); then
-    echoerr "Test run was NOT successfull."
-else
-    echonormal "Test run was successfull."
-fi
-
+# Exit
+print_exit_status "Test run" $errors
 exit $errors

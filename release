@@ -2,6 +2,9 @@
 # This script will make releases of the main project in rel/ and all projects in
 # ext_rel/. It will optionally move the release files and tar them.
 
+# Get common functions
+source common_bash_functions.sh
+
 # Default settings (can be changed with command line options)
 domove=1
 dotar=0
@@ -22,9 +25,6 @@ if [ "$?" -ne "0" ]; then
 fi
 # Get date
 date=`date +%Y%m%d-%H%M`
-
-# Convenience function for echoing to stderr
-function echoerr() { echo -e "$@" 1>&2; }
 
 # Get command-line arguments
 while [ $# -gt 0 ]
@@ -62,7 +62,7 @@ do_release () {
     cd $1
     for release in $(ls); do
         if [ ! -d $release ]; then
-            echo $release is not a dir
+            echoerr "$release is not a dir"
             pwd
             continue
         fi
@@ -81,22 +81,21 @@ do_release () {
             # If such a file was found, then do the release
             if [ relcommand ]; then
                 localerror=0
-                echo "####################################"
-                echo "##### releasing" $release
+                echonormal "releasing $release"
                 $relcommand || localerror=1
                 # Move files to $sysrel if $domove is set to 1 and no errors in
                 # release
                 if [[ $domove -eq 1 && $localerror -eq 0 ]]; then
-                    echo Deleting old release files in $sysrel/$release...
+                    echonormal "Deleting old release files in $sysrel/$release"
                     rm -rf $sysrel/$release || localerror=1
-                    echo -e "Moving release files into $sysrel..."
+                    echonormal "Moving release files into $sysrel"
                     find $finddir -mindepth 1 -maxdepth 1 -newer \
                         $sysrel/release_timestamp -print0 | xargs -0 -I {} \
                         mv {} $sysrel || localerror=1
                 fi
                 case $localerror in
-                    0) echo -e "##### Exit status: success\n";;
-                    *) echoerr "##### Exit status: ERROR\n"
+                    0) echonormal "Exit status: success\n";;
+                    *) echoerr "Exit status: ERROR\n"
                        errors=1;;
                 esac
             fi
@@ -122,12 +121,12 @@ cd $cwd
 
 # Find and copy all edocs if $dodocs is set to 1
 if [ $dodocs -eq 1 ]; then
-    echo -e "\n##### Finding and copying edocs"
+    echonormal "Finding and copying edocs"
     cd $cwd
     echo Deleting old docs in $sysrel/docs...
     rm -rf $sysrel/docs
     mkdir -p $sysrel/docs
-    echo Copying edoc files to $sysrel/docs...
+    echo -e "Copying edoc files to $sysrel/docs...\n"
     for dir in $(find . -path "*/doc/edoc-info" -printf "%h\n"); do
     # Chop some names to only get the application name
         name=$(dirname $dir)
@@ -144,12 +143,6 @@ rm -f $sysrel/release_timestamp
 rmdir --ignore-fail-on-non-empty $sysrel
 
 
-echo
-if (( errors )); then
-    echoerr "##### Release was NOT successfull."
-else
-    echo "##### Release was successfull."
-fi
-
+# Exit
+print_exit_status "Release" $errors
 exit $errors
-
