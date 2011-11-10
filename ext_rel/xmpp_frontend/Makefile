@@ -36,12 +36,12 @@ $(deps):
 # the gen_mod behaviour. If they are not present, erlc gives a warning.
 ejabberd-beams:
 	# Fetch compiled beams for this step, they're just needed for the gen_mod behaviour.
-	cd ejabberd/src && wget -nv 'http://buildbot.pcs/mirror/ejabberd_beams.tar.gz'
+	cd ejabberd/src && wget -nv 'http://buildbot.pcs/mirror/ejabberd_beams.tar.gz' 2>&1
 	cd ejabberd/src && tar -xf ejabberd_beams.tar.gz
 
 ejabberd/:
 	# wget -nv -O ejabberd-2.1.9.tar.gz 'https://github.com/processone/ejabberd/tarball/v2.1.9'
-	wget -nv 'http://buildbot.pcs/mirror/ejabberd-2.1.9.tar.gz'
+	wget -nv 'http://buildbot.pcs/mirror/ejabberd-2.1.9.tar.gz' 2>&1
 	tar -xf ejabberd-2.1.9.tar.gz
 	mv processone-ejabberd-4ca3c33 ejabberd
 

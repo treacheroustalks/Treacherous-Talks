@@ -7,22 +7,20 @@ cwd=$(pwd)
 errors=0
 ejdctl=ext_rel/xmpp_frontend/rel/xmpp_frontend/installation/sbin/ejabberdctl
 
-# Set manual build order for apps/ dir (note that anything in that directory not
-# mentioned here will still get built; but after the ones defined here).
-apps_to_build_first="datatypes service db utils"
-
 # Setup the shell to report errors even when piping commands. This allows sed
 # to operate on output while preserving the exit code from the previous
 # command. Warning! This is a bash specific feature.
 set -o pipefail
 
-rebar get-deps || errors=1
-
-#################################
-## build the global dependencies here (if they require, for instance, make-calls)
+# Color definitions
+c_red="\033[31m"
+c_brown="\033[33m"
+c_reset="\033[0m"
 
 # Convenience function for echoing to stderr
-function echoerr() { echo -e "$@" 1>&2; }
+function echoerr() { echo -e $c_red##### "$@" 1>&2 $c_reset; }
+# Convenience function for normal echoing with brown color
+function echonormal() { echo -e $c_brown##### "$@" $c_reset; }
 
 # This is a wrapper function that takes one argument, the command to run, and
 # executes it. It streams all output through sed to replace warnings so that
@@ -31,91 +29,76 @@ function build_dep () {
     local_error=0
     $1 | sed s/Warning/ignore-warning/ || local_error=1
     case "$local_error" in
-        0) echo "##### Exit status: success" ;;
-        *) echoerr "##### Exit status: ERROR"
+        0) echonormal "Exit status: success\n" ;;
+        *) echoerr "Exit status: ERROR\n"
            errors=1 ;;
     esac
 }
 
-# PROTOBUFFS
-cd deps/protobuffs
-build_dep "make all"
-cd $cwd
+#################################
 
-# RIAK CLIENT
-cd deps/riakc
-build_dep "make all"
-cd $cwd
+# Get dependencies
+echonormal "getting external dependencies"
+rebar get-deps || errors=1
 
-# YAWS WEB SERVER
-echo "##### trying to build yaws"
-cd deps/yaws
+# YAWS web server
+echonormal "downloading yaws"
+mkdir -p deps
+cd deps
+# Ignore errors from git clone since we'll still detect the when doing git
+# checkout and we will get errors if it already is there
+git clone https://github.com/ahilsend/yaws.git 2>&1
+cd yaws
+git checkout websocket_hy10 2>&1 || errors=1
+
+echonormal "building yaws"
+cd $cwd/deps/yaws
 autoconf || errors=1
 ./configure --disable-pam || errors=1
 build_dep "make -j4"
 cd $cwd
-##
-##################################
 
-cd $cwd/apps
-# Get all subdirectories
-app_dirs=$(ls)
-# Create a variable storing only the directories in $app_dirs that is not in the
-# $apps variable (basically the complement in set theory, $app_dirs \ $apps)
-rest_of_apps=$(echo -e $app_dirs $apps_to_build_first | sed 's/ /\n/g' \
-               | sort | uniq -u)
-# Concatenate the two variables to create the correct build order
-app_build_order="$apps_to_build_first $rest_of_apps"
-# Do actual build loop
-for app in ${app_build_order[@]}; do
-    if [ ! -d $app ]; then
-        echo $app is not a dir
-        pwd
-        continue
-    fi
+# Main Rebar compile
+echonormal "running top-level rebar compile"
+rebar compile
+case $? in
+    0)  echonormal "Exit status: success\n" ;;
+    *)  echoerr "Exit status: ERROR\n"
+        errors=1 ;;
+esac
 
-    cd $app
-    if [ -x build ]; then
-        echo "####################################"
-        echo "##### executing " $(pwd)"/build"
-        ./build
-        case $? in
-            0)  echo -e "##### Exit status: success\n" ;;
-            *)  echoerr "##### Exit status: ERROR\n"
-                errors=1 ;;
-        esac
-    fi
-    cd ..
-done
+# Create edocs
+echonormal "generating edocs for all apps"
+rebar doc skip_deps=true
+case $? in
+    0)  echonormal "Exit status: success\n" ;;
+    *)  echoerr "Exit status: ERROR\n"
+        errors=1 ;;
+esac
+
+# XMPP FRONTEND (ejabberd)
+# Ideally build xmpp_frontend after building the rest since
+# so that rebar's intermittent failures don't break the entire
+# build. xmpp_frontend's makefile runs rebar build scripts in
+# without the above loop.
+echonormal "building xmpp_frontend"
+# ejabberd
+echo trying to build ejabberd
+cd ext_rel/xmpp_frontend
+build_dep "make release"
+cd $cwd
+
+# XMPP FRONTEND TESTS
+echonormal "building xmpp_frontend tests (including exmpp)"
+cd ext_test/ejabberd_echo
+build_dep "./build"
 cd $cwd
 
 
-
-    # XMPP FRONTEND (ejabberd)
-    # Ideally build xmpp_frontend after building the rest since
-    # so that rebar's intermittent failures don't break the entire
-    # build. xmpp_frontend's makefile runs rebar build scripts in
-    # without the above loop.
-    echo "##### trying to build xmpp_frontend"
-    # ejabberd
-    echo trying to build ejabberd
-    cd ext_rel/xmpp_frontend
-    build_dep "make release"
-    cd $cwd
-    echo
-    echo
-
-    # XMPP FRONTEND TESTS
-    echo "##### trying to build xmpp_frontend tests (including exmpp)"
-    cd ext_test/ejabberd_echo
-    build_dep "./build"
-    cd $cwd
-
-
 if (( errors )); then
-    echoerr "##### Build was NOT successfull."
+    echoerr "Build was NOT successfull."
 else
-    echo "##### Build was successfull."
+    echonormal "Build was successfull."
 fi
 
 exit $errors

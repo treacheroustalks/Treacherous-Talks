@@ -8,12 +8,12 @@ if [ ! -e deps/exmpp/ebin/exmpp.beam ]; then
     cd deps
     rm -rf exmpp
     #wget -nv http://download.process-one.net/exmpp/exmpp-0.9.8.tar.gz
-    wget -nv http://buildbot.pcs/mirror/exmpp-0.9.8.tar.gz
+    wget -nv http://buildbot.pcs/mirror/exmpp-0.9.8.tar.gz 2>&1
     tar -xzf exmpp*.tar.gz
     rm exmpp*.tar.gz
     mv exmpp-* exmpp
     cd exmpp
-    autoreconf -vif || errors=1
+    autoreconf -vif 2>&1 || errors=1
     ./configure || errors=1
     make || errors=1
     cd ../..
