@@ -454,6 +454,24 @@ get_game_state_tst_ () ->
              ?debugMsg("User does not play this game")
      end,
      fun() ->
+             GameRecord = test_game(),
+             GameRecord2 = GameRecord#game{status = ongoing},
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             UserID = 1122,
+             Country = england,
+             game:join_game(Game#game.id, UserID, Country),
+             game_timer:sync_event(Game#game.id, timeout),
+             Reply = sync_get_game_state (Game#game.id, UserID),
+             StandardMap = digraph_io:to_erlang_term(
+                             map_data:create(standard_game)),
+             StoredMap = Reply#game_overview.map,
+             ?assertEqual(StandardMap, StoredMap),
+             ?debugMsg("Game phase changed, and map is the same"),
+             ?debugMsg("get game state test end")
+     end,
+     fun() ->
              ?debugMsg("Test joining a game which doesn't exist"),
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},

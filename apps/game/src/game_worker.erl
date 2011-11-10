@@ -275,6 +275,8 @@ new_game(ID, #game{} = Game) ->
     end.
 
 update_game(ID, #game{} = Game) ->
+    ?debugMsg("Update game"),
+    ?debugVal(Game),
     BinID = db:int_to_bin(ID),
     DBGameObj=db_obj:create(?B_GAME, BinID, Game),
     GameObjWithIndex = db_obj:set_indices(DBGameObj, create_idx_list(Game)),
@@ -331,21 +333,33 @@ get_game_state(GameID, UserID) ->
     end.
 
 get_game_map(GameID, #game_overview{} = GameOverview) ->
-    % @TODO get game map from database
-    {ok, Game=#game{status= _Status}} = get_game(GameID),
-    Map = map_data:create (standard_game),
-    GameOV = GameOverview#game_overview{game_rec= Game,
-                                        map = digraph_io:to_erlang_term(Map)},
-    {ok, GameOV}.
-
+    {ok, Game=#game{status= Status}} = get_game(GameID),
+    case Status of
+        waiting ->
+            Map = map_data:create (standard_game),
+            GameOV = GameOverview#game_overview{game_rec= Game,
+                                                map = digraph_io:to_erlang_term(Map)},
+            {ok, GameOV};
+        ongoing -> %TODO provide state for other type of games which are not waiting
+            case  get_DB_obj(?B_GAME_STATE, get_keyprefix({id, GameID})) of
+                {ok, State} ->
+                    Map = digraph_io:from_erlang_term(State#game_state.map),
+                    GameOV = GameOverview#game_overview{game_rec = Game,
+                                                        map = Map},
+                    {ok, GameOV}
+            end;
+        _ -> {error, game_not_waiting}
+    end.
 
 
 phase_change(Game = #game{id = ID}, started) ->
+    io:format("Game ~p started~n", [ID]),
     %% maybe tell the users about game start?
     update_game(ID, Game),
     setup_game(ID),
     game_join_proc:stop(ID);
 phase_change(ID, build_phase) ->
+    io:format("Game ~p entered build_phase~n", [ID]),
     Key = get_keyprefix({id, ID}),
     {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
     % skip count phase if it is not fall
@@ -360,6 +374,7 @@ phase_change(ID, build_phase) ->
             {ok, true}
     end;
 phase_change(ID, Phase) ->
+    io:format("Game ~p entered ~p~n", [ID, Phase]),
     Key = get_keyprefix({id, ID}),
     {ok, OldState} = get_DB_obj(?B_GAME_STATE, Key),
     NewCurrentGame = update_current_game(ID, Phase),
@@ -513,7 +528,8 @@ process_phase(ID, Phase) ->
     Key = get_keyprefix({id, ID}),
     {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
     Map = digraph_io:from_erlang_term(GameState#game_state.map),
-    Orders = get_all_orders(ID),
+    ?debugVal(Orders = get_all_orders(ID)),
+    io:format("Received orders: ~p~n", [Orders]),
     Result = rules:process(Phase, Map, ?RULES, Orders),
     update_state(Key, GameState#game_state{
                         map = digraph_io:to_erlang_term(Map)}),
