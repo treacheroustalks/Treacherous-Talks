@@ -1,23 +1,35 @@
+# Generic app Makefile for Treacherous Talks
 
+REBAR=../../rebar
 
-all: get_deps clean compile docs
-
-
-get_deps:
-	rebar get-deps
-
-
-clean:
-	rebar clean
-
-
-compile:
-	rebar compile
-
-
-tests:
-	rebar eunit
+all: small_clean deps compile docs
 
 docs:
-	erl -noshell -run edoc_run application "'$(APP_NAME)'" \
-               '"."' '[{def,{vsn,"$(VSN)"}}]'
+	$(REBAR) skip_deps=true doc
+
+deps:
+	$(REBAR) get-deps
+
+small_clean:
+	$(REBAR) skip_deps=true clean
+
+clean:
+	$(REBAR) clean
+
+compile:
+	rm -rf .eunit
+	$(REBAR) compile
+
+test:
+	$(REBAR) skip_deps=true eunit
+	rm -rf doc/coverage
+	mkdir doc/coverage
+	cp -r .eunit/*.html doc/coverage
+
+dia:
+	dialyzer -Wno_return -I ../ --src src
+
+complete: small_clean deps compile test docs dia
+	@echo ok
+
+.PHONY: all small_clean clean compile test docs dia complete

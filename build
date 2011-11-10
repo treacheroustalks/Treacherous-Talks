@@ -39,7 +39,7 @@ function build_dep () {
 
 # Get dependencies
 echonormal "getting external dependencies"
-rebar get-deps || errors=1
+./rebar get-deps || errors=1
 
 # YAWS web server
 echonormal "downloading yaws"
@@ -60,7 +60,7 @@ cd $cwd
 
 # Main Rebar compile
 echonormal "running top-level rebar compile"
-rebar compile
+./rebar compile
 case $? in
     0)  echonormal "Exit status: success\n" ;;
     *)  echoerr "Exit status: ERROR\n"
@@ -69,7 +69,7 @@ esac
 
 # Create edocs
 echonormal "generating edocs for all apps"
-rebar doc skip_deps=true
+./rebar doc skip_deps=true
 case $? in
     0)  echonormal "Exit status: success\n" ;;
     *)  echoerr "Exit status: ERROR\n"
