@@ -29,109 +29,29 @@
 %% request.
 %% @end
 %%
-%% [@spec reply([From, To, ToHost], {Cmd, Result}, Data) -> ok.
+%% [@spec reply([From, To, ToHost], {Cmd, Status}=Result, Data) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
-%% user registration
-reply([From, To, ToHost], {register, success}, User) ->
-    send_mail(To, From, ToHost,
-              "Registration was successful.~n~p~n",
-              [User]);
-reply([From, To, ToHost], {register, invalid_data}, Info) ->
-    send_mail(To, From, ToHost,
-              "Invalid registration data.~n~p~n",
-              [Info]);
-%% user login
-reply([From, To, ToHost], {login, success}, Session) ->
-    send_mail(To, From, ToHost,
-              "Login was successful. Your session is: \"~p\"~n",
-              [Session]);
-reply([From, To, ToHost], {login, invalid_data}, _Info) ->
-    send_mail(To, From, ToHost,
-              "Invalid login data.~n");
-%% user update
-reply([From, To, ToHost], {update_user, success}, User) ->
-    send_mail(To, From, ToHost,
-              "User information was successfully updated.~n~p~n",
-              [User]);
-reply([From, To, ToHost], {update_user, invalid_data}, Info) ->
-    send_mail(To, From, ToHost,
-              "Invalid user update information.~n~p~n",
-              [Info]);
-%% game create
-reply([From, To, ToHost], {create_game, success}, Game) ->
-    send_mail(To, From, ToHost,
-              "Game creation was successful. Your game ID is: \"~p\"~n",
-              [Game]);
-reply([From, To, ToHost], {create_game, invalid_data}, Info) ->
-    send_mail(To, From, ToHost,
-              "Invalid game creation data.~n~p~n",
-              [Info]);
-%% game reconfiguration
-reply([From, To, ToHost], {reconfig_game, success}, Game) ->
-    send_mail(To, From, ToHost,
-              "Game information was successfully updated.~n~p~n",
-              [Game]);
-reply([From, To, ToHost], {reconfig_game, invalid_data}, Info) ->
-    send_mail(To, From, ToHost,
-              "Invalid reconfig game information.~n~p~n",
-              [Info]);
-%% game join
-reply([From, To, ToHost], {join_game, success}, Info) ->
-    send_mail(To, From, ToHost,
-              "Join game was successful.~n~p~n",
-              [Info]);
-reply([From, To, ToHost], {join_game, invalid_data}, Error) ->
-    send_mail(To, From, ToHost,
-              "Invalid join game data.~n~p~n",
-              [Error]);
-%% game overview
-reply([From, To, ToHost], {game_overview, success}, {ok, GOV}) ->
-    Info = game_overview(GOV),
-    send_mail(To, From, ToHost,
-              "\nGame Overview:\n" ++ Info);
-reply([From, To, ToHost], {game_overview, invalid_data},
-                          user_not_play_this_game) ->
-    send_mail(To, From, ToHost,
-              "You do not play this game");
-%% error
-reply([From, To, ToHost], {Cmd, invalid_session}, Info) ->
-    send_mail(To, From, ToHost,
-              "[~p]Invalid user session.~n~p~n",
-              [Cmd, Info]);
-reply([From, To, ToHost], {Cmd, parse_error}, Error) ->
-    send_mail(To, From, ToHost,
-              "The command[~p] could not be interpreted correctly:~n~p~n",
-              [Cmd, Error]);
-reply([From, To, ToHost], unknown_command, _Data) ->
-    send_mail(To, From, ToHost,
-              "The provided command is unknown.~n"
-              "Supported commands are:~n"
-              ?SUPPORTED_COMMANDS).
-
-
-%% internal function
-send_mail(From, To, ToHost, Format) ->
-    io:format("[SMTP][To: ~p] ~s", [To, Format]),
-    gen_smtp_client:send({From, [To], Format}, [{relay, ToHost}, {port,25}]).
-send_mail(From, To, ToHost, Format, Data) ->
-    send_mail(From, To, ToHost,
-              io_lib:format(Format, Data)).
-
+reply([From, To, ToHost], Result, Data) ->
+    % Note: From and To are interchanged when sending the mail
+    send_mail(To, From, ToHost, get_reply(Result, Data)).
 
 %%-------------------------------------------------------------------
-%% @doc
-%% provide game infomation for user which extract from
-%%  game record, country and current map of the game
-%%  input is the game_overview record and it returns information in string
-%% @end
+%% Internal functions
 %%-------------------------------------------------------------------
-game_overview(#game_overview{} = GOV)->
-    {_GameId, Country, Game, Provinces, Units} =
-        data_format:game_overview_to_text(GOV),
-    Msg1 = io_lib:format("~nYou are playing as ~s ~nGame Information:~n",
-                         [Country]),
-    Msg2 = io_lib:format("in game_overview after msg: ~s~n ", [Game]),
-    Msg3 = io_lib:format("~nYour provinces:~n~s ~nAll units:~n~s",
-                          [Provinces, Units]),
-    lists:flatten(Msg1 ++ Msg2 ++ Msg3).
+%% Compose replies based on data returned from backend
+%% Only Results that need additional information are matched
+get_reply({game_overview, success}, Data) ->
+    Msg = fe_messages:get({game_overview, success}, Data),
+    GameOverview = fe_messages:get(game_overview, Data),
+    fe_messages:resp(Msg ++ GameOverview);
+get_reply(unknown_command, Data) ->
+    Msg = fe_messages:get(unknown_command, Data),
+    fe_messages:resp(Msg ++ "Supported commands are:~n" ++ ?SUPPORTED_COMMANDS);
+get_reply(Result, Data) ->
+    fe_messages:get(Result, Data).
+
+%% Send mail to specified user
+send_mail(From, To, ToHost, Reply) ->
+    io:format("[SMTP][To: ~p] ~s", [To, Reply]),
+    gen_smtp_client:send({From, [To], Reply}, [{relay, ToHost}, {port,25}]).

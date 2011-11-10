@@ -12,8 +12,21 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--include_lib("datatypes/include/user.hrl").
--include_lib("datatypes/include/game.hrl").
+%%-------------------------------------------------------------------
+%% Record defines the return value to the web socket
+%%
+%% event: Name of the event used by js callbacks to make changes to web page
+%% event_data: Encoded data that may be relevant for the event
+%% page: The page that has to be loaded on the client
+%% message_type: Type of message to be displayed (optional)
+%%               success, error, warning, info
+%% message_value: Data to be displayed as the message
+%%-------------------------------------------------------------------
+-record(ret, {event="",
+              event_data="",
+              page="",
+              message_type="",
+              message_value=""}).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -64,237 +77,103 @@ socket_server(WebSocket, ProtocolVersion) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Callback functions that gets called by controller
+%% Callback function that gets called by controller
 %% @end
 %%-------------------------------------------------------------------
-reply([WebSocket, ProtocolVersion], unknown_command, Data) ->
-    yaws_api:websocket_send(WebSocket, ProtocolVersion, json_encode(""));
-reply([WebSocket, ProtocolVersion], Msg, Data) ->
-    Reply = get_reply(Msg, Data),
+reply([WebSocket, ProtocolVersion], Result, Data) ->
+    Reply = get_reply(Result, Data, fe_messages:get(Result, Data)),
     yaws_api:websocket_send(WebSocket, ProtocolVersion, Reply).
 
-get_reply(Msg, Data) ->
-    case Msg of
-        {register, success} -> register_success();
-        {register, invalid_data} ->	json_encode("");
-        {login, success} -> login_success(Data);
-        {login, invalid_data} -> login_invalid_data();
-        {get_session_user, success} -> get_session_user_success(Data);
-        {get_session_user, invalid_data} -> get_session_user_invalid_data();
-        {get_session_user,invalid_session} ->
-            get_session_user_invalid_session();
-        {update_user, success} -> update_user_success(Data);
-        {update_user, invalid_data} -> update_user_invalid_data();
-        {get_game, success} -> get_game_success(Data);
-        {get_game, invalid_data} -> get_game_invalid_data();
-        {create_game, success} -> create_game_success(Data);
-        {create_game, invalid_data} -> create_game_invalid_data();
-        {reconfig_game, success} -> reconfig_game_success(Data);
-        {reconfig_game, invalid_data} -> reconfig_game_invalid_data();
-        {join_game, success} -> join_game_success(Data);
-        {join_game, error} -> join_game_error(Data);
-        {join_game,invalid_data} -> join_game_invalid_data(Data);
-        {game_overview, success} -> game_overview_success(Data);
-        {game_overview, invalid_data} -> game_overview_invalid_data(Data);
-        {game_order, success} -> game_order_success();
-        {game_order, invalid_data} -> game_order_invalid_data();
-        {Cmd, parse_error} -> json_encode("");
-        _ -> io:format("Unimplemented call ~p~n", [Msg])
-    end.
+%%-------------------------------------------------------------------
+%% Compose replies based on data returned from backend
+%%-------------------------------------------------------------------
+get_reply({Cmd, Status}, Data, Msg) ->
+    Event = atom_to_list(Cmd) ++ "_" ++ atom_to_list(Status),
+    Reply = get_ret({Cmd, Status}, #ret{event=Event, message_value=Msg}, Data),
+    json_encode(ret_to_proplist(Reply));
+get_reply(unknown_command, Data, Msg) ->
+    io:format("Unknown command~p~n", [Data]),
+    json_encode("").
+
 
 %%-------------------------------------------------------------------
 %% Functions that handle return data
 %%-------------------------------------------------------------------
 %% @doc
 %% Format for returning messages to the client
-%%
-%% event: Name of the event used by js callbacks to make changes to web page
-%% event_data: Encoded data that may be relevant for the event
-%% page: The page that has to be loaded on the client
-%% message_type: Type of message to be displayed (optional)
-%%               success, error, warning, info
-%%  message_data: Data to be displayed as the message
+%% Returns the updated ret record
 %% @end
 %%-------------------------------------------------------------------
-register_success() ->
-    R = [{"event", "register_success"},
-         {"event_data", ""},
-         {"page", "home"},
-         {"message_type", "success"},
-         {"message_value", "Registration successful."
-                           " Please login to continue."}
-        ],
-    json_encode(R).
+%% Update message type to success
+msg_success(Ret=#ret{}) ->
+    Ret#ret{message_type="success"}.
 
-register_invalid_data() ->
-    R = [{"event", "register_invalid_data"},
-         {"event_data", ""},
-         {"page", "register"},
-         {"message_type", "error"},
-         {"message_value", "An error occurred during registration."
-                           " Please try after some time."}
-        ],
-    json_encode(R).
+%% Update message type to error
+msg_error(Ret=#ret{}) ->
+    Ret#ret{message_type="error"}.
 
-login_success(Session) ->
+get_ret({register, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret#ret{page="home"});
+get_ret({register, invalid_data}, Ret=#ret{}, _Data) ->
+    io:format("THere--->>~p~n", [Ret]),
+    msg_error(Ret);
+
+get_ret({login, success}, Ret=#ret{}, Session) ->
     Data = [{"session_id", Session}],
-    R = [{"event", "login_success"},
-         {"event_data", json2:obj_from_list(Data)},
-         {"page", "dashboard"},
-         {"message_type", "success"},
-         {"message_value", "You are now logged in!"}],
-    json_encode(R).
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="dashboard"});
+get_ret({login, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-login_invalid_data() ->
-    R = [{"event", "login_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "Invalid login data."
-                           " Please check your nick and password"}],
-    json_encode(R).
-
-get_session_user_success(User) ->
+get_ret({get_session_user, success}, Ret=#ret{}, User) ->
     RequiredFields = ["nick", "email", "name"],
     Data = data_format:userrec_to_proplist(User, {string, RequiredFields}),
-    R = [{"event", "get_session_user_success"},
-         {"event_data", json2:obj_from_list(Data)},
-         {"page", "dashboard"},
-         {"message_type", ""},
-         {"message_value", ""}],
-    json_encode(R).
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="dashboard"});
+get_ret({get_session_user, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+get_ret({get_session_user, invalid_session}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-get_session_user_invalid_data() ->
-    R = [{"event", "get_session_user_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "Session invalid."
-                           " Please login to continue."}],
-    json_encode(R).
-
-get_session_user_invalid_session() ->
-    R = [{"event", "get_session_user_invalid_session"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "Session invalid."
-                           " Please login to continue."}],
-    json_encode(R).
-
-update_user_success(User) ->
+get_ret({update_user, success}, Ret=#ret{}, User) ->
     RequiredFields = ["nick", "email", "name"],
     Data = data_format:userrec_to_proplist(User, {string, RequiredFields}),
-    R = [{"event", "update_user_success"},
-         {"event_data", json2:obj_from_list(Data)},
-         {"page", "dashboard"},
-         {"message_type", "success"},
-         {"message_value", "Your information was updated successfully."}],
-    json_encode(R).
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="dashboard"});
+get_ret({update_user, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-update_user_invalid_data() ->
-    R = [{"event", "update_user_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "An error occurred during information update."
-                           " Please try after some time."}
-        ],
-    json_encode(R).
-
-get_game_success(Game) ->
+get_ret({get_game, success}, Ret=#ret{}, Game) ->
     RequiredFields = ["id", "creator_id", "name", "description", "password",
                       "press", "order_phase", "retreat_phase", "build_phase",
                       "waiting_time", "num_players", "result"],
     Data = data_format:gamerec_to_proplist(Game, {string, RequiredFields}),
-    R = [{"event", "get_game_success"},
-         {"event_data", json2:obj_from_list(Data)},
-         {"page", ""},
-         {"message_type", ""},
-         {"message_value", ""}],
-    json_encode(R).
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData});
+get_ret({get_game, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-get_game_invalid_data() ->
-    R = [{"event", "get_game_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "Game with specified Id not found in the database"}],
-    json_encode(R).
+get_ret({reconfig_game, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret#ret{page="dashboard"});
+get_ret({reconfig_game, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-reconfig_game_success(Game) ->
-    R = [{"event", "reconfig_game_success"},
-         {"event_data", ""},
-         {"page", "dashboard"},
-         {"message_type", "success"},
-         {"message_value", "Game reconfigured successfully."}],
-    json_encode(R).
+get_ret({create_game, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret#ret{page="dashboard"});
+get_ret({create_game, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-reconfig_game_invalid_data() ->
-    R = [{"event", "get_game_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "There was a problem reconfiguring the game."
-                           " Please try again after some time"}],
-    json_encode(R).
+get_ret({join_game, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret#ret{page="dashboard"});
+get_ret({join_game, error}, Ret=#ret{}, _Data) ->
+    msg_error(Ret#ret{page="dashboard"});
+get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret#ret{page="dashboard"});
 
-create_game_success(GameId) ->
-    Msg = string:concat("Game created successfully, GameId = ",
-                        integer_to_list(GameId)),
-    R = [{"event", "create_game_success"},
-         {"event_data", ""},
-         {"page", "dashboard"},
-         {"message_type", "success"},
-         {"message_value", Msg}],
-    json_encode(R).
-
-create_game_invalid_data() ->
-    R = [{"event", "update_user_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "An error occurred during creation of the game."
-                           " Please try after some time."}
-        ],
-    json_encode(R).
-
-
-join_game_success(GameId) ->
-    Msg = string:concat("Game joined successfully, GameId = ",
-                        integer_to_list(GameId)),
-    R = [{"event", "join_game_success"},
-         {"event_data", ""},
-         {"page", "dashboard"},
-         {"message_type", "success"},
-         {"message_value", Msg}],
-    json_encode(R).
-
-join_game_error(_Error) ->
-    R = [{"event", "join_game_error"},
-         {"event_data", ""},
-         {"page", "dashboard"},
-         {"message_type", "error"},
-         {"message_value", "Unknown error occurred. Please try again."}],
-    json_encode(R).
-
-join_game_invalid_data(Error) ->
-    case Error of
-        country_not_available ->
-            Msg = "The selected country is already taken. Choose another.";
-        user_already_joined ->
-            Msg = "You have already joined this game.";
-        _ ->
-            Msg = "Unknown error. Please try again."
-    end,
-    R = [{"event", "join_game_invalid_data"},
-         {"event_data", ""},
-         {"page", "dashboard"},
-         {"message_type", "error"},
-         {"message_value", Msg}],
-    json_encode(R).
-
-game_overview_success(GOv) ->
+get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
     {GameId, Country, Game, Provinces, Units} =
         data_format:game_overview_to_text(GOv),
     Data = [{"game_id", integer_to_list(GameId)},
@@ -302,51 +181,29 @@ game_overview_success(GOv) ->
             {"game", lists:flatten(Game)},
             {"provinces", lists:flatten(Provinces)},
             {"units", lists:flatten(Units)}],
-    R = [{"event", "game_overview_success"},
-         {"event_data", json2:obj_from_list(Data)},
-         {"page", "game"},
-         {"message_type", ""},
-         {"message_value", ""}],
-    json_encode(R).
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="game"});
+get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
 
-game_overview_invalid_data(Error) ->
-    case Error of
-        user_not_playing_this_game ->
-            Msg = "You need to join this game before you can play it.";
-        _ ->
-            Msg = "Unknown error. Please try again."
-    end,
-    R = [{"event", "game_overview_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", Msg}],
-    json_encode(R).
-
-game_order_success() ->
-    R = [{"event", "game_order_success"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "success"},
-         {"message_value", "Game orders sent successfully."}],
-    json_encode(R).
-
-game_order_invalid_data() ->
-    R = [{"event", "game_order_invalid_data"},
-         {"event_data", ""},
-         {"page", ""},
-         {"message_type", "error"},
-         {"message_value", "Problem sending game order."
-                           "Please check your order or try after some time."}],
-    json_encode(R).
+get_ret({game_order, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret).
 
 
 %% Convert data from websocket (JSON) to erlang terms
 json_decode(Data) ->
     json2:decode_string(binary_to_list(Data)).
 
-
 %% Convert erlang terms to JSON
 json_encode(Data) ->
     list_to_binary(json2:encode(json2:obj_from_list(Data))).
+
+%% Converts ret record to proplist
+ret_to_proplist(Ret) ->
+    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, ret)],
+    lists:zip(RecordInfo, tl(tuple_to_list(Ret))).
+
 </erl>

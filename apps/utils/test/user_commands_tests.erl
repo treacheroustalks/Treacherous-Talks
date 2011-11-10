@@ -38,16 +38,16 @@ parse_register_channel_test_() ->
 
 parse_update_test_() ->
     ActualOutput = user_commands:parse_update(?SAMPLE_UPDATE),
-    Expected = {ok, "123456", [{#user.password,"QWER"},
-                             {#user.email,field_missing},
-                             {#user.name,"Agner Erlang"}]},
+    Expected = {ok, ?SESSION_ID, [{#user.password,"QWER"},
+                                  {#user.email,field_missing},
+                                  {#user.name,"Agner Erlang"}]},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
 
 parse_create_test_() ->
     ActualOutput = user_commands:parse_create(?SAMPLE_CREATE),
-    Expected = {ok, "987654", #game{name = "awesome_game", press = "white",
+    Expected = {ok, ?SESSION_ID, #game{name = "awesome_game", press = "white",
                                   order_phase = 240, retreat_phase = 210,
                                   build_phase = 160, waiting_time = 3200,
                                   description = "",
@@ -60,14 +60,14 @@ parse_create_test_() ->
 
 parse_game_overview_test_() ->
     ActualOutput = user_commands:parse_overview(?SAMPLE_GAME_OVERVIEW),
-    Expected = {ok, "123456789", 111222},
+    Expected = {ok, ?SESSION_ID, 111222},
     [
      ?_assertEqual(Expected, ActualOutput)
     ].
 
 parse_join_game_test_() ->
     ActualOutput = user_commands:parse_join(?SAMPLE_JOIN_GAME),
-    Expected = {ok, "123456789", {111222, england}},
+    Expected = {ok, ?SESSION_ID, {111222, england}},
     [
      ?_assertEqual(Expected, ActualOutput)
     ].
@@ -201,7 +201,7 @@ parse_reconfig_test_() ->
              user_commands:parse_reconfig(?SAMPLE_RECONFIG_WITH_CHARGID)
      ),
      ?_assertEqual(
-            {ok, "456123",
+            {ok, ?SESSION_ID,
              {111222,
               [{4,"awesome_game"},
                {7,"white"},
@@ -216,7 +216,7 @@ parse_reconfig_test_() ->
              user_commands:parse_reconfig(?SAMPLE_RECONFIG)
      ),
      ?_assertEqual(
-            {ok, "456123",
+            {ok, ?SESSION_ID,
              {111222,
               [{4,"awesome_game"},
                {7,"white"},

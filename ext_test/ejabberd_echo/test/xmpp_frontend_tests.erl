@@ -137,29 +137,28 @@ adfadfasdfaldfad").
 Required fields: [\"NICKNAME\",\"PASSWORD\",\"EMAIL\",\"FULLNAME\"]").
 -define(LOGIN_RESPONSE_SUCCESS, "Login was successful. Your session is:").
 -define(UPD_RESPONSE_SUCCESS,
-        "User information was successfully updated.").
--define(UPD_RESPONSE_SESSION_ERROR, "[update_user]Invalid user session.").
+        "User information was successfully updated.\n").
+-define(UPD_RESPONSE_SESSION_ERROR, "Invalid user session. Please log in to continue.\n").
 -define(UPD_RESPONSE_BAD_SYNTAX, "The command [update_user] could not be interpreted correctly:
 Required fields: [\"SESSION\"]").
 -define(CREATE_RESPONSE_SUCCESS, "Game creation was successful. Your game ID is:").
--define(CREATE_RESPONSE_SESSION_ERROR, "[create_game]Invalid user session.").
+-define(CREATE_RESPONSE_SESSION_ERROR, "Invalid user session. Please log in to continue.\n").
 -define(CREATE_RESPONSE_BAD_SYNTAX, "The command [create_game] could not be interpreted correctly:
 Required fields: [\"SESSION\",\"GAMENAME\",\"PRESSTYPE\",\"ORDERCIRCLE\",
                   \"RETREATCIRCLE\",\"GAINLOSTCIRCLE\",\"WAITTIME\"]").
 -define(RESPONSE_COMMAND_UNKNOWN, "The provided command is unknown.
 Supported commands are:").
--define(RECONFIG_RESPONSE_SUCCESS, "Game information was successfully updated.").
--define(RECONFIG_RESPONSE_INVALID_DATA,"Invalid reconfig game information.").
--define(JOIN_GAME_RESPONSE_SUCCESS,"Join game was successful.").
--define(JOIN_GAME_RESPONSE_INVALID_DATA,"Invalid join game data.").
+-define(RECONFIG_RESPONSE_SUCCESS, "Game information was successfully updated.\n").
+-define(RECONFIG_RESPONSE_INVALID_DATA,"The game you are trying to reconfigure does not exist.\n").
+-define(JOIN_GAME_RESPONSE_SUCCESS,"Join game was successful.\n").
+-define(JOIN_GAME_RESPONSE_INVALID_DATA,"You have already joined this game.\n").
 
--define(GAME_OVERVIEW_RESPONSE_SUCCESS,"\nGame Overview:\n").
--define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"You are not playing this game").
+-define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Game Overview:\n\n").
+-define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"Only game players can view the game overview.\n").
 
--define(GAME_ORDER_RESPONSE_SUCCESS, "Game order was successfully sent.").
--define(GAME_ORDER_RESPONSE_INVALID_INPUT, "The command [game_order] could not be interpreted correctly:
-Invalid input to the following:").
--define(GAME_ORDER_RESPONSE_INVALID_DATA,"Invalid game order.").
+-define(GAME_ORDER_RESPONSE_SUCCESS, "Game order sent successfully.\n").
+-define(GAME_ORDER_RESPONSE_INVALID_INPUT, "Invalid input for the given command.\n").
+-define(GAME_ORDER_RESPONSE_INVALID_DATA,"You cannot send orders to a game you are not playing.\n").
 %%-------------------------------------------------------------------
 %% @doc
 %%-------------------------------------------------------------------
@@ -213,10 +212,10 @@ setup_reg_login_instantiator() ->
       ?LOGIN_RESPONSE_SUCCESS,
       "valid login attempt"},
      {?LOGIN_COMMAND_BAD_PASSWORD(Nick),
-      "Invalid login data.",
+      "Invalid login data.\n",
       "login request with invalid password"},
      {?LOGIN_COMMAND_BAD_NICK,
-      "Invalid login data.",
+      "Invalid login data.\n",
       "login request with invalid nickname"}].
 
 setup_session_instantiator() ->
@@ -228,7 +227,7 @@ setup_session_instantiator() ->
                                 ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
                                 [{capture, all_but_first, list}]),
     ?debugVal(Session),
-    InvalidSession = "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAAAEAAAAAAg==",
+    InvalidSession = "dGVzdA==",
 
     Game = xmpp_client:xmpp_call(?SERVICE_BOT, ?CREATE_COMMAND_CORRECT(Session)),
     ?debugVal(Game),
