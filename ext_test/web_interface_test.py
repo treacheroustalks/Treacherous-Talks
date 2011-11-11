@@ -3,6 +3,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
 
 import time
+import os, base64
 
 address="http://localhost:8000"
 waittime=20
@@ -16,14 +17,14 @@ def registerUser(driver, path, data, response):
     for element, value in data.iteritems():
         driver.find_element_by_id(element).send_keys(value)
 
-    registerButton = "//form[@id='register']/div[@class='actions']/input[@class='btn primary']"
+    registerButton = "//form[@id='register_form']/div[@class='actions']/input[@class='btn primary']"
     driver.find_element_by_xpath(registerButton).click()
 
     # Loop until page has loaded completly (we'll get exceptions about stale
     # objects while it is not fully loaded).
     while True:
         try:
-            ret = driver.find_element_by_xpath("//p[text()='"+response+"']").text
+            ret = driver.find_element_by_xpath("//p[text()='"+response+"\n']").text
             break
         except StaleElementReferenceException:
             continue
@@ -51,16 +52,18 @@ def login(driver, path, data, response):
 
 ### Tests
 def registerUserTest(driver):
-    data = {"reg_email": "a@a.com",
-            "reg_name": "Aa Aa",
-            "reg_nick": "aa",
-            "reg_password": "1234",
-            "reg_confirm_password": "1234"}
-    response = "Registration successful. Please login to continue."
+    random_string = base64.urlsafe_b64encode(os.urandom(20))
+    data = {"email": "a@a.com",
+            "name": "Aa Aa",
+            "nick": random_string,
+            "password": "1234",
+            "confirm_password": "1234"}
+    response = "Registration was successful."
     registerUser(driver, address, data, response)
+    return random_string
 
-def loginTest(driver):
-    data = {"login_nick": "aa",
+def loginTest(driver, nick):
+    data = {"login_nick": nick,
             "login_password": "1234"}
     response = "Logout"
     login(driver, address, data, response)
@@ -79,8 +82,8 @@ try:
     driver.get(address)
     time.sleep(2)
 
-    registerUserTest(driver)
-    loginTest(driver)
+    nick = registerUserTest(driver)
+    loginTest(driver, nick)
 except Exception, e:
     # Terminate the browser and re-throw the exception
     driver.quit()
