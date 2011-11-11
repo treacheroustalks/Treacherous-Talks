@@ -124,7 +124,13 @@ handle_call({login, Login}, _From, State) ->
                 {ok, HObj} = session_history:db_get(Id),
                 HistObj = session_history:resolve_history_siblings(HObj),
                 Hist = db_obj:get_value(HistObj),
-                session:stop(session_history:latest(Hist)),
+                Latest = case session_history:latest(Hist) of
+                             {ok, S} ->
+                                 S;
+                             history_empty ->
+                                 history_empty
+                         end,
+                session:stop(Latest),
 
                 UserObj = session_history:resolve_conflict(
                             Hist, DbObj, #user.last_session),
@@ -216,7 +222,12 @@ stop_sessions(DbObj) ->
     Siblings = db_obj:get_siblings(DbObj),
     lists:foreach(fun(SibObj) ->
                           Hist = db_obj:get_value(SibObj),
-                          Session = session_history:latest(Hist),
+                          Session = case session_history:latest(Hist) of
+                                        {ok, S} ->
+                                            S;
+                                        history_empty ->
+                                            history_empty
+                                    end,
                           session:stop(Session)
                   end, Siblings),
     ok.
