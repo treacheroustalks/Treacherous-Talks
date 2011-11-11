@@ -178,16 +178,11 @@ game_timer_state_tst_ () ->
              Game = sync_get(sync_new(GameRecord)),
              Id = Game#game.id,
              ?assertEqual(waiting_phase, game_timer:current_state(Id)),
-             timer:sleep(50), %we need to wait a bit for the DB write to finish
-             % assert that we have entered the waiting phase
-             game_timer:event(Id, timeout),
+
+             game_timer:sync_event(Id, timeout),
              ?assertEqual(order_phase, game_timer:current_state(Id)),
-             % trigger an event to go to the next phase, as there are
-             % no orders, there won't be a retreat phase
-             % wait a bit before triggering the new event
-             timer:sleep(50),
-             game_timer:event(Id, timeout),
-             timer:sleep(50),
+
+             game_timer:sync_event(Id, timeout),
              ?assertEqual(retreat_phase, game_timer:current_state(Id)),
              ?debugMsg("game timer state test end")
      end,
@@ -200,8 +195,7 @@ game_timer_state_tst_ () ->
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
              game:reconfig_game(UpdatedGame),
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
-             timer:sleep(20),
-             game_timer:event(Game#game.id, timeout),
+             game_timer:sync_event(Game#game.id, timeout),
              ?assertEqual(order_phase, game_timer:current_state(Game#game.id)),
              ?assertEqual(UpdatedGame#game{status = ongoing},
                           game_timer:get_game_state(Game#game.id)),
@@ -217,24 +211,24 @@ game_current_tst_() ->
              GameRecord = test_game(),
              ?debugVal(Game = sync_get(sync_new(GameRecord))),
              ID = Game#game.id,
+
              ?assertEqual(waiting_phase, game_timer:current_state(ID)),
+
              %% timeout brings us to "started"
              game_timer:sync_event(ID, timeout),
              {ok, OrderCurrent} = game:get_current_game(ID),
              ?assertEqual(order_phase, OrderCurrent#game_current.current_phase),
              ?assertEqual({1900, spring},
                           OrderCurrent#game_current.year_season),
-             %% timeout does not brings us to retreat phase, because
-             %% there are no conflicting orders
+
              game_timer:sync_event(ID, timeout),
              ?debugMsg("Process order - change phase to retreat"),
-             % here process order
-             %% we will have a retreat phase, due to "added hold" orders
              {ok, RetreatCurrent} = game:get_current_game(ID),
              ?assertEqual(retreat_phase,
                           RetreatCurrent#game_current.current_phase),
              ?assertEqual({1900, spring},
                           RetreatCurrent#game_current.year_season),
+
              %% timeout brings us to build phase - but since it spring
              %% it will skip it and go back to order
              game_timer:sync_event(ID, timeout),
@@ -242,6 +236,7 @@ game_current_tst_() ->
              {ok, Current} = game:get_current_game(ID),
              ?assertEqual(order_phase, Current#game_current.current_phase),
              ?assertEqual({1900, fall}, Current#game_current.year_season),
+
              % after the current game has updated, we automatically go
              % to the next phase -> order_phase
              % process order phase
@@ -251,10 +246,12 @@ game_current_tst_() ->
                           RetreatCurrent2#game_current.current_phase),
              ?assertEqual({1900, fall},
                           RetreatCurrent2#game_current.year_season),
+
              %% timeout to buildphase
              game_timer:sync_event(ID, timeout),
              {ok, BuildCurr} = game:get_current_game(ID),
              ?assertEqual(build_phase, BuildCurr#game_current.current_phase),
+
              game_timer:sync_event(ID, timeout),
              {ok, NewYearCurrent} = game:get_current_game(ID),
              ?assertEqual(order_phase,
@@ -455,7 +452,6 @@ get_game_state_tst_ () ->
      end,
      fun() ->
              GameRecord = test_game(),
-             GameRecord2 = GameRecord#game{status = ongoing},
              % Create a new Game
              Game = sync_get(sync_new(GameRecord)),
              % join new player with id=1122 and country=england
