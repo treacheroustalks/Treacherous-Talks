@@ -336,19 +336,19 @@ get_game_map(GameID, #game_overview{} = GameOverview) ->
     {ok, Game=#game{status= Status}} = get_game(GameID),
     case Status of
         waiting ->
-            Map = map_data:create (standard_game),
+            Map = digraph_io:to_erlang_term(map_data:create (standard_game)),
             GameOV = GameOverview#game_overview{game_rec= Game,
-                                                map = digraph_io:to_erlang_term(Map)},
+                                                map = Map},
             {ok, GameOV};
-        ongoing -> %TODO provide state for other type of games which are not waiting
+        ongoing ->
             case  get_DB_obj(?B_GAME_STATE, get_keyprefix({id, GameID})) of
                 {ok, State} ->
-                    Map = digraph_io:from_erlang_term(State#game_state.map),
+                    Map = State#game_state.map,
                     GameOV = GameOverview#game_overview{game_rec = Game,
                                                         map = Map},
                     {ok, GameOV}
             end;
-        _ -> {error, game_not_waiting}
+        _ -> {error, game_not_found}
     end.
 
 
@@ -394,7 +394,7 @@ setup_game(ID) ->
     Map = digraph_io:to_erlang_term(map_data:create(standard_game)),
     GameState = #game_state{id = ID,
                             phase = order_phase,
-                            year_season = spring,
+                            year_season = {?START_YEAR, spring},
                             map = Map},
     StateKey = list_to_binary(integer_to_list(ID) ++
                               "-" ++ integer_to_list(?START_YEAR) ++
