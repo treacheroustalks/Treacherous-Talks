@@ -541,21 +541,28 @@ limit_builds_test () ->
 
 civil_disorder_test () ->
     Map = map_data:create (standard_game),
-    map:add_unit (Map, {army, austria}, albania),
+    map:add_unit (Map, {fleet, austria}, albania),
     map:add_unit (Map, {army, austria}, serbia),
+    map:add_unit (Map, {army, austria}, ukraine),
     map:add_unit (Map, {fleet, austria}, north_africa),
     ?debugMsg ("counting:"),
     rules:process (count_phase, Map, diplomacy_rules, []),
     %% austria has now 4 supply centers (home country and serbia),
-    %% but 6 units (home country + serbia, albania, north_africa),
-    %% this means two have to go.
+    %% but 7 units (home country + A ukraine,
+    %%                             A serbia,
+    %%                             F albania,
+    %%                             F north_africa)
+    %% this means three have to go
     rules:process (build_phase, Map, diplomacy_rules, []),
     %% oops, no destroy orders! --> civil disorder rule came into affect!
 
-    %% A Serbia is removed, A Albania is equally far, but lexical order places
-    %% Serbia behind Albania, F North Africa is removed because it is very far
-    %% away:
+    %% Removed where, according to the rules:
+    %%  1) F north_africa (furthest away)
+    %%  2) F albania (equally far away but it's a fleet)
+    %%  3) A serbia (as far away as ukraine but first in alphabetical order)
     ?assertEqual ([], map:get_units (Map, north_africa)),
-    ?assertEqual ([{army, austria}], map:get_units (Map, albania)),
+    ?assertEqual ([], map:get_units (Map, albania)),
     ?assertEqual ([], map:get_units (Map, serbia)),
-        map_data:delete (Map).
+    ?assertEqual ([{army, austria}], map:get_units (Map, ukraine)),
+    map_data:delete (Map).
+

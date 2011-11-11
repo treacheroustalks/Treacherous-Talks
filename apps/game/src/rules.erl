@@ -1,7 +1,7 @@
 %% -----------------------------------------------------------------------------
 %% @doc
 %% rules implements abstract game rules. The module relies
-%% on a seperate module (name is supplied to process) to implement
+%% on a separate module (name is supplied to process) to implement
 %% the specific rules, furtheron called the 'rule implementation'.
 %%
 %% a `#rule' is a strategy-like record,
@@ -76,7 +76,7 @@ process (Phase, Map, RULES_MOD, Orders) ->
                      end,
                      [],
                      Orders1),
-    {ProcessReplies, _} = seperate_orders_and_replies (ProcessAnswer),
+    {ProcessReplies, _} = separate_orders_and_replies (ProcessAnswer),
     lists:foldl (fun (Item, Acc) ->
                          case Item of
                              ok -> Acc;
@@ -117,7 +117,7 @@ transform_orders (Orders, RuleResponse) ->
           Orders,
           RuleResponse).
 
-seperate_orders_and_replies (TransformedResponse) ->
+separate_orders_and_replies (TransformedResponse) ->
     lists:foldl (
       fun (Item, {RepliesAcc, OrdersAcc}) ->
               case Item of
@@ -173,7 +173,7 @@ execute_single_rule (Map, Rule, Orders) ->
     TransformedResponse =
         transform_orders (Orders, RuleResponse),
     %%make an {[Replies],[Orders]} tuple:
-    seperate_orders_and_replies (TransformedResponse).
+    separate_orders_and_replies (TransformedResponse).
 
 %% loops over the execute_rules_stage method until a fixpoint is reached
 -spec execute_rules (Map, [Rule], [Order]) -> any () when
