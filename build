@@ -43,8 +43,8 @@ build_dep "building xmpp_frontend" "make release"
 cd $cwd
 
 # Build our XMPP frontend tests
-cd ext_test/ejabberd_echo
-build_dep "building xmpp_frontend tests (including exmpp)" "./build"
+cd $cwd/ext_test/ejabberd_echo
+run_script "building xmpp_frontend tests" "../../rebar compile"
 cd $cwd
 
 # Exit
