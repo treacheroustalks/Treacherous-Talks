@@ -3,8 +3,8 @@
 %%% COPYRIGHT
 %%% @end
 %%%--------------------------------------------------------------------
-%%% @module xmpp_client @end
 %%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
+%%%
 %%% @doc xmpp_client to check ejabberd by using exmpp client
 %%% @end
 %%%
@@ -132,9 +132,9 @@ login(App, Sender, Password) ->
     {ok, #state{session=MySession, my_jid = MyJID}}.
 
 %%--------------------------------------------------------------------
-%% @function  handle_call/3  @end
-%%
-%% @doc Handling call messages
+%% @doc
+%% Handling call messages
+%% @end
 %%--------------------------------------------------------------------
 handle_call(stop, _From , State = #state{session=MySession}) ->
     exmpp_session:stop(MySession),
