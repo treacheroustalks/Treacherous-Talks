@@ -110,8 +110,7 @@ create (standard_game, retreat_phase) ->
      remove_dislodge_state_rule ()];
 create (standard_game, count_phase) ->
     [no_orders_accepted_rule (),
-     count_units_rule ()
-     ];
+     count_units_rule ()];
 create (standard_game, build_phase) ->
     [unit_can_build_there_rule (),
      can_build_rule (),
@@ -132,11 +131,15 @@ do_process (_, Map, {destroy, Unit, From}) ->
     map:remove_unit (Map, Unit, From),
     [];
 do_process (_, _, {support, _, _, _}) ->
+    %% the support was executed implicitly by adding/removing rules already, so
+    %% we are doing nothing.
     [];
 do_process (_, _, {convoy, _, _, _, _, _}) ->
+    %% same as support.
     [];
 do_process (build_phase, Map, {destroy_furthest_units, Nation, ToDestroy}) ->
-%    io:format (user, "destroy_furthest_unit, ~p~n", [Nation]),
+    %% the most complex order. It sorts `Nation''s units by
+    %% distance/type/province and destroys the `ToDestroy' last units.
     Units = map:get_units (Map),
     FilteredUnits = lists:filter (fun ({_Province, {_, Owner}}) ->
                           Owner == Nation
@@ -145,36 +148,52 @@ do_process (build_phase, Map, {destroy_furthest_units, Nation, ToDestroy}) ->
     TaggedUnits =
         ordsets:from_list (
           lists:map (fun ({Province, Unit}) ->
-                             MinDist =
-                                 lists:foldl (
-                                   fun (HomeProvince, Acc) ->
-                                           Dist = map:get_distance (Map,
-                                                                    Province,
-                                                                    HomeProvince),
-                                           case Acc of
-                                               infinity ->
-                                                   Dist;
-                                               _Other ->
-                                                   lists:min ([Acc, Dist])
-                                           end
-                                   end,
-                                   infinity,
-                                   get_home_provinces (Map, Nation)),
-                             {MinDist, Province, Unit}
+                             get_sort_tuple (Map, Unit, Province)
                      end,
                      FilteredUnits)),
-    {_, FurthestUnits} =
-        lists:split (length (TaggedUnits) - ToDestroy, TaggedUnits),
-    lists:foreach (fun ({_, TargetProv, TargetUnit}) ->
+    ?debugVal (TaggedUnits),
+    {FurthestUnits, _} =
+        lists:split (ToDestroy, TaggedUnits),
+    lists:foreach (fun ({_, _, TargetProv, TargetUnit}) ->
                            do_process (build_phase,
                                        Map,
                                        {destroy, TargetUnit, TargetProv})
                    end,
-                  FurthestUnits),
+                   FurthestUnits),
     [];
 do_process (Phase, _Map, Order) ->
     erlang:error ({error,
                    {unhandled_case, ?MODULE, ?LINE, [Phase, 'Map', Order]}}).
+
+%% -----------------------------------------------------------------------------
+%% Helper function for destroy_furthest_units functionality
+%% generates a tuple from the Map, Unit and Province that makes sorts first
+%% what should be destroyed first.
+%% -----------------------------------------------------------------------------
+-spec get_sort_tuple (digraph (), unit (), province ()) ->
+                             {Dis, any (), province (), unit ()} when
+      Dis :: pos_integer () | 0.
+get_sort_tuple (Map, Unit = {UType, Nation}, Province) ->
+    MinDist =
+        lists:foldl (
+          fun (HomeProvince, Acc) ->
+                  Dist = map:get_distance (Map,
+                                           Province,
+                                           HomeProvince),
+                  case Acc of
+                      infinity ->
+                          Dist;
+                      _Other ->
+                          lists:min ([Acc, Dist])
+                  end
+          end,
+          infinity,
+          get_home_provinces (Map, Nation)),
+    TypeTag = case UType of
+                  fleet -> 1;
+                  army -> 2
+              end,
+    {-MinDist, TypeTag, Province, Unit}.
 
 %% remove orders for non-existing units
 unit_exists_rule () ->
