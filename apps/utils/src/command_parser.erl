@@ -40,10 +40,11 @@
 -include_lib("datatypes/include/user.hrl").
 
 %%-------------------------------------------------------------------
+%% @todo at least the spec function arity is wrong
+%% @todo the `{game_order,...}' return case is missing in the specs. what else?
 %% @doc
 %% Gets a binary string and parses it into a command and the
 %% correspondig value.
-%%
 %%
 %% [@spec parse(BinString:binary()) ->
 %% {register, {ok, #user{}}} |
@@ -95,7 +96,8 @@ parse(BinString, Client) when is_binary(BinString) ->
                                      {ok, User= #user{}} ->
                                          case User#user.channel of
                                              undefined ->
-                                                 {ok, User#user{channel=Client}};
+                                                 {ok,
+                                                  User#user{channel=Client}};
                                              _ ->
                                                  {ok, User}
                                          end;

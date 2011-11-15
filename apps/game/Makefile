@@ -26,8 +26,11 @@ test:
 	mkdir doc/coverage
 	cp -r .eunit/*.html doc/coverage
 
-dia:
-	dialyzer -Wno return -I ../ --src src ~/pcs.plt
+game.plt: compile
+	dialyzer --build_plt --output_plt game.plt ebin
+
+dia: ebin game.plt
+	dialyzer -q -Wno_return -I .. --plts game.plt ~/.dialyzer_plt -- ebin
 
 complete: small_clean deps compile test docs
 	@echo ok

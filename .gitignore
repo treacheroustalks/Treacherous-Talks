@@ -1,6 +1,7 @@
 #erlang
 *.beam
 .eunit
+*.plt
 ebin/
 *.dump
 *doc/*.html

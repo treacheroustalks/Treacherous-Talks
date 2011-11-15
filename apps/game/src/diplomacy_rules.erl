@@ -174,7 +174,6 @@ do_process (build_phase, Map, {destroy_furthest_units, Nation, ToDestroy}) ->
                              get_sort_tuple (Map, Unit, Province)
                      end,
                      FilteredUnits)),
-    ?debugVal (TaggedUnits),
     {FurthestUnits, _} =
         lists:split (ToDestroy, TaggedUnits),
     lists:foreach (fun ({_, _, TargetProv, TargetUnit}) ->
@@ -678,22 +677,27 @@ bounce2_actor (Map,
     end.
 
 unit_can_build_there_detector (Map,
-                               {{build, {_Type, Nation}, Province}}) ->
+                               {{build, {Type, Nation}, Province}}) ->
     case map:get_province_info (Map, Province, original_owner) of
         Nation ->
-            false;
-        _ ->
             case map:get_units (Map, Province) of
                 [] ->
-                    false;
+                    case map:get_reachable (Map, Province, Type) of
+                        [] ->
+                            true;  % act!
+                        _ ->
+                            false
+                    end;
                 _ ->
-                    true
-            end
+                    true % act!
+            end;
+        _ ->
+            true % act!
     end;
 unit_can_build_there_detector (_, _) ->
     false.
 
-unit_can_build_there_actor (_Map, Build) ->
+unit_can_build_there_actor (_Map, {Build}) ->
     [{remove, Build}].
 
 unit_can_go_there_detector (Map, {M = {move, {Type, _Owner}, From, To}}) ->

@@ -51,16 +51,16 @@ test_game () ->
           waiting_time = 50*60}.
 
 
-test_game3 () ->
-    #game{ creator_id=123,
-           name="game name",
-           description="this is a long game!",
-           press = black_press,
-           order_phase = 100,
-           retreat_phase = 100,
-           build_phase = 100,
-           password="pass",
-           waiting_time = 5}.
+%test_game3 () ->
+%    #game{ creator_id=123,
+%           name="game name",
+%           description="this is a long game!",
+%           press = black_press,
+%           order_phase = 100,
+%           retreat_phase = 100,
+%           build_phase = 100,
+%           password="pass",
+%           waiting_time = 5}.
 
 % input and output for test game order
 test_order_list() ->
@@ -446,7 +446,7 @@ game_search_tst_ () ->
              ?assert(lists:member(Game4#game.id, Results3)),
 
              ?debugMsg("Search games with ALL clauses"),
-             NotClause = lists:flatten(io_lib:format("id=~p", [Game5#game.id])),
+             lists:flatten(io_lib:format("id=~p", [Game5#game.id])),
              Query4 = "press=pressTypeA AND password=pass OR press=pressTypeB "
                        "OR press=pressTypeC "
                        "NOT id=" ++ integer_to_list(Game5#game.id),

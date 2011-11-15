@@ -25,8 +25,8 @@
 %%%
 %%% A module for recognizing play move orders in email body
 %%%
-%%% @TODO modify the code in a concurrent a way, so that results of some
-%%% expensive initiations can be stored in other processes.
+%%% @TODO modify the code in a concurrent a way, so that results of some expensive initiations can be stored in other processes.
+%%% @todo use proper specs
 %%% @end
 %%%
 %%%-------------------------------------------------------------------
@@ -44,6 +44,7 @@
 -include("command_parser.hrl").
 
 %%------------------------------------------------------------------------------
+%% @todo input example is incomplete
 %% @doc parse player's orders to a list of order terms.
 %%  Return {ok, {OrderList, ErrorList}}
 %%
@@ -162,7 +163,9 @@ interpret_order_line (OrderLine) ->
         hold when SubjLoc /=nil->
             #hold{subj_unit = SubjUnit, subj_loc = SubjLoc};
         convoy when SubjLoc /=nil, ObjSrc /=nil, ObjDst /=nil ->
-            #convoy{subj_unit = SubjUnit, subj_loc = SubjLoc, obj_unit = ObjUnit,
+            #convoy{subj_unit = SubjUnit,
+                    subj_loc = SubjLoc,
+                    obj_unit = ObjUnit,
                     obj_src_loc = ObjSrc, obj_dst_loc = ObjDst};
         build when ObjUnit /=nil, ObjSrc /=nil ->
             % @TODO default coast for special coastal province
