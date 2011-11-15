@@ -65,3 +65,7 @@
 -define(RESULT, "RESULT").
 
 -define(SUPPLYCENTER, "SUPPLY CENTERS").
+
+-define(MESSAGE, "MESSAGE").
+-define(CONTENT, "CONTENT").
+-define(TO, "TO").

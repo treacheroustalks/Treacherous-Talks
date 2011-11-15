@@ -75,6 +75,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?UPDATE
                   "|"?OVERVIEW
                   "|"?JOIN
+                  "|"?MESSAGE
                   ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -107,7 +108,9 @@ parse(BinString, Client) when is_binary(BinString) ->
                 <<?OVERVIEW>> ->
                     {game_overview, user_commands:parse_overview(Data)};
                 <<?JOIN>> ->
-                    {join_game, user_commands:parse_join(Data)}
+                    {join_game, user_commands:parse_join(Data)};
+                <<?MESSAGE>> ->
+                    {user_msg, user_commands:parse_user_msg(Data)}
             end;
          nomatch ->
                 unknown_command
