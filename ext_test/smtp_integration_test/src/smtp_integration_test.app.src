@@ -1,0 +1,11 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+
+{application, smtp_integration_test,
+ [
+  {description, "Libraries for integration tests via the SMTP Frontend"},
+  {vsn, "1.0.0"},
+  {modules, [
+             imap_client,
+             smtp_test_utils
+            ]}
+ ]}.

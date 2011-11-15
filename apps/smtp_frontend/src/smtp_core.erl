@@ -324,12 +324,15 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
     To   = binary_to_list(BinTo),
 
     [_, ToHost] = string:tokens(To, "@"),
-    [_, FromHost] = string:tokens(From, "@"),
+
+    io:format("Server got mail:~n"
+              "From: ~p~n"
+              "To: ~p~n"
+              "Data: ~p~n"
+              "MyHost: ~p~n",
+              [BinFrom, BinTo, BinData, MyHost]),
 
     case ToHost of
-        FromHost
-          when FromHost == MyHost -> % when sender and receipent are on our server
-            {ok, {mail_stored, BinData}};
         MyHost -> % when a mail reach its destination
             ParsedCmd = case command_parser:parse(BinData, mail) of
                             {login, {ok, User}} ->
@@ -342,7 +345,7 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
                                 Other
                         end,
             controller:handle_action(ParsedCmd, {fun smtp_output:reply/3,
-                                                 [From, To, FromHost]});
+                                                 [From, To]});
         _ -> %  when this game server is misused as a relay server
             {ok, relay_denied}
     end.

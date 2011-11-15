@@ -47,7 +47,15 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, Domain} = application:get_env(domain),
+    {ok, Domain} = case application:get_env(domain) of
+                       undefined ->
+                           {ok, Hostname} = inet:gethostname(),
+                           {ok,{hostent,FullHostname,[],inet,_,[_]}} =
+                               inet:gethostbyname(Hostname),
+                           {ok, FullHostname};
+                       Else ->
+                           Else
+                   end,
     {ok, Address} = application:get_env(address),
     {ok, Port} = application:get_env(port),
     {ok, Protocol} = application:get_env(protocol),
@@ -59,6 +67,6 @@ init([]) ->
                       {protocol, Protocol},
                       {family, Family},
                       {sessionoptions, [{allow_bare_newlines, fix}]}
-                   ]],
+                     ]],
     SMTPServer = ?CHILD(gen_smtp_server, [smtp_core, ServerOptions], worker),
     {ok, {{one_for_one, 5, 10}, [SMTPServer]}}.

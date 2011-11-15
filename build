@@ -42,6 +42,11 @@ cd $cwd/ext_test/ejabberd_echo
 run_script "building xmpp_frontend tests" "../../rebar compile"
 cd $cwd
 
+# Build our SMTP frontend test client
+cd $cwd/ext_test/smtp_integration_test
+run_script "building smtp_frontend test client" "../../rebar compile"
+cd $cwd
+
 # Exit
 print_exit_status "Build" $errors
 exit $errors

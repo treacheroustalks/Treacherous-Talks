@@ -51,12 +51,27 @@ if [ $dointegration -eq 1 ]; then
 
     # Run tests
     cd ext_test/ejabberd_echo || errors=1
-    run_script "running tests" "$cwd/rebar eunit skip_deps=true"
-
-    # Stop backend and xmpp_frontend
-    stop_release $sysrel "xmpp_frontend"
-    stop_release $sysrel "backend"
+    run_script "running xmpp_frontend tests" "$cwd/rebar eunit skip_deps=true"
     cd $cwd
+
+    # Stop xmpp_frontend
+    stop_release $sysrel "xmpp_frontend"
+
+    # Release and start smtp_frontend
+    ./release -nd smtp_frontend
+    start_release $sysrel "smtp_frontend"
+    sleep 5
+
+    # Run smtp_frontend tests
+    cd ext_test/smtp_integration_test || errors=1
+    run_script "running smtp_frontend tests" "$cwd/rebar eunit skip_deps=true"
+    cd $cwd
+
+    # Stop smtp_frontend
+    stop_release "system-release" "smtp_frontend"
+
+    # Stop backend
+    stop_release "system-release" "backend"
 
 fi
 

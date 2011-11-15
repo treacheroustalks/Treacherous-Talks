@@ -33,8 +33,13 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    pg2:start_link(),
-    smtp_frontend_sup:start_link().
+    case net_adm:ping('backend@127.0.0.1') of
+        pong ->
+            pg2:start_link(),
+            smtp_frontend_sup:start_link();
+        pang ->
+            exit("Pinging backend@127.0.0.1 failed.")
+    end.
 
 stop(_State) ->
     ok.

@@ -19,9 +19,9 @@
                  ]},
   {mod, { smtp_frontend_app, []}},
   {env, [
-    {domain, "dilshod.pcs"},
+%    {domain, "localhost"},
     {address, {0,0,0,0}},
-    {port, 25},
+    {port, 2525},
     {protocol, tcp},
     {family, inet}
   ]}

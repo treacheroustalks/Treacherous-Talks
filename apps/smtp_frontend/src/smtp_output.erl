@@ -50,9 +50,9 @@
 %% [@spec reply([From, To, ToHost], {Cmd, Status}=Result, Data) -> ok.
 %% @end]
 %%-------------------------------------------------------------------
-reply([From, To, ToHost], Result, Data) ->
+reply([From, To], Result, Data) ->
     % Note: From and To are interchanged when sending the mail
-    send_mail(To, From, ToHost, get_reply(Result, Data)).
+    send_mail(To, From, get_reply(Result, Data)).
 
 %%-------------------------------------------------------------------
 %% Internal functions
@@ -70,6 +70,21 @@ get_reply(Result, Data) ->
     fe_messages:get(Result, Data).
 
 %% Send mail to specified user
-send_mail(From, To, ToHost, Reply) ->
-    io:format("[SMTP][To: ~p] ~s", [To, Reply]),
-    gen_smtp_client:send({From, [To], Reply}, [{relay, ToHost}, {port,25}]).
+send_mail(From, To, Body) ->
+    Mail = lists:flatten(io_lib:format("From: ~s\r\n"
+                                       "To: ~s\r\n"
+                                       "Subject: Treacherous Talks\r\n\r\n"
+                                       "~s",
+                                       [From, To, Body])),
+    io:format("[SMTP][From: ~p][To: ~p]~n~s", [From, To, Mail]),
+    RelayHost = case application:get_env(relay_host) of
+        {ok, Host} ->
+            Host;
+        undefined ->
+            "mail.pcs"  %slightly better form of hardcoding - can be set in app config.
+    end,
+    SendResult = gen_smtp_client:send({From, [To], Mail},
+                                      [{relay, RelayHost},
+                                       {port,25},
+                                       {tls, never}]),
+    io:format("Send result was ~p~n", [SendResult]).
