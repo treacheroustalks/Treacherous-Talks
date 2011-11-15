@@ -37,11 +37,6 @@ cd $cwd
 run_script "running top-level rebar compile" "./rebar compile"
 run_script "generating edocs for all apps" "./rebar doc skip_deps=true"
 
-# Build ejabberd
-cd ext_rel/xmpp_frontend
-build_dep "building xmpp_frontend" "make release"
-cd $cwd
-
 # Build our XMPP frontend tests
 cd $cwd/ext_test/ejabberd_echo
 run_script "building xmpp_frontend tests" "../../rebar compile"

@@ -32,8 +32,8 @@
 %%%==================================================================
 -module(tt_xmpp_output).
 
--include("ejabberd.hrl").
--include("jlib.hrl").
+-include("ejabberd/include/ejabberd.hrl").
+-include("ejabberd/include/jlib.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("utils/include/command_parser.hrl").
 

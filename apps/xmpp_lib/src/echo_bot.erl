@@ -38,7 +38,7 @@
 
 -export([route/3]).
 
--include("ejabberd.hrl").
+-include("ejabberd/include/ejabberd.hrl").
 
 -define(PROCNAME, ejabberd_mod_bot).
 -define(BOTNAME, echo_bot).
