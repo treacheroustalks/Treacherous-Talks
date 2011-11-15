@@ -19,15 +19,54 @@
          parse_login/1,
          parse_reconfig/1,
          parse_overview/1,
+         parse_user_msg/1,
          parse_join/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
 
+-include_lib("datatypes/include/message.hrl").
 -include_lib("datatypes/include/user.hrl").% -record(user,{})
--include_lib("datatypes/include/game.hrl").% -record(user,{})
+-include_lib("datatypes/include/game.hrl").% -record(game,{})
 -include("include/records.hrl").% -record(reg_info,{})
 -include("include/command_parser.hrl").% User command keyword
+
+%%------------------------------------------------------------------------------
+%% @doc parse_user_msg/1
+%%
+%% Parses a user message string into a message record.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_user_msg(Data :: binary() ) ->
+          {ok, #frontend_msg{}} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_user_msg(Data) ->
+    RequiredFields = [?SESSION, ?TO],
+    ReqValues = get_required_fields(RequiredFields, Data),
+
+    Content = extract_msg_content(?CONTENT ++ ":", Data),
+    ReqValues2 = [Content| ReqValues],
+    RequiredFields2 = [?CONTENT, ?SESSION, ?TO],
+
+    case lists:member(field_missing, ReqValues2) of
+        true ->
+            {error, {required_fields, RequiredFields2}};
+        false ->
+            [_,Session, To] = ReqValues2,
+            case get_error_list(ReqValues2,
+                                get_check_type(RequiredFields2),RequiredFields2) of
+                [] ->
+                    FrontendMsg = #frontend_msg{
+                                                to = To,
+                                                content = Content
+                                                },
+                    {ok, Session, FrontendMsg};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
 
 %%------------------------------------------------------------------------------
 %% @doc parse_login/1
@@ -272,6 +311,7 @@ parse_join(Data) ->
             end
     end.
 
+
 %% Internal function
 %%------------------------------------------------------------------------------
 %%
@@ -291,6 +331,23 @@ get_required_fields(Fields, Data) ->
                       end
               end, Fields).
 
+%%------------------------------------------------------------------------------
+%% @doc
+%%  extract the content of the message from input
+%% @end
+%%------------------------------------------------------------------------------
+-spec extract_msg_content(string() , binary()) ->
+          string() | field_missing.
+extract_msg_content(Field, BinString) ->
+    Commands =  Field ++ "(.*)",
+
+    {ok, MP} = re:compile(Commands, [dotall]),
+    case re:run(BinString, MP, [{capture, all_but_first, list}]) of
+        {match, [Content]} ->
+            Content;
+        nomatch ->
+            field_missing
+    end.
 %%------------------------------------------------------------------------------
 %% @doc convert time format string to minutes
 %%  Input:  "1D2H30M"
@@ -361,7 +418,9 @@ is_valid_value(FieldType, Value) ->
         channel ->
             Check(valid_pattern, "\s*(mail|im|web)\s*");
         duration_time ->
-            Check(valid_pattern, "^([0-9]+D)*([0-9]+H)*([0-9]+M)*$")
+            Check(valid_pattern, "^([0-9]+D)*([0-9]+H)*([0-9]+M)*$");
+        any ->
+            Check(valid_pattern, ".*")
     end.
 
 
@@ -425,6 +484,9 @@ get_check_type([H|Rest], AccCheckList) ->
         ?RETREATCIRCLE -> [duration_time|AccCheckList];
         ?GAINLOSTCIRCLE -> [duration_time|AccCheckList];
         ?WAITTIME -> [duration_time|AccCheckList];
+
+        ?CONTENT -> [any|AccCheckList];
+        ?TO -> [begin_with_alpha|AccCheckList];
 
         ?COUNTRY -> [alpha_space_only|AccCheckList]
     end,

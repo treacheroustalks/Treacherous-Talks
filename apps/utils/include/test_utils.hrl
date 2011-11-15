@@ -268,3 +268,33 @@ adfadfasdfaldfad">>
     2563564565asdfa
 ">>
 ).
+
+-define(SAMPLE_USER_MSG(Session),
+<<"
+    asdfasdfasdfasdf
+    MESSAGE
+
+    SESSION: " Session "
+    TO: nick
+    CONTENT:
+
+    A sample message to nick player which
+    contain several line
+    have fun
+
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_USER_MSG_WRONG,
+<<"
+    asdfasdfasdfasdf
+    MESSAGE
+
+    SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
+    TO: nick
+    END
+    2563564565asdfa
+">>
+).

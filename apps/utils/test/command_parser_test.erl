@@ -3,6 +3,9 @@
 
 -include_lib("datatypes/include/user.hrl").% #user{}
 -include_lib("datatypes/include/game.hrl").% #game{}
+-include_lib("datatypes/include/message.hrl").
+-include("include/command_parser.hrl").% User command keyword
+
 
 -include("test_utils.hrl").
 
@@ -73,6 +76,36 @@ order_test_() ->
                  {move,army,london,norwegian_sea,north_coast},
                  {move,any_unit,london,norwegian_sea,any_coast},
                  {move,army,london,norwegian_sea,any_coast}]}}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
+user_msg_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_USER_MSG(?SESSION_ID)
+                                        , im),
+    Expected = {user_msg,
+                   {ok,?SESSION_ID,
+                       {frontend_msg,"nick",
+                           "\n\n    A sample message to nick player which\n"
+                       "    contain several line\n    have fun\n\n    "}}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
+wrong_user_msg_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_USER_MSG_WRONG, im),
+    Expected = {user_msg,{error, {required_fields,
+                                  [?CONTENT, ?SESSION, ?TO]}}},
+
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+wrong_session_user_msg_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_USER_MSG("@1234")
+                                        , im),
+    Expected = {user_msg,{error, {invalid_input,
+                                  [?SESSION]}}},
+
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
