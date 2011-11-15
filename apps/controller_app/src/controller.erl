@@ -94,6 +94,7 @@
 %% join_game ->         [country_not_available,
 %%                       user_already_joined]
 %% game_overview ->     [user_not_playing_this_game]
+%% logout ->            []
 %%
 %% @end
 %%
@@ -122,7 +123,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == reconfig_game;
        Command == game_overview;
        Command == join_game;
-       Command == game_order->
+       Command == game_order;
+       Command == logout ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

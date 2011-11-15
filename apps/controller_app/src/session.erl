@@ -42,6 +42,7 @@
          start/2,
          stop/1,
          alive/1,
+         logout/2,
          get_session_user/2,
          update_user/2,
          create_game/2,
@@ -92,6 +93,8 @@ start(User=#user{}, Hist) ->
 %%-------------------------------------------------------------------
 stop(SessionId) ->
     ?SESSION_CAST(SessionId, stop).
+logout(SessionId, _Arg) ->
+    stop(SessionId).
 
 %%-------------------------------------------------------------------
 %% @doc

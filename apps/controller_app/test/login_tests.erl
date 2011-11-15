@@ -53,14 +53,18 @@ tests(Callback) ->
 %% Login tests
 %%-------------------------------------------------------------------
 success(Callback) ->
-    Cmd = {login, {ok, get_test_data(success)}},
+    User = get_test_data(success),
+    Cmd = {login, {ok, User}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, SessionId} = Result,
 
     ?assertEqual({login, success}, CmdRes),
 
     SessResult = session:alive(SessionId),
-    ?assertEqual(true, SessResult).
+    ?assertEqual(true, SessResult),
+
+    PresenceResult = session_presence:is_online(User#user.id),
+    ?assertEqual(true, PresenceResult).
 
 mult_nicks(Callback) ->
     User = get_test_data(mult_nicks),
@@ -69,7 +73,10 @@ mult_nicks(Callback) ->
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
     ?assertEqual({login, invalid_data}, CmdRes),
-    ?assertEqual(nick_not_unique, Info).
+    ?assertEqual(nick_not_unique, Info),
+
+    PresenceResult = session_presence:is_online(User#user.id),
+    ?assertEqual(false, PresenceResult).
 
 user_not_existing(Callback) ->
     User = get_test_data(user_not_existing),
@@ -78,7 +85,10 @@ user_not_existing(Callback) ->
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
     ?assertEqual({login, invalid_data}, CmdRes),
-    ?assertEqual(invalid_login_data, Info).
+    ?assertEqual(invalid_login_data, Info),
+
+    PresenceResult = session_presence:is_online(User#user.id),
+    ?assertEqual(false, PresenceResult).
 
 wrong_password(Callback) ->
     User = get_test_data(wrong_password),
@@ -87,7 +97,10 @@ wrong_password(Callback) ->
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
     ?assertEqual({login, invalid_data}, CmdRes),
-    ?assertEqual(invalid_login_data, Info).
+    ?assertEqual(invalid_login_data, Info),
+
+    PresenceResult = session_presence:is_online(User#user.id),
+    ?assertEqual(false, PresenceResult).
 
 kill_old_session(Callback) ->
     {User, Session} = get_test_data(kill_old_session),
@@ -102,7 +115,10 @@ kill_old_session(Callback) ->
     MonitorRef = monitor(process, session_id:to_pid(Session)),
     receive {'DOWN', MonitorRef, _Type, _Object, _Info} -> ok end,
     SessResult = session:alive(Session),
-    ?assertEqual(false, SessResult).
+    ?assertEqual(false, SessResult),
+
+    PresenceResult = session_presence:is_online(User#user.id),
+    ?assertEqual(true, PresenceResult).
 
 %%-------------------------------------------------------------------
 %% Test data

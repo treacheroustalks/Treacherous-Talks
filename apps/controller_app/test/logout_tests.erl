@@ -21,22 +21,37 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
--module(controller_app_app).
--vsn("1.0.0").
+%%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
+%%%
+%%% @doc Tests the logout in the controller.
+%%% 
+%%% @end
+%%%
+%%% @since : 15 Nov 2011 by Bermuda Triangle
+%%% @end
+%%%-------------------------------------------------------------------
+-module(logout_tests).
 
--behaviour(application).
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/user.hrl").
 
-%% Application callbacks
--export([start/2, stop/1]).
+-export([tests/2, success/2]).
 
-%% ===================================================================
-%% Application callbacks
-%% ===================================================================
+tests(Callback, SessId) ->
+    [
+     ?_test(success(Callback, SessId))
+    ].
 
-start(_StartType, _StartArgs) ->
-    io:format ("[~p] starting~n", [?MODULE]),
-    ok = session_presence:init(),
-    controller_app_sup:start_link().
+%%-------------------------------------------------------------------
+%% Update user tests
+%%-------------------------------------------------------------------
+success(Callback, SessId) ->
+    User = session:get_session_user(SessId, no_arg),
 
-stop(_State) ->
-    ok.
+    Cmd = {logout, {ok, SessId, []}},
+    Result = controller:handle_action(Cmd, Callback),
+
+    ?assertMatch({{logout, success}, ok}, Result),
+
+    PresenceResult = session_presence:is_online(User#user.id),
+    ?assertEqual(true, PresenceResult).

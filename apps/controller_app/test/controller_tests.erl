@@ -164,7 +164,7 @@ invalid_session(Callback) ->
 session_setup() ->
     Mods = [
             update_user_tests, get_session_user_tests,
-            create_game_tests
+            create_game_tests, logout_tests
            ],
     Callback = callback(),
 

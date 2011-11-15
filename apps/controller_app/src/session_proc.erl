@@ -49,6 +49,7 @@
 
 %% server state
 -record(state, {user, session_id, history}).
+-define(TIMEOUT, 108000000). % 30 minutes = 1000 * 60 * 60 * 30
 
 
 %% ------------------------------------------------------------------
@@ -78,9 +79,12 @@ start(User=#user{}, History) ->
 -spec init(#user{}) -> {ok, #state{}}.
 init([User, History]) ->
     Id = session_id:from_pid(self()),
-    {ok, #state{user = User,
-                session_id = Id,
-                history = session_history:add(History, Id)}}.
+    session_presence:add(User#user.id, Id),
+    {ok,
+     #state{user = User,
+            session_id = Id,
+            history = session_history:add(History, Id)},
+     ?TIMEOUT}.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -96,7 +100,7 @@ init([User, History]) ->
 handle_call({game_order, {GameId, GameOrderList}}, _From,
                                                  State = #state{user=User}) ->
     Reply = game:put_game_order(GameId, User#user.id, GameOrderList),
-    {reply, Reply, State};
+    {reply, Reply, State, ?TIMEOUT};
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -116,7 +120,7 @@ handle_call({update_user, PropList}, _From,
                 {ok, UpdatedUser} ->
                     {ok, UpdatedUser}
             end,
-    {reply, Reply, State#state{user=User2}};
+    {reply, Reply, State#state{user=User2}, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for creating a new game
@@ -130,7 +134,7 @@ handle_call({create_game, Game}, _From,
     Creator = User#user.id,
     {ok, GameId} = game:new_game(Game#game{creator_id = Creator}),
     % @todo no invalid create_game case yet ?
-    {reply, {ok, GameId}, State};
+    {reply, {ok, GameId}, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for getting a game
@@ -146,7 +150,7 @@ handle_call({get_game, GameId}, _From, State) ->
                 _ ->
                     {error, game_does_not_exist}
     end,
-    {reply, Reply, State};
+    {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for updating a game
@@ -173,7 +177,7 @@ handle_call({reconfig_game, {GameId, PropList}}, _From,
                 _ ->
                     {error, game_does_not_exist}
     end,
-    {reply, Reply, State};
+    {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for getting an overview of a game
@@ -185,7 +189,7 @@ handle_call({reconfig_game, {GameId, PropList}}, _From,
 handle_call({game_overview, GameId}, _From,
             State = #state{user=User}) ->
     Overview = game:get_game_overview(GameId, User#user.id),
-    {reply, Overview, State};
+    {reply, Overview, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for joining a game
@@ -198,7 +202,7 @@ handle_call({game_overview, GameId}, _From,
 handle_call({join_game, {GameId, Country}}, _From,
             State = #state{user=User}) ->
     Reply = game:join_game(GameId, User#user.id, Country),
-    {reply, Reply, State};
+    {reply, Reply, State, ?TIMEOUT};
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -212,25 +216,30 @@ handle_call({join_game, {GameId, Country}}, _From,
 handle_call(get_session_user, _From,
             State = #state{user=User}) ->
     Reply = {ok, User},
-    {reply, Reply, State};
+    {reply, Reply, State, ?TIMEOUT};
 
 handle_call(Request, _From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, _From, State}]),
-    {noreply, ok, State}.
+    {noreply, ok, State, ?TIMEOUT}.
 
 
 handle_cast(stop, State) ->
+    stop(State),
     {stop, normal, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
-    {noreply, State}.
+    {noreply, State, ?TIMEOUT}.
 
+handle_info(timeout, State) ->
+    stop(State),
+    {stop, normal, State};
 handle_info(_Info, State) ->
-    {noreply, State}.
+    {noreply, State, ?TIMEOUT}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    stop(State),
     io:format(user, "[~p] terminated ~p: reason: ~p, state: ~p ~n",
-               [?MODULE, self(), _Reason, _State]),
+               [?MODULE, self(), _Reason, State]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -239,3 +248,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+stop(State) ->
+    User = State#state.user,
+    UserId = User#user.id,
+    session_presence:remove(UserId).
