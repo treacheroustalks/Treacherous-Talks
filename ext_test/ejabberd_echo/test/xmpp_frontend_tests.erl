@@ -177,7 +177,7 @@ Supported commands are:").
 -define(JOIN_GAME_RESPONSE_INVALID_DATA,"You have already joined this game.\n").
 
 -define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Unhandled error.").
--define(GAME_OVERVIEW_RESPONSE_NOT_PLAY,"Unhandled error.\ngame_not_started\n").
+-define(GAME_OVERVIEW_RESPONSE_NOT_PLAY, "Only game players can view the gam").
 
 -define(GAME_ORDER_RESPONSE_SUCCESS, "Game order sent successfully:\n").
 -define(GAME_ORDER_RESPONSE_INVALID_INPUT, "Invalid input for the given command.\n").

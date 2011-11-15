@@ -39,18 +39,16 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
-%% export for eunit
--export([phase_change/2,
-        get_game_order_key/2,
-         get_keyprefix/1, get_game_order/1, translate_game_order/3, get_all_orders/1]).
+%% Exports for eunit and game timer
+-export([get_game_order_key/2]).
+
+%% ------------------------------------------------------------------
+%% External exports
+%% ------------------------------------------------------------------
+-export([update_game/2]).
 
 %% server state
 -record(state, {}).
-
-%% define start year
--define(START_YEAR, 1900).
-%% define rules module
--define(RULES, diplomacy_rules).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -93,7 +91,7 @@ handle_call({get_game, ID}, _From, State) ->
     Reply = get_game(ID),
     {reply, Reply, State};
 handle_call({get_keys_by_idx, Field, Value}, _From, State) ->
-    Reply = get_keys_by_idx(Field, Value),
+    Reply = game_utils:get_keys_by_idx(Field, Value),
     {reply, Reply, State};
 
 handle_call({join_game, GameID, UserID, Country}, _From, State) ->
@@ -103,20 +101,14 @@ handle_call({get_game_player, GameID}, _From, State) ->
     Reply = get_game_player(GameID),
     {reply, Reply, State};
 handle_call({get_game_overview, GameID, UserID}, _From, State) ->
-    Reply =get_game_overview(GameID, UserID),
+    Reply = get_game_overview(GameID, UserID),
     {reply, Reply, State};
 handle_call({delete_game, Key}, _From, State) ->
     BinKey = list_to_binary(integer_to_list(Key)),
     Reply = db:delete(?B_GAME, BinKey),
     {reply, Reply, State};
-handle_call({process_phase, ID, Phase}, _From, State) ->
-    Reply = process_phase(ID, Phase),
-    {reply, Reply, State};
 handle_call({get_current_game, ID}, _From, State) ->
-    Reply = get_current_game(ID),
-    {reply, Reply, State};
-handle_call({phase_change, Game, NewPhase},_From, State) ->
-    Reply = phase_change(Game, NewPhase),
+    Reply = game_utils:get_current_game(ID),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
@@ -140,6 +132,189 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates a new game record in the database.
+%% The first arguments being the atom 'undefined' will create a new
+%% ID for the game.
+%% @spec
+%% new_game(ID :: atom() | integer(), Game :: #game{}) ->
+%%     {ok, ID} | Error
+%% @end
+%%-------------------------------------------------------------------
+new_game(undefined, #game{} = Game) ->
+    ID = db:get_unique_id(),
+    new_game(ID, Game#game{id = ID});
+new_game(ID, #game{} = Game) ->
+    BinID = db:int_to_bin(ID),
+    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
+    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
+    GameObjWithIndex = db_obj:set_indices(DBGameObj,
+                                          game_utils:create_idx_list(Game)),
+    GamePutResult = db:put (GameObjWithIndex),
+    case GamePutResult of
+        {error, _} = Error ->
+            Error;
+        _ ->
+            PlayersPutResult = db:put (DBGamePlayerObj),
+            case PlayersPutResult of
+                {error, _} = Error ->
+                    Error;
+                _ ->
+                    {ok, _Pid} = game_join_proc:start(ID),
+                    {ok, ID}
+            end
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates a game with the given ID with the given game record in the database.
+%% @spec
+%% update_game(ID :: integer(), Game :: #game{}) ->
+%%     {ok, ID} | Error
+%% @end
+%%-------------------------------------------------------------------
+update_game(ID, #game{} = Game) ->
+    BinID = db:int_to_bin(ID),
+    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
+    GameObjWithIndex = db_obj:set_indices(DBGameObj,
+                                          game_utils:create_idx_list(Game)),
+    GamePutResult = db:put (GameObjWithIndex),
+    case GamePutResult of
+        {error, _} = Error ->
+            Error;
+        _ ->
+            {ok, ID}
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates a game overview, based on the data of the user and given
+%% game ID.
+%% @spec
+%% get_game_overview(GameID :: integer(), UserID :: integer()) ->
+%%     GameOverview :: #game_overview{}
+%%     | {error, game_not_started}
+%%     | {error, user_not_playing_this_game}
+%%     | Error
+%% @end
+%%-------------------------------------------------------------------
+get_game_overview(GameID, UserID) ->
+    case get_playercountry_game(GameID, UserID) of
+        {ok, Country, #game{status = ongoing} = Game} ->
+            Key = get_game_order_key(GameID, Country),
+            Orders = game_utils:get_game_order(Key),
+            {ok, GameState} = game_utils:get_game_state(GameID),
+            {ok, #game_overview{game_rec = Game,
+                                map = GameState#game_state.map,
+                                phase = GameState#game_state.phase,
+                                year_season = GameState#game_state.year_season,
+                                order_list = Orders,
+                                country = Country}};
+        {ok, _Country, #game{status = finished}} ->
+            % this should return something that makes sense when
+            % a game has finished
+            {error, game_not_started};
+        {ok, _Country, _Game} ->
+            % game not started yet, or stopped.
+            {error, game_not_started};
+        Error ->
+            Error
+    end.
+
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Stores a game order
+%% GameId::integer(), UserId::integer()
+%% @spec
+%%        put_game_order(GameID :: integer(),
+%%                       UserId :: integer(),
+%%                       GameOrderList :: list(tuple())) ->
+%%               {ok, Key :: string()} | {error, game_id_not_exist} | Error
+%% @end
+%% ------------------------------------------------------------------
+put_game_order(GameId, UserId, GameOrderList) ->
+    case get_playercountry_game(GameId, UserId) of
+        {ok, Country, _Game} ->
+            Key = get_game_order_key(GameId, Country),
+            NewOrder = game_utils:translate_game_order(GameId, GameOrderList,
+                                                    Country),
+            % if there are no previous orders, use put, otherwise update
+            case game_utils:get_game_order (Key) of
+                [] ->
+                    put_game_order(Key, NewOrder);
+                _GO ->
+                    update_game_order(Key, NewOrder)
+            end;
+        Error ->
+            Error
+    end.
+%% ------------------------------------------------------------------
+%% @doc
+%% Stores a game order
+%% GameId::integer(), UserId::integer()
+%% @spec
+%%        put_game_order(Key :: string(), GameOrderList :: list(tuple())) ->
+%%               {ok, Key :: atom()}
+%% @end
+%% ------------------------------------------------------------------
+put_game_order(Key, GameOrderList) ->
+    BinID = list_to_binary(Key),
+    DBGameOrderObj = db_obj:create (?B_GAME_ORDER,
+                                    BinID,
+                                    #game_order{order_list=GameOrderList}),
+    db:put (DBGameOrderObj),
+    {ok, Key}.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Updates a game order in the database
+%% @spec
+%% update_game_order(ID :: integer(), NewOrder :: list(tuple())) ->
+%%     {ok, Key :: atom()} | {error, Error}
+%% @end
+%% ------------------------------------------------------------------
+update_game_order(ID, NewOrder) ->
+    case db:get(?B_GAME_ORDER, list_to_binary(ID)) of
+        {ok, Obj} ->
+            game_utils:update_db_obj(Obj, #game_order{order_list = NewOrder}),
+            {ok, ID};
+        Error ->
+            {error, Error}
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Checks if a player is participating in a specific game, and which country
+%% @spec
+%% get_playercountry_game(GameId :: integer(), UserId :: integer()) ->
+%%     {ok, Country, Game}
+%%     | {error, game_id_not_exist}
+%%     | {error, user_not_playing_this_game}
+%%     | Error
+%% @end
+%% ------------------------------------------------------------------
+get_playercountry_game(GameId, UserId) ->
+    case get_game(GameId) of
+        {ok, Game} ->
+            case get_player_country(GameId, UserId) of
+                {ok, Country} ->
+                     {ok, Country, Game};
+                Error ->
+                    Error
+            end;
+        _Error ->
+            {error, game_id_not_exist}
+    end.
+%% ------------------------------------------------------------------
+%% @doc Returns the country atom which a user is playing in a game
+%% @spec
+%%        get_player_country(GameID :: integer(), UserID :: integer()) ->
+%%               {ok, Country :: atom()} | {error, user_not_playing_this_game}
+%% @end
+%% ------------------------------------------------------------------
 get_player_country (GameID, UserID) ->
     case get_game_player(GameID) of
         {ok, GPRec = #game_player{}} ->
@@ -157,485 +332,33 @@ get_player_country (GameID, UserID) ->
 
 %% ------------------------------------------------------------------
 %% @doc
-%% GameId::integer(), UserId::integer()
-%%
+%% Builds the key for getting orders of a country.
+%% example: get_game_order_key(12345, england) ->
+%%                 "12345-1901-fall-order_phase-england".
+%% @spec
+%% get_game_order_key(ID :: integer(), Country :: atom()) ->
+%%     Key
 %% @end
 %% ------------------------------------------------------------------
-put_game_order(GameId, UserId, GameOrderList) ->
-    case get_game(GameId) of
-        {ok, _Game = #game{} } ->
-            case get_player_country(GameId, UserId) of
-                {ok, Country} ->
-                    Key = get_game_order_key(GameId, Country),
-                    NewOrder = translate_game_order(GameId, GameOrderList,
-                                                    Country),
-                    % if player hasn't sent any order, use put, otherwise update
-                    case get_game_order (Key) of
-                        [] ->
-                            put_game_order(Key, NewOrder);
-                        _GO ->
-                            update_game_order(Key, NewOrder)
-                    end;
-                Error ->
-                    Error
-            end;
-        _ ->
-            {error, game_id_not_exist}
-    end.
-
-put_game_order(Key, GameOrderList) ->
-    BinID = list_to_binary(Key),
-    DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, #game_order{order_list=GameOrderList}),
-    db:put (DBGameOrderObj),
-    {ok, Key}.
-
-
-%%------------------------------------------------------------------------------
-%% @doc
-%%   to translate the pasred user entry for order to agree with our rule engine
-%% @end
-%%------------------------------------------------------------------------------
-translate_game_order(GameId, GameOrderList,Country) ->
-    case get_game_map(GameId) of
-        {ok, Map} ->
-            translate_game_order(GameId, GameOrderList,Country, [],
-                                 to_rule_map(Map));
-        Error ->
-            Error
-    end.
-
-translate_game_order(_GameId, [],_Country, Acc, _Map) ->
-    Acc;
-translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
-    Type=element(1,H),
-    TranslatedOrder =
-        case Type of
-            move ->
-                {_, Unit, From, To, _} = H,
-                {move, {Unit, Country}, From, To};
-            hold ->
-                {_, Unit, Wh} = H,
-                {hold, {Unit, Country}, Wh};
-            support_move ->
-                {_, SupUnit, SupportWh, _, From, To, _} = H,
-                case map:get_units(Map, From) of
-                    [] ->
-                        [];
-                    Result when length(Result) > 1 ->
-                        [];
-                    [{Unit, UConutry}] ->
-                        {support, {SupUnit, Country}, SupportWh,
-                         {move, {Unit, UConutry}, From, To}}
-                end;
-            support_hold ->
-                {_, SupUnit, SupportWh, _, Wh} = H,
-                case map:get_units(Map, Wh) of
-                    [] ->
-                        [];
-                    Result when length(Result) > 1 ->
-                        [];
-                    [{Unit, UConutry}] ->
-                        {support, {SupUnit, Country}, SupportWh,
-                         {hold, {Unit, UConutry}, Wh}}
-                end;
-            convoy ->
-                {_, Fleet, Wh, _, From, To} = H,
-                case map:get_units(Map, From) of
-                    [] ->
-                        [];
-                    Result when length(Result) > 1 ->
-                        [];
-                    [{Army, UConutry}] ->
-                        {convoy, {Fleet, Country}, Wh,
-                         {Army, UConutry}, From, To}
-                end;
-            build ->
-                {_, Unit, Wh, _} = H,
-                {build, {Unit, Country}, Wh};
-            remove ->
-                {_, Unit, Wh} = H,
-                {destroy, {Unit, Country}, Wh}
-        end,
-    case TranslatedOrder of
-        [] ->
-            translate_game_order(GameId, Rest,Country, Acc, Map);
-        _->
-            translate_game_order(GameId, Rest,Country, [TranslatedOrder|Acc], Map)
-    end.
-
-update_game_order(ID, NewOrder) ->
-    case db:get(?B_GAME_ORDER, list_to_binary(ID)) of
-        {ok, Obj} ->
-            NewObj = db_obj:set_value(Obj, #game_order{order_list=NewOrder}),
-            db:put(NewObj),
-            {ok, ID};
-        Error ->
-            {error, Error}
-    end.
-
-new_game(undefined, #game{} = Game) ->
-    ID = db:get_unique_id(),
-    new_game(ID, Game#game{id = ID});
-new_game(ID, #game{} = Game) ->
-    BinID = db:int_to_bin(ID),
-    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
-    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
-    GameObjWithIndex = db_obj:set_indices(DBGameObj, create_idx_list(Game)),
-    GamePutResult = db:put (GameObjWithIndex),
-    case GamePutResult of
-        {error, _} = Error ->
-            Error;
-        _ ->
-            PlayersPutResult = db:put (DBGamePlayerObj),
-            case PlayersPutResult of
-                {error, _} = Error ->
-                    Error;
-                _ ->
-                    {ok, _Pid} = game_join_proc:start(ID),
-                    {ok, ID}
-            end
-    end.
-
-update_game(ID, #game{} = Game) ->
-    BinID = db:int_to_bin(ID),
-    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
-    GameObjWithIndex = db_obj:set_indices(DBGameObj, create_idx_list(Game)),
-    GamePutResult = db:put (GameObjWithIndex),
-    case GamePutResult of
-        {error, _} = Error ->
-            Error;
-        _ ->
-            {ok, ID}
-    end.
-
-get_game(ID)->
-    get_DB_obj(?B_GAME, db:int_to_bin(ID)).
-
-get_keys_by_idx(Field, Val) ->
-    case create_idx(Field, Val) of
-        {error, field_not_indexed} ->
-            {error, field_not_indexed};
-        Idx ->
-            case db:get_index(?B_GAME, Idx) of
-                {ok, Matches} ->
-                    Keys = index_result_keys(Matches),
-                    {ok, Keys};
-                Other ->
-                    {error, Other}
-            end
-    end.
-
-index_result_keys([]) ->
-    [];
-index_result_keys([[?B_GAME, KeyBin] | Rest]) ->
-    Key = list_to_integer(binary_to_list(KeyBin)),
-    [ Key | index_result_keys(Rest) ];
-index_result_keys([[_, _] | Rest]) ->
-    index_result_keys(Rest).
-
-get_game_player(GameID)->
-    get_DB_obj(?B_GAME_PLAYER, GameID).
-
-
-get_game_overview(GameID, UserID) ->
-    catch
-        begin
-            GameValue = get_game(GameID),
-            is_valid(GameValue) orelse throw({error, game_not_started}),
-            {ok, Game} = GameValue,
-            is_game_started(Game) orelse throw({error, game_not_started}),
-
-            GameUserValue = get_game_user(GameID, UserID),
-            is_valid(GameUserValue) orelse throw(GameUserValue),
-            {ok, GameUser} = GameUserValue,
-
-            UserCountry = GameUser#game_user.country,
-            Key = get_game_order_key(GameID, UserCountry),
-
-            GameOrder = get_game_order(Key),
-
-            MapValue = get_game_map(GameID),
-            is_valid(MapValue) orelse throw(MapValue),
-            {ok, Map} = MapValue,
-            {ok, #game_overview{game_rec=Game, map=Map, order_list = GameOrder,
-                                country = UserCountry}}
-    end.
-
-get_game_user(GameId, UserId) ->
-    case get_game_player(GameId) of
-        {ok, GPRec = #game_player{}} ->
-            case lists:keyfind(UserId, #game_user.id,
-                               GPRec#game_player.players) of
-                false ->
-                    {error, user_not_playing_this_game};
-                GU = #game_user{} ->
-                    {ok, GU}
-            end;
-        Other ->
-            Other
-    end.
-
-is_game_started(#game{status=Status}) ->
-    case Status of
-        waiting ->
-            false;
-        _ ->
-            true
-    end.
-
-%% ------------------------------------------------------------------
-%% @doc
-%% Get the game map from game state of current phase
-%%
-%% GameID :: integer()
-%% Output-> {ok, Map::term()}
-%% @end
-%% ------------------------------------------------------------------
-get_game_map(GameID) ->
-    case  get_DB_obj(?B_GAME_STATE, get_keyprefix({id, GameID})) of
-        {ok, State} ->
-            {ok, State#game_state.map};
-        Error ->
-            Error
-    end.
-
-%% ------------------------------------------------------------------
-%% @doc
-%% Update game map in the game overview
-%%
-%% GameID :: integer(), GameOverView :: #game_overview{}
-%% Output-> {ok, NewOverview :: #game_over_view{}}
-%% @end
-%% ------------------------------------------------------------------
-get_default_map() ->
-    map_data:create (standard_game).
-
-to_mapterm(RuleHandle) ->
-    digraph_io:to_erlang_term(RuleHandle).
-
-to_rule_map(MapTerm) ->
-    digraph_io:from_erlang_term(MapTerm).
-
-
-phase_change(Game = #game{id = ID}, started) ->
-    io:format("Game ~p started~n", [ID]),
-    %% maybe tell the users about game start?
-    update_game(ID, Game),
-    setup_game(ID),
-    game_join_proc:stop(ID);
-phase_change(ID, build_phase) ->
-    io:format("Game ~p entered build_phase~n", [ID]),
-    Key = get_keyprefix({id, ID}),
-    {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
-    % skip count phase if it is not fall
-    case GameState#game_state.year_season of
-        {_Year, spring} -> {ok, skip};
-        _Other ->
-            Map = to_rule_map(GameState#game_state.map),
-            _Result = rules:process(count_phase, Map, ?RULES, []),
-            %% inform players of Result
-            NewCurrentGame = update_current_game(ID, build_phase),
-            new_state(NewCurrentGame, GameState#game_state.map),
-            {ok, true}
-    end;
-phase_change(ID, Phase) ->
-    io:format("Game ~p entered ~p~n", [ID, Phase]),
-    Key = get_keyprefix({id, ID}),
-    {ok, OldState} = get_DB_obj(?B_GAME_STATE, Key),
-    NewCurrentGame = update_current_game(ID, Phase),
-    new_state(NewCurrentGame, OldState#game_state.map).
-
-%% ------------------------------------------------------------------
-%% @doc
-%% Key: "3457892458-1900-fall-order-england"
-%%
-%% @end
-%% ------------------------------------------------------------------
-get_game_order(ID)->
-    GameOrder = get_DB_obj(?B_GAME_ORDER, ID),
-    case GameOrder of
-        {ok, GO} ->
-            GO#game_order.order_list;
-        {error, notfound} ->
-            []
-    end.
-
-setup_game(ID) ->
-    %% create initial game state
-    Map = get_default_map(),
-    GameState = #game_state{id = ID,
-                            phase = order_phase,
-                            year_season = {?START_YEAR, spring},
-                            map = to_mapterm(Map)},
-    StateKey = list_to_binary(integer_to_list(ID) ++
-                              "-" ++ integer_to_list(?START_YEAR) ++
-                              "-" ++ "spring" ++
-                              "-" ++ "order_phase"),
-    DBGameState = db_obj:create(?B_GAME_STATE, StateKey, GameState),
-    %% Link the game state to its game
-    GameStateLinkObj = db_obj:add_link(DBGameState,
-                                       {{?B_GAME,
-                                         db:int_to_bin(ID)},
-                                        ?GAME_STATE_LINK_GAME}),
-    db:put(GameStateLinkObj),
-    %% create first current game
-    CurrentGame = #game_current{id = ID,
-                                year_season = {?START_YEAR, spring},
-                                current_phase = order_phase},
-    CurrentKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
-    DBCurrentGame = db_obj:create(?B_GAME, CurrentKey, CurrentGame),
-    %% Link the current game to its gamestate
-    CurrentGameLinkObj = db_obj:add_link(DBCurrentGame,
-                                         {{?B_GAME_STATE, StateKey},
-                                          ?CURRENT_GAME_LINK_STATE}),
-    db:put(CurrentGameLinkObj).
-
-
-update_current_game(ID, Phase) ->
-    BinKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
-    DBReply = db:get(?B_GAME, BinKey),
-    case DBReply of
-        {ok, CurrentGameObj} ->
-            CurrGame = db_obj:get_value(CurrentGameObj),
-            case Phase of
-                order_phase ->
-                    case CurrGame#game_current.year_season of
-                        {Year, fall} ->
-                            NewCurrGame =  CurrGame#game_current{
-                                             year_season = {Year+1, spring},
-                                             current_phase = Phase};
-                        {Year, spring} ->
-                            NewCurrGame = CurrGame#game_current{
-                                            year_season = {Year, fall},
-                                            current_phase = Phase}
-                    end;
-                _OtherPhase ->
-                    NewCurrGame = CurrGame#game_current{
-                                    current_phase = Phase}
-            end,
-            DBCurrGameObj=db_obj:set_value(CurrentGameObj, NewCurrGame),
-            db:put (DBCurrGameObj),
-            NewCurrGame;
-        Other ->
-            Other
-    end.
-
-%% This gets the orders for all countries in a phase
-get_all_orders(ID) ->
-    Keyprefix = get_keyprefix({id, ID}),
-    Countries = [england, germany, france, austria, italy, russia, turkey],
-    ListOrders = fun(Country, Acc) ->
-                         Orders = get_game_order(Keyprefix ++ "-" ++
-                                                     atom_to_list(Country)),
-                         lists:merge(Acc, Orders)
-                 end,
-    lists:foldl(ListOrders, [], Countries).
-
-
 get_game_order_key(Id, Country) ->
-    get_keyprefix({id, Id}) ++ "-" ++ atom_to_list(Country).
+    game_utils:get_keyprefix({id, Id}) ++ "-" ++ atom_to_list(Country).
 
-get_keyprefix({id, ID}) ->
-    case get_current_game(ID) of
-        {ok, Current} ->
-            get_keyprefix({game_current, Current});
-        {error, notfound} ->
-            % This case occurs when the game is in the wait state
-            integer_to_list(ID) ++ "-1900-spring-order_phase"
-    end;
-get_keyprefix({game_current, Current}) ->
-    {Year, Season} = Current#game_current.year_season,
-    Key = integer_to_list(Current#game_current.id) ++ "-"
-        ++ integer_to_list(Year) ++ "-"
-        ++ atom_to_list(Season) ++ "-"
-        ++ atom_to_list(Current#game_current.current_phase),
-    Key.
-
-get_current_game(ID) ->
-    get_DB_obj(?B_GAME, integer_to_list(ID) ++ "-" ++ "current").
-
-
-get_DB_obj(Bucket, Key) ->
-    if
-        is_binary(Key) -> BinKey = Key;
-        is_integer(Key) -> BinKey = db:int_to_bin(Key);
-        is_list(Key) -> BinKey = list_to_binary(Key);
-        is_atom(Key) -> BinKey = list_to_binary(atom_to_list(Key));
-        true -> BinKey = Key % don't know what else it could be!
-    end,
-    DBReply = db:get(Bucket, BinKey),
-    case DBReply of
-        {ok, DBObj} ->
-            {ok, db_obj:get_value(DBObj)};
-        Other ->
-            Other
-    end.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Creates the index list for the database
+%% ------------------------------------------------------------------
+%% @doc Returns the game with id ID
+%% @spec
+%% get_game(GameID :: integer()) ->
+%%     {ok, Game :: #game{}} | Error
 %% @end
-%%-------------------------------------------------------------------
-create_idx_list(#game{status=Status, press=Press, num_players=NumPlayers}) ->
-    [
-     create_idx(#game.status, Status),
-     create_idx(#game.press, Press),
-     create_idx(#game.num_players, NumPlayers)
-    ].
+%% ------------------------------------------------------------------
+get_game(ID)->
+    game_utils:get_db_obj(?B_GAME, db:int_to_bin(ID)).
 
-%%-------------------------------------------------------------------
-%% @doc
-%% Creates an index tuple for the database.
+%% ------------------------------------------------------------------
+%% @doc Returns the game_player record of a game
+%% @spec
+%%        get_game_player(GameID :: integer()) ->
+%%               {ok, GamePlayer :: #game_player{}} | Error
 %% @end
-%%-------------------------------------------------------------------
-create_idx(#game.status, Status) ->
-    {<<"status_bin">>, term_to_binary(Status)};
-create_idx(#game.press, Press) ->
-    {<<"press_bin">>, term_to_binary(Press)};
-create_idx(#game.num_players, NumPlayers) ->
-    {<<"num_players_int">>, NumPlayers};
-create_idx(_, _) ->
-    {error, field_not_indexed}.
-
-
-process_phase(ID, Phase) ->
-    Key = get_keyprefix({id, ID}),
-    {ok, GameState} = get_DB_obj(?B_GAME_STATE, Key),
-    Map = to_rule_map(GameState#game_state.map),
-    ?debugVal(Orders = get_all_orders(ID)),
-    io:format("Received orders: ~p~n", [Orders]),
-    Result = rules:process(Phase, Map, ?RULES, Orders),
-    update_state(Key, GameState#game_state{map = to_mapterm(Map)}),
-    %% we probably want to handle the result in some way
-    %% like informing the users
-    {ok, Result}.
-
-
-update_state(Key, NewState) ->
-    {ok, OldStateObj} = db:get(?B_GAME_STATE, Key),
-    DBGameObj=db_obj:set_value(OldStateObj, NewState),
-    db:put(DBGameObj).
-
-new_state(CurrentGame, Map) ->
-    Key = get_keyprefix({game_current, CurrentGame}),
-    GameState = #game_state{id = CurrentGame#game_current.id,
-                            year_season = CurrentGame#game_current.year_season,
-                            phase = CurrentGame#game_current.current_phase,
-                            map = Map},
-    DBGameState = db_obj:create(?B_GAME_STATE, Key, GameState),
-    %% Link the game state to its game
-    GameStateLinkObj = db_obj:add_link(DBGameState,
-                                       {{?B_GAME,
-                                         db:int_to_bin(CurrentGame#game_current.id)},
-                                        ?GAME_STATE_LINK_GAME}),
-    db:put(GameStateLinkObj).
-
-
-%% Check if the given field is valid
-is_valid(Data) ->
-    case Data of
-        {ok, _Value} ->
-            true;
-        {error, _Error} ->
-            false
-    end.
+%% ------------------------------------------------------------------
+get_game_player(GameID)->
+    game_utils:get_db_obj(?B_GAME_PLAYER, GameID).

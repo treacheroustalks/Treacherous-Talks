@@ -23,10 +23,12 @@
 %%%-------------------------------------------------------------------
 -module(game_timer).
 -behaviour(gen_fsm).
+
+-include_lib ("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib ("eunit/include/eunit.hrl").
 %% ------------------------------------------------------------------
-%% Ecternal API Function Exports
+%% External API Function Exports
 %% ------------------------------------------------------------------
 -export([start_link/1, event/2, sync_event/2,
          current_state/1, get_game_state/1, stop/1]).
@@ -49,6 +51,11 @@
 %%---------------------------------------------------------------------
 -record(state, {game, phase = init}).
 
+%% define start year
+-define(START_YEAR, 1901).
+%% define rules module
+-define(RULES, diplomacy_rules).
+%% defines the game id
 -define(ID(State),(State#state.game)#game.id).
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -60,23 +67,27 @@ start_link(Game) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to change the state of the FSM Timer.
+%% @spec event(Timer::pid(), Event::atom()) -> ok
 %% @end
-%% [@spec event(Timer::pid(), Event::atom()) -> ok.
-%% @end]
 %%-------------------------------------------------------------------
 -spec event(pid(), atom()) -> ok.
 event(Timer, Event) ->
     gen_fsm:send_event({global, {?MODULE, Timer}}, Event).
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Sends a synchronous event to change the state of the FSM Timer.
+%% @spec sync_event(Timer::pid(), Event::atom()) -> {ok, CurrentState :: atom()}
+%% @end
+%%-------------------------------------------------------------------
 sync_event(Timer, Event) ->
     gen_fsm:sync_send_event({global, {?MODULE, Timer}}, Event).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to find out the current state (ONLY for testing)
+%% @spec current_state(Timer::pid()) -> StateName::atom()
 %% @end
-%% [@spec current_state(Timer::pid()) -> StateName::atom().
-%% @end]
 %%-------------------------------------------------------------------
 -spec current_state(pid()) -> atom().
 current_state(Timer) ->
@@ -84,9 +95,8 @@ current_state(Timer) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to find out the state of the game (ONLY for testing)
+%% @spec get_game_state(Timer :: pid()) -> Game :: #game{}
 %% @end
-%% [@spec get_game_state(Timer::pid()) -> Game::game{}.
-%% @end]
 %%-------------------------------------------------------------------
 -spec get_game_state(pid()) -> atom().
 get_game_state(Timer) ->
@@ -95,9 +105,8 @@ get_game_state(Timer) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to stop it
+%% @spec stop(Timer::pid()) -> ok
 %% @end
-%% [@spec stop(Timer::pid()) -> ok.
-%% @end]
 %%-------------------------------------------------------------------
 -spec stop(pid()) -> ok.
 stop(Timer) ->
@@ -118,7 +127,7 @@ waiting_phase(timeout, State) ->
     %% This is where we "move" on to the next state!
     NewState = State#state{phase = order_phase,
                            game = State#state.game#game{status = ongoing}},
-    game:phase_change(NewState#state.game, started),
+    phase_change(NewState#state.game, started),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     {next_state, order_phase, NewState, Timeout};
 waiting_phase(_Event, State) ->
@@ -126,12 +135,12 @@ waiting_phase(_Event, State) ->
     Timeout = timer:minutes((State#state.game)#game.waiting_time),
     {next_state, waiting_phase, State, Timeout}.
 waiting_phase(_Event, From, State) ->
-    syncevent(waiting_phase, From, State).
+    ?debugVal(syncevent(waiting_phase, From, State)).
 
 
 order_phase(_Event, State) ->
-    game:process_phase(?ID(State), order_phase),
-    game:phase_change(?ID(State), retreat_phase),
+    process_phase(?ID(State), order_phase),
+    phase_change(?ID(State), retreat_phase),
     Timeout = timer:minutes((State#state.game)#game.retreat_phase),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}.
 order_phase(_Event, From, State) ->
@@ -139,14 +148,14 @@ order_phase(_Event, From, State) ->
 
 
 retreat_phase(_Event, State) ->
-    game:process_phase(?ID(State), retreat_phase),
+    process_phase(?ID(State), retreat_phase),
     %% retreat is handled and we enter count phase
-    case game:phase_change(?ID(State), build_phase) of
+    case phase_change(?ID(State), build_phase) of
         {ok, true} ->
             Timeout = timer:minutes((State#state.game)#game.build_phase),
             {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {ok, skip} ->
-            game:phase_change(?ID(State), order_phase),
+            phase_change(?ID(State), order_phase),
             Timeout = timer:minutes((State#state.game)#game.order_phase),
             {next_state, order_phase, State#state{phase = order_phase}, Timeout}
     end.
@@ -155,8 +164,8 @@ retreat_phase(_Event, From, State) ->
 
 
 build_phase(_Event, State) ->
-    game:process_phase(?ID(State), build_phase),
-    game:phase_change(?ID(State), order_phase),
+    process_phase(?ID(State), build_phase),
+    phase_change(?ID(State), order_phase),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
 build_phase(_Event, From, State) ->
@@ -170,12 +179,8 @@ handle_sync_event(stop, _From, _StateName, State) ->
     io:format("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
     {stop, stop, ok, State};
 handle_sync_event(statename, _From, StateName, State) ->
-    %% for this to pick up where it was, we need to recalculate
-    %% the timeout, so only use for tests where timeouts are not used!
     {reply, StateName, StateName, State};
 handle_sync_event(phasename, _From, StateName, State) ->
-    %% for this to pick up where it was, we need to recalculate
-    %% the timeout, so only use for tests where timeouts are not used!
     {reply, State#state.phase, StateName, State};
 handle_sync_event(game, _From, StateName, State) ->
     {reply, State#state.game, StateName, State};
@@ -198,6 +203,173 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% ------------------------------------------------------------------
 %%-------------------------------------------------------------------
 %% @doc
+%% Handles the change of a phase; updates the current game and its state
+%% valid argument pairs are (#game{}, started) or (ID, Phase)
+%% @spec
+%% phase_change(Game :: #game{} | integer,  Phase :: atom()) ->
+%%    Result :: any()
+%% @end
+%%-------------------------------------------------------------------
+phase_change(Game = #game{id = ID}, started) ->
+    io:format("Game ~p started~n", [ID]),
+    %% maybe tell the users about game start?
+    game_worker:update_game(ID, Game),
+    setup_game(ID),
+    game_join_proc:stop(ID);
+phase_change(ID, build_phase) ->
+    io:format("Game ~p entered build_phase~n", [ID]),
+    {ok, GameState} = game_utils:get_game_state(ID),
+    % skip count phase if it is not fall
+    case GameState#game_state.year_season of
+        {_Year, spring} -> {ok, skip};
+        _Other ->
+            Map = game_utils:to_rule_map(GameState#game_state.map),
+            _Result = rules:process(count_phase, Map, ?RULES, []),
+            %% inform players of Result
+            NewCurrentGame = update_current_game(ID, build_phase),
+            new_state(NewCurrentGame, GameState#game_state.map),
+            {ok, true}
+    end;
+phase_change(ID, Phase) ->
+    io:format("Game ~p entered ~p~n", [ID, Phase]),
+    {ok, OldState} = game_utils:get_game_state(ID),
+    NewCurrentGame = update_current_game(ID, Phase),
+    new_state(NewCurrentGame, OldState#game_state.map).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Processes the end of a phase, by calling the rule engine with the
+%% orders the game has received.
+%% @spec
+%% process_phase(ID :: integer() , Phase :: atom()) ->
+%%    {ok, Result :: any()}
+%% @end
+%%-------------------------------------------------------------------
+process_phase(ID, Phase) ->
+    {ok, GameState} = game_utils:get_game_state(ID),
+    Map = game_utils:to_rule_map(GameState#game_state.map),
+    ?debugVal(Orders = game_utils:get_all_orders(ID)),
+    io:format("Received orders: ~p~n", [Orders]),
+    Result = rules:process(Phase, Map, ?RULES, Orders),
+    update_state(GameState#game_state{map = game_utils:to_mapterm(Map)}),
+    %% we probably want to handle the result in some way
+    %% like informing the users
+    {ok, Result}.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates the current game record for the game with id ID, to represent
+%% its current game; phase, year, season.
+%% @spec
+%% update_current_game(ID :: integer() , Phase :: atom()) ->
+%%    NewCurrentGame :: #game_current{} | Error
+%% @end
+%%-------------------------------------------------------------------
+update_current_game(ID, NewPhase) ->
+    BinKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
+    DBReply = db:get(?B_GAME, BinKey),
+    case DBReply of
+        {ok, CurrentGameObj} ->
+            OldGame = db_obj:get_value(CurrentGameObj),
+            NewGame = case {NewPhase, OldGame#game_current.year_season} of
+                          {order_phase, {Year, fall}} ->
+                              OldGame#game_current{
+                                year_season = {Year+1, spring},
+                                current_phase = NewPhase};
+                          {order_phase, {Year, spring}} ->
+                              OldGame#game_current{
+                                year_season = {Year, fall},
+                                current_phase = NewPhase};
+                          _OtherPhase ->
+                              OldGame#game_current{
+                                current_phase = NewPhase}
+                      end,
+            game_utils:update_db_obj(CurrentGameObj, NewGame);
+        Other ->
+            Other
+    end.
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates the state record
+%% @spec
+%% update_state(NewState :: #game_state{}) ->
+%%    {ok, NewState}
+%% @end
+%%-------------------------------------------------------------------
+update_state(#game_state{id = ID} = NewState) ->
+    Key = game_utils:get_keyprefix({id, ID}),
+    {ok, OldStateObj} = db:get(?B_GAME_STATE, Key),
+    game_utils:update_db_obj(OldStateObj, NewState).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates a game state record and current game record for a game with id ID.
+%% @spec
+%% setup_game(ID :: integer()) ->
+%%    Result :: any()
+%% @end
+%%-------------------------------------------------------------------
+setup_game(ID) ->
+    %% create initial game state
+    Map = game_utils:get_default_map(),
+    GameState = #game_state{id = ID,
+                            phase = order_phase,
+                            year_season = {?START_YEAR, spring},
+                            map = game_utils:to_mapterm(Map)},
+    StateKey = list_to_binary(integer_to_list(ID) ++
+                              "-" ++ integer_to_list(?START_YEAR) ++
+                              "-" ++ "spring" ++
+                              "-" ++ "order_phase"),
+    DBGameState = db_obj:create(?B_GAME_STATE, StateKey, GameState),
+    %% Link the game state to its game
+    GameStateLinkObj = db_obj:add_link(DBGameState,
+                                       {{?B_GAME,
+                                         db:int_to_bin(ID)},
+                                        ?GAME_STATE_LINK_GAME}),
+    db:put(GameStateLinkObj),
+    %% create first current game
+    CurrentGame = #game_current{id = ID,
+                                year_season = {?START_YEAR, spring},
+                                current_phase = order_phase},
+    CurrentKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
+    DBCurrentGame = db_obj:create(?B_GAME, CurrentKey, CurrentGame),
+    %% Link the current game to its gamestate
+    CurrentGameLinkObj = db_obj:add_link(DBCurrentGame,
+                                         {{?B_GAME_STATE, StateKey},
+                                          ?CURRENT_GAME_LINK_STATE}),
+    db:put(CurrentGameLinkObj).
+
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates a new game state record, with data from the current game
+%% record and a map.
+%% @spec
+%% new_state(CurrentGame :: #game_current{}, Map :: map()) ->
+%%    Result :: any()
+%% @end
+%%-------------------------------------------------------------------
+new_state(CurrentGame, Map) ->
+    ?debugVal(CurrentGame),
+    Key = game_utils:get_keyprefix({game_current, CurrentGame}),
+    GameState = #game_state{id = CurrentGame#game_current.id,
+                            year_season = CurrentGame#game_current.year_season,
+                            phase = CurrentGame#game_current.current_phase,
+                            map = Map},
+    DBGameState = db_obj:create(?B_GAME_STATE, Key, GameState),
+    %% Link the game state to its game
+    GameStateLinkObj = db_obj:add_link(DBGameState,
+                                       {{?B_GAME,
+                                         db:int_to_bin(CurrentGame#game_current.id)},
+                                        ?GAME_STATE_LINK_GAME}),
+    db:put(GameStateLinkObj).
+
+
+%%-------------------------------------------------------------------
+%% @doc
 %% Synchronous calls are handled by syncevent, it will reply ok when
 %% it has finished processing the old phase and changing to the new,
 %% these are used for testing.
@@ -207,36 +379,36 @@ syncevent(waiting_phase, From, State) ->
     %% This is where we "move" on to the next state!
     NewState = State#state{phase = order_phase,
                            game = State#state.game#game{status = ongoing}},
-    game:phase_change(NewState#state.game, started),
+    phase_change(NewState#state.game, started),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
-    gen_fsm:reply(From, ok),
+    gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, NewState, Timeout};
 syncevent(order_phase, From, State) ->
     ?debugMsg("Received order_phase sync event"),
-    game:process_phase(?ID(State), order_phase),
-    game:phase_change(?ID(State), retreat_phase),
+    ?debugVal(process_phase(?ID(State), order_phase)),
+    ?debugVal(phase_change(?ID(State), retreat_phase)),
     Timeout = timer:minutes((State#state.game)#game.retreat_phase),
-    gen_fsm:reply(From, ok),
+    gen_fsm:reply(From, {ok, retreat_phase}),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout};
 syncevent(retreat_phase, From, State) ->
     ?debugMsg("Received retreat_phase sync event"),
-    game:process_phase(?ID(State), retreat_phase),
+    process_phase(?ID(State), retreat_phase),
     %% retreat is handled and we enter count phase
-    case game:phase_change(?ID(State), build_phase) of
+    case phase_change(?ID(State), build_phase) of
         {ok, true} ->
             Timeout = timer:minutes((State#state.game)#game.build_phase),
-            gen_fsm:reply(From, ok),
+            gen_fsm:reply(From, {ok, build_phase}),
             {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {ok, skip} ->
-            game:phase_change(?ID(State), order_phase),
+            phase_change(?ID(State), order_phase),
             Timeout = timer:minutes((State#state.game)#game.order_phase),
-            gen_fsm:reply(From, ok),
+            gen_fsm:reply(From, {ok, order_phase}),
             {next_state, order_phase, State#state{phase = order_phase}, Timeout}
     end;
 syncevent(build_phase, From, State) ->
     ?debugMsg("Received build_phase sync event"),
-    game:process_phase(?ID(State), build_phase),
-    game:phase_change(?ID(State), order_phase),
+    process_phase(?ID(State), build_phase),
+    phase_change(?ID(State), order_phase),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
-    gen_fsm:reply(From, ok),
+    gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
