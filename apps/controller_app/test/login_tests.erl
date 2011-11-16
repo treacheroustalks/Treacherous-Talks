@@ -54,7 +54,7 @@ tests(Callback) ->
 %%-------------------------------------------------------------------
 success(Callback) ->
     User = get_test_data(success),
-    Cmd = {login, {ok, User}},
+    Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, SessionId} = Result,
 
@@ -68,7 +68,7 @@ success(Callback) ->
 
 mult_nicks(Callback) ->
     User = get_test_data(mult_nicks),
-    Cmd = {login, {ok, User}},
+    Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
 
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
@@ -80,7 +80,7 @@ mult_nicks(Callback) ->
 
 user_not_existing(Callback) ->
     User = get_test_data(user_not_existing),
-    Cmd = {login, {ok, User}},
+    Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
 
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
@@ -92,7 +92,7 @@ user_not_existing(Callback) ->
 
 wrong_password(Callback) ->
     User = get_test_data(wrong_password),
-    Cmd = {login, {ok, User}},
+    Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
 
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
@@ -104,8 +104,8 @@ wrong_password(Callback) ->
 
 kill_old_session(Callback) ->
     {User, Session} = get_test_data(kill_old_session),
-    Cmd = {login, {ok, User}},
-    Result = controller:handle_action(Cmd, Callback),
+    Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
+     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, SessionId} = Result,
     AliveResult = session:alive(SessionId),
     ?assertEqual(true, AliveResult),

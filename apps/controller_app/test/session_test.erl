@@ -32,6 +32,8 @@
 -define(TIMEOUT, 3000).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 
 
@@ -56,7 +58,8 @@ session_test_() ->
      fun app_stop/1,
      [
       ?_test(alive_t()),
-      ?_test(start_stop_t())
+      ?_test(start_stop_t()),
+      ?_test(push_t())
      ]
     }.
 
@@ -73,7 +76,8 @@ alive_t() ->
 start_stop_t() ->
     User = create_user(),
     Id = User#user.id,
-    SessionId = session:start(User, session_history:create(Id)),
+    PushReceiver = #push_receiver{},
+    SessionId = session:start(User, session_history:create(Id), PushReceiver),
 
     Alive = session:alive(SessionId),
     ?assertEqual(true, Alive),
@@ -84,6 +88,24 @@ start_stop_t() ->
     receive {'DOWN', MonitorRef, _Type, _Object, _Info} -> ok end,
     StopAlive = session:alive(SessionId),
     ?assertEqual(false, StopAlive).
+
+
+%% helper functions
+push_t() ->
+    User = create_user(),
+    Id = User#user.id,
+    PushReceiver = #push_receiver{pid = self(), args = no_args},
+    SessionId = session:start(User, session_history:create(Id), PushReceiver),
+
+    Event = #push_event{type = test_type, data = {some, data, to, test, this}},
+    session:push_event(SessionId, Event),
+    Received = receive
+                   Any -> Any
+               after ?TIMEOUT -> {error, timeout}
+               end,
+    session:stop(SessionId),
+
+    ?assertEqual({push, no_args, Event}, Received).
 
 
 %% helper functions

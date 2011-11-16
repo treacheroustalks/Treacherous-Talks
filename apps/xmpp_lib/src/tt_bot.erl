@@ -51,7 +51,8 @@
 
 -include("ejabberd/include/ejabberd.hrl").
 -include("ejabberd/include/jlib.hrl").
--include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 
 -define(PROCNAME, tt_bot).
 -define(SUBDOMAIN, tt).
@@ -133,6 +134,10 @@ handle_cast(_Msg, Host) ->
 %% @doc
 %%  handle all none call/cast messages
 %%-------------------------------------------------------------------
+handle_info({push, Args, Event = #push_event{type = Type, data = Data}}, Host) ->
+    io:format("[tt_bot][push event] ~p~n", [Event]),
+    tt_xmpp_output:reply(Args, Type, Data),
+    {noreply, Host};
 handle_info(_Msg, Host) ->
     {noreply, Host}.
 
@@ -203,7 +208,15 @@ route(From,
             ?INFO_MSG("Ignoring message because ~p. Packet:~n~p~n",
                       [Reason, Packet]);
         Body ->
-            ParsedCmd = command_parser:parse(Body, im),
+            ParsedCmd = case command_parser:parse(Body, im) of
+                            {login, {ok, User}} ->
+                                PushReceiver = #push_receiver{
+                                  pid = self(),
+                                  args = [To, From]},
+                                {login, {ok, {User, PushReceiver}}};
+                            Other ->
+                                Other
+                        end,
             ?INFO_MSG("Body ~p parsed as command ~p.~n",
                       [Body, ParsedCmd]),
             Callback = {fun tt_xmpp_output:reply/3,[To,From]},

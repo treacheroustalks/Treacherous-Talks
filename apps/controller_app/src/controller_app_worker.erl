@@ -130,7 +130,7 @@ handle_call({register, User}, _From, State) ->
 %%%         {reply, interger(), #state{}} | {reply, invalid, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
-handle_call({login, Login}, _From, State) ->
+handle_call({login, {Login, PushInfo}}, _From, State) ->
     Result =
         case user_management:get_by_idx(#user.nick, Login#user.nick) of
             {ok, {index_list, _IdxList}} ->
@@ -159,7 +159,7 @@ handle_call({login, Login}, _From, State) ->
                     false ->
                         {error, invalid_login_data};
                     true ->
-                        SessId = session:start(User, Hist),
+                        SessId = session:start(User, Hist, PushInfo),
                         NewHist = session_history:add(Hist, SessId),
                         NewHistObj = db_obj:set_value(HistObj, NewHist),
                         session_history:db_update(NewHistObj),
@@ -201,6 +201,14 @@ handle_call(Request, From, State) ->
     {noreply, ok, State}.
 
 
+handle_cast({push_event, {UserId, Event}}, State) ->
+    case session_presence:get_session_id(UserId) of
+        {ok, SessionId} ->
+            session:push_event(SessionId, Event);
+        {error, not_online} ->
+            ok
+    end,
+    {noreply, State};
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.

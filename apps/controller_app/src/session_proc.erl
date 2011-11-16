@@ -33,6 +33,8 @@
 -module(session_proc).
 -behaviour(gen_server).
 
+-include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
@@ -40,7 +42,7 @@
 %% ------------------------------------------------------------------
 %% Internal API Function Exports
 %% ------------------------------------------------------------------
--export([start/2]).
+-export([start/3]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -49,8 +51,8 @@
          code_change/3]).
 
 %% server state
--record(state, {user, session_id, history}).
 -define(TIMEOUT, 108000000). % 30 minutes = 1000 * 60 * 60 * 30
+-record(state, {user, session_id, history, push_receiver}).
 
 
 %% ------------------------------------------------------------------
@@ -59,13 +61,15 @@
 %%-------------------------------------------------------------------
 %% @doc
 %% Starts a new gen_server and links it to its parent
+%%
+%% @spec start(#user{}, #session_history{}, #push_receiver{}) ->
+%%         {ok, #state{}}
 %% @end
-%% [@spec start(#user{}, session_history{}) -> {ok, #state{}}.
-%% @end]
 %%-------------------------------------------------------------------
-%-spec start(#user{}) -> {ok, #state{}}.
-start(User=#user{}, History) ->
-    gen_server:start(?MODULE, [User, History], []).
+start(User=#user{},
+      History,
+      PushReceiver = #push_receiver{}) ->
+    gen_server:start(?MODULE, [User, History, PushReceiver], []).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -73,18 +77,18 @@ start(User=#user{}, History) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Initiates the controller_app_worker
+%%
+%% @spec init([any()]) -> {ok, #state{}}
 %% @end
-%% [@spec init(User::#user{}) -> {ok, #state{}}.
-%% @end]
 %%-------------------------------------------------------------------
--spec init(#user{}) -> {ok, #state{}}.
-init([User, History]) ->
+%-spec init([#user{}, #sesion_history{}, #push_receiver{}]) -> {ok, #state{}}.
+init([User, History, PushReceiver]) ->
     Id = session_id:from_pid(self()),
     session_presence:add(User#user.id, Id),
-    {ok,
-     #state{user = User,
-            session_id = Id,
-            history = session_history:add(History, Id)},
+    {ok, #state{user = User,
+                session_id = Id,
+                history = session_history:add(History, Id),
+                push_receiver = PushReceiver},
      ?TIMEOUT}.
 
 %%-------------------------------------------------------------------
@@ -245,6 +249,11 @@ handle_call(Request, _From, State) ->
     {noreply, ok, State, ?TIMEOUT}.
 
 
+handle_cast(Event = #push_event{}, State = #state{push_receiver = Receiver}) ->
+    Pid = Receiver#push_receiver.pid,
+    Args = Receiver#push_receiver.args,
+    catch Pid ! {push, Args, Event},
+    {noreply, State};
 handle_cast(stop, State) ->
     stop(State),
     {stop, normal, State};

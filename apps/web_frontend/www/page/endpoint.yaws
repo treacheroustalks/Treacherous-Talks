@@ -28,6 +28,7 @@
               message_type="",
               message_value=""}).
 
+-include_lib("datatypes/include/push_receiver.hrl").
 %%-------------------------------------------------------------------
 %% @doc
 %% Yaws function that gets called when an endpoint is requested.
@@ -60,19 +61,31 @@ websocket_owner() ->
 %%-------------------------------------------------------------------
 socket_server(WebSocket, ProtocolVersion) ->
     receive
-    {tcp, WebSocket, DataFrame} ->
-        Data = yaws_api:websocket_unframe_data(ProtocolVersion, DataFrame),
-        io:format("Got data from Websocket: ~p~n", [Data]),
-        ParsedCmd = web_parser:parse(json_decode(Data)),
-        io:format("Parsed command: ~p~n", [ParsedCmd]),
-        controller:handle_action(ParsedCmd,
-                                 {fun reply/3, [WebSocket, ProtocolVersion]}),
-        socket_server(WebSocket, ProtocolVersion);
-    {tcp_closed, WebSocket} ->
-        io:format("Websocket closed. Terminating socket_server...~n");
-    Any ->
-        io:format("socket_server received msg:~p~n", [Any]),
-        socket_server(WebSocket, ProtocolVersion)
+        {tcp, WebSocket, DataFrame} ->
+            Data = yaws_api:websocket_unframe_data(ProtocolVersion, DataFrame),
+            io:format("Got data from Websocket: ~p~n", [Data]),
+            ParsedCmd = case web_parser:parse(json_decode(Data)) of
+                            {login, {ok, User}} ->
+                                PushReceiver = #push_receiver{
+                                  pid = self(),
+                                  args = [WebSocket, ProtocolVersion]},
+                                {login, {ok, {User, PushReceiver}}};
+                            Other ->
+                                Other
+                        end,
+            io:format("Parsed command: ~p~n", [ParsedCmd]),
+            controller:handle_action(ParsedCmd,
+                                     {fun reply/3, [WebSocket, ProtocolVersion]}),
+            socket_server(WebSocket, ProtocolVersion);
+        {tcp_closed, WebSocket} ->
+            io:format("Websocket closed. Terminating socket_server...~n");
+        {push, [Websocket, ProtocolVersion], Event} ->
+            % @todo send stuff to the user
+            io:format("socket_server received event:~p~n", [Event]),
+            socket_server(WebSocket, ProtocolVersion)
+        Any ->
+            io:format("socket_server received msg:~p~n", [Any]),
+            socket_server(WebSocket, ProtocolVersion)
     end.
 
 %%-------------------------------------------------------------------

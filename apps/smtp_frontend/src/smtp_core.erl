@@ -42,8 +42,7 @@
 %Export for eunit test
 -export([simple_relay/4, forward_mail/4]).
 
--include_lib("datatypes/include/user.hrl").% #user{}
--include_lib("datatypes/include/game.hrl").% #game{}
+-include_lib("datatypes/include/push_receiver.hrl").% #user{}
 -record(state,
     {
         options = [] :: list(),
@@ -332,7 +331,16 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
           when FromHost == MyHost -> % when sender and receipent are on our server
             {ok, {mail_stored, BinData}};
         MyHost -> % when a mail reach its destination
-            ParsedCmd = command_parser:parse(BinData, mail),
+            ParsedCmd = case command_parser:parse(BinData, mail) of
+                            {login, {ok, User}} ->
+                                PushReceiver = #push_receiver{
+% @todo                                 pid = self(),
+% @todo                                 args = [To, From]
+                                 },
+                                {login, {ok, {User, PushReceiver}}};
+                            Other ->
+                                Other
+                        end,
             controller:handle_action(ParsedCmd, {fun smtp_output:reply/3,
                                                  [From, To, FromHost]});
         _ -> %  when this game server is misused as a relay server

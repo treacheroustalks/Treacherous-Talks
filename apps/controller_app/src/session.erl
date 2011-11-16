@@ -32,6 +32,8 @@
 %%%-------------------------------------------------------------------
 -module(session).
 
+-include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
@@ -40,7 +42,7 @@
 %% Interface Function Exports
 %% ------------------------------------------------------------------
 -export([
-         start/2,
+         start/3,
          stop/1,
          alive/1,
          logout/2,
@@ -52,7 +54,8 @@
          game_overview/2,
          join_game/2,
          game_order/2,
-         user_msg/2
+         user_msg/2,
+         push_event/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -78,11 +81,12 @@
 %% @doc
 %% Starts a new session for the given user and returns the session id.
 %%
-%% @spec start(User::#user{}, #session_history{}) -> string()
+%% @spec start(User::#user{}, #session_history{}, #push_receiver{}) ->
+%%          string()
 %% @end
 %%-------------------------------------------------------------------
-start(User=#user{}, Hist) ->
-    {ok, Pid} = session_proc:start(User, Hist),
+start(User=#user{}, Hist, PushReceiver = #push_receiver{}) ->
+    {ok, Pid} = session_proc:start(User, Hist, PushReceiver),
     session_id:from_pid(Pid).
 
 
@@ -196,7 +200,6 @@ join_game(SessionId, Data = {_GameId, _Country}) ->
 game_order(SessionId, Data = {_GameId, _OrderList}) ->
     ?SESSION_CALL(SessionId, game_order, Data).
 
-
 %%-------------------------------------------------------------------
 %% @doc game_order/2
 %% API for sending message
@@ -205,3 +208,14 @@ game_order(SessionId, Data = {_GameId, _OrderList}) ->
 %%-------------------------------------------------------------------
 user_msg(SessionId, FEMsg = #frontend_msg{}) ->
     ?SESSION_CALL(SessionId, user_msg, FEMsg).
+%%-------------------------------------------------------------------
+%% @doc push_event/2
+%% API for pushing event to the user the session with the given id
+%% belongs to.
+%%
+%% @spec push_event(string(), #push_event{}) ->
+%%         {ok, integer()} | {error, country_not_available}
+%% @end
+%%-------------------------------------------------------------------
+push_event(SessionId, Event = #push_event{}) ->
+    ?SESSION_CAST(SessionId, Event).

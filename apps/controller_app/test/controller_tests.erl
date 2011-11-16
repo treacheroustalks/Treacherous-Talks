@@ -30,11 +30,15 @@
 -module(controller_tests).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
 
--export([create_user/0, create_game/0]).
+-export([create_user/0, create_game/0, get_receiver/0, get_event/0]).
+
+-define(TIMEOUT, 3000).
 %%-------------------------------------------------------------------
 %% setup code
 %%-------------------------------------------------------------------
@@ -57,6 +61,21 @@ callback(_Args, Result, Info) ->
     {Result, Info}.
 callback() ->
     {fun callback/3, []}.
+
+%%-------------------------------------------------------------------
+%% helper: event receiver
+%%-------------------------------------------------------------------
+get_receiver() ->
+    #push_receiver{pid = self(),
+                   args = no_args}.
+
+get_event() ->
+   receive
+       {push, no_args, Event} -> {ok, Event};
+       Other -> {error, {not_an_event, Other}}
+   after
+       ?TIMEOUT -> {error, timeout}
+   end.
 
 %%-------------------------------------------------------------------
 %% All controller interface tests
@@ -164,7 +183,8 @@ invalid_session(Callback) ->
 session_setup() ->
     Mods = [
             update_user_tests, get_session_user_tests,
-            create_game_tests, user_msg_tests, logout_tests
+            create_game_tests, user_msg_tests, logout_tests,
+            push_events_tests
            ],
     Callback = callback(),
 
@@ -173,7 +193,7 @@ session_setup() ->
     NewUser= controller:handle_action(Register,
                                       {fun(_,_,Data) -> Data end, []}),
 
-    Login = {login, {ok, NewUser}},
+    Login = {login, {ok, {NewUser, get_receiver()}}},
     SessId = controller:handle_action(Login,
                                       {fun(_,_,Data) -> Data end, []}),
 
@@ -203,7 +223,7 @@ pre_game_setup() ->
     NewUser= controller:handle_action(Register,
                                       {fun(_,_,Data) -> Data end, []}),
 
-    Login = {login, {ok, NewUser}},
+    Login = {login, {ok, {NewUser, get_receiver()}}},
     SessId = controller:handle_action(Login,
                                       {fun(_,_,Data) -> Data end, []}),
 
@@ -238,7 +258,7 @@ joined_game_setup() ->
     NewUser= controller:handle_action(Register,
                                       {fun(_,_,Data) -> Data end, []}),
 
-    Login = {login, {ok, NewUser}},
+    Login = {login, {ok, {NewUser, get_receiver()}}},
     SessId = controller:handle_action(Login,
                                       {fun(_,_,Data) -> Data end, []}),
 
@@ -275,7 +295,7 @@ game_order_setup() ->
     NewUser= controller:handle_action(Register,
                                       {fun(_,_,Data) -> Data end, []}),
 
-    Login = {login, {ok, NewUser}},
+    Login = {login, {ok, {NewUser, get_receiver()}}},
     SessId = controller:handle_action(Login,
                                       {fun(_,_,Data) -> Data end, []}),
 

@@ -32,7 +32,7 @@
 -module(controller).
 
 %% Public API
--export([handle_action/2]).
+-export([handle_action/2, push_event/2]).
 
 
 %% Internal functions, exported for eUnit, do not use!
@@ -42,12 +42,18 @@
          get_user/2
         ]).
 
+-include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 
+%% ------------------------------------------------------------------
+%% Internal macros
+%% ------------------------------------------------------------------
 -define(WORKER, controller_app_worker).
--define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER),
-                                          Cmd)).
+-define(SELECT_WORKER, service_worker:select_pid(?WORKER)).
+-define(CAST_WORKER(Cmd), gen_server:cast(?SELECT_WORKER, Cmd)).
+-define(CALL_WORKER(Cmd), gen_server:call(?SELECT_WORKER, Cmd)).
 
 %% ------------------------------------------------------------------
 %% External API Function Definitions
@@ -148,6 +154,17 @@ handle_action(Cmd, {CallbackFun, Args}) ->
 
 
 %%-------------------------------------------------------------------
+%% @doc
+%% Pushes an event to the user with given id, if online.
+%%
+%% @spec push_event(UserId::integer(), #push_event{}) -> ok
+%% @end
+%%-------------------------------------------------------------------
+push_event(UserId, Event = #push_event{}) ->
+    ?CAST_WORKER({push_event, {UserId, Event}}).
+
+
+%%-------------------------------------------------------------------
 %% @doc create_user/2
 %%
 %% API for creation of a user
@@ -162,11 +179,14 @@ register(User) ->
 %% @doc login/1
 %%
 %% API for logging in a user
+%%
+%% @spec login({#user{}, #push_receiver{}}) ->
+%%          {ok, SessionId} | {error, nick_not_unique} |
+%%          {error, invalid_login_data} | {error, simultaneous_login}
 %% @end
-%% [@spec login(#user{}) @end]
 %%-------------------------------------------------------------------
-login(User) ->
-    ?CALL_WORKER({login, User}).
+login(Data = {#user{}, #push_receiver{}}) ->
+    ?CALL_WORKER({login, Data}).
 
 
 %%-------------------------------------------------------------------
