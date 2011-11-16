@@ -1,7 +1,13 @@
-{application, web_frontend, [
-    {description,  "The Treacherous Talks web frontend"},
-    {vsn,          "1"},
-    {applications, [kernel, stdlib, datatypes]},
-    {registered, []},
-    {mod, {web_frontend_app, []}}
-]}.
+{application, web_frontend,
+ [
+  {description, "The Treacherous Talks web frontend"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  datatypes,
+                  utils
+                 ]},
+  {mod, {web_frontend_app, []}}
+ ]}.

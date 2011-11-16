@@ -69,27 +69,18 @@ do_release () {
 
         cd $release
         if [ -z "$release_name" -o "$release_name" == $release ]; then
-            relcommand=""
-            # Look for Makefile or reltool.config
-            if [ -a Makefile ]; then
-                relcommand="make release"
-                finddir="rel"
-            elif [ -a reltool.config ]; then
-                relcommand="$cwd/rebar generate"
-                finddir="."
-            fi
-            # If such a file was found, then do the release
-            if [ relcommand ]; then
+            # Look for reltool.config
+            if [ -a reltool.config ]; then
                 localerror=0
                 echonormal "releasing $release"
-                $relcommand || localerror=1
+                $cwd/rebar generate || localerror=1
                 # Move files to $sysrel if $domove is set to 1 and no errors in
                 # release
                 if [[ $domove -eq 1 && $localerror -eq 0 ]]; then
                     echonormal "Deleting old release files in $sysrel/$release"
                     rm -rf $sysrel/$release || localerror=1
                     echonormal "Moving release files into $sysrel"
-                    find $finddir -mindepth 1 -maxdepth 1 -newer \
+                    find "." -mindepth 1 -maxdepth 1 -newer \
                         $sysrel/release_timestamp -print0 | xargs -0 -I {} \
                         mv {} $sysrel || localerror=1
                 fi
@@ -107,7 +98,6 @@ do_release () {
 
 # Do releases
 do_release $cwd/rel
-do_release $cwd/ext_rel
 
 # Tar if $dotar is set to 1
 cd $sysrel
