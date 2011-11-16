@@ -41,7 +41,8 @@
          mapred/3, mapred/4,
          mapred_stream/4, mapred_stream/5,
          mapred_bucket/3, mapred_bucket/4,
-         mapred_bucket_stream/5]).
+         mapred_bucket_stream/5,
+         search/3]).
 
 -record(db_c, {module, client}).
 
@@ -65,7 +66,7 @@
 connect() ->
     connect (application:get_env (riak)).
 
-connect({Channel, {Host, Port}}) when is_list (Host), 
+connect({Channel, {Host, Port}}) when is_list (Host),
                                       is_integer (Port) ->
     connect(random_client_id(), {Channel, {Host, Port}}).
 connect(ClientId, {Channel, Node}) when is_binary(ClientId) ->
@@ -164,10 +165,12 @@ mapred_bucket(RC, Bucket, Query, Timeout) ->
 mapred_bucket_stream(RC, Bucket, Query, ClientPid, Timeout) ->
     ?PASS4(RC, mapred_bucket_stream, Bucket, Query, ClientPid, Timeout).
 
-
 get_unique_id() ->
     %TODO create some id ...
     random_id().
+
+search(RC, Bucket, Query) ->
+    ?PASS2(RC, search, Bucket, Query).
 
 %% INTERNAL
 

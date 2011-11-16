@@ -52,7 +52,8 @@
          mapred/2, mapred/3,
          mapred_bucket/2, mapred_bucket/3,
          get_unique_id/0,
-         int_to_bin/1, int_to_bin/2
+         int_to_bin/1, int_to_bin/2,
+         search/2
         ]).
 
 %% -----------------------------------------------------------------
@@ -66,7 +67,7 @@
 %% -----------------------------------------------------------------
 
 %%-------------------------------------------------------------------
-%% @doc 
+%% @doc
 %% Ping riak.
 %%
 %% @spec ping_riak() -> pong | pang
@@ -107,7 +108,7 @@ get(Bucket, Key, Options) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Same as get/2, but tries to resolve siblings with the session 
+%% Same as get/2, but tries to resolve siblings with the session
 %% history, if any. Where Field is the position where the session is
 %% stored in the record.
 %%
@@ -126,7 +127,7 @@ get_resolve(Bucket, Key, Hist, Field) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Same as get/3, but tries to resolve siblings with the session 
+%% Same as get/3, but tries to resolve siblings with the session
 %% history, if any.
 %%
 %% @end
@@ -270,7 +271,7 @@ set_bucket(Bucket, BucketProps) ->
 %% Perform a map/reduce on the given Inputs.
 %%
 %% @spec
-%%  mapred(Inputs::[{Bucket::binary(), Key::binary()}], 
+%%  mapred(Inputs::[{Bucket::binary(), Key::binary()}],
 %%         Query::[MAGIC]) ->
 %%     {ok, list()} | {error, term()}
 %% @end
@@ -294,6 +295,19 @@ mapred_bucket(Bucket, Query) ->
     ?CALL_WORKER({mapred_bucket, Bucket, Query}).
 mapred_bucket(Bucket, Query, Timeout) ->
     ?CALL_WORKER({mapred_bucket, Bucket, Query, Timeout}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Perform a search on the given bucket.
+%%
+%% @spec
+%%  search(Bucket::binary(), Query::[MAGIC]) ->
+%%     {ok, list()} | {error, term()}
+%% @end
+%%-------------------------------------------------------------------
+search(Bucket, Query) ->
+    ?CALL_WORKER({search, Bucket, Query}).
 
 
 %%-------------------------------------------------------------------

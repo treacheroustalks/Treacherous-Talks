@@ -110,6 +110,9 @@ handle_call({delete_game, Key}, _From, State) ->
 handle_call({get_current_game, ID}, _From, State) ->
     Reply = game_utils:get_current_game(ID),
     {reply, Reply, State};
+handle_call({search, Query},_From, State) ->
+    Reply = game_search:search(Query),
+    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -148,7 +151,9 @@ new_game(undefined, #game{} = Game) ->
     new_game(ID, Game#game{id = ID});
 new_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
-    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
+    % Store Game record as proplist for search
+    GamePropList = data_format:rec_to_plist(Game),
+    DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
     GameObjWithIndex = db_obj:set_indices(DBGameObj,
                                           game_utils:create_idx_list(Game)),
@@ -177,7 +182,9 @@ new_game(ID, #game{} = Game) ->
 %%-------------------------------------------------------------------
 update_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
-    DBGameObj=db_obj:create(?B_GAME, BinID, Game),
+    % Store Game record as proplist for search
+    GamePropList = data_format:rec_to_plist(Game),
+    DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     GameObjWithIndex = db_obj:set_indices(DBGameObj,
                                           game_utils:create_idx_list(Game)),
     GamePutResult = db:put (GameObjWithIndex),
@@ -351,7 +358,13 @@ get_game_order_key(Id, Country) ->
 %% @end
 %% ------------------------------------------------------------------
 get_game(ID)->
-    game_utils:get_db_obj(?B_GAME, db:int_to_bin(ID)).
+    case game_utils:get_db_obj(?B_GAME, db:int_to_bin(ID)) of
+        {ok, GamePropList} ->
+            Game = data_format:plist_to_rec(?GAME_REC_NAME, GamePropList),
+            {ok, Game};
+        {error, Error} ->
+            {error, Error}
+    end.
 
 %% ------------------------------------------------------------------
 %% @doc Returns the game_player record of a game

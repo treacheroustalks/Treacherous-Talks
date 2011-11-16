@@ -44,6 +44,7 @@
 -define(GAME_PLAYER_LINK_USER, <<"user">>).
 -define(GAME_STATE_LINK_GAME, <<"game">>).
 -define(CURRENT_GAME_LINK_STATE, <<"game_state">>).
+-define(GAME_REC_NAME, game).
 
 -record (game, {id :: integer (),
                 creator_id :: integer (),

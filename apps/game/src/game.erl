@@ -32,7 +32,8 @@
           get_game_players/1,
           get_game_overview/2,
           put_game_order/3,
-          get_current_game/1
+          get_current_game/1,
+          search/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -168,3 +169,13 @@ get_game_overview(GameID, UserID) ->
 %% -----------------------------------------------------------------------------
 get_current_game(GameID) ->
     ?CALL_WORKER({get_current_game, GameID}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  Search game bucket.
+%%  See http://wiki.basho.com/Riak-Search---Querying.html for query syntax
+%%  ORed together and NotParams are passed as NOT
+%% @end
+%% ----------------------------------------------------------------------------
+search(Query) ->
+    ?CALL_WORKER({search, Query}).
