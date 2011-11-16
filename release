@@ -72,18 +72,10 @@ do_release () {
             # Look for reltool.config
             if [ -a reltool.config ]; then
                 localerror=0
+                echonormal "Deleting old release files in $sysrel/$release"
+                rm -rf $sysrel/$release || localerror=1
                 echonormal "releasing $release"
                 $cwd/rebar generate || localerror=1
-                # Move files to $sysrel if $domove is set to 1 and no errors in
-                # release
-                if [[ $domove -eq 1 && $localerror -eq 0 ]]; then
-                    echonormal "Deleting old release files in $sysrel/$release"
-                    rm -rf $sysrel/$release || localerror=1
-                    echonormal "Moving release files into $sysrel"
-                    find "." -mindepth 1 -maxdepth 1 -newer \
-                        $sysrel/release_timestamp -print0 | xargs -0 -I {} \
-                        mv {} $sysrel || localerror=1
-                fi
                 case $localerror in
                     0) echonormal "Exit status: success\n";;
                     *) echoerr "Exit status: ERROR\n"

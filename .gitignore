@@ -29,8 +29,7 @@ doc/
 deps/
 
 #releases
-ext_rel/web_frontend/rel/web_frontend/
-rel/backend/rel/backend/
-rel/smtp_frontend/rel/smtp_frontend/
-rel/db/rel/db/
 system-release/
+
+#integration test artifacts
+chromedriver.log

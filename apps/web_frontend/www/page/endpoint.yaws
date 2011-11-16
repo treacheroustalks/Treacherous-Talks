@@ -82,7 +82,7 @@ socket_server(WebSocket, ProtocolVersion) ->
         {push, [Websocket, ProtocolVersion], Event} ->
             % @todo send stuff to the user
             io:format("socket_server received event:~p~n", [Event]),
-            socket_server(WebSocket, ProtocolVersion)
+            socket_server(WebSocket, ProtocolVersion);
         Any ->
             io:format("socket_server received msg:~p~n", [Any]),
             socket_server(WebSocket, ProtocolVersion)

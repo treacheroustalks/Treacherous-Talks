@@ -1,28 +1,141 @@
 #!/bin/bash
 # This script will setup an environment for running integration tests
 
-# Get common functions
-source ../common_bash_functions.sh
+###### Define internal functions and variables
 
 # Internal variables
 cwd="$( cd -P "$( dirname "$0" )" && pwd )"
 sysrel=$cwd/../system-release
 errors=0
 
+# Set some color definitions, but only if we're running in a real terminal
+if [ -t 1 ]; then
+    c_red="\033[31m"
+    c_brown="\033[33m"
+    c_reset="\033[0m";
+else
+    c_red=""
+    c_brown=""
+    c_reset="";
+fi
+
+# Description: Echoes text in red color with ##### signs in front to STDERR
+# First argument: text to echo
+function echoerr() { echo -e $c_red##### "$@" 1>&2 $c_reset; }
+
+# Description: Echoes text in brown color with ##### signs in front to STDOUT
+# First argument: text to echo
+function echonormal() { echo -e $c_brown##### "$@" $c_reset; }
+
+# Description: Runs a command and prints message depending on exit code
+# First argument: printed name
+# Second argument: command to run
+# Side effect: will set $errors to one if non-zero exit code
+function run_script () {
+    local_error=0
+    # Run the script given in $1
+    echonormal "$1"
+    $2 || local_error=1
+    case "$local_error" in
+        0)  echonormal "Exit status: success\n" ;;
+        *)  echoerr "Exit status: ERROR\n"
+            errors=1 ;;
+    esac
+}
+
+# Description: Starts a release and pings it to make sure that it is running
+# First argument: path to system-release directory
+# Second argument: name of release to start
+# Side effect: will set $errors to one if non-zero exit code
+function start_release () {
+    command=$1/$2/bin/$2
+    local_error=0
+    # Start the release given in $1
+    echonormal "Starting $2"
+    $command start || local_error=1
+    # Wait before pinging
+    sleep 1
+    # Do five ping attempts and fail if all is unsuccessfull
+    running=0
+    for i in {1..10}
+    do
+        echonormal "Ping attempt number $i for $2"
+        # Run command and pipe output to find regexp
+        $command ping 2>&1 | perl -pe 'END { print; exit $status }
+                                       $status=100 if
+                                       /.*not responding to pings/;'
+        case "$?" in
+            0) running=1
+               break ;;
+        esac
+        # Sleep before next attempt
+        sleep 1
+    done
+    # Check if ping was unsuccessfull and set errors accordingly
+    if [ $running -eq 0 ]; then
+        local_error=1
+    fi
+    case "$local_error" in
+        0) echonormal "$2 is up and running\n" ;;
+        *) echoerr "ERROR: Could not start $2\n"
+           errors=1 ;;
+    esac
+}
+
+# Description: Stops a release in a proper way
+# First argument: path to system-release directory
+# Second argument: name of release to stop
+# Side effect: will set $errors to one if non-zero exit code
+function stop_release () {
+    command=$1/$2/bin/$2
+    local_error=0
+    # Stop the release given in $1
+    echonormal "Stopping $2"
+    $command stop || local_error=1
+    case "$local_error" in
+        0) echonormal "$2 is stopped\n" ;;
+        *) echoerr "ERROR: Could not stop $2\n"
+           errors=1 ;;
+    esac
+}
+
+
 ###### Script starts here
 
-echonormal "Running test script\n"
+echonormal "Running integration test script\n"
 
+# Start releases
 start_release $sysrel backend
+sleep 2
+start_release $sysrel xmpp_frontend
 start_release $sysrel web_frontend
+start_release $sysrel smtp_frontend
+sleep 5
+
+# Run XMPP tests
+cd $cwd/ejabberd_echo || errors=1
+run_script "Running XMPP tests" "$cwd/../rebar eunit skip_deps=true"
+
+# Run SMTP tests
+cd $cwd/smtp_integration_test || errors=1
+run_script "Running SMTP tests" "$cwd/../rebar eunit skip_deps=true"
 
 # Run Selenium test script
+cd $cwd
 run_script "Running Selenium tests" "python $cwd/web_interface_test.py"
 
+# Stop releases
+stop_release $sysrel smtp_frontend
 stop_release $sysrel web_frontend
+stop_release $sysrel xmpp_frontend
 stop_release $sysrel backend
 
 
-# Exit
-print_exit_status "Test run" $errors
+###### Exit
+
+if (( $errors )); then
+    echoerr "Integration test run was NOT successfull."
+else
+    echonormal "Integration test run was successfull."
+fi
 exit $errors
