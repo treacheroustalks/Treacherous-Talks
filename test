@@ -38,34 +38,25 @@ fi
 if [ $dointegration -eq 1 ]; then
 
     cd $cwd
+    sysrel=$cwd/system-release
 
     # Release and start backend
-    run_script "releasing backend" "./release -nd backend"
-    backend=system-release/backend/bin/backend
-    run_script "starting backend" "$backend start"
+    ./release -nd backend
+    start_release $sysrel "backend"
 
-    # Release and install xmpp_frontend
-    run_script "releasing xmpp_frontend" "./release -nd xmpp_frontend"
-    cd $cwd/system-release/xmpp_frontend
-    run_script "installing xmpp_frontend for frontend tests" "make clean install"
-    ejdctl=system-release/xmpp_frontend/installation/sbin/ejabberdctl
-    cd $cwd
-
-    # Start xmpp_frontend
-    echonormal "running xmpp_frontend tests"
-    run_script "starting ejabberd and waiting 10 seconds" "$cwd/$ejdctl start"
-    sleep 10 # TODO: Use erik's pinging blocking script instead of naive sleep.
-    echo "ejabberd status:"
-    $cwd/$ejdctl status || errors=1
+    # Release and start xmpp_frontend
+    ./release -nd xmpp_frontend
+    start_release $sysrel "xmpp_frontend"
+    sleep 10
 
     # Run tests
     cd ext_test/ejabberd_echo || errors=1
     run_script "running tests" "$cwd/rebar eunit skip_deps=true"
 
     # Stop backend and xmpp_frontend
-    run_script "stopping ejabberd" "$cwd/$ejdctl stop"
+    stop_release $sysrel "xmpp_frontend"
+    stop_release $sysrel "backend"
     cd $cwd
-    stop_release "system-release" "backend"
 
 fi
 

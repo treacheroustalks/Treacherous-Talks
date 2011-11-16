@@ -1,0 +1,11 @@
+{application, xmpp_lib,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.

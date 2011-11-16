@@ -49,8 +49,8 @@
 % to this component.
 -export([route/3]).
 
--include("ejabberd.hrl").
--include("jlib.hrl").
+-include("ejabberd/include/ejabberd.hrl").
+-include("ejabberd/include/jlib.hrl").
 -include_lib("datatypes/include/user.hrl").
 
 -define(PROCNAME, tt_bot).
