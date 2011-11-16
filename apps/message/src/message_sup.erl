@@ -21,23 +21,42 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc
-%%% All the bucket names are to be included in this file
+%%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
+%%%
+%%% @doc Unit tests for updating user
 %%% @end
 %%%
-%%% @since : 18 Oct 2011 by Bermuda Triangle
+%%% @since : 15 Nov 2011 by Bermuda Triangle
 %%% @end
-%%%
 %%%-------------------------------------------------------------------
+-module(message_sup).
 
--define(B_SESSION, <<"session">>).
--define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
--define(B_SESSION_HISTORY, <<"session_history">>).
--define(B_GAME_STATE, <<"game_state">>).
+-behaviour(supervisor).
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+%% API
+-export([start_link/0]).
+
+%% Supervisor callbacks
+-export([init/1]).
+
+%% Helper macro for declaring children of supervisor
+-define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+
+%% ===================================================================
+%% API functions
+%% ===================================================================
+
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, no_arg).
+
+%% ===================================================================
+%% Supervisor callbacks
+%% ===================================================================
+
+init(no_arg) ->
+    {ok, { {one_for_one, 5, 10},
+           [
+            ?CHILD(message_worker_sup, supervisor),
+            ?CHILD(message_config, worker)
+           ]} }.
+

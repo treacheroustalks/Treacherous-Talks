@@ -7,7 +7,8 @@
                from :: integer(),
                to :: integer(),
                content :: nonempty_string(),
-               date_created :: date ()
+               date_created :: date (),
+               status = unread :: read | unread
                }).
 
 -record (frontend_msg, {to :: nonempty_string(),

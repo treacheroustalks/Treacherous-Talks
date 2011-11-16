@@ -124,7 +124,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == game_overview;
        Command == join_game;
        Command == game_order;
-       Command == logout ->
+       Command == logout;
+       Command == user_msg ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

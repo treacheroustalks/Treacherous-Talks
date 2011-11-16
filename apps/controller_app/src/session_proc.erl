@@ -35,6 +35,7 @@
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 %% ------------------------------------------------------------------
 %% Internal API Function Exports
@@ -101,6 +102,27 @@ handle_call({game_order, {GameId, GameOrderList}}, _From,
                                                  State = #state{user=User}) ->
     Reply = game:put_game_order(GameId, User#user.id, GameOrderList),
     {reply, Reply, State, ?TIMEOUT};
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for off game user messages
+%% @end
+%% [@spec handle_call({user_msg::atom(), #frontend_msg{},
+%%                     From::{pid(), Tag}, #state{}) -> {reply,Reply,#state{}}.]
+%%
+%% succeed return {ok, messageID :: integer()}
+%% fail return :
+%%           {error, nick_not_unique} |
+%%           {error, invalid_nick}|
+%%           {error, Error :: any()}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({user_msg, FEMsg = #frontend_msg{}}, _From,
+                                                State = #state{user=User}) ->
+    Message = #message{from = User#user.id,
+                        content = FEMsg#frontend_msg.content},
+    Reply = message:user_msg(FEMsg#frontend_msg.to, Message),
+    {reply, Reply, State};
 
 %%-------------------------------------------------------------------
 %% @doc

@@ -21,23 +21,42 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc
-%%% All the bucket names are to be included in this file
+%%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
+%%%
+%%% @doc Unit tests for updating user
 %%% @end
 %%%
-%%% @since : 18 Oct 2011 by Bermuda Triangle
+%%% @since : 15 Nov 2011 by Bermuda Triangle
 %%% @end
-%%%
 %%%-------------------------------------------------------------------
+-module(message_worker_sup).
+-behaviour(supervisor).
 
--define(B_SESSION, <<"session">>).
--define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
--define(B_SESSION_HISTORY, <<"session_history">>).
--define(B_GAME_STATE, <<"game_state">>).
+%% API
+-export([start_link/0, worker_count/0, worker_count/1]).
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+%% Supervisor callbacks
+-export([init/1]).
+
+%% ===================================================================
+%% API functions
+%% ===================================================================
+
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, no_arg).
+
+worker_count() ->
+    service_worker_sup:worker_count(?MODULE).
+
+worker_count(Count) ->
+    service_worker_sup:worker_count(?MODULE, message, message_worker, Count).
+
+%% ===================================================================
+%% Supervisor callbacks
+%% ===================================================================
+init(no_arg) ->
+    io:format ("[~p] starting ~p~n", [?MODULE, self()]),
+    Workers = service_worker_sup:create_childspec(
+                message, message_workers, message_worker),
+    {ok, { {one_for_one, 5, 10}, Workers } }.
+

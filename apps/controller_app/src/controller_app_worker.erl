@@ -93,6 +93,7 @@ init(no_arg) ->
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for creation of a user
@@ -102,7 +103,7 @@ handle_call(ping, _From, State) ->
 %% @end
 %%-------------------------------------------------------------------
 handle_call({register, User}, _From, State) ->
-    Result = case user_management:create(User) of 
+    Result = case user_management:create(User) of
                  {ok, User1 = #user{}} ->
                      SessHist = session_history:create(User1#user.id),
                      session_history:db_put(SessHist),

@@ -32,6 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 -export([create_user/0, create_game/0]).
 %%-------------------------------------------------------------------
@@ -39,7 +40,7 @@
 %%-------------------------------------------------------------------
 apps() ->
     [protobuffs, riakc, service, db, datatypes, user_management,
-     game, controller_app].
+     game, message, controller_app].
 
 app_start() ->
     [ ?assertEqual(ok, application:start(App)) || App <- apps()],
@@ -114,7 +115,6 @@ controller_game_order_test_() ->
      fun game_order_test_instantiator/1
     }.
 
-
 %%-------------------------------------------------------------------
 %% Unknown command tests
 %%-------------------------------------------------------------------
@@ -164,7 +164,7 @@ invalid_session(Callback) ->
 session_setup() ->
     Mods = [
             update_user_tests, get_session_user_tests,
-            create_game_tests, logout_tests
+            create_game_tests, user_msg_tests, logout_tests
            ],
     Callback = callback(),
 
@@ -266,8 +266,6 @@ joined_game_test_instantiator(Mods) ->
 %%-------------------------------------------------------------------
 %% game_order tests
 %%-------------------------------------------------------------------
-
-
 game_order_setup() ->
     Mods = [game_order_tests],
     Callback = callback(),
@@ -302,7 +300,6 @@ game_order_test_instantiator(Mods) ->
                         end
                 end, Mods)).
 
-
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------
@@ -329,4 +326,3 @@ create_game() ->
           build_phase = 12*60,
           password="pass",
           waiting_time = 48*60}.
-

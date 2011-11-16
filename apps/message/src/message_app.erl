@@ -21,23 +21,29 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc
-%%% All the bucket names are to be included in this file
+%%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
+%%%
+%%% @doc Unit tests for updating user
 %%% @end
 %%%
-%%% @since : 18 Oct 2011 by Bermuda Triangle
+%%% @since : 15 Nov 2011 by Bermuda Triangle
 %%% @end
-%%%
 %%%-------------------------------------------------------------------
+-module(message_app).
+-vsn("1.0.0").
 
--define(B_SESSION, <<"session">>).
--define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
--define(B_SESSION_HISTORY, <<"session_history">>).
--define(B_GAME_STATE, <<"game_state">>).
+-behaviour(application).
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+%% Application callbacks
+-export([start/2, stop/1]).
+
+%% ===================================================================
+%% Application callbacks
+%% ===================================================================
+
+start(_StartType, _StartArgs) ->
+    io:format ("[~p] starting~n", [?MODULE]),
+    message_sup:start_link().
+
+stop(_State) ->
+    ok.

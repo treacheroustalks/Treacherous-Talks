@@ -34,6 +34,7 @@
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 %% ------------------------------------------------------------------
 %% Interface Function Exports
@@ -50,7 +51,8 @@
          reconfig_game/2,
          game_overview/2,
          join_game/2,
-         game_order/2
+         game_order/2,
+         user_msg/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -194,3 +196,12 @@ join_game(SessionId, Data = {_GameId, _Country}) ->
 game_order(SessionId, Data = {_GameId, _OrderList}) ->
     ?SESSION_CALL(SessionId, game_order, Data).
 
+
+%%-------------------------------------------------------------------
+%% @doc game_order/2
+%% API for sending message
+%%
+%% @end
+%%-------------------------------------------------------------------
+user_msg(SessionId, FEMsg = #frontend_msg{}) ->
+    ?SESSION_CALL(SessionId, user_msg, FEMsg).
