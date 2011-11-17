@@ -8,9 +8,9 @@ SYSREL=system-release
 
 # Internal variables used for naming release tar
 DATE=`date +%Y%m%d-%H%M`
-COMMIT=`git diff-index --quiet HEAD; \
-        if [ $$? -ne 0 ]; then echo dirty; \
-        else git rev-list --max-count=1 HEAD; fi`
+COMMIT=$(shell git diff-index --quiet HEAD; \
+               if [ $$? -ne 0 ]; then echo dirty; \
+               else git rev-list --max-count=1 HEAD; fi)
 
 
 standard: small_clean get_deps compile docs
@@ -82,6 +82,25 @@ tar_release:
 	rm -f $(SYSREL)/release-*.tar.gz
 	tar -czf $(SYSREL)/release-$(DATE)-$(COMMIT).tar.gz system-release/*
 
+# Create a stupid deb package of all releases in SYSREL using the tool fpm. It
+# can be installed via a gem, run "gem install fpm". Beware that you might need
+# to add the gem bin directory to your $PATH, such as /var/lib/gems/1.8/bin.
+deb_release:
+	rm -f $(SYSREL)/*.deb
+	cd $(SYSREL); fpm -s dir -t deb -n treacherous-talks --prefix /opt/tt \
+	-v $(DATE)-$(COMMIT) *
+
+
+### Helper rules for internal development
+
+create_deps_file: clean get_deps
+	tar -czf dependencies.tar.gz deps/
+
+fetch_deps_file:
+	wget -nv 'http://buildbot.pcs/mirror/dependencies.tar.gz' 2>&1
+	tar -xf dependencies.tar.gz
+	rm dependencies.tar.gz
 
 .PHONY: standard complete get_deps compile docs small_clean clean test \
-		unittest inttest release clean_release copy_docs tar_release
+	unittest inttest release clean_release copy_docs tar_release \
+	deb_release create_deps_file fetch_deps_file
