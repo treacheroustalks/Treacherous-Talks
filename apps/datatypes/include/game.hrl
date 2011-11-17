@@ -79,8 +79,16 @@
     phase :: phase(),
     map :: any()}).
 
+-record(game_current, {
+          id :: integer(),
+          year_season :: {pos_integer(), season()},
+          current_phase :: phase(),
+          date_updated = {date (), time ()} :: date()}).
+
 -record(game_overview, {
     game_rec :: #game{},
+    phase :: phase(),
+    year_season :: any(),
     country :: country(),
     map :: any(),
     order_list :: any()}).
@@ -94,12 +102,6 @@
     phase :: phase(),
     date_created = {date (), time ()} :: date (),
     order_list :: any()}).
-
--record(game_current,
-        {id :: integer(),
-         year_season :: {pos_integer(), season()},
-         current_phase :: phase(),
-         date_updated = {date (), time ()} :: date()}).
 
 -endif.
 %INDEX

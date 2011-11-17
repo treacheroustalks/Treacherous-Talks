@@ -31,10 +31,8 @@
           join_game/3,
           get_game_players/1,
           get_game_overview/2,
-          phase_change/2,
-          get_current_game/1,
-          process_phase/2,
-          put_game_order/3
+          put_game_order/3,
+          get_current_game/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -51,20 +49,23 @@
 %% ------------------------------------------------------------------
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  creates a new game asynchronously.
-%%
-%%  will reply {ok, GameKey :: Integer()} to the calling process
-%%  in case of success
+%%  creates a new game
+%% @spec
+%% new_game(Game :: #game{}) ->
+%%     {ok, ID :: integer} | Error
 %% @end
 %% -----------------------------------------------------------------------------
--spec new_game (#game{}) -> ok.
 new_game(Game=#game{}) ->
     ?CALL_WORKER({new_game, Game}).
 
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  stores a list of game moves to the database
-%%
+%% @spec
+%% put_game_order(GameId :: integer(),
+%%                UserId :: integer(),
+%%                GameOrder :: list()) ->
+%%     {ok, ID :: string()} | Error
 %% @end
 %% -----------------------------------------------------------------------------
 put_game_order (GameId, UserId, GameOrder) ->
@@ -72,9 +73,10 @@ put_game_order (GameId, UserId, GameOrder) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  gets a game from the database and returns it asynchronously
-%%
-%%  will reply {ok, #game{}} to the calling process in case of success
+%%  gets a game from the database and returns it
+%% @spec
+%% get_game(Key :: integer()) ->
+%%     {ok, Game :: #game{}} | Error
 %% @end
 %% -----------------------------------------------------------------------------
 get_game(Key) ->
@@ -86,6 +88,9 @@ get_game(Key) ->
 %% or {error, Error}.
 %% Field is #record.field,
 %% Value is the value to search for.
+%% @spec
+%% get_keys_by_idx(Field :: any(), Value :: any()) ->
+%%     {ok, Keys :: list()} | {error, Error}
 %% @end
 %% -----------------------------------------------------------------------------
 get_keys_by_idx(Field, Value) ->
@@ -93,9 +98,9 @@ get_keys_by_idx(Field, Value) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  deletes a game from the database asynchronously
-%%
-%%  will reply ok to the calling process in case of success
+%%  deletes a game from the database
+%% @spec
+%% delete_game(Key :: integer()) -> ok
 %% @end
 %% -----------------------------------------------------------------------------
 delete_game(Key) ->
@@ -103,10 +108,12 @@ delete_game(Key) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  reconfig a game from the database asynchronously
+%%  reconfig a game from the database
 %%
 %%  will reply {ok, GameKey :: Integer()} to the calling process
 %% in case of success
+%% @spec
+%% reconfig_game(Game :: #game{}) -> {ok, ID :: integer} | Error
 %% @end
 %% -----------------------------------------------------------------------------
 reconfig_game(Game = #game{}) ->
@@ -114,11 +121,14 @@ reconfig_game(Game = #game{}) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  join a player to a game from the database asynchronously
+%%  join a player to a game from the database
 %%
 %%  will reply {ok, GameKey :: Integer()} to the calling process
 %% in case of success
 %%  if country is already taken reply {error, country_not_available}
+%% @spec
+%% join_game(GameID :: integer(), UserID :: integer, Country :: country()) ->
+%%     {ok, GameID :: integer()} | {error, country_not_available}
 %% @end
 %% -----------------------------------------------------------------------------
 join_game(GameID, UserID, Country) ->
@@ -127,9 +137,10 @@ join_game(GameID, UserID, Country) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  gets a game players from the database and returns it asynchronously
-%%
-%%  will reply {ok, #game{}} to the calling process in case of success
+%%  gets a game players from the database and returns it
+%% @spec
+%% get_game_players(GameID :: integer) ->
+%%     {ok, GamePlayers :: #game_player{}} | Error
 %% @end
 %% -----------------------------------------------------------------------------
 get_game_players(GameID) ->
@@ -137,12 +148,10 @@ get_game_players(GameID) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  gets a game status from the database and returns it asynchronously
-%%
-%%  will reply {ok, #game_status{}} to the calling process in case of success
-%% if the user is not joined the game reply {error, user_not_play_this_game}
-%% this function only return state of waiting game and if the game is not in
-%% waiting, it will reply {error, game_not_waiting}
+%% gets a game overview for a given game and a specific user
+%% @spec
+%% get_game_overview(GameID :: integer(), UserID :: integer()) ->
+%%     {ok, GameOverview :: #game_overview{}} | {error, game_not_started}
 %% @end
 %% -----------------------------------------------------------------------------
 get_game_overview(GameID, UserID) ->
@@ -150,25 +159,12 @@ get_game_overview(GameID, UserID) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  gets the current game information of a game from the database
-%%  will reply {ok, game_current{}} to the calling process in case of success
+%%  get the game_current record for the game with id GameID
+%% replies {ok, CurrentGame :: #game_current{}} or Error.
+%% @spec
+%% get_current_game(GameID :: integer()) ->
+%%     {ok, CurrentGame :: #game_current{}} | Error
 %% @end
-%% ----------------------------------------------------------------------------
-get_current_game(ID) ->
-    ?CALL_WORKER({get_current_game, ID}).
-
 %% -----------------------------------------------------------------------------
-%% @doc
-%%  Handles the game phase and updates the state of the game, replies
-%%  {ok, Phase} if the game is to continue or {ok, end} if the game has ended
-%% @end
-%% ----------------------------------------------------------------------------
-process_phase(ID, Phase) ->
-    ?CALL_WORKER({process_phase, ID, Phase}).
-%% -----------------------------------------------------------------------------
-%% @doc
-%%  API for handling phase changes
-%% @end
-%% ----------------------------------------------------------------------------
-phase_change(Game, NewPhase) ->
-    ?CALL_WORKER({phase_change, Game, NewPhase}).
+get_current_game(GameID) ->
+    ?CALL_WORKER({get_current_game, GameID}).

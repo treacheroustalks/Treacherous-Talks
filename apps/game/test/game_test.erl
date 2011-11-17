@@ -114,13 +114,10 @@ game_test_ () ->
      [ping_tst_(),
       new_get_game_tst_(),
       delete_game_tst_(),
-      game_timer_create_tst_(),
-      game_timer_state_tst_(),
       game_update_tst_(),
       join_game_tst_(),
       get_game_overview_tst_(),
-      translate_game_order_tst_(),
-      game_current_tst_()
+      translate_game_order_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -182,107 +179,8 @@ delete_game_tst_ () ->
              ?assertEqual(false, lists:member(Key, Keys2))
      end].
 
-%%--------------------------------------------------------------------
-%% Tests game timer - creation of a new game timer
-%%--------------------------------------------------------------------
-game_timer_create_tst_() ->
-    [fun() ->
-             Game = test_game(),
-             ?assertMatch({ok, _Pid}, game_timer_sup:create_timer(Game))
-     end].
 
-%%--------------------------------------------------------------------
-%% Tests game timer - changes state on sent events
-%%--------------------------------------------------------------------
-game_timer_state_tst_ () ->
-    [fun() ->
-             ?debugMsg("game timer state test start"),
-             GameRecord = test_game3(),
-             Game = sync_get(sync_new(GameRecord)),
-             Id = Game#game.id,
-             ?assertEqual(waiting_phase, game_timer:current_state(Id)),
 
-             game_timer:sync_event(Id, timeout),
-             ?assertEqual(order_phase, game_timer:current_state(Id)),
-
-             game_timer:sync_event(Id, timeout),
-             ?assertEqual(retreat_phase, game_timer:current_state(Id)),
-             ?debugMsg("game timer state test end")
-     end,
-     fun() ->
-             ?debugMsg("game timer reconfig test"),
-             GameRecord = test_game3(),
-             Game = sync_get(sync_new(GameRecord)),
-             UpdatedGame = Game#game{description="RECONFIG",
-                                     waiting_time = 1},
-             ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
-             game:reconfig_game(UpdatedGame),
-             ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
-             game_timer:sync_event(Game#game.id, timeout),
-             ?assertEqual(order_phase, game_timer:current_state(Game#game.id)),
-             ?assertEqual(UpdatedGame#game{status = ongoing},
-                          game_timer:get_game_state(Game#game.id)),
-             ?debugMsg("game timer reconfig test end")
-     end].
-
-%%--------------------------------------------------------------------
-%% Tests current game state - changes state on sent events
-%%--------------------------------------------------------------------
-game_current_tst_() ->
-    [fun() ->
-             ?debugMsg("Current game update test----------"),
-             GameRecord = test_game(),
-             ?debugVal(Game = sync_get(sync_new(GameRecord))),
-             ID = Game#game.id,
-
-             ?assertEqual(waiting_phase, game_timer:current_state(ID)),
-
-             %% timeout brings us to "started"
-             game_timer:sync_event(ID, timeout),
-             {ok, OrderCurrent} = game:get_current_game(ID),
-             ?assertEqual(order_phase, OrderCurrent#game_current.current_phase),
-             ?assertEqual({1900, spring},
-                          OrderCurrent#game_current.year_season),
-
-             game_timer:sync_event(ID, timeout),
-             ?debugMsg("Process order - change phase to retreat"),
-             {ok, RetreatCurrent} = game:get_current_game(ID),
-             ?assertEqual(retreat_phase,
-                          RetreatCurrent#game_current.current_phase),
-             ?assertEqual({1900, spring},
-                          RetreatCurrent#game_current.year_season),
-
-             %% timeout brings us to build phase - but since it spring
-             %% it will skip it and go back to order
-             game_timer:sync_event(ID, timeout),
-             ?debugMsg("Process retreat - skip build - change phase to order"),
-             {ok, Current} = game:get_current_game(ID),
-             ?assertEqual(order_phase, Current#game_current.current_phase),
-             ?assertEqual({1900, fall}, Current#game_current.year_season),
-
-             % after the current game has updated, we automatically go
-             % to the next phase -> order_phase
-             % process order phase
-             game_timer:sync_event(ID, timeout),
-             {ok, RetreatCurrent2} = game:get_current_game(ID),
-             ?assertEqual(retreat_phase,
-                          RetreatCurrent2#game_current.current_phase),
-             ?assertEqual({1900, fall},
-                          RetreatCurrent2#game_current.year_season),
-
-             %% timeout to buildphase
-             game_timer:sync_event(ID, timeout),
-             {ok, BuildCurr} = game:get_current_game(ID),
-             ?assertEqual(build_phase, BuildCurr#game_current.current_phase),
-
-             game_timer:sync_event(ID, timeout),
-             {ok, NewYearCurrent} = game:get_current_game(ID),
-             ?assertEqual(order_phase,
-                          NewYearCurrent#game_current.current_phase),
-             ?assertEqual({1901, spring},
-                          NewYearCurrent#game_current.year_season),
-             ?debugMsg("Current game updates test end----------")
-     end].
 %%------------------------------------------------------------------------------
 %% Tests the game update functionality
 %%------------------------------------------------------------------------------
@@ -336,10 +234,7 @@ game_update_tst_() ->
              ?assertEqual(true, lists:member(Key, Keys)),
 
              % game changes status
-             % based on how game timer changes from waiting to ongoing
-             OngoingGame = Game#game{status = ongoing},
-             game:phase_change(OngoingGame, started),
-             timer:sleep(50),
+             game_timer:sync_event(Game#game.id, timeout),
 
              % prove that we find it
              {ok, Keys2} = game:get_keys_by_idx(#game.status, ongoing),
@@ -370,22 +265,22 @@ game_update_tst_() ->
 %%------------------------------------------------------------------------------
 translate_game_order_tst_() ->
     [fun() ->
-              ?debugMsg("translate game order test"),
-              GameRecord = test_game(),
-              % Create a new Game
-              Game = sync_get(sync_new(GameRecord)),
-              % join new player with id=1122 and country=england
-              JoinResult = game:join_game(Game#game.id, 1122, england),
-              ?assertEqual({ok, Game#game.id}, JoinResult),
-              {GameOrderList, ExpectedOutput} = test_order_list(),
+             ?debugMsg("translate game order test"),
+             GameRecord = test_game(),
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             JoinResult = game:join_game(Game#game.id, 1122, england),
+             ?assertEqual({ok, Game#game.id}, JoinResult),
+             {GameOrderList, ExpectedOutput} = test_order_list(),
 
-              % start the game
-              game_worker:phase_change(Game, started),
+             % start the game
+             game_timer:sync_event(Game#game.id, timeout),
 
-              Result = game_worker:translate_game_order(Game#game.id,
-                                                        GameOrderList,england),
-              ?assertEqual(ExpectedOutput, Result),
-              ?debugMsg("successful translate game order test")
+             Result = game_utils:translate_game_order(Game#game.id,
+                                                       GameOrderList,england),
+             ?assertEqual(ExpectedOutput, Result),
+             ?debugMsg("successful translate game order test")
       end
      ].
 
@@ -437,7 +332,7 @@ join_game_tst_() ->
              JoinProcPid = game_join_proc_map:get_pid(GameId),
              % a join proc exists for the game after creating the game
              ?assertEqual(true, game_join_proc:is_alive(JoinProcPid)),
-             game:phase_change(Game, started),
+             game_timer:sync_event(Game#game.id, timeout),
              % block only until the join process is gone.
              % If the test times out, the proc probably didn't die within 5s
              % and suggests something's wrong.
@@ -461,7 +356,8 @@ get_game_overview_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
-             game_worker:phase_change(Game#game{status=ongoing}, started),
+             % start the game
+             game_timer:sync_event(Game#game.id, timeout),
              GOV = sync_get_game_overview (Game#game.id, UserID),
              ?debugMsg("1Game Overview -------------------------->>"),
              ?debugVal(GOV),
@@ -474,7 +370,8 @@ get_game_overview_tst_ () ->
              % Create a new Game
              Game = sync_get(sync_new(GameRecord)),
              UserID = 11223,
-             game_worker:phase_change(Game#game{status=ongoing}, started),
+             % start the game
+             game_timer:sync_event(Game#game.id, timeout),
              Reply = sync_get_game_overview (Game#game.id, UserID),
              ?debugMsg("2Game Overview -------------------------->>"),
              ?debugVal(Reply),
@@ -489,7 +386,8 @@ get_game_overview_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
-             game_worker:phase_change(Game#game{status=ongoing}, started),
+             % start the game
+             game_timer:sync_event(Game#game.id, timeout),
              Reply = sync_get_game_overview (Game#game.id, UserID),
              ?debugMsg("3Game Overview -------------------------->>"),
              ?debugVal(Reply),
@@ -523,14 +421,14 @@ sync_get_game_player(ID) ->
     GamePlayer.
 
 sync_get_game_overview(GameID, UserID) ->
-    case game:get_game_overview(GameID, UserID) of
+    case ?debugVal(game:get_game_overview(GameID, UserID)) of
         {ok, GameOverview} ->
             ?debugMsg("Getting game overview ---------------------->>"),
             ?debugVal(GameOverview),
             GameOverview;
         {error, Error} ->
             Error;
-        Other ->
+        _Other ->
             unknown_error
     end.
 

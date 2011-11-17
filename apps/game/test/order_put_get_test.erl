@@ -97,8 +97,8 @@ move_get_put_test_ () ->
     {setup,
      fun app_started_setup/0,
      fun app_started_teardown/1,
-     [ping_tst_ (),
-      get_game_order_tst_ (),
+     [ping_tst_(),
+      get_game_order_tst_(),
       put_game_order_tst_(),
       get_all_orders_tst_()
      ]}.
@@ -140,8 +140,8 @@ put_game_order_tst_ () ->
              game:join_game(Game#game.id, UserID, Country),
              timer:sleep(50),
              % start the game
-             game_worker:phase_change(Game, started),
-             timer:sleep(50),
+             game_timer:sync_event(Game#game.id, timeout),
+             %%timer:sleep(50),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
@@ -167,15 +167,15 @@ get_all_orders_tst_ () ->
              timer:sleep(50),
 
              % start the game
-             game_worker:phase_change(Game, started),
-             timer:sleep(50),
+             %game_worker:phase_change(Game, started),
+             game_timer:sync_event(Game#game.id, timeout),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
              sync_put_order (Game#game.id, UserID1, input_updated_order_list()),
              Move = sync_get_order(Key),
              ?debugMsg("GETALL------------------->>"),
-             ?debugVal(game_worker:get_all_orders(Game#game.id)),
+             ?debugVal(game_utils:get_all_orders(Game#game.id)),
              ?assertEqual(expected_updated_order_list(), Move)
      end].
 
@@ -190,8 +190,9 @@ get_game_order_tst_ () ->
              game:join_game(Game#game.id, UserID, Country),
              timer:sleep(50),
              % start the game
-             game_worker:phase_change(Game#game{status=ongoing}, started),
-             timer:sleep(50),
+             %game_worker:phase_change(Game#game{status=ongoing}, started),
+             %timer:sleep(50),
+             game_timer:sync_event(Game#game.id, timeout),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              Move = sync_get_order(Key),
@@ -206,7 +207,7 @@ sync_put_order (GameId, UserId, OrderList) ->
     Key.
 
 sync_get_order (Key) ->
-    case game_worker:get_game_order (Key) of
+    case game_utils:get_game_order (Key) of
         {ok, Order} ->
             Order;
         Error ->
