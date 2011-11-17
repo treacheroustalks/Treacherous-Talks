@@ -161,7 +161,7 @@ get({user_msg, invalid_data}, Error) ->
     case Error of
         nick_not_unique ->
             resp("Error: Duplicate nick detected!.~n");
-        does_not_exist ->
+        invalid_nick ->
             resp("Error: The user does not exist.~n");
         _ ->
             resp_unhandled_error(Error)
@@ -187,7 +187,7 @@ get({Cmd, parse_error}, Error) ->
 get(off_game_msg, Msg) ->
     {{Year, Month, Day}, {H, M, S}} = calendar:universal_time_to_local_time(
                                         Msg#message.date_created),
-    resp("<~p/~p/~p ~p:~p:~p> ~s:~n ~s~n", [Year, Month, Day, H, M, S,
+    resp("<~p/~p/~p ~p:~p:~p> ~s:~n~s", [Year, Month, Day, H, M, S,
                                            Msg#message.from_nick,
                                            Msg#message.content]);
 
