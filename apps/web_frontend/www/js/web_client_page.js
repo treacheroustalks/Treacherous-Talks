@@ -83,6 +83,7 @@ function load_reconfig_game_page(page_data) {
 function load_game_overview_data(page_data) {
     $('#game_id').val(page_data.game_id);
     $('#country').html(page_data.country);
+    $('#game_info').html(nl2br(page_data.game_info));
     $('#game').html(nl2br(page_data.game));
     $('#provinces').html(nl2br(page_data.provinces));
     $('#units').html(nl2br(page_data.units));

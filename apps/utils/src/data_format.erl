@@ -48,13 +48,17 @@
 %% @end
 %%-------------------------------------------------------------------
 game_overview_to_text(#game_overview{} = GOV)->
+    {Year, Season} = GOV#game_overview.year_season,
+    Phase = atom_to_list(GOV#game_overview.phase),
     Country = GOV#game_overview.country,
+    GameInfo = io_lib:format("~s: ~s ~s~n",
+                             [Phase, atom_to_list(Season), integer_to_list(Year)]),
     GameRec = GOV#game_overview.game_rec,
     Orders = GOV#game_overview.order_list,
     Game = game_to_text(GameRec),
     Map = digraph_io:from_erlang_term(GOV#game_overview.map),
     {Provinces, Units} = map_to_text(Map, Country),
-    {GameRec#game.id, Country, Game, Provinces, Units, Orders}.
+    {GameRec#game.id, Country, GameInfo, Game, Provinces, Units, Orders}.
 
 
 %%-------------------------------------------------------------------

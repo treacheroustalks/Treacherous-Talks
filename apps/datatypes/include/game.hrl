@@ -88,7 +88,7 @@
 -record(game_overview, {
     game_rec :: #game{},
     phase :: phase(),
-    year_season :: any(),
+    year_season :: {pos_integer(), season()},
     country :: country(),
     map :: any(),
     order_list :: any()}).

@@ -212,11 +212,12 @@ resp_unhandled_error(Error) ->
 
 %% Get game overview in text format
 game_overview(#game_overview{} = GOV)->
-    {_GameId, Country, Game, Provinces, Units, Orders} =
+    {_GameId, Country, GameInfo, Game, Provinces, Units, Orders} =
         data_format:game_overview_to_text(GOV),
     Msg1 = io_lib:format("~nYou are playing as ~s ~nGame Information:~n",
                          [Country]),
-    Msg2 = io_lib:format("in game_overview after msg: ~s~n ", [Game]),
-    Msg3 = io_lib:format("~nYour provinces:~n~s ~nAll units:~n~s~nYour Orders:~n~p",
+    Msg2 = io_lib:format("~s", [GameInfo]),
+    Msg3 = io_lib:format("in game_overview after msg: ~s~n ", [Game]),
+    Msg4 = io_lib:format("~nYour provinces:~n~s ~nAll units:~n~s~nYour Orders:~n~p",
                           [Provinces, Units, Orders]),
-    lists:flatten(Msg1 ++ Msg2 ++ Msg3).
+    lists:flatten(Msg1 ++ Msg2 ++ Msg3 ++ Msg4).

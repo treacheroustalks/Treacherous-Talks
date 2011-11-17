@@ -39,6 +39,10 @@
             <td><div id="country"></div></td>
         </tr>
         <tr>
+            <td>Game info</td>
+            <td><div id="game_info"></div></td>
+        </tr>
+        <tr>
             <td>Game</td>
             <td><div id="game"></div></td>
         </tr>
