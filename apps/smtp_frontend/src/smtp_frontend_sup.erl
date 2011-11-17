@@ -34,7 +34,7 @@
 
 %% Helper macro for declaring children of supervisor
 -define(CHILD(I, A, Type), {I, {I, start_link, A}, permanent, 5000, Type, [I]}).
-
+-define(CHILD2(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
 %% ===================================================================
 %% API functions
 %% ===================================================================
@@ -69,4 +69,5 @@ init([]) ->
                       {sessionoptions, [{allow_bare_newlines, fix}]}
                      ]],
     SMTPServer = ?CHILD(gen_smtp_server, [smtp_core, ServerOptions], worker),
-    {ok, {{one_for_one, 5, 10}, [SMTPServer]}}.
+    ReplyServer = ?CHILD2(mail_sender, worker),
+    {ok, {{one_for_one, 5, 10}, [SMTPServer, ReplyServer]}}.

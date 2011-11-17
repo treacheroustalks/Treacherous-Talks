@@ -39,10 +39,14 @@
 -define(RELAY, true).
 -define(ECHO_DISABLED, true). %set to false to enable echo_bot
 
+
+
 %Export for eunit test
 -export([simple_relay/4, forward_mail/4]).
 
 -include_lib("datatypes/include/push_receiver.hrl").% #user{}
+-include_lib("utils/include/debug.hrl").
+
 -record(state,
     {
         options = [] :: list(),
@@ -70,7 +74,7 @@
 %% @end
 %%------------------------------------------------------------------------------------------------
 init(Hostname, SessionCount, Address, Options) ->
-    io:format("peer: ~p~n", [Address]),
+    io:format("peer: ~p ~p ~n", [Hostname, Address]),
     case SessionCount > 20 of
         false ->
             Banner = [Hostname, " ESMTP smtp_server_example"],
@@ -337,14 +341,16 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
             ParsedCmd = case command_parser:parse(BinData, mail) of
                             {login, {ok, User}} ->
                                 PushReceiver = #push_receiver{
-% @todo                                 pid = self(),
-% @todo                                 args = [To, From],
-                                  type = mail
-                                 },
+                                    pid = mail_sender:get_pid(),
+                                    args = [To, From],
+                                    type = mail
+                                },
                                 {login, {ok, {User, PushReceiver}}};
                             Other ->
                                 Other
                         end,
+
+            ?DEBUG("ParsedCmd  ~p~n", [ParsedCmd]),
             controller:handle_action(ParsedCmd, {fun smtp_output:reply/3,
                                                  [From, To]});
         _ -> %  when this game server is misused as a relay server
