@@ -32,6 +32,7 @@
 
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/message.hrl").
 -include_lib("utils/include/command_parser.hrl").
 
 -export([
@@ -39,7 +40,9 @@
          game_to_text/1,
          map_to_text/2,
          rec_to_plist/1, rec_to_plist/2, plist_to_rec/2,
-         type_of/1
+         type_of/1,
+         search_result_keys/1,
+         bin_to_int/1
          ]).
 
 %%-------------------------------------------------------------------
@@ -255,6 +258,7 @@ print_time(Msg, _Value, _Label) ->
 %% @doc
 %% Converts record to proplist
 %% Any new data type has to be added here before using this function
+%% because record_info requires that the record name is known at compile time.
 %% WARNING: Nested records are not converted
 %% input :
 %%     RecordValue - record
@@ -267,7 +271,7 @@ rec_to_plist(RecordValue) ->
     RecFields = case Record of
                     game -> record_info(fields, game);
                     user -> record_info(fields, user);
-                    _ -> {error, not_supported}
+                    message -> record_info(fields, message)
                 end,
     RecordInfo = [Field || Field <- RecFields],
     lists:zip(RecordInfo, tl(tuple_to_list(RecordValue))).
@@ -316,6 +320,16 @@ plist_to_rec(Record, PropList) ->
     Values = plist_get_all_values(PropList),
     list_to_tuple([Record|Values]).
 
+%% ------------------------------------------------------------------
+%% @doc
+%%  Riak search results tend to be in format [[Bucket, KeyBin],...].
+%%  This turns that into [KeyInt,...]
+%% @end
+%% ------------------------------------------------------------------
+-spec search_result_keys(list(list(binary()))) -> list(integer()).
+search_result_keys(Result) ->
+    lists:map(fun([_,KeyBin]) -> bin_to_int(KeyBin) end,
+              Result).
 
 % Hack to get record type from record value
 get_record(RecordValue) ->
@@ -348,3 +362,6 @@ type_of(X) when is_port(X)      -> port;
 type_of(X) when is_reference(X) -> reference;
 type_of(X) when is_atom(X)      -> atom;
 type_of(_X)                     -> unknown.
+
+bin_to_int(B) ->
+    list_to_integer(binary_to_list(B)).

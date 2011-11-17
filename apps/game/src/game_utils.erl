@@ -208,7 +208,7 @@ get_keys_by_idx(Field, Val) ->
         Idx ->
             case db:get_index(?B_GAME, Idx) of
                 {ok, Matches} ->
-                    Keys = index_result_keys(Matches),
+                    Keys = data_format:search_result_keys(Matches),
                     {ok, Keys};
                 Other ->
                     {error, Other}
@@ -363,20 +363,6 @@ get_game_map(GameID) ->
         Error ->
             Error
     end.
-
-%% ------------------------------------------------------------------
-%% @doc
-%% Helper function for get_keys_by_idx
-%% Builds a list of keys from the index list given.
-%% @end
-%% ------------------------------------------------------------------
-index_result_keys([]) ->
-    [];
-index_result_keys([[?B_GAME, KeyBin] | Rest]) ->
-    Key = list_to_integer(binary_to_list(KeyBin)),
-    [ Key | index_result_keys(Rest) ];
-index_result_keys([[_, _] | Rest]) ->
-    index_result_keys(Rest).
 
 %%-------------------------------------------------------------------
 %% @doc

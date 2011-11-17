@@ -107,6 +107,18 @@ handle_call({delete, Bucket, Key, Options},
     Result = db_c:delete(Conn, Bucket, Key, Options),
     {reply, Result, State};
 
+handle_call({empty_bucket, Bucket},
+            _From, #state{db_conn=Conn} = State) ->
+    Result = case db_c:list_keys(Conn, Bucket) of
+                 {ok, Keys} ->
+                     lists:map(fun(Key) -> db_c:delete(Conn, Bucket, Key) end,
+                               Keys),
+                 ok;
+                 Error ->
+                     Error
+             end,
+    {reply, Result, State};
+
 handle_call(list_buckets,
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:list_buckets(Conn),

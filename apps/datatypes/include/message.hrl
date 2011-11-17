@@ -14,7 +14,7 @@
                }).
 
 -record (frontend_msg, {to :: nonempty_string(),
-               content :: nonempty_string()
-               }).
+                        content :: nonempty_string()
+                       }).
 
 -endif.
