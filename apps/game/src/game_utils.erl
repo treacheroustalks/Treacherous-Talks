@@ -45,7 +45,8 @@
          create_idx_list/1,
          update_db_obj/2,
          get_db_obj/2,
-         translate_game_order/3]).
+         translate_game_order/3,
+         get_game_current_key/1]).
 
 -define(COUNTRIES, ["england", "germany", "france", "austria", "italy",
                     "russia", "turkey"]).
@@ -85,8 +86,17 @@ get_keyprefix({game_current, Current}) ->
 %% @end
 %% ------------------------------------------------------------------
 get_current_game(ID) ->
-    get_db_obj(?B_GAME, integer_to_list(ID) ++ "-" ++ "current").
+    get_db_obj(?B_GAME_CURRENT, get_game_current_key(ID)).
 
+
+%% ------------------------------------------------------------------
+%% @doc Returns the current game key
+%% @spec
+%%        get_game_current_key(ID :: integer()) -> binary()
+%% @end
+%% ------------------------------------------------------------------
+get_game_current_key(ID) ->
+    list_to_binary(integer_to_list(ID) ++ "-" ++ "current").
 
 
 %% ------------------------------------------------------------------

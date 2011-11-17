@@ -117,7 +117,8 @@ game_test_ () ->
       game_update_tst_(),
       join_game_tst_(),
       get_game_overview_tst_(),
-      translate_game_order_tst_()
+      translate_game_order_tst_(),
+      game_search_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -343,6 +344,7 @@ join_game_tst_() ->
              % no entry exists for the game in the game id -> pid DB
              ?assertEqual(none, game_join_proc_map:get_pid(GameId))
      end].
+
 %%------------------------------------------------------------------------------
 %% Tests the get game overview functionality
 %%------------------------------------------------------------------------------
@@ -359,7 +361,6 @@ get_game_overview_tst_ () ->
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
              GOV = sync_get_game_overview (Game#game.id, UserID),
-             ?debugMsg("1Game Overview -------------------------->>"),
              ?debugVal(GOV),
              ?assertEqual(Country, GOV#game_overview.country),
              ?debugMsg("game state retrieved")
@@ -373,7 +374,6 @@ get_game_overview_tst_ () ->
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
              Reply = sync_get_game_overview (Game#game.id, UserID),
-             ?debugMsg("2Game Overview -------------------------->>"),
              ?debugVal(Reply),
              ?assertEqual(user_not_playing_this_game, Reply),
              ?debugMsg("User does not play this game")
@@ -389,7 +389,6 @@ get_game_overview_tst_ () ->
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
              Reply = sync_get_game_overview (Game#game.id, UserID),
-             ?debugMsg("3Game Overview -------------------------->>"),
              ?debugVal(Reply),
              StandardMap = digraph_io:to_erlang_term(
                              map_data:create(standard_game)),
@@ -403,6 +402,68 @@ get_game_overview_tst_ () ->
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},
                           game:join_game(1234, 1122, england))
+     end].
+
+%%------------------------------------------------------------------------------
+%% Tests the game search functionality
+%%------------------------------------------------------------------------------
+game_search_tst_ () ->
+    [fun() ->
+             ?debugMsg("Search cleanup"),
+             {ok, Results} = game:search("pressTypeA OR press=pressTypeB OR "
+                                         "press=pressTypeC"),
+             lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
+     end,
+     fun() ->
+             ?debugMsg("GAME SEARCH TESTS: START"),
+             % Setup games
+             GameRecord = test_game(),
+             Game1 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+             Game2 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+             Game3 = sync_get(sync_new(GameRecord#game{press=pressTypeB})),
+             Game4 = sync_get(sync_new(GameRecord#game{press=pressTypeC})),
+             Game5 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+
+             ?debugMsg("Search games with only AND clause with match"),
+             Query1 = "press=pressTypeA AND password=pass",
+             {ok, Results1} = game:search(Query1),
+             ?debugVal(Results1),
+             ?assert(length(Results1) =:= 3),
+             ?assert(lists:member(Game1#game.id, Results1)),
+             ?assert(lists:member(Game2#game.id, Results1)),
+             ?assert(lists:member(Game5#game.id, Results1)),
+
+             ?debugMsg("Search games with only AND clause without match "),
+             Query2 = "press=pressTypeA AND password=dummy",
+             {ok, Results2} = game:search(Query2),
+             ?assert(length(Results2) =:= 0),
+
+             ?debugMsg("Search games with only OR clause"),
+             Query3 = "press=pressTypeB OR press=pressTypeC",
+             {ok, Results3} = game:search(Query3),
+             ?assert(length(Results3) =:= 2),
+             ?assert(lists:member(Game3#game.id, Results3)),
+             ?assert(lists:member(Game4#game.id, Results3)),
+
+             ?debugMsg("Search games with ALL clauses"),
+             NotClause = lists:flatten(io_lib:format("id=~p", [Game5#game.id])),
+             Query4 = "press=pressTypeA AND password=pass OR press=pressTypeB "
+                       "OR press=pressTypeC "
+                       "NOT id=" ++ integer_to_list(Game5#game.id),
+             {ok, Results4} = game:search(Query4),
+             ?assert(length(Results4) =:= 4),
+             ?assert(lists:member(Game1#game.id, Results4)),
+             ?assert(lists:member(Game2#game.id, Results4)),
+             ?assert(lists:member(Game3#game.id, Results4)),
+             ?assert(lists:member(Game4#game.id, Results4)),
+
+             ?debugMsg("GAME SEARCH TESTS: DONE"),
+             % Cleanup
+             sync_delete(Game1#game.id),
+             sync_delete(Game2#game.id),
+             sync_delete(Game3#game.id),
+             sync_delete(Game4#game.id),
+             sync_delete(Game5#game.id)
      end].
 
 %%------------------------------------------------------------------------------
@@ -423,7 +484,7 @@ sync_get_game_player(ID) ->
 sync_get_game_overview(GameID, UserID) ->
     case ?debugVal(game:get_game_overview(GameID, UserID)) of
         {ok, GameOverview} ->
-            ?debugMsg("Getting game overview ---------------------->>"),
+            ?debugMsg("Getting game overview"),
             ?debugVal(GameOverview),
             GameOverview;
         {error, Error} ->

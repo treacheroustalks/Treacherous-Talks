@@ -266,8 +266,8 @@ process_phase(ID, Phase) ->
 %% @end
 %%-------------------------------------------------------------------
 update_current_game(ID, NewPhase) ->
-    BinKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
-    DBReply = db:get(?B_GAME, BinKey),
+    BinKey = game_utils:get_game_current_key(ID),
+    DBReply = db:get(?B_GAME_CURRENT, BinKey),
     case DBReply of
         {ok, CurrentGameObj} ->
             OldGame = db_obj:get_value(CurrentGameObj),
@@ -333,8 +333,8 @@ setup_game(ID) ->
     CurrentGame = #game_current{id = ID,
                                 year_season = {?START_YEAR, spring},
                                 current_phase = order_phase},
-    CurrentKey = list_to_binary(integer_to_list(ID) ++ "-" ++ "current"),
-    DBCurrentGame = db_obj:create(?B_GAME, CurrentKey, CurrentGame),
+    CurrentKey = game_utils:get_game_current_key(ID),
+    DBCurrentGame = db_obj:create(?B_GAME_CURRENT, CurrentKey, CurrentGame),
     %% Link the current game to its gamestate
     CurrentGameLinkObj = db_obj:add_link(DBCurrentGame,
                                          {{?B_GAME_STATE, StateKey},

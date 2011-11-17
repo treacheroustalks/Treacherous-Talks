@@ -136,6 +136,12 @@ handle_call({mapred_bucket, Bucket, Query, Timeout},
     Result = db_c:mapred_bucket(Conn, Bucket, Query, Timeout),
     {reply, Result, State};
 
+handle_call({search, Bucket, Query},
+            _From, #state{db_conn=Conn} = State) ->
+    Result = db_c:search(Conn, Bucket, Query),
+    {reply, Result, State};
+
+
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.

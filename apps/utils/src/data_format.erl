@@ -38,8 +38,7 @@
          game_overview_to_text/1,
          game_to_text/1,
          map_to_text/2,
-         gamerec_to_proplist/1, gamerec_to_proplist/2,
-         userrec_to_proplist/1, userrec_to_proplist/2
+         rec_to_plist/1, rec_to_plist/2, plist_to_rec/2
          ]).
 
 %%-------------------------------------------------------------------
@@ -203,22 +202,30 @@ print_time(Msg, _Value, _Label) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Converts game record to proplist
+%% Converts record to proplist
+%% Any new data type has to be added here before using this function
+%% WARNING: Nested records are not converted
 %% input :
-%%     Game - record
+%%     RecordValue - record
 %% output:
 %%     Proplist - [{Key, Value}]
 %% @end
 %%-------------------------------------------------------------------
-gamerec_to_proplist(Game) ->
-    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, game)],
-    lists:zip(RecordInfo, tl(tuple_to_list(Game))).
+rec_to_plist(RecordValue) ->
+    Record = get_record(RecordValue),
+    RecFields = case Record of
+                    game -> record_info(fields, game);
+                    user -> record_info(fields, user);
+                    _ -> {error, not_supported}
+                end,
+    RecordInfo = [Field || Field <- RecFields],
+    lists:zip(RecordInfo, tl(tuple_to_list(RecordValue))).
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Converts game record to proplist
+%% Converts record to proplist
 %% input :
-%%     Game - record
+%%     RecordValue - record
 %%     Format - string - converts all atom "values" to string format
 %%     RequiredFields - used to avoid sending all the data to the user. Only
 %%                      fields mentioned in it will be returned
@@ -226,55 +233,51 @@ gamerec_to_proplist(Game) ->
 %%     Proplist - [{Key, Value}]
 %% @end
 %%-------------------------------------------------------------------
-gamerec_to_proplist(Game, {Format, RequiredFields}) ->
-    PropList = gamerec_to_proplist(Game),
-    rec_filter(PropList, {Format, RequiredFields}).
-
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Converts user record to proplist
-%% input :
-%%     User - record
-%% output:
-%%     Proplist - [{Key, Value}]
-%% @end
-%%-------------------------------------------------------------------
-userrec_to_proplist(User) ->
-    RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, user)],
-    lists:zip(RecordInfo, tl(tuple_to_list(User))).
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Converts user record to proplist
-%% input :
-%%     User - record
-%%     Format - string - converts all atom "values" to string format
-%%     RequiredFields - used to avoid sending all the data to the user. Only
-%%                      fields mentioned in it will be returned
-%% output:
-%%     Proplist - [{Key, Value}]
-%% @end
-%%-------------------------------------------------------------------
-userrec_to_proplist(User, {Format, RequiredFields}) ->
-    PropList = userrec_to_proplist(User),
-    rec_filter(PropList, {Format, RequiredFields}).
-
-
-%% Filter records based on format
-rec_filter(PropList, {Format, RequiredFields}) ->
-    FilterPL = [{X, Y} || {X, Y} <- PropList, lists:member(X, RequiredFields)],
+rec_to_plist(RecordValue, {Format, RequiredFields}) ->
+    FilterPL = rec_to_plist(RecordValue, RequiredFields),
     case Format of
-        % All the elements and values are in string format
         string ->
-            lists:map(fun({X, Y}) -> {X, case is_atom(Y) of
-                                             true -> atom_to_list(Y);
-                                             false -> Y
-                                         end} end, FilterPL);
+            % All the elements and values to string format
+            lists:map(fun({X, Y}) -> {atom_to_list(X),
+                                      case is_atom(Y) of
+                                          true -> atom_to_list(Y);
+                                          false -> Y
+                                      end} end, FilterPL);
         % Default proplist
         _ -> FilterPL
-    end.
+    end;
+rec_to_plist(RecordValue, RequiredFields) ->
+    PropList = rec_to_plist(RecordValue),
+    [{X, Y} || {X, Y} <- PropList, lists:member(X, RequiredFields)].
 
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts proplist to record
+%% input :
+%%     Record - atom for the record
+%%     PropList - proplist
+%% output:
+%%     Record
+%% @end
+%%-------------------------------------------------------------------
+plist_to_rec(Record, PropList) ->
+    Values = plist_get_all_values(PropList),
+    list_to_tuple([Record|Values]).
+
+
+% Hack to get record type from record value
+get_record(RecordValue) ->
+    element(1, RecordValue).
+
+% Get all values from a proplist
+plist_get_all_values(PropList) ->
+    lists:reverse(plist_get_all_values(PropList, [])).
+
+plist_get_all_values([], Acc) ->
+    Acc;
+plist_get_all_values([{_Key, Value}|Ps], Acc) ->
+    plist_get_all_values(Ps, [Value|Acc]).
 
 %%-------------------------------------------------------------------
 %% @doc

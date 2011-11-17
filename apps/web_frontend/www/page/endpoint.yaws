@@ -139,8 +139,8 @@ get_ret({login, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({get_session_user, success}, Ret=#ret{}, User) ->
-    RequiredFields = ["nick", "email", "name"],
-    Data = data_format:userrec_to_proplist(User, {string, RequiredFields}),
+    RequiredFields = [nick, email, name],
+    Data = data_format:rec_to_plist(User, {string, RequiredFields}),
     EventData = json2:obj_from_list(Data),
     msg_success(Ret#ret{event_data = EventData,
                         page="dashboard"});
@@ -150,8 +150,8 @@ get_ret({get_session_user, invalid_session}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({update_user, success}, Ret=#ret{}, User) ->
-    RequiredFields = ["nick", "email", "name"],
-    Data = data_format:userrec_to_proplist(User, {string, RequiredFields}),
+    RequiredFields = [nick, email, name],
+    Data = data_format:rec_to_plist(User, {string, RequiredFields}),
     EventData = json2:obj_from_list(Data),
     msg_success(Ret#ret{event_data = EventData,
                         page="dashboard"});
@@ -159,10 +159,10 @@ get_ret({update_user, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({get_game, success}, Ret=#ret{}, Game) ->
-    RequiredFields = ["id", "creator_id", "name", "description", "password",
-                      "press", "order_phase", "retreat_phase", "build_phase",
-                      "waiting_time", "num_players", "result"],
-    Data = data_format:gamerec_to_proplist(Game, {string, RequiredFields}),
+    RequiredFields = [id, creator_id, name, description, password,
+                      press, order_phase, retreat_phase, build_phase,
+                      waiting_time, num_players, result],
+    Data = data_format:rec_to_plist(Game, {string, RequiredFields}),
     EventData = json2:obj_from_list(Data),
     msg_success(Ret#ret{event_data = EventData});
 get_ret({get_game, invalid_data}, Ret=#ret{}, _Data) ->
