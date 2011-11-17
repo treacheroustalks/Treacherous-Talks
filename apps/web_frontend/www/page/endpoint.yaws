@@ -69,6 +69,7 @@ socket_server(WebSocket, ProtocolVersion) ->
                                 PushReceiver = #push_receiver{
                                   pid = self(),
                                   args = [WebSocket, ProtocolVersion]},
+                                  type = web
                                 {login, {ok, {User, PushReceiver}}};
                             Other ->
                                 Other

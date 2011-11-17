@@ -79,7 +79,14 @@ send_chat(From, To, Body) ->
 
 %%-------------------------------------------------------------------
 %% @ doc
-%%  prepare the xml chat mesage and route it to the user
+%% send a prepared xml chat message and route it to the user
+%%-------------------------------------------------------------------
+send_xml_message(From, To, XmlBody) ->
+    ejabberd_router:route(From, To, XmlBody).
+
+%%-------------------------------------------------------------------
+%% @ doc
+%% prepare a xml chat message and route it to the user
 %%-------------------------------------------------------------------
 send_message(From, To, TypeStr, BodyStr) ->
     ?INFO_MSG("Sending message type [~s]~n"
@@ -87,18 +94,6 @@ send_message(From, To, TypeStr, BodyStr) ->
               "To ~p~n"
               "Body \"~s\".~n",
               [TypeStr, From#jid.user, To#jid.user, BodyStr]),
-    XmlBody = {xmlelement, "message",
-               [{"type", TypeStr},
-                {"from", jlib:jid_to_string(From)},
-                {"to", jlib:jid_to_string(To)}],
-               [{xmlelement, "body", [],
-                 [{xmlcdata, strip_bom(BodyStr)}]}]},
-    ejabberd_router:route(From, To, XmlBody).
+    send_xml_message(From, To, 
+                     xml_message:prepare(From, To, TypeStr, BodyStr)).
 
-
-%%-------------------------------------------------------------------
-%% @ doc
-%%  strip the BOM or Byte Order Mark from the beginning of the body
-%%-------------------------------------------------------------------
-strip_bom([239,187,191|C]) -> C;
-strip_bom(C) -> C.

@@ -338,7 +338,8 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
                             {login, {ok, User}} ->
                                 PushReceiver = #push_receiver{
 % @todo                                 pid = self(),
-% @todo                                 args = [To, From]
+% @todo                                 args = [To, From],
+                                  type = mail
                                  },
                                 {login, {ok, {User, PushReceiver}}};
                             Other ->

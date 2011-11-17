@@ -21,42 +21,42 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
+%%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
 %%%
-%%% @doc Unit tests for updating user
-%%% @end
+%%% @doc Defines how to push messages to different frontends.
+%%% 
 %%%
-%%% @since : 15 Nov 2011 by Bermuda Triangle
+%%% @since : 17 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
--module (message).
+-module(fe_push).
 
--export ([user_msg/1
-         ]).
+-export([send/4]).
 
--include_lib ("datatypes/include/game.hrl").
--include_lib("datatypes/include/message.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 
-%% ------------------------------------------------------------------
-%% Internal Macro Definitions
-%% ------------------------------------------------------------------
--define(WORKER, message_worker).
--define(CAST_WORKER(Cmd), gen_server:cast(service_worker:select_pid(?WORKER), Cmd)).
--define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER), Cmd)).
 
-%% ------------------------------------------------------------------
-%% External API Function Definitions
-%% ------------------------------------------------------------------
-%% -----------------------------------------------------------------------------
+%%-------------------------------------------------------------------
 %% @doc
-%%  get the nick name of the recipient and message record which contain the
-%%  sender id and content of message.
+%% Sends a push_event to a frontend. for web and mail the general 
+%% case is sufficient, but for im it needs to be converted to an xml
+%% message.
+%%
+%% @spec send(Type::atom(),
+%%            Args::list(),
+%%            Pid::pid(),
+%%            Event::#push_event{}) -> 
+%%         ok | {error, {not_a_push_event, any()}}
 %% @end
-%% -----------------------------------------------------------------------------
--spec user_msg(#message{}) ->
-          {ok, MessageId :: integer()} |
-          {error, nick_not_unique} |
-          {error, invalid_nick}|
-          {error, Error :: any()}.
-user_msg(Msg=#message{}) ->
-    ?CALL_WORKER({user_msg, Msg}).
+%%-------------------------------------------------------------------
+send(im, [Server, ImUser], Pid, Event = #push_event{}) ->
+    Msg = xml_message:prepare(Server, ImUser, "chat",
+                              fe_messages:get(Event#push_event.type,
+                                              Event#push_event.data)),
+    Pid ! {route, Server, ImUser, Msg},
+    ok;
+send(_Type, Args, Pid, Event = #push_event{}) ->
+    Pid ! {push, Args, Event},
+    ok;
+send(_,_,_,Data) ->
+    {error, {not_a_push_event, Data}}.

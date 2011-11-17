@@ -25,7 +25,8 @@
 -define(PUSH_RECEIVER, true).
 
 -record (push_receiver, {pid :: pid(),
-                         args :: any()
+                         args :: any(),
+                         type :: im | mail | web
                }).
 
 -endif.

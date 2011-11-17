@@ -94,7 +94,9 @@ start_stop_t() ->
 push_t() ->
     User = create_user(),
     Id = User#user.id,
-    PushReceiver = #push_receiver{pid = self(), args = no_args},
+    PushReceiver = #push_receiver{pid = self(), args = no_args,
+                                  type = default
+                                 },
     SessionId = session:start(User, session_history:create(Id), PushReceiver),
 
     Event = #push_event{type = test_type, data = {some, data, to, test, this}},

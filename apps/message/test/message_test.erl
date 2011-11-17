@@ -43,13 +43,17 @@ apps () ->
 app_started_setup () ->
     ?debugMsg ("starting apps:"),
     Response = [{App, application:start (App)} || App <- apps ()],
+    meck:new(controller),
+    meck:expect(controller, push_event, 2, ok),
     ?debugMsg (io_lib:format ("~p", [Response])).
 
 app_started_teardown (_) ->
-    [application:stop (App) || App <- lists:reverse (apps ())].
+    [application:stop (App) || App <- lists:reverse (apps ())],
+    meck:unload(controller).
 
 test_msg() ->
-    #message{from = 5555, to = 2222}.
+    #message{from_nick = "bob", from_id = 5555,
+             to_nick = "valid_nick", to_id = 2222}.
 
 test_key() ->
     1234.
@@ -94,8 +98,9 @@ message_worker_tst_() ->
 
 message_fail_tst_() ->
     [fun() ->
-        Reply = message:user_msg("invalid_user", test_msg()),
-        ?assertEqual({error,invalid_nick}, Reply)
+             Msg = test_msg(),
+             Reply = message:user_msg(Msg#message{to_nick = "invalid nick"}),
+             ?assertEqual({error,invalid_nick}, Reply)
      end].
 
 message_success_tst_() ->
@@ -104,7 +109,7 @@ message_success_tst_() ->
         user_management:create(to_user()),
 
         % send msg to "to_user"
-        Result = message:user_msg("valid_nick", test_msg()),
+        Result = message:user_msg(test_msg()),
         {ok, Key} = Result,
         db:delete(?B_USER, db:int_to_bin(to_user_id())),
 

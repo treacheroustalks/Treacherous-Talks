@@ -33,6 +33,7 @@
 -module(fe_messages).
 
 -include_lib("datatypes/include/game.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 -export([get/2, resp/1, resp/2, resp_unhandled_error/1]).
 
@@ -153,6 +154,19 @@ get({game_order, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
+% off game messaging
+get({user_msg, success}, MessageId) ->
+    resp("Message was send. Message ID is: \"~p\"~n", [MessageId]);
+get({user_msg, invalid_data}, Error) ->
+    case Error of
+        nick_not_unique ->
+            resp("Error: Duplicate nick detected!.~n");
+        does_not_exist ->
+            resp("Error: The user does not exist.~n");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
+
 % Invalid session
 get({_Cmd, invalid_session}, _Val) ->
     resp("Invalid user session. Please log in to continue.~n");
@@ -167,6 +181,15 @@ get({Cmd, parse_error}, Error) ->
         _ ->
             resp("The command[~p] could not be interpreted.~n", [Cmd])
     end;
+
+% push events
+% off game message
+get(off_game_msg, Msg) ->
+    {{Year, Month, Day}, {H, M, S}} = calendar:universal_time_to_local_time(
+                                        Msg#message.date_created),
+    resp("<~p/~p/~p ~p:~p:~p> ~s:~n ~s~n", [Year, Month, Day, H, M, S,
+                                           Msg#message.from_nick,
+                                           Msg#message.content]);
 
 % Unimplemented command
 get({Cmd, _Status}, _Val) ->

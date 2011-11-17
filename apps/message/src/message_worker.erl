@@ -46,6 +46,7 @@
 %% export for eunit
 -export([log_user_msg/2]).
 
+-include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/message.hrl").
@@ -72,17 +73,20 @@ init(no_arg) ->
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 
-handle_call({user_msg, ToNick, Msg=#message{}}, _From, State) ->
-    Result = case user_management:get_by_idx(#user.nick, ToNick) of
+handle_call({user_msg, Msg=#message{}}, _From, State) ->
+    Result = case user_management:get_by_idx(#user.nick, Msg#message.to_nick) of
                  {ok, {index_list, _IdxList}} ->
                      % Multiple nicks in the db, not allowed ...
                      {error, nick_not_unique};
                  {ok, DbObj} ->
                      User = db_obj:get_value(DbObj),
                      ToID = User#user.id,
-                     log_user_msg(undefined, Msg#message{to = ToID,
-                                           date_created = erlang:universaltime()
-                                                        });
+                     NewMsg = Msg#message{to_id = ToID,
+                                          date_created = erlang:universaltime()},
+                     LogResult = log_user_msg(undefined, NewMsg),
+                     Event = #push_event{type = off_game_msg, data = NewMsg},
+                     controller:push_event(ToID, Event),
+                     LogResult;
                  {error, does_not_exist} ->
                      {error, invalid_nick};
                  {error, Error} ->
@@ -120,11 +124,11 @@ log_user_msg(ID, Msg) ->
     DbObj = db_obj:create(?B_MESSAGE, BinID, Msg),
     DbLinkObj = db_obj:add_link(DbObj,
                                        {{?B_USER,
-                                         db:int_to_bin(Msg#message.from)},
+                                         db:int_to_bin(Msg#message.from_id)},
                                         ?MESSAGE_FROM_USER_LINK}),
     DbLinkObj2 = db_obj:add_link(DbLinkObj,
                                        {{?B_USER,
-                                         db:int_to_bin(Msg#message.to)},
+                                         db:int_to_bin(Msg#message.to_id)},
                                         ?MESSAGE_TO_USER_LINK}),
     db:put(DbLinkObj2),
     {ok, ID}.

@@ -108,6 +108,7 @@ stop(Host) ->
 %% @doc
 %%  Register a virtual host and tells ejabberd to route all messages
 %%  to this virtual host to this module.
+
 %%-------------------------------------------------------------------
 init([Host, Opts]) ->
     % add a new virtual host / subdomain e.g. tt.localhost
@@ -134,11 +135,8 @@ handle_cast(_Msg, Host) ->
 %% @doc
 %%  handle all none call/cast messages
 %%-------------------------------------------------------------------
-handle_info({push, Args, Event = #push_event{type = Type, data = Data}}, Host) ->
-    io:format("[tt_bot][push event] ~p~n", [Event]),
-    tt_xmpp_output:reply(Args, Type, Data),
-    {noreply, Host};
-handle_info(_Msg, Host) ->
+handle_info(Msg, Host) ->
+    io:format("[tt_bot][handle_info][unhandled] ~p~n", [Msg]),
     {noreply, Host}.
 
 %%-------------------------------------------------------------------
@@ -212,7 +210,9 @@ route(From,
                             {login, {ok, User}} ->
                                 PushReceiver = #push_receiver{
                                   pid = self(),
-                                  args = [To, From]},
+                                  args = [To, From],
+                                  type = im
+                                 },
                                 {login, {ok, {User, PushReceiver}}};
                             Other ->
                                 Other
@@ -231,7 +231,6 @@ route(From, To, Packet) ->
               "To: ~p.~n",
               [?MODULE, From, To, Packet]),
     ok.
-
 
 %%===================================================================
 %% @ doc

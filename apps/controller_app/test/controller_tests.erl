@@ -67,7 +67,9 @@ callback() ->
 %%-------------------------------------------------------------------
 get_receiver() ->
     #push_receiver{pid = self(),
-                   args = no_args}.
+                   args = no_args,
+                   type = default
+                  }.
 
 get_event() ->
    receive

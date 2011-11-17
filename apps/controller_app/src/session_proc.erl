@@ -123,9 +123,11 @@ handle_call({game_order, {GameId, GameOrderList}}, _From,
 %%-------------------------------------------------------------------
 handle_call({user_msg, FEMsg = #frontend_msg{}}, _From,
                                                 State = #state{user=User}) ->
-    Message = #message{from = User#user.id,
-                        content = FEMsg#frontend_msg.content},
-    Reply = message:user_msg(FEMsg#frontend_msg.to, Message),
+    Message = #message{from_id = User#user.id,
+                       from_nick = User#user.nick,
+                       to_nick = FEMsg#frontend_msg.to,
+                       content = FEMsg#frontend_msg.content},
+    Reply = message:user_msg(Message),
     {reply, Reply, State};
 
 %%-------------------------------------------------------------------
@@ -252,8 +254,10 @@ handle_call(Request, _From, State) ->
 handle_cast(Event = #push_event{}, State = #state{push_receiver = Receiver}) ->
     Pid = Receiver#push_receiver.pid,
     Args = Receiver#push_receiver.args,
-    catch Pid ! {push, Args, Event},
+    Type = Receiver#push_receiver.type,
+    catch fe_push:send(Type, Args, Pid, Event),
     {noreply, State};
+
 handle_cast(stop, State) ->
     stop(State),
     {stop, normal, State};

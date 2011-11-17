@@ -21,42 +21,35 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
+%%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
 %%%
-%%% @doc Unit tests for updating user
-%%% @end
-%%%
-%%% @since : 15 Nov 2011 by Bermuda Triangle
+%%% @doc Common functions for xml messages
+%%% 
+%%% @since : 17 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
--module (message).
+-module(xml_message).
 
--export ([user_msg/1
-         ]).
+-export([
+         prepare/4
+        ]).
 
--include_lib ("datatypes/include/game.hrl").
--include_lib("datatypes/include/message.hrl").
-
-%% ------------------------------------------------------------------
-%% Internal Macro Definitions
-%% ------------------------------------------------------------------
--define(WORKER, message_worker).
--define(CAST_WORKER(Cmd), gen_server:cast(service_worker:select_pid(?WORKER), Cmd)).
--define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER), Cmd)).
-
-%% ------------------------------------------------------------------
-%% External API Function Definitions
-%% ------------------------------------------------------------------
-%% -----------------------------------------------------------------------------
+%%-------------------------------------------------------------------
 %% @doc
-%%  get the nick name of the recipient and message record which contain the
-%%  sender id and content of message.
+%% prepare a xml chat mesage
 %% @end
-%% -----------------------------------------------------------------------------
--spec user_msg(#message{}) ->
-          {ok, MessageId :: integer()} |
-          {error, nick_not_unique} |
-          {error, invalid_nick}|
-          {error, Error :: any()}.
-user_msg(Msg=#message{}) ->
-    ?CALL_WORKER({user_msg, Msg}).
+%%-------------------------------------------------------------------
+prepare(From, To, TypeStr, BodyStr) ->
+    {xmlelement, "message",
+     [{"type", TypeStr},
+      {"from", jlib:jid_to_string(From)},
+      {"to", jlib:jid_to_string(To)}],
+     [{xmlelement, "body", [],
+       [{xmlcdata, strip_bom(BodyStr)}]}]}.
+
+%%-------------------------------------------------------------------
+%% @ doc
+%%  strip the BOM or Byte Order Mark from the beginning of the body
+%%-------------------------------------------------------------------
+strip_bom([239,187,191|C]) -> C;
+strip_bom(C) -> C.
