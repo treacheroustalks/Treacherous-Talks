@@ -91,6 +91,7 @@
     phase :: phase(),
     year_season :: {pos_integer(), season()},
     country :: country(),
+    players :: list(),
     map :: any(),
     order_list :: any()}).
 

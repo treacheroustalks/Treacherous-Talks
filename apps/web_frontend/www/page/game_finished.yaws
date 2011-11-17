@@ -1,0 +1,36 @@
+<!-- Finished Game overview page -->
+<div class="page-header">
+  <h1>Game overview and play<small></small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <table>
+    <thead>
+        <tr>
+            <th>Legend</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Game Info:</td>
+            <td><div id="game_info"></div></td>
+        </tr>
+        <tr>
+            <td>Game configurations:</td>
+            <td><div id="game"></div></td>
+        </tr>
+        <tr>
+            <td>Players:</td>
+            <td><div id="players"></div></td>
+        </tr>
+        <tr>
+            <td>Map</td>
+            <td><div id="map"></div></td>
+        </tr>
+    </tbody>
+    </table>
+  </div>
+</div>

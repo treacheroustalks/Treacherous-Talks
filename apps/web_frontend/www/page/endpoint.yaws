@@ -188,19 +188,13 @@ get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret#ret{page="dashboard"});
 
 get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
-    {GameId, Country, GameInfo, Game, Provinces, Units, Orders} =
-        data_format:game_overview_to_text(GOv),
-    OrdersString = lists:flatten(io_lib:format("~p", [Orders])),
-    Data = [{"game_id", integer_to_list(GameId)},
-            {"country", atom_to_list(Country)},
-            {"game_info", lists:flatten(GameInfo)},
-            {"game", lists:flatten(Game)},
-            {"provinces", lists:flatten(Provinces)},
-            {"units", lists:flatten(Units)},
-            {"orders", OrdersString}],
-    EventData = json2:obj_from_list(Data),
-    msg_success(Ret#ret{event_data = EventData,
-                        page="game"});
+    case data_format:game_overview_to_text(GOv) of
+        {_, finished, FinishedData} ->
+            finished_overview_ret(FinishedData, Ret);
+        {GameId, _Status, Data} ->
+            game_overview_ret(GameId, Data, Ret);
+        _ -> msg_error(Ret)
+    end;
 get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
@@ -214,9 +208,9 @@ get_ret({games_current, success}, Ret=#ret{}, Games) ->
                       press, order_phase, retreat_phase, build_phase,
                       waiting_time, num_players],
     EventData = lists:map(fun(Game) ->
-        json2:obj_from_list(data_format:rec_to_plist(Game,
-                                                     {string, RequiredFields}))
-        end, Games),
+                json2:obj_from_list(data_format:rec_to_plist(Game,
+                                    {string, RequiredFields}))
+                          end, Games),
     msg_success(Ret#ret{event_data = EventData,
                         page = "games_current"});
 get_ret({games_current, invalid_data}, Ret=#ret{}, _Data) ->
@@ -235,5 +229,29 @@ json_encode(Data) ->
 ret_to_proplist(Ret) ->
     RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, ret)],
     lists:zip(RecordInfo, tl(tuple_to_list(Ret))).
+
+game_overview_ret(Id, {Info, Country, Game, Provinces, Units, Orders}, Ret=#ret{}) ->
+    OrdersString = lists:flatten(io_lib:format("~p", [Orders])),
+    Data = [{"game_status", "ongoing"},
+            {"game_id", integer_to_list(Id)},
+            {"country", atom_to_list(Country)},
+            {"game_info", lists:flatten(Info)},
+            {"game", lists:flatten(Game)},
+            {"provinces", lists:flatten(Provinces)},
+            {"units", lists:flatten(Units)},
+            {"orders", OrdersString}],
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="game"}).
+
+finished_overview_ret({Info, PlayerInfo, Game, FinalMap}, Ret=#ret{}) ->
+    Data = [{"game_status", "finished"},
+            {"game_info", lists:flatten(Info)},
+            {"game", lists:flatten(Game)},
+            {"players", lists:flatten(PlayerInfo)},
+            {"map", lists:flatten(FinalMap)}],
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="game_finished"}).
 
 </erl>

@@ -25,6 +25,8 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 -include_lib ("datatypes/include/game.hrl").
+-include_lib ("datatypes/include/user.hrl").
+-include_lib ("datatypes/include/bucket.hrl").
 
 -define (TEST_TIMEOUT, 3000).
 
@@ -61,6 +63,23 @@ test_game () ->
 %           build_phase = 100,
 %           password="pass",
 %           waiting_time = 5}.
+
+user_list() ->
+    [{12, england},
+     {13, france},
+     {14, turkey},
+     {15, austria},
+     {16, russia},
+     {17, germany},
+     {18, italy}].
+finished_ov() ->
+    [{england, "12"},
+     {france, "13"},
+     {turkey, "testuser"},
+     {austria, "15"},
+     {russia, "16"},
+     {germany, "17"},
+     {italy, "18"}].
 
 % input and output for test game order
 test_order_list() ->
@@ -399,6 +418,24 @@ get_game_overview_tst_ () ->
              ?debugMsg("get game state test end")
      end,
      fun() ->
+             ?debugMsg("Testing game overview for a finished game"),
+             UserId = 14,
+             create_mock_user(create_user(UserId)),
+             GameRecord = test_game(),
+             Game = sync_get(sync_new(GameRecord)),
+             GID = Game#game.id,
+             game_timer:sync_event(GID, timeout),
+             % join all players
+             lists:foreach(fun({UID, C}) -> game:join_game(GID, UID, C) end,
+                           user_list()),
+             game:reconfig_game(Game#game{status = finished}),
+             % 1112222 is a "random user", anyone can view finished games
+             OV = sync_get_game_overview(GID, 1112222),
+             ?assertEqual(OV#game_overview.players, finished_ov()),
+             delete_mock_user(create_user(UserId)),
+             ?debugMsg("Finished game overview: END TEST -----")
+     end,
+     fun() ->
              ?debugMsg("Test joining a game which doesn't exist"),
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},
@@ -526,3 +563,27 @@ sync_delete(ID) ->
         Other ->
             erlang:error ({error, {{received, Other}, {expected, ok}}})
     end.
+
+
+create_user(Id) ->
+    #user{id = Id,
+          nick = "testuser",
+          email = "test@user.com",
+          password = "test_passw0rd",
+          name = "Test User",
+          role = user,
+          channel = mail,
+          last_ip = {127, 0, 0, 0},
+          last_login = never,
+          score = 0,
+          date_created = {{2011, 10, 18}, {10, 42, 15}},
+          date_updated = {{2011, 10, 18}, {10, 42, 16}}}.
+
+create_mock_user(User) ->
+    BinId = db:int_to_bin(User#user.id),
+    DbObj = db_obj:create(?B_USER, BinId, User),
+    db:put(DbObj).
+
+delete_mock_user(User) ->
+    BinKey = db:int_to_bin(User#user.id),
+    db:delete(?B_USER, BinKey).

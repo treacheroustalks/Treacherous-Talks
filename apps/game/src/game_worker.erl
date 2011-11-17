@@ -200,12 +200,14 @@ update_game(ID, #game{} = Game) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Creates a game overview, based on the data of the user and given
-%% game ID.
+%% game ID. Only a user who is in a game can see an overview of it when
+%% it is ongoing, but anyone can get an overview of a finished game.
 %% @spec
 %% get_game_overview(GameID :: integer(), UserID :: integer()) ->
 %%     GameOverview :: #game_overview{}
 %%     | {error, game_not_started}
 %%     | {error, user_not_playing_this_game}
+%%     | {error, game_stopped}
 %%     | Error
 %% @end
 %%-------------------------------------------------------------------
@@ -214,24 +216,41 @@ get_game_overview(GameID, UserID) ->
         {ok, Country, #game{status = ongoing} = Game} ->
             Key = get_game_order_key(GameID, Country),
             Orders = game_utils:get_game_order(Key),
-            {ok, GameState} = game_utils:get_game_state(GameID),
-            {ok, #game_overview{game_rec = Game,
-                                map = GameState#game_state.map,
-                                phase = GameState#game_state.phase,
-                                year_season = GameState#game_state.year_season,
-                                order_list = Orders,
-                                country = Country}};
-        {ok, _Country, #game{status = finished}} ->
-            % this should return something that makes sense when
-            % a game has finished
-            {error, game_not_started};
-        {ok, _Country, _Game} ->
+            OV = basic_game_overview(GameID, Game),
+            {ok, OV#game_overview{order_list = Orders,
+                                  country = Country}
+            };
+        {_, _Player, #game{status = finished} = Game} ->
+            % user that is not in the game can view a finished game
+            OV = basic_game_overview(GameID, Game),
+            {ok, OV#game_overview{players =
+                                  game_utils:userlist(GameID)}
+            };
+        {ok, _Country, #game{status = waiting}} ->
             % game not started yet, or stopped.
             {error, game_not_started};
-        Error ->
-            Error
+        {ok, _Country, #game{status = stopped}} ->
+            {error, game_stopped};
+        {no_player, PlayerError, _Game} ->
+            PlayerError;
+        {no_game, _Player, GameError} ->
+            GameError
     end.
-
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates basic game overview, only based on game and gamestate
+%% for a finished game, this will present the last state of the game
+%% @spec
+%% basic_game_overview(GameID :: integer(), Game :: #game{}) ->
+%%            #game_overview{}
+%% @end
+%%-------------------------------------------------------------------
+basic_game_overview(GameID, Game) ->
+    {ok, GameState} = game_utils:get_game_state(GameID),
+    #game_overview{game_rec = Game,
+                   map = GameState#game_state.map,
+                   phase = GameState#game_state.phase,
+                   year_season = GameState#game_state.year_season}.
 
 %% ------------------------------------------------------------------
 %% @doc
@@ -257,8 +276,10 @@ put_game_order(GameId, UserId, GameOrderList) ->
                 _GO ->
                     update_game_order(Key, NewOrder)
             end;
-        Error ->
-            Error
+        {no_player, PlayerError, _Game} ->
+            PlayerError;
+        {no_game, _Player, GameError} ->
+            GameError
     end.
 %% ------------------------------------------------------------------
 %% @doc
@@ -300,9 +321,8 @@ update_game_order(ID, NewOrder) ->
 %% @spec
 %% get_playercountry_game(GameId :: integer(), UserId :: integer()) ->
 %%     {ok, Country, Game}
-%%     | {error, game_id_not_exist}
-%%     | {error, user_not_playing_this_game}
-%%     | Error
+%%     | {no_player, {error, user_not_playing_this_game}, Game}
+%%     | {no_game, UserId, {error, game_id_not_exist}}
 %% @end
 %% ------------------------------------------------------------------
 get_playercountry_game(GameId, UserId) ->
@@ -310,12 +330,12 @@ get_playercountry_game(GameId, UserId) ->
         {ok, Game} ->
             case get_player_country(GameId, UserId) of
                 {ok, Country} ->
-                     {ok, Country, Game};
+                    {ok, Country, Game};
                 Error ->
-                    Error
+                    {no_player, Error, Game}
             end;
         _Error ->
-            {error, game_id_not_exist}
+            {no_game, UserId, {error, game_id_not_exist}}
     end.
 %% ------------------------------------------------------------------
 %% @doc Returns the country atom which a user is playing in a game

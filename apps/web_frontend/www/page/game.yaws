@@ -1,6 +1,6 @@
 <!-- Game overview page -->
 <div class="page-header">
-  <h1>Game overview and play<small></small></h1>
+  <h1>Finished game overview<small></small></h1>
 </div>
 <div class="row">
   <div class="span15">
@@ -36,16 +36,12 @@
     </thead>
     <tbody>
         <tr>
-            <td>Country</td>
-            <td><div id="country"></div></td>
+            <td>Game Info:</td>
+            <td><div id="game_info"></div></td>
         </tr>
         <tr>
             <td>Orders</td>
             <td><div id="orders"></div></td>
-        </tr>
-        <tr>
-            <td>Game info</td>
-            <td><div id="game_info"></div></td>
         </tr>
         <tr>
             <td>Game</td>

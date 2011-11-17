@@ -47,18 +47,68 @@
 %% @end
 %%-------------------------------------------------------------------
 game_overview_to_text(#game_overview{} = GOV)->
-    {Year, Season} = GOV#game_overview.year_season,
-    Phase = atom_to_list(GOV#game_overview.phase),
-    Country = GOV#game_overview.country,
-    GameInfo = io_lib:format("~s: ~s ~s~n",
-                             [Phase, atom_to_list(Season), integer_to_list(Year)]),
+    GameStatus = GOV#game_overview.game_rec#game.status,
+    case GameStatus of
+        finished -> create_game_info(finished, GOV);
+        Status -> create_game_info(Status, GOV)
+    end.
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Produces the game overview data, based on the status of the game
+%% @end
+%%-------------------------------------------------------------------
+create_game_info(finished, GOV) ->
     GameRec = GOV#game_overview.game_rec,
-    Orders = GOV#game_overview.order_list,
+    GameInfo = game_info_to_text(GOV),
+    PlayerInfo = player_list_to_text(GOV#game_overview.players),
     Game = game_to_text(GameRec),
     Map = digraph_io:from_erlang_term(GOV#game_overview.map),
-    {Provinces, Units} = map_to_text(Map, Country),
-    {GameRec#game.id, Country, GameInfo, Game, Provinces, Units, Orders}.
+    FinalMap = get_unit_prov(Map),
+    {GameRec#game.id, finished,
+     {GameInfo, PlayerInfo, Game, FinalMap}};
 
+create_game_info(Status, GOV) ->
+    GameRec = GOV#game_overview.game_rec,
+    Game = game_to_text(GameRec),
+    GameInfo = game_info_to_text(GOV),
+    Orders = GOV#game_overview.order_list,
+    Map = digraph_io:from_erlang_term(GOV#game_overview.map),
+    Country = GOV#game_overview.country,
+    {Provinces, Units} = map_to_text(Map, Country),
+    {GameRec#game.id, Status,
+     {GameInfo, Country, Game, Provinces, Units, Orders}}.
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates a textual list of player, country pairs
+%% @end
+%%-------------------------------------------------------------------
+player_list_to_text(PlayerList) ->
+    lists:foldl(
+      fun({Country, Nick}, Acc) ->
+              String = io_lib:format("~s - ~s~n",
+                                     [atom_to_list(Country),
+                                      Nick]),
+              string:concat(Acc, String) end,
+      [], PlayerList).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates basic game information, in textual form.
+%% @end
+%%-------------------------------------------------------------------
+game_info_to_text(#game_overview{} = GOV) ->
+    {Year, Season} = GOV#game_overview.year_season,
+    Phase = GOV#game_overview.phase,
+    io_lib:format("Phase: ~s~nYear: ~s~nSeason: ~s~n~n",
+                  [atom_to_list(Phase),
+                   integer_to_list(Year),
+                   atom_to_list(Season)
+                  ]).
 
 %%-------------------------------------------------------------------
 %% @doc

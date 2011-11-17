@@ -30,6 +30,7 @@
 -module(game_utils).
 
 -include_lib ("datatypes/include/game.hrl").
+-include_lib ("datatypes/include/user.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("eunit/include/eunit.hrl").
 
@@ -44,6 +45,7 @@
          get_keys_by_idx/2,
          create_idx_list/1,
          update_db_obj/2,
+         userlist/1,
          get_db_obj/2,
          translate_game_order/3,
          get_game_current_key/1]).
@@ -70,13 +72,12 @@ get_keyprefix({id, ID}) ->
             integer_to_list(ID) ++ "-1900-spring-order_phase"
     end;
 get_keyprefix({game_current, Current}) ->
-    ?debugVal(Current),
     {Year, Season} = Current#game_current.year_season,
     Key = integer_to_list(Current#game_current.id) ++ "-"
         ++ integer_to_list(Year) ++ "-"
         ++ atom_to_list(Season) ++ "-"
         ++ atom_to_list(Current#game_current.current_phase),
-    ?debugVal(Key).
+    Key.
 
 %% ------------------------------------------------------------------
 %% @doc Returns the country atom which a user is playing in a game
@@ -142,6 +143,28 @@ get_game_order(ID)->
         _Error -> []
     end.
 
+%% ------------------------------------------------------------------
+%% @doc
+%% Creates pairs of users and their usernames
+%% @spec
+%% userlist(GamePlayerRec :: #game_player{}) ->
+%%     CountryUserList :: list(tuple())
+%% @end
+%% ------------------------------------------------------------------
+userlist(GameID) ->
+    {ok, GamePlayerObj} = get_db_obj(?B_GAME_PLAYER, GameID),
+    CreatePairs =
+        fun(Player, Acc) ->
+                case get_db_obj(?B_USER, Player#game_user.id) of
+                    {ok, User} ->
+                        [{Player#game_user.country,
+                          User#user.nick}] ++ Acc;
+                    _Other ->
+                        [{Player#game_user.country,
+                          integer_to_list(Player#game_user.id)}] ++ Acc
+                end
+        end,
+    lists:foldl(CreatePairs, [], GamePlayerObj#game_player.players).
 
 %% ------------------------------------------------------------------
 %% @doc
