@@ -132,7 +132,7 @@ get({join_game, invalid_data}, Error) ->
 
 % Game overview
 get({game_overview, success}, _Val) ->
-    resp("Game Overview:~n");
+    resp("Game Overview~n");
 get({game_overview, invalid_data}, Error) ->
     case Error of
         user_not_playing_this_game ->
@@ -166,6 +166,12 @@ get({user_msg, invalid_data}, Error) ->
         _ ->
             resp_unhandled_error(Error)
     end;
+
+% Games current
+get({games_current, success}, Games) ->
+    resp("Found ~p games~n~n", [length(Games)]);
+get({games_current, invalid_data}, Error) ->
+    resp_unhandled_error(Error);
 
 % Invalid session
 get({_Cmd, invalid_session}, _Val) ->

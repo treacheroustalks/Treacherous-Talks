@@ -78,6 +78,7 @@
 %%              game_order |
 %%              join_game |
 %%              game_overview |
+%%              games_current |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data | invalid_session | error.
@@ -101,6 +102,9 @@
 %%                       user_already_joined]
 %% game_overview ->     [user_not_playing_this_game]
 %% logout ->            []
+%% user_msg ->          [nick_not_unique,
+%%                       invalid_nick]
+%% games_current ->     []
 %%
 %% @end
 %%
@@ -131,7 +135,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == join_game;
        Command == game_order;
        Command == logout;
-       Command == user_msg ->
+       Command == user_msg;
+       Command == games_current ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

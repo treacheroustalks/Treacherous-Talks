@@ -74,14 +74,14 @@ parse(RawData) ->
                {#user.email, get_field("email", Data)},
                {#user.name, get_field("name", Data)}]}};
         "get_game" ->
-            GameId = list_to_integer(get_field("game_id", Data)),
+            GameId = get_integer("game_id", Data),
             {get_game, {ok, get_field("session_id", Data), GameId}};
         "create_game" ->
-            OrderPhase = list_to_integer(get_field("order_phase", Data)),
-            RetreatPhase = list_to_integer(get_field("retreat_phase", Data)),
-            BuildPhase = list_to_integer(get_field("build_phase", Data)),
-            WaitingTime = list_to_integer(get_field("waiting_time", Data)),
-            NumPlayers = list_to_integer(get_field("num_players", Data)),
+            OrderPhase = get_integer("order_phase", Data),
+            RetreatPhase = get_integer("retreat_phase", Data),
+            BuildPhase = get_integer("build_phase", Data),
+            WaitingTime = get_integer("waiting_time", Data),
+            NumPlayers = get_integer("num_players", Data),
             {_, Description} = lists:keyfind("description", 1, Data),
             {create_game,
              {ok,
@@ -97,12 +97,12 @@ parse(RawData) ->
                     num_players = NumPlayers,
                     creator_id = undefined}}};
         "reconfig_game" ->
-            GameId = list_to_integer(get_field("game_id", Data)),
-            OrderPhase = list_to_integer(get_field("order_phase", Data)),
-            RetreatPhase = list_to_integer(get_field("retreat_phase", Data)),
-            BuildPhase = list_to_integer(get_field("build_phase", Data)),
-            WaitingTime = list_to_integer(get_field("waiting_time", Data)),
-            NumPlayers = list_to_integer(get_field("num_players", Data)),
+            GameId = get_integer("game_id", Data),
+            OrderPhase = get_integer("order_phase", Data),
+            RetreatPhase = get_integer("retreat_phase", Data),
+            BuildPhase = get_integer("build_phase", Data),
+            WaitingTime = get_integer("waiting_time", Data),
+            NumPlayers = get_integer("num_players", Data),
             {_, Description} = lists:keyfind("description", 1, Data),
             {reconfig_game,
              {ok,
@@ -119,21 +119,34 @@ parse(RawData) ->
                {#game.password, get_field("password", Data)},
                {#game.creator_id, field_missing}]}}};
         "join_game" ->
-            GameId = list_to_integer(get_field("game_id", Data)),
+            GameId = get_integer("game_id", Data),
             Country = list_to_atom(get_field("country", Data)),
             {join_game, {ok, get_field("session_id", Data), {GameId, Country}}};
         "game_overview" ->
-            GameId = list_to_integer(get_field("game_id", Data)),
+            GameId = get_integer("game_id", Data),
             {game_overview, {ok, get_field("session_id", Data), GameId}};
         "game_order" ->
-            GameId = list_to_integer(get_field("game_id", Data)),
+            GameId = get_integer("game_id", Data),
             OrderLines = string:tokens(get_field("game_order", Data), "\r\n,"),
             GameOrders = player_orders:interpret_str_orders(OrderLines),
             % Remove error orders
             ResultOrders = lists:filter(fun(X)-> element(1, X) /= error end,
                                            GameOrders),
             {game_order, {ok, get_field("session_id", Data),
-                          {GameId, ResultOrders}}}
+                          {GameId, ResultOrders}}};
+        "games_current" ->
+            {games_current, {ok, get_field("session_id", Data), dummy}}
+    end.
+
+
+%% Get a specific field from a list of tuples and convert to integer if it isn't
+get_integer(Key, Data) ->
+    Value = get_field(Key, Data),
+    case is_integer(Value) of
+        true ->
+            Value;
+        false ->
+            list_to_integer(Value)
     end.
 
 %% Get a specific field from a list of tuples

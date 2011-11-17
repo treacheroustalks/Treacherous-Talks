@@ -118,7 +118,8 @@ game_test_ () ->
       join_game_tst_(),
       get_game_overview_tst_(),
       translate_game_order_tst_(),
-      game_search_tst_()
+      game_search_tst_(),
+      get_games_current_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -465,6 +466,34 @@ game_search_tst_ () ->
              sync_delete(Game4#game.id),
              sync_delete(Game5#game.id)
      end].
+
+%%------------------------------------------------------------------------------
+%% Tests the get_games_current functionality
+%%------------------------------------------------------------------------------
+get_games_current_tst_ () ->
+    [fun() ->
+             ?debugMsg("Get games current cleanup"),
+             {ok, Results} = game:search("creator_id=1337"),
+             lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
+     end,
+     fun() ->
+             ?debugMsg("Testing get_games_current"),
+             % Setup games
+             GameRecord = test_game(),
+             CreatorId = 1337,
+             Game1 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
+                                                       status=waiting})),
+             Game2 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
+                                                       status=ongoing})),
+             Game3 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
+                                                       status=stopped})),
+             Game4 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
+                                                       status=finished})),
+             {ok, Results} = game:get_games_current(CreatorId),
+             ?assert(length(Results) =:= 2),
+             ?assert(lists:member(Game1, Results)),
+             ?assert(lists:member(Game2, Results))
+    end].
 
 %%------------------------------------------------------------------------------
 %% Helpers

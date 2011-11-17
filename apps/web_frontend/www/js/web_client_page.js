@@ -118,6 +118,28 @@ function load_create_game_page() {
 }
 
 /**
+ * Populate the games_current page
+ */
+function load_games_current(data) {
+    var view_link = function(id) {
+        return '<a href="javascript:void(0);" class="btn primary" ' +
+               'onclick="get_game_overview(' + id + ')">view</a>';
+    }
+
+    // Add view link to all the games
+    for ( var i = 0; i < data.length; i++) {
+        var obj = data[i];
+        data[i]['view'] = view_link(obj.id);
+    }
+
+    print(data);
+
+    // Create html table from JSON and display it
+    var keys = get_keys(data[0]);
+    $('#games_current_data').html(JsonToTable(data, keys, 'gct', 'gcc'));
+}
+
+/**
  * Element updates on the page when user logs in
  */
 function login_update_elements() {
@@ -133,6 +155,36 @@ function logout_update_elements() {
     $("#logout").hide();
     $("#login_form").show();
     $("#register_menu").show();
+}
+
+/*------------------------------------------------------------------------------
+ Page functions
+ -----------------------------------------------------------------------------*/
+
+/**
+ * Call server for for "games current"
+ */
+function get_games_current() {
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        } ]
+    };
+    call_server('games_current', dataObj);
+}
+
+/**
+ * Call server to get game overview of specified game
+ */
+function get_game_overview(game_id) {
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "game_id" : game_id
+        } ]
+    };
+    call_server('game_overview', dataObj);
 }
 
 /*------------------------------------------------------------------------------
@@ -602,4 +654,12 @@ function nl2br(str, is_xhtml) {
             : '<br>';
     return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g,
             '$1' + breakTag + '$2');
+}
+
+function get_keys(obj) {
+    var keys = [];
+    for ( var key in obj) {
+        keys.push(key);
+    }
+    return keys;
 }

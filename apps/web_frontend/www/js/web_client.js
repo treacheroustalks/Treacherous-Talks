@@ -253,11 +253,16 @@ function event_action(data) {
         clear_message();
         break;
     case "game_overview_success":
+        clear_message();
         load_game_overview_data(event_data);
         break;
     case "game_order_success":
         clear_message();
         clear_game_orders();
+        break;
+    case "games_current_success":
+        clear_message();
+        load_games_current(event_data);
         break;
     default:
         break;

@@ -22,6 +22,7 @@
         <div class="actions">
             <input type="submit" class="btn primary" value="Submit game orders" onclick="validate(); return false;">&nbsp;
             <input type="reset" class="btn" value="Reset">&nbsp;
+            <a href="javascript:void(0);" class="btn" onclick="load_home_page();">Back</a>
         </div>
     </form>
     </fieldset>
@@ -39,6 +40,10 @@
             <td><div id="country"></div></td>
         </tr>
         <tr>
+            <td>Orders</td>
+            <td><div id="orders"></div></td>
+        </tr>
+        <tr>
             <td>Game info</td>
             <td><div id="game_info"></div></td>
         </tr>
@@ -54,14 +59,7 @@
             <td>Units</td>
             <td><div id="units"></div></td>
         </tr>
-        <tr>
-            <td>Orders</td>
-            <td><div id="orders"></div></td>
-        </tr>
     </tbody>
     </table>
-    <div class="actions">
-        <button type="reset" class="btn" onclick="load_home_page();">Back</button>
-    </div>
   </div>
 </div>

@@ -68,15 +68,16 @@ socket_server(WebSocket, ProtocolVersion) ->
                             {login, {ok, User}} ->
                                 PushReceiver = #push_receiver{
                                   pid = self(),
-                                  args = [WebSocket, ProtocolVersion]},
-                                  type = web
+                                  args = [WebSocket, ProtocolVersion],
+                                  type = web},
                                 {login, {ok, {User, PushReceiver}}};
                             Other ->
                                 Other
                         end,
             io:format("Parsed command: ~p~n", [ParsedCmd]),
             controller:handle_action(ParsedCmd,
-                                     {fun reply/3, [WebSocket, ProtocolVersion]}),
+                                     {fun reply/3,
+                                     [WebSocket, ProtocolVersion]}),
             socket_server(WebSocket, ProtocolVersion);
         {tcp_closed, WebSocket} ->
             io:format("Websocket closed. Terminating socket_server...~n");
@@ -206,6 +207,19 @@ get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
 get_ret({game_order, success}, Ret=#ret{}, _Data) ->
     msg_success(Ret);
 get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({games_current, success}, Ret=#ret{}, Games) ->
+    RequiredFields = [id, name, status, description,
+                      press, order_phase, retreat_phase, build_phase,
+                      waiting_time, num_players],
+    EventData = lists:map(fun(Game) ->
+        json2:obj_from_list(data_format:rec_to_plist(Game,
+                                                     {string, RequiredFields}))
+        end, Games),
+    msg_success(Ret#ret{event_data = EventData,
+                        page = "games_current"});
+get_ret({games_current, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret).
 
 

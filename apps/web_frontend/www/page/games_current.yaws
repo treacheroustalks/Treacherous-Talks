@@ -1,0 +1,14 @@
+<!-- User game listing page -->
+<div class="page-header">
+  <h1>Current games<small>Your waiting and ongoing games</small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <div id="games_current_data"></div>
+    <div class="actions">
+        <button type="reset" class="btn" onclick="load_home_page();">Back</button>
+    </div>
+  </div>
+</div>

@@ -183,7 +183,7 @@ handle_call({get_game, GameId}, _From, State) ->
 %% @doc
 %% Handles call for updating a game
 %% @end
-%% [@spec handle_call({reconfig_game::atom(), #game{}},
+%% [@spec handle_call({reconfig_game::atom(), {integer(),[{string(), term()}]}},
 %%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
@@ -210,7 +210,7 @@ handle_call({reconfig_game, {GameId, PropList}}, _From,
 %% @doc
 %% Handles call for getting an overview of a game
 %% @end
-%% [@spec handle_call({game_overview::atom(), GameId::Integer(), UserId::Integer()},
+%% [@spec handle_call({game_overview::atom(), GameId::Integer()},
 %%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
@@ -222,22 +222,19 @@ handle_call({game_overview, GameId}, _From,
 %% @doc
 %% Handles call for joining a game
 %% @end
-%% [@spec handle_call({join_game::atom(), GameId::Integer(), UserId::Integer(),
-%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
-%%                                                  {reply, ok, #state{}}.]
+%% [@spec handle_call({join_game::atom(), GameId::Integer(),Country::country()},
+%%                     From::{pid(), Tag}, #state{}) -> {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
 handle_call({join_game, {GameId, Country}}, _From,
             State = #state{user=User}) ->
     Reply = game:join_game(GameId, User#user.id, Country),
     {reply, Reply, State, ?TIMEOUT};
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for getting the user of the session.
 %% @end
-%% [@spec handle_call({get_session_user::atom(), UserId::Integer(),
-%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
+%% [@spec handle_call({get_session_user::atom()},From::{pid(), Tag}, #state{})->
 %%                                                  {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
@@ -245,7 +242,21 @@ handle_call(get_session_user, _From,
             State = #state{user=User}) ->
     Reply = {ok, User},
     {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for getting the current games of a user
+%% @end
+%% [@spec handle_call({games_current::atom(), UserId::Integer(),
+%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
+%%                                                  {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call(games_current, _From,
+            State = #state{user=User}) ->
+    Reply = game:get_games_current(User#user.id),
+    {reply, Reply, State, ?TIMEOUT};
 
+%% Unhandled request
 handle_call(Request, _From, State) ->
     io:format("Received unhandled call: ~p~n", [{Request, _From, State}]),
     {noreply, ok, State, ?TIMEOUT}.

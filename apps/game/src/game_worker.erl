@@ -26,7 +26,6 @@
 
 -include_lib ("datatypes/include/game.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
--include_lib ("eunit/include/eunit.hrl").
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -112,6 +111,9 @@ handle_call({get_current_game, ID}, _From, State) ->
     {reply, Reply, State};
 handle_call({search, Query},_From, State) ->
     Reply = game_search:search(Query),
+    {reply, Reply, State};
+handle_call({get_games_current, UserID},_From, State) ->
+    Reply = get_games_current(UserID),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
@@ -375,3 +377,20 @@ get_game(ID)->
 %% ------------------------------------------------------------------
 get_game_player(GameID)->
     game_utils:get_db_obj(?B_GAME_PLAYER, GameID).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Get the games for the given user with status = waiting | ongoing
+%% @end
+%%-------------------------------------------------------------------
+-spec get_games_current(integer()) -> {ok, [#game{}]}.
+get_games_current(UserID) ->
+    Query = "id=" ++ integer_to_list(UserID) ++ " AND "
+            "(status=waiting OR status=ongoing)",
+    {ok, GamesIds} = game_search:search(Query),
+    Games = lists:map(fun(GameId) ->
+                              {ok, Game} = get_game(GameId),
+                              Game end,
+                      GamesIds),
+    {ok, Games}.

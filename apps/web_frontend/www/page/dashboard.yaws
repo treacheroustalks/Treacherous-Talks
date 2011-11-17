@@ -8,7 +8,8 @@
   <div class="span8">
     <h2>Game options</h2>
     <p>
-        <button class="btn primary" onclick="load_create_game_page();">Create a new game</button>
+        <a class="btn primary" onclick="load_create_game_page();">Create a new game</a>&nbsp;
+        <a class="btn primary" onclick="get_games_current();">My current games</a>&nbsp;
     </p>
     <fieldset class="span7">
     <legend>Reconfig game</legend>

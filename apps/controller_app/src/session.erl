@@ -55,7 +55,8 @@
          join_game/2,
          game_order/2,
          user_msg/2,
-         push_event/2
+         push_event/2,
+         games_current/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -208,6 +209,7 @@ game_order(SessionId, Data = {_GameId, _OrderList}) ->
 %%-------------------------------------------------------------------
 user_msg(SessionId, FEMsg = #frontend_msg{}) ->
     ?SESSION_CALL(SessionId, user_msg, FEMsg).
+
 %%-------------------------------------------------------------------
 %% @doc push_event/2
 %% API for pushing event to the user the session with the given id
@@ -219,3 +221,15 @@ user_msg(SessionId, FEMsg = #frontend_msg{}) ->
 %%-------------------------------------------------------------------
 push_event(SessionId, Event = #push_event{}) ->
     ?SESSION_CAST(SessionId, Event).
+
+%%-------------------------------------------------------------------
+%% @doc games_current/2
+%% Get all the games of a specific user that are current running
+%%
+%% @spec games_current(string(), term()) ->
+%%         {ok, [#game{}]}
+%% @end
+%%-------------------------------------------------------------------
+games_current(SessionId, _Data) ->
+    ?SESSION_CALL(SessionId, games_current).
+

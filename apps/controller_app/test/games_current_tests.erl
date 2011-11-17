@@ -23,43 +23,30 @@
 %%%-------------------------------------------------------------------
 %%% @author Sukumar Yethadka <sbhat7@gmail.com>
 %%%
-%%% @doc Module to search games using Riak search
+%%% @doc Unit tests for getting current games of the given user
+%%% @end
 %%%
-%%% @since : 16 Nov 2011 by Bermuda Triangle
-%%%==================================================================
+%%% @since : 17 Nov 2011 by Bermuda Triangle
+%%% @end
+%%%-------------------------------------------------------------------
+-module(games_current_tests).
 
--module(game_search).
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/game.hrl").
 
--include_lib ("datatypes/include/bucket.hrl").
--export([search/1]).
+-export([tests/3, success/3]).
 
+tests(Callback, SessId, GameId) ->
+    [?_test(success(Callback, SessId, GameId))].
 %%-------------------------------------------------------------------
-%% @doc
-%% Performs a search on the game bucket
-%% See http://wiki.basho.com/Riak-Search---Querying.html for query syntax
-%% @end
+%% Update user tests
 %%-------------------------------------------------------------------
--spec search(string()) -> {ok, [integer()]} | {error, term()}.
-search(Query) ->
-    case db:search(?B_GAME, Query) of
-        {ok, Results} ->
-            {ok, get_game_ids(Results)};
-        {error, Error} ->
-            {error, Error}
-    end.
-
-
-%%-------------------------------------------------------------------
-%% Internal functions
-%%-------------------------------------------------------------------
-%% Remove bucket name from results
-get_game_ids(Results) ->
-    lists:reverse(get_game_ids(Results, [])).
-
-get_game_ids([], Acc) ->
-    Acc;
-get_game_ids([[?B_GAME, BinId]|Rs], Acc) ->
-    get_game_ids(Rs, [binary_to_integer(BinId)|Acc]).
-
-binary_to_integer(B) ->
-    list_to_integer(binary_to_list(B)).
+success(Callback, SessId, GameId) ->
+    ?debugMsg("get_games_current test"),
+    Data = dummy,
+    Cmd = {games_current, {ok, SessId, Data}},
+    Result = controller:handle_action(Cmd, Callback),
+    {CmdRes, {ok, Games}} = Result,
+    ?assertEqual({games_current, success}, CmdRes),
+    Game = hd(Games),
+    ?assertEqual(GameId, Game#game.id).

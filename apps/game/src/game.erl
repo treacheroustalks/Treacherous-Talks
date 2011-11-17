@@ -33,7 +33,8 @@
           get_game_overview/2,
           put_game_order/3,
           get_current_game/1,
-          search/1
+          search/1,
+          get_games_current/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -179,3 +180,11 @@ get_current_game(GameID) ->
 %% ----------------------------------------------------------------------------
 search(Query) ->
     ?CALL_WORKER({search, Query}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  Get the games for the given user with status = waiting | ongoing
+%% @end
+%% ----------------------------------------------------------------------------
+get_games_current(UserID) ->
+    ?CALL_WORKER({get_games_current, UserID}).
