@@ -1,0 +1,14 @@
+{application, gen_moves,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {modules, [gen_moves]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { gen_moves_app, []}},
+  {env, []}
+ ]}.
+

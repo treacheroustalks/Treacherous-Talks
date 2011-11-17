@@ -17,7 +17,6 @@ clean:
 	$(REBAR) clean
 
 compile:
-	rm -rf .eunit
 	$(REBAR) compile
 
 test:
@@ -26,13 +25,13 @@ test:
 	mkdir doc/coverage
 	cp -r .eunit/*.html doc/coverage
 
-utils.plt: compile
-	dialyzer --build_plt --output_plt utils.plt ebin
+gen_moves.plt: compile
+	dialyzer -q --build_plt --output_plt gen_moves.plt ebin
 
-dia: ebin utils.plt test
-	dialyzer -q -I .. --plts utils.plt ~/.dialyzer_plt ../game/game.plt -- ebin
+dia: ebin gen_moves.plt test
+	dialyzer -q -I .. --plts gen_moves.plt ~/.dialyzer_plt ../game/game.plt ../utils/utils.plt -- ebin
 
-complete: small_clean deps compile test docs dia
+complete: small_clean deps compile test docs
 	@echo ok
 
 .PHONY: all small_clean clean compile test docs dia complete

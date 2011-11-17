@@ -27,6 +27,7 @@
 %%% @end
 %%%
 %%% @since : 17 Oct 2011 by Bermuda Triangle
+%%% @todo broken specs
 %%% @end
 %%%-------------------------------------------------------------------
 -module(controller).
@@ -148,7 +149,6 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
                     CallbackFun(Args, {Command, success}, Result)
             end
     end;
-
 handle_action({Command, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {Command, parse_error}, Error);
 
@@ -170,6 +170,8 @@ push_event(UserId, Event = #push_event{}) ->
 
 
 %%-------------------------------------------------------------------
+%% @todo the whole documentation here is wrong. not only arity, even the name
+%% @deprecated only for eunit
 %% @doc create_user/2
 %%
 %% API for creation of a user
@@ -181,6 +183,7 @@ register(User) ->
 
 
 %%-------------------------------------------------------------------
+%% @deprecated only for eunit
 %% @doc login/1
 %%
 %% API for logging in a user
@@ -195,6 +198,7 @@ login(Data = {#user{}, #push_receiver{}}) ->
 
 
 %%-------------------------------------------------------------------
+%% @deprecated only for eunit
 %% @doc get_user/2
 %%
 %% API for getting a user
