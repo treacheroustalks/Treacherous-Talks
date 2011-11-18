@@ -156,7 +156,7 @@ get({game_order, invalid_data}, Error) ->
 
 % off game messaging
 get({user_msg, success}, MessageId) ->
-    resp("Message was send. Message ID is: \"~p\"~n", [MessageId]);
+    resp("Message was sent. Message ID is: \"~p\"~n", [MessageId]);
 get({user_msg, invalid_data}, Error) ->
     case Error of
         nick_not_unique ->
@@ -191,7 +191,7 @@ get({Cmd, parse_error}, Error) ->
         {error,{invalid_input, _Val}} ->
             resp("Invalid input for the given command.~n");
         _ ->
-            resp("The command[~p] could not be interpreted.~n", [Cmd])
+            resp("The command [~p] could not be interpreted.~n", [Cmd])
     end;
 
 % push events

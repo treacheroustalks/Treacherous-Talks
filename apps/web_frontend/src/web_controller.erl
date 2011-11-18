@@ -61,11 +61,14 @@ out(A) ->
 
 
 get_page(Page) ->
-    [get_header([]), get_simple_page(Page), get_footer([])].
+    [get_header([]), get_simple_page(Page), get_chat ([]), get_footer([])].
 
 %% Load yaws page using server side includes - http://yaws.hyber.org/ssi.yaws
 get_simple_page(Page) ->
     {yssi, "page/"++Page++".yaws"}.
+
+get_chat (Bindings) ->
+    {ssi, "page/chat.html", "%%", Bindings}.
 
 get_header(Bindings) ->
     {ssi, "page/header.html","%%", Bindings}.

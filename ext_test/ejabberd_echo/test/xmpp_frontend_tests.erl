@@ -188,7 +188,7 @@ Supported commands are:").
 -define(GAME_ORDER_RESPONSE_SUCCESS, "Game order sent successfully:\n").
 -define(GAME_ORDER_RESPONSE_INVALID_INPUT, "Invalid input for the given command.\n").
 -define(GAME_ORDER_RESPONSE_INVALID_DATA,"You cannot send orders to a game you are not playing.\n").
--define(SEND_OFF_GAME_MSG_RESPONSE_SUCCESS, "Message was send. Message ID is: ").
+-define(SEND_OFF_GAME_MSG_RESPONSE_SUCCESS, "Message was sent. Message ID is: ").
 -define(SEND_OFF_GAME_MSG_RESPONSE_FAILED, "Error: The user does not exist.").
 %%-------------------------------------------------------------------
 %% @doc
