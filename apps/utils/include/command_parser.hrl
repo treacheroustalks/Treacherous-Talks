@@ -27,6 +27,7 @@
 -define(RECONFIG, "RECONFIG").
 -define(CREATE, "CREATE").
 -define(OVERVIEW, "OVERVIEW").
+-define(VIEWCURRENTGAMES, "VIEWCURRENTGAMES").
 -define(JOIN, "JOIN").
 -define(ORDER, "ORDER").
 -define(END, "END").

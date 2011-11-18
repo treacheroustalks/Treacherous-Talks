@@ -39,7 +39,7 @@
 -export([reply/3]).
 
 -define(SUPPORTED_COMMANDS,
-        "REGISTER, LOGIN, UPDATE, CREATE, OVERVIEW").
+        "REGISTER, LOGIN, UPDATE, CREATE, JOIN, OVERVIEW, VIEWCURRENTGAMES").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -63,6 +63,10 @@ get_reply({game_overview, success}, Data) ->
     Msg = fe_messages:get({game_overview, success}, Data),
     GameOverview = fe_messages:get(game_overview, Data),
     fe_messages:resp(Msg ++ GameOverview);
+get_reply({games_current, success}, Data) ->
+    Msg = fe_messages:get({games_current, success}, Data),
+    GamesCurrent = fe_messages:get(games_current, Data),
+    fe_messages:resp(Msg ++ GamesCurrent);
 get_reply(unknown_command, Data) ->
     Msg = fe_messages:get(unknown_command, Data),
     fe_messages:resp(Msg ++ "Supported commands are:~n" ++ ?SUPPORTED_COMMANDS);
