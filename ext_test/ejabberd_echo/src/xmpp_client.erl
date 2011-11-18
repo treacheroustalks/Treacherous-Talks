@@ -37,19 +37,17 @@
 -include_lib("eunit/include/eunit.hrl").
 
 % API
--export([start_link/0, start_link/2, stop/0]).
+-export([start_link/2, stop/1]).
 
--export([login/3, xmpp_call/2, xmpp_cast/2,
-         last_received_msg/0, clear_last_received/0]).
+-export([login/3, xmpp_call/3, xmpp_cast/3,
+         last_received_msg/1, clear_last_received/1]).
 
 % gen_server callbacks
--export([init/1, init/2, handle_call/3, handle_cast/2, handle_info/2,
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 -record(state, {session, msg, my_jid, last_received_msg, reply_expected,
-                reply_to}).
--define(SERVER, ?MODULE).
-
+                reply_to = undefined}).
 %%====================================================================
 %% API
 %%====================================================================
@@ -57,74 +55,61 @@
 %% @doc
 %%  use to start genserver to start process to make session
 %%  and connect to ejabberd. We can provide setup parameter to setup
-%%  session.
-%%  start_link() -> {ok,Pid} | ignore | {error,Error}
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE,[], []).
-
+%%  session. 
+%% 
+%% @spec start_link(Sender::string(), Password::string()) ->
+%%          {ok,Pid} | ignore | {error,Error}
+%% @end
 %%-------------------------------------------------------------------
-%% @ doc
-%%  sart a session with the passed user and passowrd
-%%-------------------------------------------------------------------
-start_link(Sender, Password) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE,
-        [Sender, Password], []).
+start_link(Sender, Password) when is_atom(Sender) ->
+    gen_server:start_link({local, Sender}, ?MODULE,
+        [atom_to_list(Sender) ++ "@localhost", Password], []).
 
 %%-------------------------------------------------------------------
 %% @doc
 %%  send a message to the recipient and return first xmpp chat message
 %% that is received after the chat.
 %%-------------------------------------------------------------------
-xmpp_call(To, SendMsg) ->
-    gen_server:call(?MODULE, {xmpp_call, To, SendMsg}).
+xmpp_call(Sender, To, SendMsg) ->
+    gen_server:call(Sender, {xmpp_call, To, SendMsg}).
 
 
 %%-------------------------------------------------------------------
 %% @doc
 %%  send a message to the recipient in cast fashion.
 %%-------------------------------------------------------------------
-xmpp_cast(To, SendMsg) ->
-    gen_server:cast(?MODULE, {xmpp_call, To, SendMsg}).
+xmpp_cast(Sender, To, SendMsg) ->
+    gen_server:cast(Sender, {xmpp_call, To, SendMsg}).
 
 %%-------------------------------------------------------------------
 %% @doc
 %%  stop gen_server and exmpp application
 %%-------------------------------------------------------------------
-stop() ->
-    gen_server:call(?MODULE, stop).
+stop(Sender) ->
+    gen_server:call(Sender, stop).
 
 %%-------------------------------------------------------------------
 %% @doc
 %%  return the last received message
 %%-------------------------------------------------------------------
-last_received_msg() ->
-    gen_server:call(?MODULE, last_received_msg).
+last_received_msg(Sender) ->
+    gen_server:call(Sender, last_received_msg).
 
-clear_last_received() ->
-    gen_server:call(?MODULE, clear_last_received).
+clear_last_received(Sender) ->
+    gen_server:call(Sender, clear_last_received).
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  it sets the initial the paramters for login and session @end
-%%--------------------------------------------------------------------
-init([])->
-    Sender = "test_client@localhost",
-    Password = "password",
-    %SendMsg = "Hello World !",
-    login(exmpp, Sender, Password).
 
 %%-------------------------------------------------------------------
 %% @doc
 %%  make session and login to the ejabberd server
 %% @end
 %%-------------------------------------------------------------------
-init(Sender, Password) ->
-    login(exmpp, Sender, Password).
+init([Sender, Password]) ->
+    {Session, JID} = login(exmpp, Sender, Password),
+    {ok, #state{session = Session, my_jid = JID}}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -147,7 +132,7 @@ login(App, Sender, Password) ->
     % Connect in standard TCP:
     {ok, _StreamId} = exmpp_session:connect_TCP(MySession, Server, 5222),
     {ok, MySession} = session(MySession, Password),
-    {ok, #state{session=MySession, my_jid = MyJID}}.
+    {MySession, MyJID}.
 
 %%--------------------------------------------------------------------
 %% @doc
