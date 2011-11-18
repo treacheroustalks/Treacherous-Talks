@@ -21,8 +21,6 @@
 %% @doc Wrapper for Riak clients.  Supports HTTP and Protocol Buffers.
 -module(db_c).
 
--include_lib ("eunit/include/eunit.hrl").
-
 -export([connect/0, connect/1, connect/2,
          disconnect/1,
          ping/1,
@@ -204,7 +202,8 @@ search(RC, Bucket, Query) ->
 search_values(RC, Bucket, Query) ->
     case search(RC, Bucket, Query) of
         {ok, Result} ->
-            get_values(RC, Bucket, Result);
+            Result1 = lists:map(fun([_, Key]) -> Key end, Result),
+            get_values(RC, Bucket, Result1);
         Other ->
             Other
     end.
