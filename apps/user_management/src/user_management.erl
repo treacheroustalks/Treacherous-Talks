@@ -40,8 +40,7 @@
          create/1,
          get/1, get/2,
          get_by_idx/2,
-         update/1,
-         is_valid/2
+         update/1
         ]).
 
 
@@ -161,41 +160,6 @@ get(Type, Key) ->
               end
       end,
       [], Keys).
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Verifies user authentication and returns the result to the Client.
-%% @end
-%%-------------------------------------------------------------------
-is_valid(Nick, Password) ->
-    % @todo use secondary indices for this!!!
-
-    % This is terrible, but map/reduce erlang code would need to be on the
-    % riak node. for now this is the solution...
-    % http://lists.basho.com/pipermail/riak-users_lists.basho.com/2010-April/000988.html
-    % https://gist.github.com/351659
-    % or add a load path to the riak node, where the code is:
-    % http://markmail.org/message/xvttgfnufojqbv7w#query:+page:1+mid:xvttgfnufojqbv7w+state:results
-    % or use javascript functions ...
-
-    {ok, Keys} = db:list_keys(?B_USER),
-    Result = lists:foldl(
-               fun(Key, Acc) ->
-                       {ok, Item} = db:get(?B_USER, Key),
-                       Val = db_obj:get_value(Item),
-                       case Val of
-                           #user{nick = Nick, password = Password} ->
-                               [Val | Acc];
-                           _ ->
-                               Acc
-                       end
-               end, [], Keys),
-    case Result of
-        [] ->
-            false;
-        [User | _] ->
-            User
-    end.
 
 %% ------------------------------------------------------------------
 %% Internal Functions
