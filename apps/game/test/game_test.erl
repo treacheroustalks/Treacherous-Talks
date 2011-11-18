@@ -138,7 +138,8 @@ game_test_ () ->
       get_game_overview_tst_(),
       translate_game_order_tst_(),
       game_search_tst_(),
-      get_games_current_tst_()
+      get_games_current_tst_(),
+      game_search_ext_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -527,6 +528,69 @@ get_games_current_tst_ () ->
              ?assert(lists:member(Game1, Results)),
              ?assert(lists:member(Game2, Results))
     end].
+
+%%------------------------------------------------------------------------------
+%% Tests the game search functionality for the exported function
+%%------------------------------------------------------------------------------
+game_search_ext_tst_ () ->
+    [fun() ->
+             ?debugMsg("Search cleanup"),
+             {ok, Results} = game:search("pressTypeA OR press=pressTypeB OR "
+                                         "press=pressTypeC"),
+             lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
+     end,
+     fun() ->
+             ?debugMsg("GAME SEARCH TESTS: START"),
+             % Setup games
+             GameRecord = test_game(),
+             Game1 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+             Game2 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+             Game3 = sync_get(sync_new(GameRecord#game{press=pressTypeB})),
+             Game4 = sync_get(sync_new(GameRecord#game{press=pressTypeC})),
+             Game5 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+
+             ?debugMsg("Search games with only AND clause with match"),
+             Query1 = "press=pressTypeA AND password=pass",
+             {ok, Results1} = game:get_game_search(Query1),
+             ?debugVal(Results1),
+             ?assert(length(Results1) =:= 3),
+             ?assert(lists:member(Game1, Results1)),
+             ?assert(lists:member(Game2, Results1)),
+             ?assert(lists:member(Game5, Results1)),
+
+             ?debugMsg("Search games with only AND clause without match "),
+             Query2 = "press=pressTypeA AND password=dummy",
+             {ok, Results2} = game:get_game_search(Query2),
+             ?assert(length(Results2) =:= 0),
+
+             ?debugMsg("Search games with only OR clause"),
+             Query3 = "press=pressTypeB OR press=pressTypeC",
+             {ok, Results3} = game:get_game_search(Query3),
+             ?assert(length(Results3) =:= 2),
+             ?assert(lists:member(Game3, Results3)),
+             ?assert(lists:member(Game4, Results3)),
+
+             ?debugMsg("Search games with ALL clauses"),
+             lists:flatten(io_lib:format("id=~p", [Game5#game.id])),
+             Query4 = "press=pressTypeA AND password=pass OR press=pressTypeB "
+                       "OR press=pressTypeC "
+                       "NOT id=" ++ integer_to_list(Game5#game.id),
+             {ok, Results4} = game:get_game_search(Query4),
+             ?assert(length(Results4) =:= 4),
+             ?assert(lists:member(Game1, Results4)),
+             ?assert(lists:member(Game2, Results4)),
+             ?assert(lists:member(Game3, Results4)),
+             ?assert(lists:member(Game4, Results4)),
+
+             ?debugMsg("GAME SEARCH TESTS: DONE"),
+             % Cleanup
+             sync_delete(Game1#game.id),
+             sync_delete(Game2#game.id),
+             sync_delete(Game3#game.id),
+             sync_delete(Game4#game.id),
+             sync_delete(Game5#game.id)
+     end].
+
 
 %%------------------------------------------------------------------------------
 %% Helpers

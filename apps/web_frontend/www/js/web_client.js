@@ -264,6 +264,9 @@ function event_action(data) {
         clear_message();
         load_games_current(event_data);
         break;
+    case "game_search_success":
+        load_game_search(event_data);
+        break;
     default:
         break;
     }

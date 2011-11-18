@@ -106,6 +106,7 @@
 %% user_msg ->          [nick_not_unique,
 %%                       invalid_nick]
 %% games_current ->     []
+%% game_search ->       []
 %%
 %% @end
 %%
@@ -137,7 +138,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == game_order;
        Command == logout;
        Command == user_msg;
-       Command == games_current ->
+       Command == games_current;
+       Command == game_search ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

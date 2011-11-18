@@ -32,7 +32,6 @@
 -module(web_parser_tests).
 
 -include_lib("eunit/include/eunit.hrl").
-
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 
@@ -50,7 +49,9 @@ parser_test_() ->
       fun reconfig_game/0,
       fun join_game/0,
       fun game_overview/0,
-      fun game_order/0
+      fun game_order/0,
+      fun games_current/0,
+      fun game_search/0
      ]}.
 
 login() ->
@@ -93,6 +94,14 @@ game_order() ->
     ?assertEqual(game_order_exp_data(),
                  web_parser:parse(game_order_data())).
 
+games_current() ->
+    ?assertEqual(games_current_exp_data(),
+                 web_parser:parse(games_current_data())).
+
+game_search() ->
+    ?assertEqual(game_search_exp_data(),
+                 web_parser:parse(game_search_data())).
+
 
 %% Expected data
 login_exp_data() ->
@@ -120,6 +129,7 @@ create_game_exp_data() ->
      {ok,
       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
       #game{name = "War of the world",
+            description = "",
             press = "grey",
             password = "hunter2",
             order_phase = 10,
@@ -168,6 +178,22 @@ game_order_exp_data() ->
                     {move,army,london,norwegian_sea,north_coast},
                     {move,any_unit,london,norwegian_sea,any_coast},
                     {move,army,london,norwegian_sea,any_coast}]}}}.
+
+games_current_exp_data() ->
+    {games_current, {ok,
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
+
+game_search_exp_data() ->
+    {game_search,{ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                  "name=War of the world AND "
+                  "description=The world of war AND "
+                  "press=grey AND "
+                  "status=ongoing AND "
+                  "order_phase=10 AND "
+                  "retreat_phase=10 AND "
+                  "build_phase=10 AND "
+                  "waiting_time=10 AND "
+                  "num_players=7"}}.
 
 %% Input data
 login_data() ->
@@ -279,3 +305,28 @@ game_order_data() ->
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]},
             {struct,[{"game_order", "A Lon-Nrg\r\nLon-Nrg\r\nA Lon -> Nrg nc\r\nArmy Lon move Nrg"}]}]}}]}}.
+
+games_current_data() ->
+    {ok,{struct,
+     [{"action","games_current"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
+
+game_search_data() ->
+    {ok,{struct,
+     [{"action","game_search"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"name","War of the world"}]},
+            {struct,[{"description","The world of war"}]},
+            {struct,[{"press","grey"}]},
+            {struct,[{"status","ongoing"}]},
+            {struct,[{"order_phase","10"}]},
+            {struct,[{"retreat_phase","10"}]},
+            {struct,[{"build_phase","10"}]},
+            {struct,[{"waiting_time","10"}]},
+            {struct,[{"num_players","7"}]}]}}]}}.

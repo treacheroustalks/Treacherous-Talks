@@ -115,6 +115,9 @@ handle_call({search, Query},_From, State) ->
 handle_call({get_games_current, UserID},_From, State) ->
     Reply = get_games_current(UserID),
     {reply, Reply, State};
+handle_call({get_game_search, Query},_From, State) ->
+    Reply = get_game_search(Query),
+    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -408,6 +411,20 @@ get_game_player(GameID)->
 get_games_current(UserID) ->
     Query = "id=" ++ integer_to_list(UserID) ++ " AND "
             "(status=waiting OR status=ongoing)",
+    {ok, GamesIds} = game_search:search(Query),
+    Games = lists:map(fun(GameId) ->
+                              {ok, Game} = get_game(GameId),
+                              Game end,
+                      GamesIds),
+    {ok, Games}.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Get the games for the given search query
+%% @end
+%%-------------------------------------------------------------------
+-spec get_game_search(string()) -> {ok, [#game{}]}.
+get_game_search(Query) ->
     {ok, GamesIds} = game_search:search(Query),
     Games = lists:map(fun(GameId) ->
                               {ok, Game} = get_game(GameId),

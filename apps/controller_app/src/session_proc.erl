@@ -255,6 +255,18 @@ handle_call(games_current, _From,
             State = #state{user=User}) ->
     Reply = game:get_games_current(User#user.id),
     {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for searching the game bucket
+%% @end
+%% [@spec handle_call({games_current::atom(), UserId::Integer(),
+%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
+%%                                                  {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({game_search, Query}, _From, State) ->
+    Reply = game:get_game_search(Query),
+    {reply, Reply, State, ?TIMEOUT};
 
 %% Unhandled request
 handle_call(Request, _From, State) ->

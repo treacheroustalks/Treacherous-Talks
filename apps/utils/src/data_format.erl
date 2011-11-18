@@ -38,7 +38,8 @@
          game_overview_to_text/1,
          game_to_text/1,
          map_to_text/2,
-         rec_to_plist/1, rec_to_plist/2, plist_to_rec/2
+         rec_to_plist/1, rec_to_plist/2, plist_to_rec/2,
+         type_of/1
          ]).
 
 %%-------------------------------------------------------------------

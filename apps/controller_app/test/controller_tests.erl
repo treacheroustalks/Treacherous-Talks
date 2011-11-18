@@ -217,7 +217,7 @@ session_test_instantiator(Mods) ->
 pre_game_setup() ->
     Mods = [
             reconfig_game_tests, join_game_tests, get_game_tests,
-            games_current_tests
+            games_current_tests, game_search_tests
            ],
     Callback = callback(),
 
