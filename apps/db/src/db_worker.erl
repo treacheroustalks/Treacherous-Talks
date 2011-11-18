@@ -80,6 +80,15 @@ handle_call({get_index, Bucket, IdxTup},
     Result = db_c:get_index(Conn, Bucket, IdxTup),
     {reply, Result, State};
 
+handle_call({get_values, Bucket, Keys},
+            _From, #state{db_conn=Conn} = State) ->
+    Result = db_c:get_values(Conn, Bucket, Keys),
+    {reply, Result, State};
+handle_call({get_values, Bucket, Keys, Timeout},
+            _From, #state{db_conn=Conn} = State) ->
+    Result = db_c:get_values(Conn, Bucket, Keys, Timeout),
+    {reply, Result, State};
+
 handle_call({put, Obj},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:put(Conn, Obj),
@@ -139,6 +148,11 @@ handle_call({mapred_bucket, Bucket, Query, Timeout},
 handle_call({search, Bucket, Query},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:search(Conn, Bucket, Query),
+    {reply, Result, State};
+
+handle_call({search_values, Bucket, Query},
+            _From, #state{db_conn=Conn} = State) ->
+    Result = db_c:search_values(Conn, Bucket, Query),
     {reply, Result, State};
 
 
