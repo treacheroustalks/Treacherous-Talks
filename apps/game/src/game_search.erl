@@ -26,40 +26,53 @@
 %%% @doc Module to search games using Riak search
 %%%
 %%% @since : 16 Nov 2011 by Bermuda Triangle
+%%%
+%%% See http://wiki.basho.com/Riak-Search---Querying.html for query syntax
 %%%==================================================================
 
 -module(game_search).
 
 -include_lib ("datatypes/include/bucket.hrl").
--export([search/1]).
+-include_lib ("datatypes/include/game.hrl").
+-export([search/1, search_values/1]).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Performs a search on the game bucket
-%% See http://wiki.basho.com/Riak-Search---Querying.html for query syntax
 %% @end
 %%-------------------------------------------------------------------
 -spec search(string()) -> {ok, [integer()]} | {error, term()}.
 search(Query) ->
     case db:search(?B_GAME, Query) of
         {ok, Results} ->
-            {ok, get_game_ids(Results)};
-        {error, Error} ->
-            {error, Error}
+            Result1 = lists:map(fun([_, Key]) -> binary_to_integer(Key)
+                                end, Results),
+            {ok, Result1};
+        Error ->
+            Error
     end.
 
 
 %%-------------------------------------------------------------------
+%% @doc
+%% Performs a search on the game bucket and returns the games records
+%% @end
+%%-------------------------------------------------------------------
+-spec search_values(string()) -> {ok, [#game{}]} | {error, term()}.
+search_values(Query) ->
+    case db:search_values(?B_GAME, Query) of
+        {ok, Games} ->
+            % Convert game proplists to game records
+            {ok, lists:map(fun(GamePropList) ->
+                                   data_format:plist_to_rec(?GAME_REC_NAME,
+                                                            GamePropList)
+                           end, Games)};
+        Error ->
+            Error
+    end.
+
+%%-------------------------------------------------------------------
 %% Internal functions
 %%-------------------------------------------------------------------
-%% Remove bucket name from results
-get_game_ids(Results) ->
-    lists:reverse(get_game_ids(Results, [])).
-
-get_game_ids([], Acc) ->
-    Acc;
-get_game_ids([[?B_GAME, BinId]|Rs], Acc) ->
-    get_game_ids(Rs, [binary_to_integer(BinId)|Acc]).
-
 binary_to_integer(B) ->
     list_to_integer(binary_to_list(B)).

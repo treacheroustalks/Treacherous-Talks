@@ -201,6 +201,8 @@ search(RC, Bucket, Query) ->
 
 search_values(RC, Bucket, Query) ->
     case search(RC, Bucket, Query) of
+        {ok, []} ->
+            {ok, []};
         {ok, Result} ->
             Result1 = lists:map(fun([_, Key]) -> Key end, Result),
             get_values(RC, Bucket, Result1);

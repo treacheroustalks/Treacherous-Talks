@@ -411,12 +411,7 @@ get_game_player(GameID)->
 get_games_current(UserID) ->
     Query = "id=" ++ integer_to_list(UserID) ++ " AND "
             "(status=waiting OR status=ongoing)",
-    {ok, GamesIds} = game_search:search(Query),
-    Games = lists:map(fun(GameId) ->
-                              {ok, Game} = get_game(GameId),
-                              Game end,
-                      GamesIds),
-    {ok, Games}.
+    game_search:search_values(Query).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -425,9 +420,4 @@ get_games_current(UserID) ->
 %%-------------------------------------------------------------------
 -spec get_game_search(string()) -> {ok, [#game{}]}.
 get_game_search(Query) ->
-    {ok, GamesIds} = game_search:search(Query),
-    Games = lists:map(fun(GameId) ->
-                              {ok, Game} = get_game(GameId),
-                              Game end,
-                      GamesIds),
-    {ok, Games}.
+    game_search:search_values(Query).
