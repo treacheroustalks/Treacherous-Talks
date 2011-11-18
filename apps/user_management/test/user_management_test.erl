@@ -75,31 +75,6 @@ create_user_with_taken_nick_test_() ->
        fun create_user_nick_taken_t/1
       }}.
 
-authenticate_user_success_test_() ->
-    {"authenticate a user",
-      {setup,
-       fun () ->
-               app_start(),
-               User = create_user(),
-               {ok, User1} = user_management:create(User),
-               {User1, User1#user.password, User1}
-       end,
-       fun app_stop/1,
-       fun authenticate_user/1
-      }}.
-
-authenticate_user_failure_test_() ->
-    {"authenticate a user",
-      {setup,
-       fun () ->
-               app_start(),
-               User = create_user(),
-               user_management:create(User),
-               {User, "S0m3_rand0m_passw0rd", false}
-       end,
-       fun app_stop/1,
-       fun authenticate_user/1
-      }}.
 
 update_user_test_() ->
     {"update a user",
@@ -213,12 +188,6 @@ get_user_by_idx(#user{} = User, Field) ->
         Other ->
             erlang:error(error, Other)
     end.
-
-authenticate_user({#user{nick = Nick}, Pw, Expected}) ->
-    ?debugVal(Expected),
-    Result = user_management:is_valid(Nick, Pw),
-    ?debugVal(Result),
-    ?_assert(Expected == Result).
 
 
 %% helper functions
