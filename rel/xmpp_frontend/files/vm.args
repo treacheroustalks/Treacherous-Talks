@@ -18,3 +18,6 @@
 
 ## Tweak GC to run more often
 -env ERL_FULLSWEEP_AFTER 2
+
+## Set the location of crash dumps
+-env ERL_CRASH_DUMP log/erl_crash.dump

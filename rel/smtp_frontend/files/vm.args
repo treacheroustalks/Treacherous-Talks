@@ -18,4 +18,5 @@
 ## Tweak GC to run more often
 -env ERL_FULLSWEEP_AFTER 10
 
--eval "application:start(smtp_frontend)."
+## Set the location of crash dumps
+-env ERL_CRASH_DUMP log/erl_crash.dump
