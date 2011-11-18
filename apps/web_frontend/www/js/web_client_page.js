@@ -118,25 +118,38 @@ function load_create_game_page() {
 }
 
 /**
+ * Load the game_search page
+ */
+function load_game_search_page() {
+    page = 'game_search';
+    load_page();
+}
+
+/**
  * Populate the games_current page
  */
 function load_games_current(data) {
     var view_link = function(id) {
-        return '<a href="javascript:void(0);" class="btn primary" ' +
-               'onclick="get_game_overview(' + id + ')">view</a>';
+        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">view</a>';
     }
-
     // Add view link to all the games
     for ( var i = 0; i < data.length; i++) {
         var obj = data[i];
         data[i]['view'] = view_link(obj.id);
     }
-
-    print(data);
-
     // Create html table from JSON and display it
     var keys = get_keys(data[0]);
     $('#games_current_data').html(JsonToTable(data, keys, 'gct', 'gcc'));
+}
+
+/**
+ * Populate the game_search page
+ */
+function load_game_search(data) {
+    // Create html table from JSON and display it
+    var keys = get_keys(data[0]);
+    $('#game_search_data').html('<h2>Game search results</h2>');
+    $('#game_search_data').append(JsonToTable(data, keys, 'gst', 'gsc'));
 }
 
 /**
@@ -223,6 +236,9 @@ function handle_enter() {
         break;
     case 'game':
         validate_game();
+        break;
+    case 'game_search':
+        validate_game_search();
         break;
     default:
         break;
@@ -389,7 +405,7 @@ function validate_update_user() {
 }
 
 /**
- * Validate user update data and if successful, send it to server
+ * Validate game data and if successful, send it to server
  */
 function validate_game_data() {
     switch (page) {
@@ -466,6 +482,64 @@ function validate_game_data() {
     }
 }
 
+/**
+ * Validate game search data and if successful, send it to server
+ */
+function validate_game_search() {
+    var form = get_form_data('#search_game_form');
+
+    if (!is_field_empty(form.order_phase)
+            && check_field_int(form.order_phase, 'order_phase'))
+        return false;
+    if (!is_field_empty(form.retreat_phase)
+            && check_field_int(form.retreat_phase, 'retreat_phase'))
+        return false;
+    if (!is_field_empty(form.build_phase)
+            && check_field_int(form.build_phase, 'build_phase'))
+        return false;
+    if (!is_field_empty(form.waiting_time)
+            && check_field_int(form.waiting_time, 'waiting_time'))
+        return false;
+
+    // Check if all the form fields are empty
+    var is_empty = true;
+    $.each(form, function(key, val) {
+        if (!is_field_empty(val))
+            is_empty = false;
+    });
+    if (is_empty) {
+        set_message('error', 'Please enter some search criteria.');
+        clear_message();
+        return false;
+    }
+
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "name" : form.name
+        }, {
+            "description" : form.description
+        }, {
+            "status" : form.status
+        }, {
+            "press" : form.press
+        }, {
+            "order_phase" : form.order_phase
+        }, {
+            "retreat_phase" : form.retreat_phase
+        }, {
+            "build_phase" : form.build_phase
+        }, {
+            "waiting_time" : form.waiting_time
+        }, {
+            "num_players" : form.num_players
+        } ]
+    };
+
+    call_server('game_search', dataObj);
+}
+
 function validate_game() {
     var form = get_form_data('#play_game_form');
 
@@ -501,11 +575,21 @@ function check_field_empty(field, name, message) {
     else
         var msg = 'Please enter ' + name;
 
-    if (field == undefined || field == '') {
+    if (is_field_empty(field)) {
         set_message('error', msg);
         clear_message();
         return true;
     } else
+        return false;
+}
+
+/**
+ * Check if a given field is empty
+ */
+function is_field_empty(field) {
+    if (field == undefined || field == '')
+        return true;
+    else
         return false;
 }
 

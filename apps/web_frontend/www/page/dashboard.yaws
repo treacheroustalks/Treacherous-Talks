@@ -10,6 +10,7 @@
     <p>
         <a class="btn primary" onclick="load_create_game_page();">Create a new game</a>&nbsp;
         <a class="btn primary" onclick="get_games_current();">My current games</a>&nbsp;
+        <a class="btn primary" onclick="load_game_search_page();">Search games</a>&nbsp;
     </p>
     <fieldset class="span7">
     <legend>Reconfig game</legend>

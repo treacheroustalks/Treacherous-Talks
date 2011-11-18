@@ -63,7 +63,7 @@ socket_server(WebSocket, ProtocolVersion) ->
     receive
         {tcp, WebSocket, DataFrame} ->
             Data = yaws_api:websocket_unframe_data(ProtocolVersion, DataFrame),
-            io:format("Got data from Websocket: ~p~n", [Data]),
+            io:format("Got data from Websocket: ~p~n", [json_decode(Data)]),
             ParsedCmd = case web_parser:parse(json_decode(Data)) of
                             {login, {ok, User}} ->
                                 PushReceiver = #push_receiver{
@@ -220,6 +220,18 @@ get_ret({games_current, success}, Ret=#ret{}, Games) ->
     msg_success(Ret#ret{event_data = EventData,
                         page = "games_current"});
 get_ret({games_current, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({game_search, success}, Ret=#ret{}, Games) ->
+    RequiredFields = [id, name, status, description,
+                      press, order_phase, retreat_phase, build_phase,
+                      waiting_time, num_players],
+    EventData = lists:map(fun(Game) ->
+        json2:obj_from_list(data_format:rec_to_plist(Game,
+                                                     {string, RequiredFields}))
+        end, Games),
+    msg_success(Ret#ret{event_data = EventData});
+get_ret({game_search, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret).
 
 

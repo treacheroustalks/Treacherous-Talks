@@ -33,7 +33,7 @@
           get_game_overview/2,
           put_game_order/3,
           get_current_game/1,
-          search/1,
+          search/1, get_game_search/1,
           get_games_current/1
          ]).
 
@@ -176,6 +176,9 @@ get_current_game(GameID) ->
 %%  Search game bucket.
 %%  See http://wiki.basho.com/Riak-Search---Querying.html for query syntax
 %%  ORed together and NotParams are passed as NOT
+%% @spec
+%% search(Query :: string()) ->
+%%     {ok, [integer()]} | {error, Error}
 %% @end
 %% ----------------------------------------------------------------------------
 search(Query) ->
@@ -184,7 +187,20 @@ search(Query) ->
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  Get the games for the given user with status = waiting | ongoing
+%% @spec
+%% get_games_current(UserID :: integer()) ->
+%%     {ok, [#game{}]} | {error, Error}
 %% @end
 %% ----------------------------------------------------------------------------
 get_games_current(UserID) ->
     ?CALL_WORKER({get_games_current, UserID}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  Get the games for the given search query
+%% search(Query :: string()) ->
+%%     {ok, [#game{}]} | {error, Error}
+%% @end
+%% ----------------------------------------------------------------------------
+get_game_search(Query) ->
+    ?CALL_WORKER({get_game_search, Query}).

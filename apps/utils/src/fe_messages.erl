@@ -173,6 +173,12 @@ get({games_current, success}, Games) ->
 get({games_current, invalid_data}, Error) ->
     resp_unhandled_error(Error);
 
+% Games search
+get({game_search, success}, Games) ->
+    resp("Found ~p games~n~n", [length(Games)]);
+get({game_search, invalid_data}, Error) ->
+    resp_unhandled_error(Error);
+
 % Invalid session
 get({_Cmd, invalid_session}, _Val) ->
     resp("Invalid user session. Please log in to continue.~n");

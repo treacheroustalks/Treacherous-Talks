@@ -56,7 +56,8 @@
          game_order/2,
          user_msg/2,
          push_event/2,
-         games_current/2
+         games_current/2,
+         game_search/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -232,4 +233,15 @@ push_event(SessionId, Event = #push_event{}) ->
 %%-------------------------------------------------------------------
 games_current(SessionId, _Data) ->
     ?SESSION_CALL(SessionId, games_current).
+
+%%-------------------------------------------------------------------
+%% @doc game_search/2
+%% Search the game bucket for the given query
+%%
+%% @spec game_search(string(), string()) ->
+%%         {ok, [#game{}]}
+%% @end
+%%-------------------------------------------------------------------
+game_search(SessionId, Query) ->
+    ?SESSION_CALL(SessionId, game_search, Query).
 

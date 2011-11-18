@@ -1,0 +1,55 @@
+<!-- User game listing page -->
+<div class="page-header">
+  <h1>Search games<small>Search all games</small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <fieldset>
+    <form id="search_game_form">
+        <p>All fields are optional</p>
+        <div class="clearfix">
+            <div class="inline-inputs">
+                <input class="small" id="name" name="name" type="text" placeholder="Game name"/>
+                <input class="large" id="description" name="description" placeholder="Game description"/>
+                <input class="small" id="order_phase" name="order_phase" type="text" placeholder="Order time"/>
+                <input class="small" id="retreat_phase" name="retreat_phase" type="text" placeholder="Retreat time"/>
+                <input class="small" id="build_phase" name="build_phase" type="text" placeholder="Build time"/>
+                <input class="small" id="waiting_time" name="waiting_time" type="text" placeholder="Waiting time"/>
+            </div>
+        </div>
+        <div class="clearfix">
+            <select class="large" name="status" id="status">
+                <option value="">Select Status</option>
+                <option value="waiting">Waiting</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="stopped">Stopped</option>
+                <option value="finished">Finished</option>
+            </select>
+            <select class="large" name="press" id="press">
+                <option value="">Select Press</option>
+                <option value="white">White</option>
+                <option value="grey">Grey</option>
+                <option value="black">Black</option>
+            </select>
+            <select class="large" name="num_players" id="num_players">
+                <option value="">Select number of players</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+            </select>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Search game" onclick="validate(); return false;">&nbsp;
+            <input type="reset" class="btn" value="Reset">&nbsp;
+            <a href="javascript:void(0);" class="btn" onclick="load_home_page();">Back</a>
+        </div>
+    </form>
+    </fieldset>
+    <div id="game_search_data"></div>
+    </div>
+</div>

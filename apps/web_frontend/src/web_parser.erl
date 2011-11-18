@@ -42,15 +42,20 @@
 %% Action - chooses the message that has to be generated
 %% Data - Data in the form of Erlang version of JSON that is yet to be decoded.
 %%        Data is used to create the message content based in Action
-%% @end
-%% [@spec
-%% parse(Action::string(), Data::term()) ->
-%% {register, {ok, #user{}}} |
-%% {login, {ok, #user{}}} |
-%% {update, {ok, SessionId, #user{}}} |
-%% {create_game, {ok, SessionId, #game{}}}
-%% @end]
-%%-------------------------------------------------------------------
+-spec
+parse(Data::term()) ->
+{register, {ok, #user{}}} |
+{login, {ok, #user{}}} |
+{update, {ok, string(), #user{}}} |
+{create_game, {ok, string(), #game{}}} |
+{reconfig_game, {ok, string(), #game{}}} |
+{join_game, {ok, string(), {integer(), atom()}}} |
+{game_overview, {ok, string(), integer()}} |
+{game_order, {ok, string(), {integer(), term()}}} |
+{games_current, {ok, string(), atom()}} |
+{game_search, {ok, string(), string()}}.
+
+
 parse(RawData) ->
     {Action, Data} = decode(RawData),
     case Action of
@@ -82,12 +87,11 @@ parse(RawData) ->
             BuildPhase = get_integer("build_phase", Data),
             WaitingTime = get_integer("waiting_time", Data),
             NumPlayers = get_integer("num_players", Data),
-            {_, Description} = lists:keyfind("description", 1, Data),
             {create_game,
              {ok,
               get_field("session_id", Data),
               #game{name = get_field("name", Data),
-                    description = Description,
+                    description = get_field("description", Data),
                     press = get_field("press", Data),
                     password = get_field("password", Data),
                     order_phase = OrderPhase,
@@ -103,7 +107,6 @@ parse(RawData) ->
             BuildPhase = get_integer("build_phase", Data),
             WaitingTime = get_integer("waiting_time", Data),
             NumPlayers = get_integer("num_players", Data),
-            {_, Description} = lists:keyfind("description", 1, Data),
             {reconfig_game,
              {ok,
               get_field("session_id", Data),
@@ -114,7 +117,7 @@ parse(RawData) ->
                {#game.retreat_phase, RetreatPhase},
                {#game.build_phase, BuildPhase},
                {#game.waiting_time, WaitingTime},
-               {#game.description, Description},
+               {#game.description, get_field("description", Data)},
                {#game.num_players, NumPlayers},
                {#game.password, get_field("password", Data)},
                {#game.creator_id, field_missing}]}}};
@@ -135,7 +138,10 @@ parse(RawData) ->
             {game_order, {ok, get_field("session_id", Data),
                           {GameId, ResultOrders}}};
         "games_current" ->
-            {games_current, {ok, get_field("session_id", Data), dummy}}
+            {games_current, {ok, get_field("session_id", Data), dummy}};
+        "game_search" ->
+            Query = get_search_query(Data),
+            {game_search, {ok, get_field("session_id", Data), Query}}
     end.
 
 
@@ -154,10 +160,37 @@ get_field(Key, Data) ->
     {Key, Value} = lists:keyfind(Key, 1, Data),
     case Value of
         "" ->
-            undefined;
+            "";
         _ ->
             Value
     end.
+
+%% Generate search query from input data
+get_search_query(Data) ->
+    Params = ["name", "description", "press", "status", "order_phase",
+              "retreat_phase", "build_phase", "waiting_time", "num_players"],
+    lists:foldl(fun(Key, Query) ->
+                        Val = get_field(Key, Data),
+                        Value = to_string(Val),
+                        case {Query, Val} of
+                            {_, ""} ->
+                                Query;
+                            {"", _} ->
+                                get_query_string(Key, Value);
+                            _ ->
+                                Query ++ " AND " ++ get_query_string(Key, Value)
+                        end
+                end, "", Params).
+
+to_string(Val) ->
+    case data_format:type_of(Val) of
+        list -> Val;
+        integer -> integer_to_list(Val);
+        atom -> atom_to_list(Val)
+    end.
+
+get_query_string(Key, Value) ->
+    Key ++ "=" ++ Value.
 
 %% Convert JSON decoded erlang into list of tuples
 decode(RawData) ->
