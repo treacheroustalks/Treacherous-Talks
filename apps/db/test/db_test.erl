@@ -53,7 +53,8 @@ db_put_get_test_() ->
       ?_test(get_index()),
       ?_test(list_keys()),
       ?_test(get_index_with_siblings()),
-      ?_test(get_resolve())
+      ?_test(get_resolve()),
+      ?_test(get_values())
      ]
     }.
 
@@ -165,6 +166,33 @@ get_resolve() ->
 
     {ok, ReverseResultObj} = db:get_resolve(Bucket, Key, ReverseHist, LastSessField),
     ?assertEqual(Sib1Val, db_obj:get_value(ReverseResultObj)).
+    
+%% put/get test
+get_values() ->
+    Bucket = <<"get_list_test">>,
+    {ok, OldKeys} = db:list_keys(Bucket),
+    lists:foreach(fun(K) ->
+                          db:delete(Bucket, K)
+                  end, OldKeys),
+    % create some values in the db
+    Count = 10,
+    {Keys, Values} = lists:foldl(fun(No, {CurKeys, CurValues}) ->
+                                         Key = db:int_to_bin(
+                                                 db:get_unique_id()),
+                                         Val = {val, No},
+                                         Obj = db_obj:create(Bucket, Key, Val),
+                                         db:put(Obj),
+                                         {[Key|CurKeys], [Val|CurValues]}
+                                 end, {[], []}, lists:seq(1, Count)),
+
+    Result = db:get_values(Bucket, Keys),
+    ?assertMatch({ok, _Vals}, Result),
+    {ok, ResValues} = Result,
+    ?assertEqual(Count, length(ResValues)),
+    lists:foreach(fun(Val) ->
+                          ?assertEqual(true, lists:member(Val, ResValues))
+                  end, Values).
+
     
     
 %% test int_to_bin

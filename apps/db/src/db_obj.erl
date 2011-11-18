@@ -42,7 +42,9 @@
          get_json_field/2,
          set_json_field/3,
          from_riakc_obj/1,
-         to_riakc_obj/1]).
+         to_riakc_obj/1,
+         binary_to_erlang/1
+        ]).
 
 -include_lib("riakc/include/riakc_obj.hrl").
 
@@ -228,12 +230,15 @@ to_riakc_obj(WObj) ->
     riakc_obj:update_value(MDO, encode_value(get_content_type(WObj),
                                              get_value(WObj))).
 
+binary_to_erlang(V) ->
+    {ok, Tokens, _} = erl_scan:string(binary_to_list (V)),
+    {ok, Term} = erl_parse:parse_term (Tokens),
+    Term.
+
 decode_value(?CTYPE_JSON, V) ->
     mochijson2:decode(V);
 decode_value(?CTYPE_ERLANG_TERM, V) ->
-    {ok, Tokens, _} = erl_scan:string(binary_to_list (V)),
-    {ok, Term} = erl_parse:parse_term (Tokens),
-    Term;
+    binary_to_erlang(V);
 decode_value(_, V) when is_list(V) ->
     iolist_to_binary(V);
 decode_value(_, V) when is_binary(V) ->

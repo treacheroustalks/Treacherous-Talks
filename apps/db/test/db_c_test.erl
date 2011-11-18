@@ -25,6 +25,9 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 
+%% -------------------------------------------------------------------
+%% Startup/teardown code
+%% -------------------------------------------------------------------
 connected_startup () ->
     {ok, Client} = db_c:connect ({pb, {"127.0.0.1", 8081}}),
     Client.
@@ -32,6 +35,9 @@ connected_startup () ->
 connected_teardown (Client) ->
     db_c:disconnect (Client).
 
+%% -------------------------------------------------------------------
+%% Test many concurrent connections
+%% -------------------------------------------------------------------
 many_concurrent_conns_test () ->
     Clients = lists:map (fun (N) ->
                                  Client = connected_startup (),
@@ -46,6 +52,9 @@ many_concurrent_conns_test () ->
                end,
                lists:reverse (Clients)).
 
+%% -------------------------------------------------------------------
+%% Write siblings test
+%% -------------------------------------------------------------------
 write_siblings (Client) ->
     [fun () ->
              db_c:set_bucket (Client, <<"test">>, [{allow_mult, true}]),
@@ -66,6 +75,9 @@ siblings_test_ () ->
      fun connected_teardown/1,
      fun write_siblings/1}.
 
+%% -------------------------------------------------------------------
+%% Write with undefined id to the db, get an id back.
+%% -------------------------------------------------------------------
 write_undefined_test_ () ->
     {setup,
      fun connected_startup/0,
@@ -86,6 +98,9 @@ write_undefined_tst_ (Client) ->
 
 
 
+%% -------------------------------------------------------------------
+%% Secondary indices tests
+%% -------------------------------------------------------------------
 secondary_indices_test_ () ->
     {setup,
      fun connected_startup/0,
@@ -131,4 +146,41 @@ write_index(Client) ->
              ?debugVal(GetIdx),
              ?assertEqual([ [Bucket, Key] ], GetIdx),
              db_c:delete(Client, Bucket, Key)
+     end].
+
+
+%% -------------------------------------------------------------------
+%% Get a list from riak.
+%% -------------------------------------------------------------------
+get_list_test_() ->
+    {setup,
+     fun connected_startup/0,
+     fun connected_teardown/1,
+     fun get_list/1}.
+
+get_list(Client) ->
+    [fun() ->
+             Bucket = <<"get_list_test">>,
+             {ok, OldKeys} = db_c:list_keys(Client, Bucket),
+             lists:foreach(fun(K) ->
+                               db_c:delete(Client, Bucket, K)
+                       end, OldKeys),
+             % create some values in the db
+             Count = 10,
+             {Keys, Values} = lists:foldl(fun(No, {CurKeys, CurValues}) ->
+                                                  Key = db:int_to_bin(
+                                                          db_c:get_unique_id()),
+                                                  Val = {val, No},
+                                                  Obj = db_obj:create(Bucket, Key, Val),
+                                                  db_c:put(Client, Obj),
+                                                  {[Key|CurKeys], [Val|CurValues]}
+                                          end, {[], []}, lists:seq(1, Count)),
+
+             Result = db_c:get_values(Client, Bucket, Keys),
+             ?assertMatch({ok, _Vals}, Result),
+             {ok, ResValues} = Result,
+             ?assertEqual(Count, length(ResValues)),
+             lists:foreach(fun(Val) ->
+                                   ?assertEqual(true, lists:member(Val, ResValues))
+                           end, Values)
      end].

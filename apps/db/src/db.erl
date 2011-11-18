@@ -42,6 +42,7 @@
 -export([ping_riak/0,
          get/2, get/3,
          get_resolve/4, get_resolve/5,
+         get_values/2, get_values/3,
          get_index/2,
          put/1, put/2,
          delete/2, delete/3,
@@ -53,7 +54,7 @@
          mapred_bucket/2, mapred_bucket/3,
          get_unique_id/0,
          int_to_bin/1, int_to_bin/2,
-         search/2
+         search/2, search_values/2
         ]).
 
 %% -----------------------------------------------------------------
@@ -139,6 +140,30 @@ get_resolve(Bucket, Key, Options, Hist, Field) ->
         Other ->
             Other
     end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Gets a list of values from the DB.
+%%
+%% @spec
+%%  get_values(Bucket::binary(), Keys::[binary()]) ->
+%%     {ok, [any()]} | {error, any()}
+%% @end
+%%-------------------------------------------------------------------
+get_values(Bucket, Keys) ->
+    ?CALL_WORKER({get_values, Bucket, Keys}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Gets a list of values from the DB.
+%%
+%% @spec
+%%  get_values(Bucket::binary(), Keys::[binary()], Timeout::integer()) ->
+%%     {ok, [any()]} | {error, any()}
+%% @end
+%%-------------------------------------------------------------------
+get_values(Bucket, Keys, Timeout) ->
+    ?CALL_WORKER({get_values, Bucket, Keys, Timeout}).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -308,6 +333,19 @@ mapred_bucket(Bucket, Query, Timeout) ->
 %%-------------------------------------------------------------------
 search(Bucket, Query) ->
     ?CALL_WORKER({search, Bucket, Query}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Perform a search on the given bucket and returns the values of all
+%% results
+%%
+%% @spec
+%%  search_values(Bucket::binary(), Query::[MAGIC]) ->
+%%     {ok, list()} | {error, term()}
+%% @end
+%%-------------------------------------------------------------------
+search_values(Bucket, Query) ->
+    ?CALL_WORKER({search_values, Bucket, Query}).
 
 
 %%-------------------------------------------------------------------

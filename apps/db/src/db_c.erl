@@ -29,6 +29,7 @@
          get_client_id/1, set_client_id/2,
          get_server_info/1,
          get/3, get/4,
+         get_values/3, get_values/4,
          get_index/3,
          get_unique_id/0,
          put/2, put/3,
@@ -42,7 +43,7 @@
          mapred_stream/4, mapred_stream/5,
          mapred_bucket/3, mapred_bucket/4,
          mapred_bucket_stream/5,
-         search/3]).
+         search/3, search_values/3]).
 
 -record(db_c, {module, client}).
 
@@ -114,6 +115,34 @@ get(RC, Bucket, Key) ->
 get(RC, Bucket, Key, Options) ->
     to_db_obj(?PASS3(RC, get, Bucket, Key, Options)).
 
+get_values(RC, Bucket, Keys) ->
+    MapRed = fun(Inputs) ->
+                     mapred(RC, Inputs,
+                            [{map, {modfun, riak_kv_mapreduce, map_object_value},
+                              none, true}])
+             end,
+    get_values_helper(Bucket, Keys, MapRed).
+get_values(RC, Bucket, Keys, Timeout) ->
+    MapRed = fun(Inputs) ->
+                     mapred(RC, Inputs,
+                            [{map, {modfun, riak_kv_mapreduce, map_object_value},
+                              none, true}],
+                            Timeout)
+             end,
+    get_values_helper(Bucket, Keys, MapRed).
+
+get_values_helper(Bucket, Keys, MapRed) ->
+    Inputs = lists:map(fun(Key) ->
+                               {Bucket, Key}
+                       end, Keys),
+    case MapRed(Inputs)
+    of
+        {ok, [{_, List}]} ->
+            {ok, lists:map(fun db_obj:binary_to_erlang/1, List)};
+        Other ->
+            {error, Other}
+    end.
+
 get_index(RC, Bucket, {Index, IndexKey}) ->
     ?PASS3(RC, get_index, Bucket, Index, IndexKey).
 
@@ -171,6 +200,14 @@ get_unique_id() ->
 
 search(RC, Bucket, Query) ->
     ?PASS2(RC, search, Bucket, Query).
+
+search_values(RC, Bucket, Query) ->
+    case search(RC, Bucket, Query) of
+        {ok, Result} ->
+            get_values(RC, Bucket, Result);
+        Other ->
+            Other
+    end.
 
 %% INTERNAL
 
