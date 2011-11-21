@@ -39,7 +39,8 @@
 %% -----------------------------------------------------------------
 %% Public interface
 %% -----------------------------------------------------------------
--export([ping_riak/0,
+-export([empty_bucket/1,
+         ping_riak/0,
          get/2, get/3,
          get_resolve/4, get_resolve/5,
          get_values/2, get_values/3,
@@ -241,6 +242,17 @@ delete(Bucket, Key) ->
 delete(Bucket, Key, Options) ->
     ?CALL_WORKER({delete, Bucket, Key, Options}).
 
+%%-------------------------------------------------------------------
+%% @doc
+%%  Deletes all documents in given bucket.
+%%
+%% @spec
+%%  empty_bucket(Bucket::binary()) ->
+%%     ok | {error, Error}
+%% @end
+%%-------------------------------------------------------------------
+empty_bucket(Bucket) ->
+    ?CALL_WORKER({empty_bucket, Bucket}).
 
 %%-------------------------------------------------------------------
 %% @doc

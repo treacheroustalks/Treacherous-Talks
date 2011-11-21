@@ -31,7 +31,9 @@
 %%%-------------------------------------------------------------------
 -module (message).
 
--export ([user_msg/1
+-export ([user_msg/1,
+          unread/1,
+          mark_as_read/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -60,3 +62,23 @@
           {error, Error :: any()}.
 user_msg(Msg=#message{}) ->
     ?CALL_WORKER({user_msg, Msg}).
+
+
+%% --------------------------------------------------------------------
+%% @doc
+%%  Returns the list of unread messages where UserId is the recipient.
+%% @end
+%% --------------------------------------------------------------------
+-spec message:unread(UserId :: integer()) -> [#message{}].
+unread(UserId) ->
+    ?CALL_WORKER({unread, UserId}).
+
+%% --------------------------------------------------------------------
+%% @doc
+%%  Marks the message as read so that it will not be returned in
+%%  subsequent calls to message:unread/1
+%% @end
+%% --------------------------------------------------------------------
+-spec message:mark_as_read(MessageId :: integer()) -> ok | {error, notfound}.
+mark_as_read(MessageId) ->
+    ?CALL_WORKER({mark_as_read, MessageId}).

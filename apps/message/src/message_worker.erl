@@ -23,7 +23,7 @@
 %%%-------------------------------------------------------------------
 %%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
 %%%
-%%% @doc Unit tests for updating user
+%%% @doc The business end of the message app.
 %%% @end
 %%%
 %%% @since : 15 Nov 2011 by Bermuda Triangle
@@ -73,6 +73,14 @@ init(no_arg) ->
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 
+handle_call({unread, UserId}, _From, State) ->
+    Unread = do_unread(UserId),
+    {reply, Unread, State};
+
+handle_call({mark_as_read, MessageId}, _From, State) ->
+    Result = do_mark_as_read(MessageId),
+    {reply, Result, State};
+
 handle_call({user_msg, Msg=#message{}}, _From, State) ->
     Result = case user_management:get_by_idx(#user.nick, Msg#message.to_nick) of
                  {ok, {index_list, _IdxList}} ->
@@ -121,15 +129,39 @@ log_user_msg(undefined, Msg) ->
     log_user_msg(ID, Msg#message{id = ID});
 log_user_msg(ID, Msg) ->
     BinID = db:int_to_bin(ID),
-    DbObj = db_obj:create(?B_MESSAGE, BinID, Msg),
+    MsgPropList = data_format:rec_to_plist(Msg),
+    DbObj = db_obj:create(?B_MESSAGE, BinID, MsgPropList),
     DbLinkObj = db_obj:add_link(DbObj,
-                                       {{?B_USER,
-                                         db:int_to_bin(Msg#message.from_id)},
-                                        ?MESSAGE_FROM_USER_LINK}),
+                                {{?B_USER,
+                                  db:int_to_bin(Msg#message.from_id)},
+                                 ?MESSAGE_FROM_USER_LINK}),
     DbLinkObj2 = db_obj:add_link(DbLinkObj,
-                                       {{?B_USER,
-                                         db:int_to_bin(Msg#message.to_id)},
-                                        ?MESSAGE_TO_USER_LINK}),
+                                 {{?B_USER,
+                                   db:int_to_bin(Msg#message.to_id)},
+                                  ?MESSAGE_TO_USER_LINK}),
     db:put(DbLinkObj2),
     {ok, ID}.
 
+do_unread(UserId) ->
+    Query = lists:flatten(io_lib:format("to_id=~p AND status=unread", [UserId])),
+    {ok, PropLists} = db:search_values(?B_MESSAGE, Query),
+    Messages = lists:map(fun(PropList) ->
+                                 data_format:plist_to_rec(message, PropList)
+                         end,
+                         PropLists),
+    {ok, Messages}.
+
+do_mark_as_read(MessageId) ->
+    case db:get(?B_MESSAGE, db:int_to_bin(MessageId)) of
+        {ok, DBObj} ->
+            PropList = db_obj:get_value(DBObj),
+            % modify via the record format to maintain the property order easily
+            Message = data_format:plist_to_rec(message, PropList),
+            ReadMessage = Message#message{status=read},
+            ReadPropList = data_format:rec_to_plist(ReadMessage),
+            ReadDBObj = db_obj:set_value(DBObj, ReadPropList),
+            db:put(ReadDBObj),
+            ok;
+        {error, notfound} ->
+            {error, notfound}
+    end.
