@@ -69,5 +69,5 @@ delete_timer(Game) ->
 init(no_arg) ->
     io:format ("[~p] starting ~p~n", [?MODULE, self()]),
     TimerSpec = {game_timer, {game_timer, start_link, []},
-                 permanent, 5000, worker, [game_timer]},
+                 transient, 5000, worker, [game_timer]},
     {ok, { {simple_one_for_one, 5, 10}, [TimerSpec] } }.

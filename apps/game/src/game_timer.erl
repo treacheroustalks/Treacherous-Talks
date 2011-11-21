@@ -31,7 +31,8 @@
 %% External API Function Exports
 %% ------------------------------------------------------------------
 -export([start_link/1, event/2, sync_event/2,
-         current_state/1, get_game_state/1, stop/1]).
+         current_state/1, get_game_state/1,
+         stop/1, stop/2]).
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Exports
@@ -74,6 +75,7 @@ start_link(Game) ->
 event(Timer, Event) ->
     gen_fsm:send_event({global, {?MODULE, Timer}}, Event).
 
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends a synchronous event to change the state of the FSM Timer.
@@ -111,6 +113,17 @@ get_game_state(Timer) ->
 -spec stop(pid()) -> ok.
 stop(Timer) ->
     gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, stop).
+%%-------------------------------------------------------------------
+%% @doc
+%% Sends an event to Timer, to stop it and update the game to be either
+%% finished or stopped
+%% @spec stop(Timer::pid(), NewState :: finished | stopped) -> ok
+%% @end
+%%-------------------------------------------------------------------
+-spec stop(pid(), finished | stopped) -> ok.
+stop(Timer, NewState) ->
+    gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}},
+                                      {stop, NewState}).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -175,9 +188,13 @@ build_phase(_Event, From, State) ->
 handle_event(_Event, StateName, State) ->
     {next_state, StateName, State}.
 
+handle_sync_event({stop, NewState}, _From, _StateName, State) ->
+    io:format("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
+    end_game((State#state.game)#game.id, NewState),
+    {stop, normal, {(State#state.game)#game.id, NewState}, State};
 handle_sync_event(stop, _From, _StateName, State) ->
     io:format("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
-    {stop, stop, ok, State};
+    {stop, normal, stop_request, State};
 handle_sync_event(statename, _From, StateName, State) ->
     {reply, StateName, StateName, State};
 handle_sync_event(phasename, _From, StateName, State) ->
@@ -193,6 +210,7 @@ handle_info(_Info, StateName, State) ->
 
 terminate(_Reason, _StateName, State) ->
     io:format("Terminating game timer ~p~n", [State]),
+    global:unregister_name({(State#state.game)#game.id, ?MODULE}),
     ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
@@ -342,6 +360,18 @@ setup_game(ID) ->
     db:put(CurrentGameLinkObj).
 
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates game record and stops the timer, when a game has finished.
+%% NewStatus can either be the atom finished or stopped
+%% @spec
+%% end_game(GameID :: integer(), NewStatus :: atom()) -> any()
+%% @end
+%%-------------------------------------------------------------------
+end_game(GameID, NewStatus) ->
+    {ok, Game} = game:get_game(GameID),
+    FinishedGame = Game#game{status = NewStatus},
+    game_worker:update_game(GameID, FinishedGame).
 
 %%-------------------------------------------------------------------
 %% @doc
