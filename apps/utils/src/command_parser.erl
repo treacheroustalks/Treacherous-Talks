@@ -75,6 +75,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?REGISTER
                   "|"?UPDATE
                   "|"?OVERVIEW
+                  "|"?VIEWCURRENTGAMES
                   "|"?JOIN
                   "|"?MESSAGE
                   ")(.*)END",
@@ -109,6 +110,8 @@ parse(BinString, Client) when is_binary(BinString) ->
                     {update_user, user_commands:parse_update(Data)};
                 <<?OVERVIEW>> ->
                     {game_overview, user_commands:parse_overview(Data)};
+                <<?VIEWCURRENTGAMES>> ->
+                    {games_current, user_commands:parse_games_current(Data)};
                 <<?JOIN>> ->
                     {join_game, user_commands:parse_join(Data)};
                 <<?MESSAGE>> ->

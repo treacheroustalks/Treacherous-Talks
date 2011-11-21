@@ -36,6 +36,7 @@
 
 -export([
          game_overview_to_text/1,
+         games_current_to_text/1,
          game_to_text/1,
          map_to_text/2,
          rec_to_plist/1, rec_to_plist/2, plist_to_rec/2,
@@ -113,11 +114,33 @@ game_info_to_text(#game_overview{} = GOV) ->
 
 %%-------------------------------------------------------------------
 %% @doc
+%% Convert list of current games into text format
+%% @end
+%%-------------------------------------------------------------------
+-spec games_current_to_text(list()) -> string().
+games_current_to_text(Games) ->
+    textify_all_games_current(Games).
+
+%%-------------------------------------------------------------------
+%% Helper function for games_current_to_text(Games)
+%% Calls game_to_text for all current games in the Games list
+%%-------------------------------------------------------------------
+textify_all_games_current([H | T]) ->
+    Games = game_to_text(H)
+            ++ "\n--------------------\n\n"
+            ++ textify_all_games_current(T),
+    [Games];
+textify_all_games_current([]) -> [].
+
+
+%%-------------------------------------------------------------------
+%% @doc
 %% Convert game record into text format
 %% @end
 %%-------------------------------------------------------------------
 game_to_text(#game{} = Game) ->
-    Msg1 = update_msg("", Game#game.name, ?GAMENAME, undefined),
+    Msg  = update_msg("", Game#game.id, ?GAMEID, undefined),
+    Msg1 = update_msg(Msg, Game#game.name, ?GAMENAME, undefined),
     Msg2 = update_msg(Msg1, Game#game.description, ?DESCRIPTION, field_missing),
     Msg3 = update_msg(Msg2, Game#game.status, ?STATUS, undefined),
     Msg4 = update_msg(Msg3, Game#game.press, ?PRESSTYPE, undefined),

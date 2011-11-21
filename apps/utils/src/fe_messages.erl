@@ -169,7 +169,7 @@ get({user_msg, invalid_data}, Error) ->
 
 % Games current
 get({games_current, success}, Games) ->
-    resp("Found ~p games~n~n", [length(Games)]);
+    resp("Found ~p games:~n~n", [length(Games)]);
 get({games_current, invalid_data}, Error) ->
     resp_unhandled_error(Error);
 
@@ -213,7 +213,10 @@ get(unknown_command, _Val) ->
 
 % Additional commands
 get(game_overview, Val) ->
-    game_overview(Val).
+    game_overview(Val);
+get(games_current, Val) ->
+    games_current(Val).
+
 
 %%-------------------------------------------------------------------
 %% @doc resp/2
@@ -271,3 +274,8 @@ finished_game_overview({GameInfo, PlayerInfo, Game, FinalMap}) ->
     Msg3 = io_lib:format("Players in this game:~n~s~n ", [PlayerInfo]),
     Msg4 = io_lib:format("~nFinal map:~n~s", [FinalMap]),
     lists:flatten(Msg1 ++ Msg2 ++ Msg3 ++ Msg4).
+
+%% Get current games in text format
+games_current(Games) ->
+    CurrentGames = data_format:games_current_to_text(Games),
+    lists:flatten(CurrentGames).

@@ -38,7 +38,8 @@
          parse_reconfig/1,
          parse_overview/1,
          parse_user_msg/1,
-         parse_join/1]).
+         parse_join/1,
+         parse_games_current/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -329,6 +330,34 @@ parse_join(Data) ->
             end
     end.
 
+%%------------------------------------------------------------------------------
+%% @doc parse_overview/1
+%%
+%% Parses a view current games(of particular user) request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_games_current(Data :: binary() ) ->
+          {ok, SessionId::string(), atom()} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_games_current(Data) ->
+    RequiredFields = [?SESSION],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId] = ReqValues,
+
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    {ok, SessionId, useless_data};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
 
 %% Internal function
 %%------------------------------------------------------------------------------
