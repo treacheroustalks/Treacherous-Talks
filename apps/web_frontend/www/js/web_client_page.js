@@ -208,6 +208,19 @@ function get_game_overview(game_id) {
     call_server('game_overview', dataObj);
 }
 
+function send_chat_message() {
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie() },
+            { "to" : $('#chat_to').val() },
+            { "content" : $('#chat_msg').val() }
+        ]
+    };
+    call_server('user_msg', dataObj);
+    $('#chat_msg').val('');
+}
+
+
 /*------------------------------------------------------------------------------
  Form cleanup functions
  -----------------------------------------------------------------------------*/
@@ -691,20 +704,48 @@ function delete_cookie() {
  Message functions
  -----------------------------------------------------------------------------*/
 /**
- * Show message in the message box type: success, error, warning message:
- * message to be set in the message box
+ * Show message to user: success, error, warning, chat message:
+ * message to be set in the message box / the chat box.
  */
 function set_message(type, message) {
     if (type == undefined || type == "" || message == undefined
             || message == "")
         return false;
 
-    var msgDiv = $('#message');
-    var msg = '<div class="alert-message ' + type + '">'
+    switch (type) {
+    case 'chat':
+        var getKeys = function(obj){
+            var keys = [];
+            for(var key in obj){
+                keys.push(key);
+            }
+            return keys;
+        }
+        var chatArea = $('#chat_text');
+        print('keys=' + getKeys(chatArea));
+
+        chatArea.val(chatArea.val() + '\n' + message);
+        //I know, I know... but it's the only way I could make this work :-/
+        chatArea.scrollTop(99999);
+        chatArea.slideDown();
+        break;
+    case 'invisible':
+        print(message);
+        break;
+    case 'success':
+    case 'error':
+        var msgDiv = $('#message');
+        var msg = '<div class="alert-message ' + type + '">'
             + '<a class="close" href="javscript:void(0);" '
             + 'onclick="delete_message(); return false;">&times;</a><p>'
             + message + '</p>' + '</div>';
-    msgDiv.html(msg).fadeIn('fast');
+        msgDiv.html(msg).fadeIn('fast');
+        break;
+    default:
+        print('web_client_page.js, set_message: message "'
+              + message + '" of type "'
+              + type + '" could not be handled');
+    }
 }
 
 /**

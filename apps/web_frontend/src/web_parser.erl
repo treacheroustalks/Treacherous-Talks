@@ -34,6 +34,7 @@
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -141,7 +142,12 @@ parse(RawData) ->
             {games_current, {ok, get_field("session_id", Data), dummy}};
         "game_search" ->
             Query = get_search_query(Data),
-            {game_search, {ok, get_field("session_id", Data), Query}}
+            {game_search, {ok, get_field("session_id", Data), Query}};
+        "user_msg" ->
+            {user_msg, {ok,
+                        get_field ("session_id", Data),
+                        #frontend_msg{to = get_field ("to", Data),
+                                      content = get_field ("content", Data)}}}
     end.
 
 

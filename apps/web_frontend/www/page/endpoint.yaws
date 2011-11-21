@@ -29,6 +29,7 @@
               message_value=""}).
 
 -include_lib("datatypes/include/push_receiver.hrl").
+-include_lib("datatypes/include/push_event.hrl").
 %%-------------------------------------------------------------------
 %% @doc
 %% Yaws function that gets called when an endpoint is requested.
@@ -74,19 +75,23 @@ socket_server(WebSocket, ProtocolVersion) ->
                             Other ->
                                 Other
                         end,
-            io:format("Parsed command: ~p~n", [ParsedCmd]),
             controller:handle_action(ParsedCmd,
                                      {fun reply/3,
                                      [WebSocket, ProtocolVersion]}),
             socket_server(WebSocket, ProtocolVersion);
         {tcp_closed, WebSocket} ->
             io:format("Websocket closed. Terminating socket_server...~n");
-        {push, [Websocket, ProtocolVersion], Event} ->
-            % @todo send stuff to the user
-            io:format("socket_server received event:~p~n", [Event]),
+        {push, [Websocket, ProtocolVersion], Event} = P ->
+            case Event of
+                #push_event{type = Type, data = Msg} ->
+                    reply ([WebSocket, ProtocolVersion], off_game_msg, Msg);
+                _ ->
+                    io:format("received illegal push: ~p~n", [P]),
+                    ok
+            end,
             socket_server(WebSocket, ProtocolVersion);
         Any ->
-            io:format("socket_server received msg:~p~n", [Any]),
+            io:format("socket_server received unhandled msg:~p~n", [Any]),
             socket_server(WebSocket, ProtocolVersion)
     end.
 
@@ -106,8 +111,10 @@ get_reply({Cmd, Status}, Data, Msg) ->
     Event = atom_to_list(Cmd) ++ "_" ++ atom_to_list(Status),
     Reply = get_ret({Cmd, Status}, #ret{event=Event, message_value=Msg}, Data),
     json_encode(ret_to_proplist(Reply));
+get_reply (CmdWithoutStatus, Data, Msg) ->
+    get_reply ({CmdWithoutStatus, ok}, Data, Msg);
 get_reply(unknown_command, Data, Msg) ->
-    io:format("Unknown command~p~n", [Data]),
+    io:format("Unknown command ~p~n", [Data]),
     json_encode("").
 
 
@@ -127,6 +134,19 @@ msg_success(Ret=#ret{}) ->
 msg_error(Ret=#ret{}) ->
     Ret#ret{message_type="error"}.
 
+msg_chat (Ret=#ret{}) ->
+    Ret#ret{message_type="chat"}.
+
+msg_invisible (Ret=#ret{}) ->
+    Ret#ret{message_type="invisible"}.
+
+get_ret ({user_msg, success}, Ret, _Data) ->
+    % just print it to the log:
+    msg_invisible (Ret);
+get_ret ({off_game_msg, ok}, Ret, Data) ->
+    get_ret (off_game_msg, Ret, Data);
+get_ret (off_game_msg, Ret = #ret{}, _Data) ->
+    msg_chat (Ret);
 get_ret({register, success}, Ret=#ret{}, _Data) ->
     msg_success(Ret#ret{page="home"});
 get_ret({register, invalid_data}, Ret=#ret{}, _Data) ->

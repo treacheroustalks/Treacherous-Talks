@@ -33,6 +33,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/message.hrl").
 -include_lib("datatypes/include/game.hrl").
 
 -export([]).
@@ -40,6 +41,7 @@
 parser_test_() ->
     {inorder,
      [
+      fun user_msg/0,
       fun login/0,
       fun register/0,
       fun update/0,
@@ -102,8 +104,19 @@ game_search() ->
     ?assertEqual(game_search_exp_data(),
                  web_parser:parse(game_search_data())).
 
+user_msg() ->
+    ?assertEqual (user_msg_exp_data(),
+                  web_parser:parse(user_msg_data())).
 
 %% Expected data
+
+user_msg_exp_data() ->
+    {user_msg,
+     {ok,
+      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+      #frontend_msg{to = "maximus",
+                    content = "hi!"}}}.
+
 login_exp_data() ->
    {login,
     {ok, #user{nick = "maximus",
@@ -196,6 +209,17 @@ game_search_exp_data() ->
                   "num_players=7"}}.
 
 %% Input data
+
+user_msg_data() ->
+    {ok, {struct,
+      [{"action", "user_msg"},
+       {"data",
+        {array,
+         [{struct,[{"session_id",
+                    "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+          {struct, [{"to", "maximus"}]},
+          {struct, [{"content", "hi!"}]}]}}]}}.
+
 login_data() ->
     {ok,{struct,
      [{"action","login"},
