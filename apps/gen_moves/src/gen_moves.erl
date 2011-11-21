@@ -66,7 +66,7 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 
--export ([generate_orders/3,
+-export ([generate_orders/1,
           apply_order_season/2]).
 
 %% -----------------------------------------------------------------------------
@@ -74,7 +74,9 @@
 %% picks a random element from the list
 %% @end
 %% -----------------------------------------------------------------------------
--spec pick ([any ()]) -> any ().
+-spec pick ([any ()] | []) -> any () | {error, empty}.
+pick ([]) ->
+    {error, empty};
 pick (List) ->
     lists:nth (random:uniform (length (List)), List).
 
@@ -104,8 +106,12 @@ pick (List) ->
 gen_move (Map, Unit = {Type, _}, From) ->
     Options = lists:delete (From, map:get_reachable (Map, From, Type)),
     ?debugVal ({Map, Unit, From, '->', Options}),
-    To = pick (Options),
-    {move, Unit, From, To}.
+    case pick (Options) of
+        {error, empty} ->
+            {hold, Unit, From};
+        To ->
+            {move, Unit, From, To}
+    end.
 
 -spec gen_build (Map, Nation) -> tuple () when
       Map :: any (),
@@ -165,12 +171,9 @@ generate_order (Phase, _, _, _) ->
 %% use the included `year'/`season'/`phase' infos instead.
 %% @end
 %% -----------------------------------------------------------------------------
--spec generate_orders (Map, SessionId, GameId) ->
-                              [dict ()] when
-      Map :: any (),
-      SessionId :: integer (),
-      GameId :: integer ().
-generate_orders (Map, _SessionId, _GameId) ->
+-spec generate_orders (Map) -> [dict ()] when
+      Map :: any ().
+generate_orders (Map) ->
     PrivateMap = digraph_io:from_erlang_term (digraph_io:to_erlang_term (Map)),
     AliveNations = ordsets:to_list (
                      lists:foldl (
@@ -237,7 +240,7 @@ dict_add_order_season (Map, Phase, Nation, Dict) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%% receives a map and a single order dict ({@link generate_orders/3} gives you
+%% receives a map and a single order dict ({@link generate_orders/1} gives you
 %% a whole list of them!) and applies the orders to a map.
 %% It returns the answer-list from {@link game:process/4}.
 %% @end

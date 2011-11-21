@@ -1,8 +1,7 @@
-{application, gen_moves,
+{application, load_test,
  [
   {description, ""},
-  {vsn, "1.0.0"},
-  {modules, [gen_moves]},
+  {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
@@ -10,4 +9,3 @@
                  ]},
   {env, []}
  ]}.
-
