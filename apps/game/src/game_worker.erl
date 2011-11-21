@@ -305,7 +305,7 @@ put_game_order(Key, GameOrderList) ->
 %% @doc
 %% Updates a game order in the database
 %% @spec
-%% update_game_order(ID :: integer(), NewOrder :: list(tuple())) ->
+%% update_game_order(ID :: string(), NewOrder :: list(tuple())) ->
 %%     {ok, Key :: atom()} | {error, Error}
 %% @end
 %% ------------------------------------------------------------------
