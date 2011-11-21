@@ -76,7 +76,8 @@ phase_timer_test_ () ->
      [ping_tst_(),
       game_timer_create_tst_(),
       game_timer_state_tst_(),
-      game_current_tst_()
+      game_current_tst_(),
+      game_timer_end_tst_()
      ]}.
 
 ping_tst_ () ->
@@ -182,6 +183,27 @@ game_current_tst_() ->
                           NewYearCurrent#game_current.year_season),
              ?debugMsg("Current game updates test end----------")
      end].
+
+%%--------------------------------------------------------------------
+%% Tests the ending of a game
+%%--------------------------------------------------------------------
+game_timer_end_tst_() ->
+    [fun() ->
+             ?debugMsg("finish game test----------"),
+             GameRecord = test_game(),
+             ?debugVal(Game = sync_get(sync_new(GameRecord))),
+             ID = Game#game.id,
+             ?debugVal(TimerPid = global:whereis_name({game_timer, ID})),
+             ?assert(is_process_alive(TimerPid)),
+             ?assertEqual(game_timer:sync_event(ID, timeout), {ok, order_phase}),
+             ?assertEqual({ID, finished}, game_timer:stop(ID, finished)),
+             
+             ?assertEqual({ok, Game#game{status = finished}}, game:get_game(ID)),
+             %% check that the game timer does not exist
+             ?assertNot(is_process_alive(TimerPid)),
+             ?assertEqual(undefined, global:whereis_name({game_timer, ID}))
+     end].
+
 
 %%--------------------------------------------------------------------
 %% Helper functions for creating and getting games
