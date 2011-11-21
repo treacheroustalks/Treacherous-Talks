@@ -1,3 +1,5 @@
+
+
 %%%-------------------------------------------------------------------
 %%% Copyright (C) 2011 by Bermuda Triangle
 %%%
@@ -123,11 +125,17 @@ get_game_state(ID)->
 %% ------------------------------------------------------------------
 get_all_orders(ID) ->
     Key = game_utils:get_keyprefix({id, ID}),
-    ListOrders = fun(Country, Acc) ->
-                         Orders = get_game_order(Key ++ "-" ++ Country),
-                         lists:merge(Acc, Orders)
-                 end,
-    lists:foldl(ListOrders, [], ?COUNTRIES).
+    Keys = lists:map(fun(Country) ->
+                             Key ++ "-" ++ Country
+                     end, ?COUNTRIES),
+    case db:get_values(?B_GAME_ORDER, Keys) of
+        {ok, Orders} ->
+            lists:flatten(lists:map(fun(Order) ->
+                                            Order#game_order.order_list
+                                    end, Orders));
+        _Error ->
+            []
+    end.
 
 %% ------------------------------------------------------------------
 %% @doc Gets the game orders for a given key
