@@ -98,7 +98,7 @@ test_order_list() ->
       {remove, army, munich}
      ],
      %% expected output
-     [{destroy,{army,england},munich},
+     [{disband,{army,england},munich},
       {build,{army,england},stockholm},
       {support,{army,england},london,{hold,{army,russia},moscow}},
       {support,{army,england},london,{move,{army,germany},berlin,munich}},

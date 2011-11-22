@@ -45,8 +45,8 @@ order_transform_test() ->
     BuildRes = load_test:order_transform(Build),
     ?assertEqual(BuildExp, BuildRes),
 
-    Destroy = {destroy, {army, england}, paris},
-    DestroyExp = #disband{subj_unit = army, subj_loc = paris},
-    DestroyRes = load_test:order_transform(Destroy),
-    ?assertEqual(DestroyExp, DestroyRes).
+    Disband = {disband, {army, england}, paris},
+    DisbandExp = #disband{subj_unit = army, subj_loc = paris},
+    DisbandRes = load_test:order_transform(Disband),
+    ?assertEqual(DisbandExp, DisbandRes).
     

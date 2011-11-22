@@ -297,7 +297,7 @@ multiple_stages_test () ->
     ?assert (map:unit_exists (Map, burgundy, {army, france})),
     ?assert (map:unit_exists (Map, burgundy, {army, germany})),
     ?assert (map:unit_exists (Map, gascony, {army, france})),
-    %% germany fails to retreat A burgundy - it is destroyed:
+    %% germany fails to retreat A burgundy - it is disbanded:
     rules:process (retreat_phase, Map, diplomacy_rules, []),
     ?assertEqual (false, map:unit_exists (Map, burgundy, {army, germany})),
     map_data:delete (Map).
@@ -550,7 +550,7 @@ limit_builds_test () ->
     rules:process (order_phase, Map, diplomacy_rules,
                    [{move, {army, austria}, vienna, galicia}]),
     ?assertEqual ([], map:get_units (Map, vienna)),
-    ?debugVal (rules:process (count_phase, Map, diplomacy_rules,[])),
+    rules:process (count_phase, Map, diplomacy_rules,[]),
     Reply = rules:process (build_phase, Map, diplomacy_rules,
                    [{build, {army, austria}, vienna}]),
     ?assertEqual ([], map:get_units (Map, vienna)),
@@ -577,7 +577,7 @@ civil_disorder_test () ->
     %%                             F north_africa)
     %% this means three have to go
     rules:process (build_phase, Map, diplomacy_rules, []),
-    %% oops, no destroy orders! --> civil disorder rule came into affect!
+    %% oops, no disband orders! --> civil disorder rule came into affect!
 
     %% Removed where, according to the rules:
     %%  1) F north_africa (furthest away)

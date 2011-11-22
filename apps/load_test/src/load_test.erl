@@ -276,7 +276,7 @@ order_transform(Order) ->
                     obj_dst_loc = To};
         {build, {Unit, _}, Loc} ->
             #build{obj_unit = Unit, obj_loc = Loc};
-        {destroy, {Unit, _}, Loc} ->
+        {disband, {Unit, _}, Loc} ->
             #disband{subj_unit = Unit, subj_loc = Loc}
     end.
 

@@ -75,7 +75,7 @@ expected_test_order_list() ->
      {move, {army, england}, vienna, galicia},
      {move, {army, england}, warsaw, galicia},
      {build, {army, england}, warsaw},
-     {destroy, {army, england}, warsaw}
+     {disband, {army, england}, warsaw}
     ]).
 
 expected_updated_order_list() ->

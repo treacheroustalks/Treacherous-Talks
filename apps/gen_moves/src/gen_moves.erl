@@ -134,7 +134,7 @@ gen_build (Map, Nation) ->
         [] ->
             {build, {pick ([army, fleet]), Nation}, OriginalCenter};
         [Unit | _] ->
-            {destroy, Unit, OriginalCenter}
+            {disband, Unit, OriginalCenter}
     end.
 
 %-spec gen_support (any (), tuple (), atom ()) -> tuple ().

@@ -39,13 +39,13 @@
 %%     <td>`order_phase'</td>
 %%     <td>`[{dislodge, unit(), province ()}]'</td>
 %%     <td>
-%%       the unit needs to be moved in retreat phase or it will be destroyed
+%%       the unit needs to be moved in retreat phase or it will be disbanded
 %%     </td>
 %%   </tr>
 %%   <tr>
 %%     <td>`count_phase'</td>
 %%     <td>`[{has_builds, nation(), integer()}]'</td>
-%%     <td>the nation is allowed to build / has to destroy that many units</td>
+%%     <td>the nation is allowed to build / has to disband that many units</td>
 %%   </tr>
 %% </table>
 %%
@@ -86,7 +86,7 @@
 %% {convoy, {fleet, england}, english_channel, {army, england}, wales, picardy}
 -type hold_order () :: {hold, unit ()}.
 -type build_order () :: {build, unit (), province ()}.
--type destroy_order () :: {destroy, unit (), province ()}.
+-type disband_order () :: {disband, unit (), province ()}.
 -type move_order () :: {move, unit (), From :: province (), To :: province ()}.
 -type support_order () :: {support, Fleet :: unit (), Province :: province (),
                            MoveOrHold :: order ()}.
@@ -97,7 +97,7 @@
                           To :: province ()}.
 -type order () :: hold_order () |
                   build_order () |
-                  destroy_order () |
+                  disband_order () |
                   move_order () |
                   support_order () |
                   convoy_order ().
@@ -149,8 +149,8 @@ do_process (_, _Map, {hold, _, _}) ->
 do_process (build_phase, Map, {build, Unit = {_Type, _Nation}, Where}) ->
     map:add_unit (Map, Unit, Where),
     [];
-do_process (_, Map, {destroy, Unit, From}) ->
-%    ?debugMsg (io_lib:format ("destroying ~p, ~p", [Unit, From])),
+do_process (_, Map, {disband, Unit, From}) ->
+%    ?debugMsg (io_lib:format ("disbanding ~p, ~p", [Unit, From])),
     map:remove_unit (Map, Unit, From),
     [];
 do_process (_, _, {support, _, _, _}) ->
@@ -160,9 +160,9 @@ do_process (_, _, {support, _, _, _}) ->
 do_process (_, _, {convoy, _, _, _, _, _}) ->
     %% same as support.
     [];
-do_process (build_phase, Map, {destroy_furthest_units, Nation, ToDestroy}) ->
+do_process (build_phase, Map, {disband_furthest_units, Nation, ToDisband}) ->
     %% the most complex order. It sorts `Nation''s units by
-    %% distance/type/province and destroys the `ToDestroy' last units.
+    %% distance/type/province and disbands the `ToDisband' last units.
     Units = map:get_units (Map),
     FilteredUnits = lists:filter (fun ({_Province, {_, Owner}}) ->
                           Owner == Nation
@@ -175,11 +175,11 @@ do_process (build_phase, Map, {destroy_furthest_units, Nation, ToDestroy}) ->
                      end,
                      FilteredUnits)),
     {FurthestUnits, _} =
-        lists:split (ToDestroy, TaggedUnits),
+        lists:split (ToDisband, TaggedUnits),
     lists:foreach (fun ({_, _, TargetProv, TargetUnit}) ->
                            do_process (build_phase,
                                        Map,
-                                       {destroy, TargetUnit, TargetProv})
+                                       {disband, TargetUnit, TargetProv})
                    end,
                    FurthestUnits),
     [];
@@ -188,9 +188,9 @@ do_process (Phase, _Map, Order) ->
                    {unhandled_case, ?MODULE, ?LINE, [Phase, 'Map', Order]}}).
 
 %% -----------------------------------------------------------------------------
-%% Helper function for destroy_furthest_units functionality
+%% Helper function for disband_furthest_units functionality
 %% generates a tuple from the Map, Unit and Province that makes sorts first
-%% what should be destroyed first.
+%% what should be disbanded first.
 %% -----------------------------------------------------------------------------
 -spec get_sort_tuple (digraph (), unit (), province ()) ->
                              {Dis, any (), province (), unit ()} when
@@ -279,10 +279,10 @@ civil_disorder_actor (Map, Orders) ->
 %                                     erlang:error ({error, 'VAL'}),
                                      {ok, Val} = dict:find (Nation, Acc),
                                      dict:store (Nation, Val, Acc);
-%                                 {destroy_furthest_unit, Nation} ->
+%                                 {disband_furthest_unit, Nation} ->
 %                                     {ok, Val} = dict:find (Nation, Acc),
 %                                     dict:store (Nation, Val + 1, Acc);
-                                 {destroy, {_, Nation}, _Province} ->
+                                 {disband, {_, Nation}, _Province} ->
                                      {ok, Val} = dict:find (Nation, Acc),
                                      dict:store (Nation, Val + 1, Acc);
                                  _ -> Acc
@@ -290,19 +290,19 @@ civil_disorder_actor (Map, Orders) ->
                      end,
                      get_build_licenses (Map),
                      Orders),
-    NeedToDestroy =
+    NeedToDisband =
         lists:filter (
           fun ({_Nation, Counter}) ->
                   Counter < 0
           end,
           dict:to_list (CorrectedLicenses)),
-    %% now emit the destroy-furthest-units orders:
+    %% now emit the disband-furthest-units orders:
     lists:map (fun ({Nation, Counter}) ->
                        {add,
-                        {destroy_furthest_units,
+                        {disband_furthest_units,
                          Nation, -Counter}}
                end,
-               NeedToDestroy).
+               NeedToDisband).
 
 %% remove units that where not dislodged yet
 remove_undislodged_units_rule () ->
@@ -510,7 +510,7 @@ is_supportable (_) ->
 
 %% return a dict, that contains nation()/integer() pairs,
 %% denoting the numbers of builds (if integer is positive) a nation has
-%% or the number of units it must destroy (if integer is negative)
+%% or the number of units it must disband (if integer is negative)
 get_build_licenses (Map) ->
     % count how many units each nation has and set province owners
     Dict =
