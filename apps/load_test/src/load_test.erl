@@ -35,18 +35,25 @@
 %% Public API
 %% ------------------------------------------------------------------
 -export([
-         register/0,
+         register_user/0,
+         register_user/1,
          login/2,
+         login/1,
          logout/2,
          send_msg/2,
          read_push_msg/1,
          create_game/1,
+         create_game/2,
          join_game/3,
+         join_full_game/2,
          game_overview/2,
          create_orders/0,
          send_orders/7,
          send_game_msg/3,
-         search_current/1
+         search_current/1,
+         start_game/2,
+         start_games/2,
+         phase_change/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -72,14 +79,23 @@
 %% ------------------------------------------------------------------
 %% API implementation
 %% ------------------------------------------------------------------
--spec register() -> {Nick::string(), Password::string()}.
-register() ->
+-spec register_user() -> {Nick::string(), Password::string()}.
+register_user() ->
     Nick = "load_test_" ++ integer_to_list(random()),
     User = create_user(Nick),
-    Cmd = {register, {ok, User}},
+    Cmd = {register_user, {ok, User}},
     controller:handle_action(Cmd, callback()),
     {Nick, User#user.password}.
 
+-spec register_user(integer()) -> [{Nick::string(), Password::string()}].
+register_user(Count) ->
+    register_user(Count, []).
+
+register_user(0, Users) ->
+    Users;
+register_user(Count, Users) ->
+    User = register_user(),
+    register_user(Count-1, [User|Users]).
 
 -spec login(Nick::string(), Password::string()) ->
                    {SessionId::string(), Pid::pid()}.
@@ -93,6 +109,11 @@ login(Nick, Password) ->
                         Receiver}}},
     {{login, success}, SessionId} = controller:handle_action(Cmd, callback()),
     {SessionId, Pid}.
+
+-spec login([{Nick::string(), Password::string()}]) ->
+          [{SessionId::string(), Pid::pid()}].
+login(Users) ->
+    lists:map(fun({Nick, Password}) -> login(Nick, Password) end, Users).
 
 %@todo -spec logout(SessionId::string(), Pid::pid()) -> {[#message{}], [#game_message{}]}.
 logout(SessionId, Pid) ->
@@ -122,6 +143,16 @@ create_game(SessionId) ->
         controller:handle_action(Cmd, callback()),
     GameId.
 
+-spec create_game(SessionId::string(), Count::integer()) -> [GameId::integer()].
+create_game(SessionId, Count) ->
+    create_game(SessionId, Count, []).
+
+create_game(_SessionId, 0, Games) ->
+    Games;
+create_game(SessionId, Count, Games) ->
+    Game = create_game(SessionId),
+    create_game(SessionId, Count-1, [Game|Games]).
+
 -spec join_game(SessionId::string(), GameId::integer(), Country::country()) ->
                        ok | any().
 join_game(SessionId, GameId, Country) ->
@@ -133,6 +164,25 @@ join_game(SessionId, GameId, Country) ->
              Error
      end.
 
+-spec join_full_game([SessionId::string()], GameId::integer()) ->
+                       ok | any().
+join_full_game(Sessions, GameId) ->
+    GU = lists:zip(Sessions, get_all_countries()),
+    [join_game(SessionId, GameId, Country) || {SessionId, Country} <- GU],
+    ok.
+
+-spec phase_change(Node::string(), GameId::integer()) -> ok.
+phase_change(Node, GameId) ->
+    rpc:call(Node, game_timer, sync_event, [GameId, timeout]),
+    ok.
+
+-spec start_game(Node::string(), GameId::integer()) -> ok.
+start_game(Node, GameId) ->
+    phase_change(Node, GameId).
+
+-spec start_games(Node::string(), [GameId::integer()]) -> ok.
+start_games(Node, Games) ->
+    lists:foreach(fun(GameId) -> phase_change(Node, GameId) end, Games).
 
 -spec game_overview(SessionId::string(),
                     GameId::integer()) -> #game_overview{}.
@@ -144,7 +194,7 @@ game_overview(SessionId, GameId) ->
 -spec create_orders() -> [dict()].
 create_orders() ->
     Orders = gen_moves:generate_orders(map_data:create(standard_game)),
-    Countries = [england, germany, france, italy, russia, turkey, austria],
+    Countries = get_all_countries(),
     CountryTransform = fun(Dict, Country) ->
                                {ok, Ord} = dict:find({orders, Country}, Dict),
                                NewOrd = lists:map(fun order_transform/1, Ord),
@@ -254,14 +304,14 @@ order_transform(Order) ->
                   subj_dst_loc = To};
         {hold, {Unit, _Country}, Loc} ->
             #hold{subj_unit = Unit, subj_loc = Loc};
-        {support, {SupUnit, _}, SupLoc, 
+        {support, {SupUnit, _}, SupLoc,
          {move, {Unit, _}, From, To}} ->
             #support_move{subj_unit = SupUnit,
                           subj_loc = SupLoc,
                           obj_unit = Unit,
                           obj_src_loc = From,
                           obj_dst_loc = To};
-        {support, {SupUnit, _}, SupLoc, 
+        {support, {SupUnit, _}, SupLoc,
          {hold, {Unit, _}, Loc}} ->
             #support_hold{subj_unit = SupUnit,
                           subj_loc = SupLoc,
@@ -305,3 +355,6 @@ receiver(State) ->
         _ ->
             receiver(State)
     end.
+
+get_all_countries() ->
+    [england, germany, france, italy, russia, turkey, austria].
