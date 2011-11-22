@@ -43,11 +43,25 @@
 %% setup code
 %%-------------------------------------------------------------------
 apps() ->
-    [protobuffs, riakc, service, db, datatypes, user_management,
-     game, message, controller_app].
+    [message, protobuffs, riakc, service, db, datatypes, user_management,
+     game, controller_app].
 
 app_start() ->
-    [ ?assertEqual(ok, application:start(App)) || App <- apps()],
+    lists:foreach (fun (App) ->
+                           case application:start (App) of
+                               {error, {already_started, App}} -> ok;
+                               ok -> ok;
+                               Other ->
+                                   erlang:error ({error,
+                                                  {?MODULE, ?LINE,
+                                                   'could not start',
+                                                   App,
+                                                   'reason was', Other}})
+                           end,
+                           ?debugMsg (
+                              io_lib:format ("~p is running", [App]))
+                   end,
+                   apps ()),
     error_logger:tty(false).
 
 app_stop(_) ->

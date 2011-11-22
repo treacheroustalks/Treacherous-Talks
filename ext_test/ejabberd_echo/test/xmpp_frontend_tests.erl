@@ -211,11 +211,14 @@ instantiator_fixture_test_() ->
      fun teardown/1,
      fun instantiator/1}.
 
-instantiator_two_users_test_() ->
+instantiator_two_user_test_() ->
     {setup,
      fun setup_two_user_instantiator/0,
      fun teardown/1,
      fun two_user_instantiator/1}.
+
+offline_message_test_() ->
+    fun offline_message_tst_/0.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -373,6 +376,36 @@ setup_two_user_instantiator() ->
       "successful off game message sending"}
     ].
 
+offline_message_tst_() ->
+    ?debugMsg ("Testing sending of offline message"),
+    Password = "password",
+    Client1 = user1_test_client,
+    Client2 = user2_test_client,
+    Nick1 = random_nick(),
+    Nick2 = random_nick(),
+
+    Msg = "Hello, this is an offline message!",
+    
+    %% create user #2 and log him out:
+    xmpp_client:start_link(Client2, Password),
+    login_test_user (Client2, Nick2),
+    xmpp_client:stop (Client2),
+
+    %% create user #1, send an offline message to #2 and log out:
+    xmpp_client:start_link(Client1, Password),
+    {Session1, Nick1} = login_test_user (Client1, Nick1),
+    xmpp_client:xmpp_call(Client1,
+                          ?SERVICE_BOT,
+                          ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg)),
+    xmpp_client:stop (Client1),
+
+    %% wait a bit, log user #2 on and check that `Msg' was received:
+    receive after 1000 -> ok end,
+    xmpp_client:start_link (Client2, Password),
+    Response =
+        xmpp_client:xmpp_call(
+          Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
+    {match, _} = re:run (Response, Msg).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -409,26 +442,31 @@ instantiator([_Clients| Tests]) ->
 %% instantiate two user tests
 %%-------------------------------------------------------------------
 two_user_instantiator([_Clients| Tests]) ->
-    lists:map(fun({{Client1, Request1, Expect1},
-                   {Client2, Regex, Expect2},
-                   Description}) ->
-                      fun() ->
-                              ?debugFmt("Testing ~s.", [Description]),
-                              Response1 = xmpp_client:xmpp_call(
-                                           Client1, ?SERVICE_BOT, Request1),
-                              ResponsePrefix1 = response_prefix(Expect1, Response1),
-                              ?assertEqual(Expect1, ResponsePrefix1),
+    lists:map(
+      fun({{Client1, Request1, Expect1},
+           {Client2, Regex, Expect2},
+           Description}) ->
+              fun() ->
+                      ?debugFmt("Testing ~s.", [Description]),
+                      Response1 = xmpp_client:xmpp_call(
+                                    Client1, ?SERVICE_BOT, Request1),
+                      ResponsePrefix1 = response_prefix(Expect1,
+                                                        Response1),
+                      ?assertEqual(Expect1, ResponsePrefix1),
+                      timer:sleep (1000),
+                      Response2 =
+                          xmpp_client:last_received_msg(Client2),
+                      {ok, Reg} =
+                          re:compile(Regex,
+                                     [dotall, {newline, anycrlf}]),
+                      Result2 = re:run(Response2, Reg,
+                                       [global,
+                                        {capture, all_but_first, list},
+                                        {newline, anycrlf}]),
+                      ?assertEqual({match, Expect2}, Result2)
 
-                              receive nothin -> ok after 1000 -> ok end,
-                              Response2 = xmpp_client:last_received_msg(Client2),
-                              {ok, Reg} = re:compile(Regex,
-                                                     [dotall, {newline, anycrlf}]),
-                              Result2 = re:run(Response2, Reg,
-                                     [global, {capture, all_but_first, list},
-                                      {newline, anycrlf}]),
-                              ?assertEqual({match, Expect2}, Result2)
-                      end
-              end, Tests).
+              end
+      end, Tests).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -481,12 +519,17 @@ random_id() ->
 %% @end
 %%-------------------------------------------------------------------
 login_test_user(Client) ->
-    Nick = random_nick(),
-    xmpp_client:xmpp_call(Client, ?SERVICE_BOT, ?REGISTER_COMMAND_CORRECT(Nick)),
-    Response = xmpp_client:xmpp_call(Client, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick)),
+    login_test_user (Client, undefined).
+
+login_test_user(Client, undefined) ->
+    login_test_user (Client, random_nick ());
+login_test_user(Client, Nick) ->
+    catch xmpp_client:xmpp_call(
+      Client, ?SERVICE_BOT, ?REGISTER_COMMAND_CORRECT(Nick)),
+    Response =
+        xmpp_client:xmpp_call(
+          Client, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick)),
     {match, [Session]} = re:run(Response,
                                 ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
                                 [{capture, all_but_first, list}]),
     {Session, Nick}.
-    
-

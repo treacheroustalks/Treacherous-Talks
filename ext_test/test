@@ -55,7 +55,7 @@ function start_release () {
     $command start || local_error=1
     # Wait before pinging
     sleep 1
-    # Do five ping attempts and fail if all is unsuccessfull
+    # Do five ping attempts and fail if all is unsuccessful
     running=0
     for i in {1..10}
     do
@@ -71,7 +71,7 @@ function start_release () {
         # Sleep before next attempt
         sleep 1
     done
-    # Check if ping was unsuccessfull and set errors accordingly
+    # Check if ping was unsuccessful and set errors accordingly
     if [ $running -eq 0 ]; then
         local_error=1
     fi
@@ -134,8 +134,8 @@ stop_release $sysrel backend
 ###### Exit
 
 if (( $errors )); then
-    echoerr "Integration test run was NOT successfull."
+    echoerr "Integration test run was NOT successful."
 else
-    echonormal "Integration test run was successfull."
+    echonormal "Integration test run was successful."
 fi
 exit $errors
