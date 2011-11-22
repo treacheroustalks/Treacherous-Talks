@@ -21,9 +21,9 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc user_command
+%%% @doc user_commands
 %%%
-%%% A module for recognizing user command in email body
+%%% A module for recognizing user commands in email body
 %%%
 %%% @end
 %%%
@@ -39,6 +39,7 @@
          parse_overview/1,
          parse_user_msg/1,
          parse_game_msg/1,
+         parse_game_search/1,
          parse_games_current/1,
          parse_join/1]).
 
@@ -391,9 +392,51 @@ parse_join(Data) ->
     end.
 
 %%------------------------------------------------------------------------------
-%% @doc parse_overview/1
+%% @doc parse_game_search/1
 %%
-%% Parses a view current games(of particular user) request
+%% Parses a query in search game request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_game_search(Data :: binary() ) ->
+          {ok, SessionId::string(), Query::string()} |
+          {error, {empty_query, string()}} |
+          {error, {invalid_input, list()}} |
+          {error, {required_fields, list()}}.
+parse_game_search(Data) ->
+    OptionalFields = [?GAMEID, ?GAMENAME, ?DESCRIPTION, ?PRESSTYPE, ?STATUS,
+                      ?ORDERCIRCLE, ?RETREATCIRCLE, ?GAINLOSTCIRCLE, ?WAITTIME,
+                      ?NUMBEROFPLAYERS],
+    OptionalKeys = ["id", "name", "description", "press", "status",
+                    "order_phase", "retreat_phase", "build_phase",
+                    "waiting_time", "num_players"],
+    OptionalValues = get_required_fields(OptionalFields, Data),
+    RequiredFields = [?SESSION],
+    RequiredValues = get_required_fields(RequiredFields, Data),
+    Query = get_search_query(OptionalKeys, OptionalValues),
+    case lists:member(field_missing, RequiredValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId] = RequiredValues,
+            case get_error_list(RequiredValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    case Query of
+                        "" ->
+                            {error, {empty_query, "Error: Query was empty"}};
+                        _ ->
+                            {ok, SessionId, Query}
+                    end;
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_games_current/1
+%%
+%% Parses a view current games request (of a particular user)
 %%
 %% @end
 %%------------------------------------------------------------------------------
@@ -419,11 +462,10 @@ parse_games_current(Data) ->
             end
     end.
 
-%% Internal function
+%% Internal functions
 %%------------------------------------------------------------------------------
-%%
-%% Get required field value from field name
-%%
+%% @doc
+%%  Get required field value from field name
 %% @end
 %%------------------------------------------------------------------------------
 get_required_fields(Fields, Data) ->
@@ -440,7 +482,28 @@ get_required_fields(Fields, Data) ->
 
 %%------------------------------------------------------------------------------
 %% @doc
-%%  extract the content of the message from input
+%%  Generate search query from input data
+%% @end
+%%------------------------------------------------------------------------------
+-spec get_search_query(list(), list()) -> string().
+get_search_query(KeysList, ValuesList) ->
+    PropList = lists:zip(KeysList, ValuesList),
+    lists:foldl(fun({Key, Value}, Query) ->
+                    case {Query, Value} of
+                        {_, field_missing} ->
+                            Query;
+                        {_, ""} ->
+                            Query;
+                        {"", _} ->
+                            Key ++ "=" ++ Value;
+                        _ ->
+                            Query ++ " AND " ++ Key ++ "=" ++ Value
+                    end
+                end, "", PropList).
+
+%%------------------------------------------------------------------------------
+%% @doc
+%%  Extract the content of the message from input
 %% @end
 %%------------------------------------------------------------------------------
 -spec extract_msg_field_val(string() , binary()) ->
@@ -484,7 +547,8 @@ parse_time_format(TimeFormat) ->
 
 %%------------------------------------------------------------------------------
 %% @doc check if command values are valid
-%% Input Arg1: (alpha_num_only|begin_with_alpha|num_only|alpha_only|mail_addr)
+%% Input Arg1: (alpha_num_only|begin_with_alpha|num_only|alpha_space_only|
+%%              mail_addr)
 %%       Arg2: FieldValue
 %% Output (true|false)
 %% @end
@@ -586,21 +650,22 @@ get_check_type([H|Rest], AccCheckList) ->
         ?EMAIL -> [mail_addr|AccCheckList];
         ?CHANNEL -> [channel|AccCheckList];
 
-        ?DESCRIPTION -> [alpha_space_only|AccCheckList];
         ?GAMEID -> [num_only|AccCheckList];
-        ?NUMBEROFPLAYERS -> [num_only|AccCheckList];
-
         ?GAMENAME -> [begin_with_alpha|AccCheckList];
         ?PRESSTYPE -> [press_type|AccCheckList];
+        ?DESCRIPTION -> [alpha_space_only|AccCheckList];
+        ?NUMBEROFPLAYERS -> [num_only|AccCheckList];
         ?ORDERCIRCLE -> [duration_time|AccCheckList];
         ?RETREATCIRCLE -> [duration_time|AccCheckList];
         ?GAINLOSTCIRCLE -> [duration_time|AccCheckList];
         ?WAITTIME -> [duration_time|AccCheckList];
+        ?STATUS -> [alpha_space_only|AccCheckList];
+
+        ?COUNTRY -> [alpha_space_only|AccCheckList];
 
         ?CONTENT -> [any|AccCheckList];
-        ?TO -> [begin_with_alpha|AccCheckList];
+        ?TO -> [begin_with_alpha|AccCheckList]
 
-        ?COUNTRY -> [alpha_space_only|AccCheckList]
     end,
     get_check_type(Rest, UpdatedCheckList).
 

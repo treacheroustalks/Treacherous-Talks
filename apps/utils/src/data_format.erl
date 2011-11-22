@@ -37,7 +37,7 @@
 
 -export([
          game_overview_to_text/1,
-         games_current_to_text/1,
+         games_list_to_text/1,
          game_to_text/1,
          map_to_text/2,
          rec_to_plist/1, rec_to_plist/2, plist_to_rec/2,
@@ -117,23 +117,23 @@ game_info_to_text(#game_overview{} = GOV) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Convert list of current games into text format
+%% Convert list of games to textual form
 %% @end
 %%-------------------------------------------------------------------
--spec games_current_to_text(list()) -> string().
-games_current_to_text(Games) ->
-    textify_all_games_current(Games).
+-spec games_list_to_text([#game{}]) -> string().
+games_list_to_text(Games) ->
+     textual_form_of(Games).
 
 %%-------------------------------------------------------------------
-%% Helper function for games_current_to_text(Games)
-%% Calls game_to_text for all current games in the Games list
+%% Helper function for games_list_to_text(Games)
+%% Calls game_to_text for all games in the Games list
 %%-------------------------------------------------------------------
-textify_all_games_current([H | T]) ->
+textual_form_of([H | T]) ->
     Games = game_to_text(H)
             ++ "\n--------------------\n\n"
-            ++ textify_all_games_current(T),
+            ++ textual_form_of(T),
     [Games];
-textify_all_games_current([]) -> [].
+textual_form_of([]) -> [].
 
 
 %%-------------------------------------------------------------------

@@ -42,7 +42,7 @@
 -export([reply/3]).
 
 -define(SUPPORTED_COMMANDS,
-        "REGISTER, LOGIN, UPDATE, CREATE, OVERVIEW").
+        "REGISTER, LOGIN, UPDATE, CREATE, JOIN, OVERVIEW, VIEWCURRENTGAMES, SEARCH").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -58,13 +58,26 @@ reply([From, To], Result, Data) ->
 
 %% Compose replies based on data returned from backend
 %% Only Results that need additional information are matched
+% Game overview
 get_reply({game_overview, success}, Data) ->
     Msg = fe_messages:get({game_overview, success}, Data),
     GameOverview = fe_messages:get(game_overview, Data),
     fe_messages:resp(Msg ++ GameOverview);
+% View current game(s)
+get_reply({games_current, success}, Data) ->
+    Msg = fe_messages:get({games_current, success}, Data),
+    GamesCurrent = fe_messages:get(games_current, Data),
+    fe_messages:resp(Msg ++ GamesCurrent);
+% Search game(s)
+get_reply({game_search, success}, Data) ->
+    Msg = fe_messages:get({game_search, success}, Data),
+    GameSearch = fe_messages:get(game_search, Data),
+    fe_messages:resp(Msg ++ GameSearch);
+% Unknown commands
 get_reply(unknown_command, Data) ->
     Msg = fe_messages:get(unknown_command, Data),
     fe_messages:resp(Msg ++ "Supported commands are:~n" ++ ?SUPPORTED_COMMANDS);
+% Normal reply
 get_reply(Result, Data) ->
     fe_messages:get(Result, Data).
 
@@ -94,6 +107,6 @@ send_message(From, To, TypeStr, BodyStr) ->
               "To ~p~n"
               "Body \"~s\".~n",
               [TypeStr, From#jid.user, To#jid.user, BodyStr]),
-    send_xml_message(From, To, 
+    send_xml_message(From, To,
                      xml_message:prepare(From, To, TypeStr, BodyStr)).
 

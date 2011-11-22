@@ -83,6 +83,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?OVERVIEW
                   "|"?VIEWCURRENTGAMES
                   "|"?JOIN
+                  "|"?SEARCH
                   "|"?MESSAGE
                   ")(.*)END",
 
@@ -120,6 +121,8 @@ parse(BinString, Client) when is_binary(BinString) ->
                     {games_current, user_commands:parse_games_current(Data)};
                 <<?JOIN>> ->
                     {join_game, user_commands:parse_join(Data)};
+                <<?SEARCH>> ->
+                    {game_search, user_commands:parse_game_search(Data)};
                 <<?MESSAGE>> ->
                     Pattern =  ?GAMEID,
                     {ok, MP1} = re:compile(Pattern, [dotall]),

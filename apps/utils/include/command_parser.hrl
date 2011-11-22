@@ -30,11 +30,11 @@
 -define(VIEWCURRENTGAMES, "VIEWCURRENTGAMES").
 -define(JOIN, "JOIN").
 -define(ORDER, "ORDER").
+-define(SEARCH, "SEARCH").
 -define(END, "END").
 
 
 -define(SESSION, "SESSION").
-
 -define(NICKNAME, "NICKNAME").
 -define(PASSWORD, "PASSWORD").
 -define(FULLNAME, "FULLNAME").
@@ -52,6 +52,10 @@
 -define(GAINLOSTCIRCLE, "GAINLOSTCIRCLE").
 -define(WAITTIME, "WAITTIME").
 -define(COUNTRY, "COUNTRY").
+-define(STATUS, "STATUS").
+-define(RESULT, "RESULT").
+
+-define(SUPPLYCENTER, "SUPPLY CENTERS").
 
 % countries allowed in the game
 -define(COUNTRIES, [england,
@@ -62,10 +66,7 @@
                     russia,
                     turkey]).
 
--define(STATUS, "STATUS").
--define(RESULT, "RESULT").
 
--define(SUPPLYCENTER, "SUPPLY CENTERS").
 
 -define(MESSAGE, "MESSAGE").
 -define(CONTENT, "CONTENT").

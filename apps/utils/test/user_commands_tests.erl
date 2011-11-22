@@ -87,9 +87,27 @@ parse_game_overview_test_() ->
      ?_assertEqual(Expected, ActualOutput)
     ].
 
+parse_games_current_test_() ->
+    ActualOutput = user_commands:parse_games_current(
+                                     ?SAMPLE_GAMES_CURRENT(?SESSION_ID)),
+    Expected = {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==",
+                    useless_data},
+    [
+     ?_assertEqual(Expected, ActualOutput)
+    ].
+
 parse_join_game_test_() ->
     ActualOutput = user_commands:parse_join(?SAMPLE_JOIN_GAME),
     Expected = {ok, ?SESSION_ID, {111222, england}},
+    [
+     ?_assertEqual(Expected, ActualOutput)
+    ].
+
+parse_game_search_test_() ->
+    ActualOutput = user_commands:parse_game_search(
+                                     ?SAMPLE_GAME_SEARCH(?SESSION_ID)),
+    Expected = {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==",
+                    "id=1234 AND name=simple_game AND waiting_time=1D"},
     [
      ?_assertEqual(Expected, ActualOutput)
     ].

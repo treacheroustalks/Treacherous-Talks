@@ -171,7 +171,17 @@ GAMEID: 111222 \r
 END\r
 adfadfasdfaldfad">>
 ).
-
+%% View current games ----------------------------------
+-define(SAMPLE_GAMES_CURRENT(Session),
+<<"
+    asdfasdfasdfasdf
+    SEARCH
+    SESSION: " Session "
+    END
+    2563564565asdfa
+">>
+).
+%% Join game ------------------------------------------
 -define(SAMPLE_JOIN_GAME,
 <<"sddfaadfaff\r
 JOIN\r
@@ -184,7 +194,7 @@ END\r
 adfadfasdfaldfad">>
 ).
 
-% Dummyland is not a valid country
+% Dummyland is not a valid country --------------------
 -define(SAMPLE_JOIN_GAME_ERROR,
 <<"sddfaadfaff\r
 JOIN\r
@@ -195,6 +205,19 @@ COUNTRY: Dummyland
 \r
 END\r
 adfadfasdfaldfad">>
+).
+%% Game search ----------------------------------------
+-define(SAMPLE_GAME_SEARCH(Session),
+<<"
+    asdfasdfasdfasdf
+    SEARCH
+    SESSION: " Session "
+    GAMEID: 1234
+    GAMENAME: simple_game
+    WAITTIME: 1D
+    END
+    2563564565asdfa
+">>
 ).
 
 -define(SAMPLE_TEST_ORDERS1,

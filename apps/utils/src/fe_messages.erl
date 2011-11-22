@@ -154,7 +154,7 @@ get({game_order, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
-% off game messaging
+% Off game messaging
 get({user_msg, success}, MessageId) ->
     resp("Message was sent. Message ID is: \"~p\"~n", [MessageId]);
 get({user_msg, invalid_data}, Error) ->
@@ -196,6 +196,7 @@ get({game_search, invalid_data}, Error) ->
 % Invalid session
 get({_Cmd, invalid_session}, _Val) ->
     resp("Invalid user session. Please log in to continue.~n");
+
 % Command parse error
 get({Cmd, parse_error}, Error) ->
     case Error of
@@ -204,12 +205,15 @@ get({Cmd, parse_error}, Error) ->
                  "Required fields: ~p", [Cmd, FieldStrList]);
         {error,{invalid_input, _Val}} ->
             resp("Invalid input for the given command.~n");
+        {error,{empty_query, Val}} ->
+            resp("[~p] Please enter some search criteria.~n", [Val]);
         _ ->
             resp("The command [~p] could not be interpreted.~n", [Cmd])
     end;
 
-% push events
-% off game message
+
+% Push events
+% Off game message
 get(off_game_msg, Msg = #message{}) ->
     resp(date_to_str(Msg#message.date_created) ++ "~s:~n~s",
          [Msg#message.from_nick, Msg#message.content]);
@@ -234,7 +238,9 @@ get(unknown_command, _Val) ->
 get(game_overview, Val) ->
     game_overview(Val);
 get(games_current, Val) ->
-    games_current(Val).
+    get_games_in_textual_form(Val);
+get(game_search, Val) ->
+    get_games_in_textual_form(Val).
 
 
 %%-------------------------------------------------------------------
@@ -304,7 +310,7 @@ finished_game_overview({GameInfo, PlayerInfo, Game, FinalMap}) ->
     Msg4 = io_lib:format("~nFinal map:~n~s", [FinalMap]),
     lists:flatten(Msg1 ++ Msg2 ++ Msg3 ++ Msg4).
 
-%% Get current games in text format
-games_current(Games) ->
-    CurrentGames = data_format:games_current_to_text(Games),
+%% Get games in text format
+get_games_in_textual_form(Games) ->
+    CurrentGames = data_format:games_list_to_text(Games),
     lists:flatten(CurrentGames).

@@ -168,6 +168,20 @@ END").
 
 -define(GAME_MSG, "in game message for one country :-)").
 
+-define(GAME_VIEW_COMMAND(Session),
+"VIEWCURRENTGAMES
+SESSION: " ++ Session ++ "
+END").
+-define(GAME_SEARCH_COMMAND(Session, GameID),
+"SEARCH
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+END").
+-define(GAME_SEARCH_COMMAND_EMPTY_QUERY(Session),
+"SEARCH
+SESSION: " ++ Session ++ "
+END").
+
 %%------------------------------------------------------------------
 %% Responses
 %%------------------------------------------------------------------
@@ -188,17 +202,26 @@ Required fields: [\"SESSION\",\"GAMENAME\",\"PRESSTYPE\",\"ORDERCIRCLE\",
                   \"RETREATCIRCLE\",\"GAINLOSTCIRCLE\",\"WAITTIME\"]").
 -define(RESPONSE_COMMAND_UNKNOWN, "The provided command is unknown.
 Supported commands are:").
+
 -define(RECONFIG_RESPONSE_SUCCESS, "Game information was successfully updated.\n").
 -define(RECONFIG_RESPONSE_INVALID_DATA,"The game you are trying to reconfigure does not exist.\n").
+
 -define(JOIN_GAME_RESPONSE_SUCCESS,"Join game was successful.\n").
 -define(JOIN_GAME_RESPONSE_INVALID_DATA,"You have already joined this game.\n").
 
 -define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Unhandled error.").
 -define(GAME_OVERVIEW_RESPONSE_NOT_PLAY, "Only game players can view the gam").
 
+-define(GAME_VIEW_RESPONSE_SUCCESS, "Found 2 games:").
+-define(GAME_VIEW_RESPONSE_ERROR, "Invalid user session. Please log in to continue.\n").
+
+-define(GAME_SEARCH_RESPONSE_SUCCESS(GameID), "Found 1 games").
+-define(GAME_SEARCH_RESPONSE_ERROR, "[\"Error: Query was empty\"] Please enter some search criteria.").
+
 -define(GAME_ORDER_RESPONSE_SUCCESS, "Game order sent successfully:\n").
 -define(GAME_ORDER_RESPONSE_INVALID_INPUT, "Invalid input for the given command.\n").
 -define(GAME_ORDER_RESPONSE_INVALID_DATA,"You cannot send orders to a game you are not playing.\n").
+
 -define(SEND_OFF_GAME_MSG_RESPONSE_SUCCESS, "Message was sent. Message ID is: ").
 -define(SEND_OFF_GAME_MSG_RESPONSE_FAILED, "Error: The user does not exist.").
 -define(SEND_GAME_MSG_RESPONSE_SUCCESS, "Game Message was sent. Game ID is: ").
@@ -367,11 +390,30 @@ setup_session_instantiator() ->
       ?SEND_OFF_GAME_MSG(Session, "not_exisiting_user", "a message"),
       ?SEND_OFF_GAME_MSG_RESPONSE_FAILED,
       "game order successfully sent"},
+
      {Client,
        ?SEND_GAME_MSG(Session, GameID, "france", ?GAME_MSG),
        ?SEND_GAME_MSG_RESPONSE_NOT_ONGOING,
-       "send game message to a game which is not started"}
-    ].
+       "send game message to a game which is not started"},
+
+     {Client,
+      ?GAME_VIEW_COMMAND(Session),
+      ?GAME_VIEW_RESPONSE_SUCCESS,
+      "successful game view"},
+     {Client,
+      ?GAME_VIEW_COMMAND(InvalidSession),
+      ?GAME_VIEW_RESPONSE_ERROR,
+      "invalid session"},
+
+     {Client,
+      ?GAME_SEARCH_COMMAND(Session, GameID),
+      ?GAME_SEARCH_RESPONSE_SUCCESS(GameID),
+      "successful game search"},
+     {Client,
+      ?GAME_SEARCH_COMMAND_EMPTY_QUERY(Session),
+      ?GAME_SEARCH_RESPONSE_ERROR,
+      "query was empty"}].
+
 
 setup_two_user_instantiator() ->
     Password = "password",
@@ -433,7 +475,7 @@ offline_message_tst_() ->
     Nick2 = random_nick(),
 
     Msg = "Hello, this is an offline message!",
-    
+
     %% create user #2 and log him out:
     xmpp_client:start_link(Client2, Password),
     login_test_user (Client2, Nick2),
