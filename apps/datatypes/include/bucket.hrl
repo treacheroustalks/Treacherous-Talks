@@ -42,3 +42,5 @@
 -define(B_MESSAGE, <<"message">>).
 -define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
 -define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+
+-define(B_GAME_MESSAGE, <<"game_message">>).

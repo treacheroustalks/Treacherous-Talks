@@ -63,6 +63,12 @@
 %% {game_overview, Error} |
 %% {join_game, {ok, SessionId, {GameId, Country}} |
 %% {join_game, Error} |
+%% {user_msg, {ok, #frontend_msg{}}} |
+%% {user_msg, {error, {required_fields, list()}}} |
+%% {user_msg, {error, {invalid_input, list()}}} |
+%% {game_msg, {ok, #frontend_msg{}}} |
+%% {game_msg, {error, {required_fields, list()}}} |
+%% {game_msg, {error, {invalid_input, list()}}} |
 %% unknown_command]
 %% @end
 %%-------------------------------------------------------------------
@@ -115,7 +121,14 @@ parse(BinString, Client) when is_binary(BinString) ->
                 <<?JOIN>> ->
                     {join_game, user_commands:parse_join(Data)};
                 <<?MESSAGE>> ->
-                    {user_msg, user_commands:parse_user_msg(Data)}
+                    Pattern =  ?GAMEID,
+                    {ok, MP1} = re:compile(Pattern, [dotall]),
+                    case re:run(Data, MP1, [{capture, all_but_first, list}]) of
+                        {match, _} ->
+                            {game_msg, user_commands:parse_game_msg(Data)};
+                        nomatch ->
+                            {user_msg, user_commands:parse_user_msg(Data)}
+                    end
             end;
          nomatch ->
                 unknown_command

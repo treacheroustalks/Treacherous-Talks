@@ -34,10 +34,12 @@
           put_game_order/3,
           get_current_game/1,
           search/1, get_game_search/1,
-          get_games_current/1
+          get_games_current/1,
+          game_msg/2
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
+-include_lib ("datatypes/include/message.hrl").
 
 %% ------------------------------------------------------------------
 %% Internal Macro Definitions
@@ -204,3 +206,22 @@ get_games_current(UserID) ->
 %% ----------------------------------------------------------------------------
 get_game_search(Query) ->
     ?CALL_WORKER({get_game_search, Query}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%   Send in-game message to relevant players
+%% it could reply: ok |
+%%                 {error, game_phase_not_ongoing} |
+%%                 {error, user_not_playing_this_game}|
+%%                 {error, not_allowed_send_msg} |
+%%                 {error, any()}
+%%
+%% @end
+%% ----------------------------------------------------------------------------
+-spec game_msg(#game_message{}, list()) ->ok |
+                                          {error, game_phase_not_ongoing} |
+                                          {error, user_not_playing_this_game}|
+                                          {error, not_allowed_send_msg} |
+                                          {error, any()}.
+game_msg(Message= #game_message{}, ToCountries) ->
+    ?CALL_WORKER({game_msg, Message, ToCountries}).

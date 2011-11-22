@@ -48,7 +48,7 @@ parse_test_() ->
                         })),
      ?_test(check_parse(?SAMPLE_CREATE,
                         {create_game, {ok, ?SESSION_ID,
-                                       #game{name = "awesome_game", press = "white",
+                                       #game{name = "awesome_game", press = white,
                                              order_phase = 240, retreat_phase = 210,
                                              build_phase = 160, waiting_time = 3200,
                                              description = "",
@@ -75,7 +75,7 @@ reconfig_test_() ->
     Expected = {reconfig_game,{ok,?SESSION_ID, {
                                     111222,
                                     [{4,"awesome_game"},    % name
-                                     {7,"white"},
+                                     {7,white},
                                      {8,240},
                                      {9,210},
                                      {10,160},
@@ -110,7 +110,7 @@ user_msg_test_() ->
                    {ok,?SESSION_ID,
                        {frontend_msg,"nick",
                            "\n\n    A sample message to nick player which\n"
-                       "    contain several line\n    have fun\n\n    "}}},
+                       "    contain several line\n    have fun\n\n    ", undefined}}},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
@@ -131,4 +131,68 @@ wrong_session_user_msg_test_() ->
 
     [
         ?_assertEqual(Expected, ActualOutput)
+    ].
+
+game_msg_test_() ->
+    [
+     fun() ->
+              ?debugMsg("game message parsing with missed game id"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_GAME_MSG(?SESSION_ID, "dfgdf"), im),
+             Expected = {game_msg,{error, {invalid_input,
+                                  [?GAMEID]}}},
+
+             ?assertEqual(Expected, ActualOutput)
+     end,
+     fun() ->
+             ?debugMsg("correct game message parsing"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_GAME_MSG(?SESSION_ID, ?GAME_ID_VAL), im),
+             Expected = {game_msg,
+                         {ok,?SESSION_ID,
+                          {frontend_msg,[england],
+                           "\n\n    A sample message to nick player which\n"
+                               "    contain several line\n    have fun\n\n    ",
+                            list_to_integer(?GAME_ID_VAL)}}},
+
+             ?assertEqual(Expected, ActualOutput)
+     end,
+     fun() ->
+             ?debugMsg("game message field missing"),
+             ActualOutput = command_parser:parse(
+                          ?SAMPLE_GAME_MSG_WRONG(?SESSION_ID, ?GAME_ID_VAL), im),
+             Expected = {game_msg,{error, {required_fields,
+                                  [?CONTENT, ?SESSION, ?GAMEID]}}},
+
+             ?assertEqual(Expected, ActualOutput)
+     end,
+     fun() ->
+             ?debugMsg("correct game message parsing(send to 4 countries)"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_GAME_MSG_MULTICOUNTRY(?SESSION_ID,
+                                                            ?GAME_ID_VAL), im),
+             Expected = {game_msg,
+                         {ok,?SESSION_ID,
+                          {frontend_msg,[austria,russia,england,germany],
+                           "\n\n    A sample message to nick player which\n"
+                               "    contain several line\n    have fun\n\n    ",
+                            list_to_integer(?GAME_ID_VAL)}}},
+
+             ?assertEqual(Expected, ActualOutput)
+     end,
+     fun() ->
+             ?debugMsg("implicitly boradcast to all countries"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_GAME_MSG_NO_TO(?SESSION_ID,
+                                                            ?GAME_ID_VAL), im),
+             Expected = {game_msg,
+                         {ok,?SESSION_ID,
+                          {frontend_msg,[austria, england, france, germany,
+                                         italy, russia, turkey],
+                           "\n\n    A sample message to nick player which\n"
+                               "    contain several line\n    have fun\n\n    ",
+                            list_to_integer(?GAME_ID_VAL)}}},
+
+             ?assertEqual(Expected, ActualOutput)
+     end
     ].

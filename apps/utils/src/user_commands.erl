@@ -38,8 +38,9 @@
          parse_reconfig/1,
          parse_overview/1,
          parse_user_msg/1,
-         parse_join/1,
-         parse_games_current/1]).
+         parse_game_msg/1,
+         parse_games_current/1,
+         parse_join/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -47,13 +48,72 @@
 -include_lib("datatypes/include/message.hrl").
 -include_lib("datatypes/include/user.hrl").% -record(user,{})
 -include_lib("datatypes/include/game.hrl").% -record(game,{})
--include("include/records.hrl").% -record(reg_info,{})
 -include("include/command_parser.hrl").% User command keyword
+
+%%------------------------------------------------------------------------------
+%% @doc parse_game_msg/1
+%%
+%% Parses a game message string into a frontend message record.
+%%  Game id is mandetory in game message
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_game_msg(Data :: binary() ) ->
+          {ok, #frontend_msg{}} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_game_msg(Data) ->
+    RequiredFields = [?SESSION, ?GAMEID],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    ToCountriesStr = extract_msg_field_val(?TO":(.*)\n", Data, ungreedy),
+    ToCountriesStrList = case ToCountriesStr of
+                             field_missing -> broadcast;
+                             _ -> string:tokens(ToCountriesStr, " ,")
+                         end,
+    ToCountries = parse_to_countries(ToCountriesStrList),
+    Content = extract_msg_field_val(?CONTENT":(.*)", Data),
+    ReqValues2 = [Content| ReqValues],
+    RequiredFields2 = [?CONTENT, ?SESSION, ?GAMEID],
+
+    case lists:member(field_missing, ReqValues2) of
+        true ->
+            {error, {required_fields, RequiredFields2}};
+        false ->
+            [_,Session, GameID] = ReqValues2,
+            case get_error_list(ReqValues2,
+                                get_check_type(RequiredFields2),RequiredFields2) of
+                [] ->
+                    FrontendMsg = #frontend_msg{
+                                                to = ToCountries,
+                                                content = Content,
+                                                game_id = list_to_integer(GameID)
+                                               },
+                    {ok, Session, FrontendMsg};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+parse_to_countries(broadcast) -> % if there's no TO field, broadcast
+    [austria, england, france, germany, italy, russia, turkey];
+parse_to_countries(CountryStrList) ->
+    parse_to_countries(CountryStrList ,[]).
+parse_to_countries([], Acc) ->
+    Acc;
+parse_to_countries([H|Rest], Acc) ->
+    LowercasedH = string:to_lower(H),
+    Value = proplists:get_value(LowercasedH, ?COUNTRY_LOOKUP),
+    case Value of
+        undefined ->
+            parse_to_countries(Rest, Acc);
+        _ ->
+            parse_to_countries(Rest, [Value|Acc])
+    end.
 
 %%------------------------------------------------------------------------------
 %% @doc parse_user_msg/1
 %%
-%% Parses a user message string into a message record.
+%% Parses a user message string into a frontend message record.
 %%
 %% @end
 %%------------------------------------------------------------------------------
@@ -65,7 +125,7 @@ parse_user_msg(Data) ->
     RequiredFields = [?SESSION, ?TO],
     ReqValues = get_required_fields(RequiredFields, Data),
 
-    Content = extract_msg_content(?CONTENT ++ ":", Data),
+    Content = extract_msg_field_val(?CONTENT":(.*)", Data),
     ReqValues2 = [Content| ReqValues],
     RequiredFields2 = [?CONTENT, ?SESSION, ?TO],
 
@@ -137,7 +197,7 @@ parse_create(Data) ->
                                 merge_list(RequiredFields, OptionalFields)) of
                 [] ->
                     GameWithRequired = #game{
-                        name = Name, press = Press,
+                        name = Name, press = convert_to_press_atom(Press),
                         order_phase = parse_time_format(OrdPhase),
                         retreat_phase = parse_time_format(RetPhase),
                         build_phase = parse_time_format(BldPhase),
@@ -184,7 +244,7 @@ parse_reconfig(Data) ->
                 [] ->
                     {ok, Session,
                      {list_to_integer(GameIdStr),
-                      [{#game.name, Name}, {#game.press,  Press},
+                      [{#game.name, Name}, {#game.press, convert_to_press_atom(Press)},
                        {#game.order_phase, parse_time_format(OrdPhase)},
                        {#game.retreat_phase, parse_time_format(RetPhase)},
                        {#game.build_phase, parse_time_format(BldPhase)},
@@ -383,18 +443,21 @@ get_required_fields(Fields, Data) ->
 %%  extract the content of the message from input
 %% @end
 %%------------------------------------------------------------------------------
--spec extract_msg_content(string() , binary()) ->
+-spec extract_msg_field_val(string() , binary()) ->
           string() | field_missing.
-extract_msg_content(Field, BinString) ->
-    Commands =  Field ++ "(.*)",
-
-    {ok, MP} = re:compile(Commands, [dotall]),
+extract_msg_field_val(Commands, BinString) ->
+    extract_msg_field_val(Commands, BinString, [dotall]).
+extract_msg_field_val(Commands, BinString, ungreedy) ->
+    extract_msg_field_val(Commands, BinString, [dotall, ungreedy]);
+extract_msg_field_val(Commands, BinString, CompOpt) ->
+    {ok, MP} = re:compile(Commands, CompOpt),
     case re:run(BinString, MP, [{capture, all_but_first, list}]) of
         {match, [Content]} ->
             Content;
         nomatch ->
             field_missing
     end.
+
 %%------------------------------------------------------------------------------
 %% @doc convert time format string to minutes
 %%  Input:  "1D2H30M"
@@ -463,9 +526,11 @@ is_valid_value(FieldType, Value) ->
         password ->
             Check(valid_pattern, "^[\s-~]+$");
         channel ->
-            Check(valid_pattern, "\s*(mail|im|web)\s*");
+            Check(valid_pattern, "^\s*(mail|im|web)\s*$");
         duration_time ->
             Check(valid_pattern, "^([0-9]+D)*([0-9]+H)*([0-9]+M)*$");
+        press_type ->
+            Check(valid_pattern, "^\s*(white|grey|none)\s*$");
         any ->
             Check(valid_pattern, ".*")
     end.
@@ -526,7 +591,7 @@ get_check_type([H|Rest], AccCheckList) ->
         ?NUMBEROFPLAYERS -> [num_only|AccCheckList];
 
         ?GAMENAME -> [begin_with_alpha|AccCheckList];
-        ?PRESSTYPE -> [alpha_space_only|AccCheckList];
+        ?PRESSTYPE -> [press_type|AccCheckList];
         ?ORDERCIRCLE -> [duration_time|AccCheckList];
         ?RETREATCIRCLE -> [duration_time|AccCheckList];
         ?GAINLOSTCIRCLE -> [duration_time|AccCheckList];
@@ -553,3 +618,20 @@ get_check_type([H|Rest], AccCheckList) ->
 %%------------------------------------------------------------------------------
 merge_list(L1, L2) ->
     lists:foldl(fun(X, L) -> [X|L] end, L1, L2).
+
+%%------------------------------------------------------------------------------
+%% @doc convert press string to atom
+%%
+%% The input Str should be checked by is_valid_value/2(regexp) before it
+%% enters this function.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec convert_to_press_atom(string()) -> white | grey | none.
+convert_to_press_atom(Str) ->
+    Press = (catch list_to_existing_atom(Str)),
+    case Press of
+        white -> white;
+        grey -> grey;
+        _ -> none
+    end.

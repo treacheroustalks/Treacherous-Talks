@@ -58,6 +58,40 @@
 %%                 #support_move{...}],
 %%                [{error, ...},
 %%                 {error, ...}]}}
+%%
+%%  Valid Order Example: (case insensitive)
+%%
+%% ----the following unit types are equivalent----------------
+%%     A = Army
+%%     F = Fleet
+%%     A Lon->Nrg = Army Lon->Nrg
+%%
+%% ----the following move orders are equivalent----------------
+%%     A Lon->Nrg
+%%     A Lon-Nrg
+%%     A Lon m Nrg
+%%     A Lon move Nrg
+%%
+%% ---the following convoy orders are equivalent-----------------
+%%     F Nth C A Lon-Nrg
+%%     F Nth Convoy A Lon-Nrg
+%%
+%% ---the following hold orders are equivalent-----------------
+%%     A Bre H
+%%     A Bre Hold
+%%
+%% ---the following support orders are equivalent-----------------
+%%     F Fin S Bre
+%%     F Fin Support Bre
+%%
+%% ---the following remove orders are equivalent-----------------
+%%     Remove A mun
+%%     R A mun
+%%
+%% ---the following build orders are equivalent-----------------
+%%     Build A mun
+%%     B A mun
+%%
 %% @end
 %%------------------------------------------------------------------------------
 parse_orders (EmailBody) when is_binary(EmailBody) ->

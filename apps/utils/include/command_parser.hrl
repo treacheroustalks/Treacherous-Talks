@@ -70,3 +70,20 @@
 -define(MESSAGE, "MESSAGE").
 -define(CONTENT, "CONTENT").
 -define(TO, "TO").
+-define(VALID_PRESS, [white, grey, none]).
+-define(COUNTRY_LOOKUP,
+[{"austria", austria},
+ {"england", england},
+ {"france", france},
+ {"italy", italy},
+ {"russia", russia},
+ {"germany", germany},
+ {"turkey", turkey},
+ {"a", austria},
+ {"e", england},
+ {"f", france},
+ {"g", germany},
+ {"i", italy},
+ {"r", russia},
+ {"t", turkey}
+]).

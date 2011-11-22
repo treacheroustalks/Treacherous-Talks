@@ -80,6 +80,8 @@
 %%              join_game |
 %%              game_overview |
 %%              games_current |
+%%              user_msg |
+%%              game_msg |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data | invalid_session | error.
@@ -107,6 +109,9 @@
 %%                       invalid_nick]
 %% games_current ->     []
 %% game_search ->       []
+%% game_msg ->          [not_allowed_send_msg,
+%%                      game_does_not_exist,
+%%                      game_phase_not_ongoing]
 %%
 %% @end
 %%
@@ -139,7 +144,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == logout;
        Command == user_msg;
        Command == games_current;
-       Command == game_search ->
+       Command == game_search ;
+       Command == game_msg ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

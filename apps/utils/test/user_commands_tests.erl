@@ -31,7 +31,6 @@
 -include_lib("datatypes/include/user.hrl").% #user{}
 -include_lib("datatypes/include/game.hrl").% #game{}
 
--include("include/records.hrl").% -record(reg_info,{})
 -include("include/test_utils.hrl").% ?SAMPLE_EMAILS
 -include("include/command_parser.hrl").
 
@@ -70,7 +69,7 @@ parse_update_test_() ->
 
 parse_create_test_() ->
     ActualOutput = user_commands:parse_create(?SAMPLE_CREATE),
-    Expected = {ok, ?SESSION_ID, #game{name = "awesome_game", press = "white",
+    Expected = {ok, ?SESSION_ID, #game{name = "awesome_game", press = white,
                                   order_phase = 240, retreat_phase = 210,
                                   build_phase = 160, waiting_time = 3200,
                                   description = "",
@@ -227,7 +226,7 @@ parse_reconfig_test_() ->
             {ok, ?SESSION_ID,
              {111222,
               [{4,"awesome_game"},
-               {7,"white"},
+               {7,white},
                {8,240},
                {9,210},
                {10,160},
@@ -242,7 +241,7 @@ parse_reconfig_test_() ->
             {ok, ?SESSION_ID,
              {111222,
               [{4,"awesome_game"},
-               {7,"white"},
+               {7,white},
                {8,240},
                {9,field_missing},
                {10,field_missing},
