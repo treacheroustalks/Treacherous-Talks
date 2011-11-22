@@ -3,7 +3,7 @@ try:
     from selenium.common.exceptions import StaleElementReferenceException
     from selenium.webdriver.support.ui import WebDriverWait
 except:
-    print "WARNING: Selnium cannot be found by the Python script."
+    print "WARNING: Selenium cannot be found by the Python script."
     print "Aborting Selenium test run (but returning exit code 0)."
     import sys
     sys.exit(0)

@@ -89,8 +89,9 @@
 %%-------------------------------------------------------------------
 start(User=#user{}, Hist, PushReceiver = #push_receiver{}) ->
     {ok, Pid} = session_proc:start(User, Hist, PushReceiver),
-    session_id:from_pid(Pid).
-
+    SessId = session_id:from_pid(Pid),
+    deliver_offline_messages (SessId, User),
+    SessId.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -245,3 +246,28 @@ games_current(SessionId, _Data) ->
 game_search(SessionId, Query) ->
     ?SESSION_CALL(SessionId, game_search, Query).
 
+%% --------------------------------------------------------------------
+%% @doc
+%%  Delivers the messages that were sent to a user, after he has logged in
+%%  by calling {@link session:user_msg/2} <br/>
+%% <em>WARNINGS</em>:<br/>
+%%  <ol>
+%%   <li>assumes an existing user session process</li>
+%%   <li>sends everything as `off_game_msg' since `on_game_msg's are not
+%%       supported yet</li>
+%%  </ol>
+%% @end
+%% --------------------------------------------------------------------
+-spec deliver_offline_messages (NewSessionId :: list (), User :: #user{}) ->
+                                       ok | {error, Reason :: any ()}.
+deliver_offline_messages (NewSessionId, User) ->
+    {ok, Messages} = message:unread (User#user.id),
+    lists:foreach (fun (Msg) ->
+                           session:push_event(
+                             NewSessionId,
+                             #push_event{type = off_game_msg, data = Msg}),
+                           message:mark_as_read (Msg#message.id)
+                   end,
+                   Messages),
+    
+    Messages.

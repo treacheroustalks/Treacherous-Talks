@@ -1,4 +1,4 @@
-%%%-------------------------------------------------------------------
+%%-------------------------------------------------------------------
 %%% @copyright
 %%% Copyright (C) 2011 by Bermuda Triangle
 %%%
@@ -24,6 +24,7 @@
 %%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
 %%%
 %%% @doc Unit tests for updating user
+%%% @todo Rahim: Description: Unit tests? huh?
 %%% @end
 %%%
 %%% @since : 15 Nov 2011 by Bermuda Triangle

@@ -35,10 +35,11 @@
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/message.hrl").
+-include_lib("datatypes/include/push_receiver.hrl").
 
 
 apps () ->
-    [datatypes, service, protobuffs, riakc, db, message].
+    [datatypes, service, protobuffs, riakc, db, controller_app, message].
 
 app_started_setup () ->
     ?debugMsg ("starting apps:"),
@@ -227,7 +228,7 @@ unread_tst_() ->
                db:delete(?B_MESSAGE, db:int_to_bin(Key)),
                ?assertEqual({error, notfound}, message:mark_as_read(Key))
        end}
-     ]}.
+    ]}.
 
 
 get_DB_obj(Bucket, Key) ->

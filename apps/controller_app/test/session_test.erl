@@ -39,7 +39,7 @@
 
 %% startup
 apps() ->
-    [protobuffs, riakc, db].
+    [message, protobuffs, riakc, db].
 
 app_start() ->
     [ ?assertEqual(ok, application:start(App)) || App <- apps()],
