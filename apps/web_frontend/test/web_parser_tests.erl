@@ -41,6 +41,8 @@
 parser_test_() ->
     {inorder,
      [
+      fun parse_countries_str/0,
+      fun game_msg/0,
       fun user_msg/0,
       fun login/0,
       fun register/0,
@@ -108,7 +110,25 @@ user_msg() ->
     ?assertEqual (user_msg_exp_data(),
                   web_parser:parse(user_msg_data())).
 
+game_msg() ->
+    ?assertEqual (game_msg_exp_data(),
+                  web_parser:parse(game_msg_data())).
+
+parse_countries_str() ->
+    ?assertEqual ([england, germany, france],
+                  web_parser:parse_countries_str({array,["england",
+                                                         "germany",
+                                                         "france"]})).
+
 %% Expected data
+
+game_msg_exp_data() ->
+    {game_msg,
+     {ok,
+      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+      #frontend_msg{game_id = 1234,
+                    to = [england,germany],
+                    content = "hi!"}}}.
 
 user_msg_exp_data() ->
     {user_msg,
@@ -143,7 +163,7 @@ create_game_exp_data() ->
       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
       #game{name = "War of the world",
             description = "",
-            press = "grey",
+            press = grey,
             password = "hunter2",
             order_phase = 10,
             retreat_phase = 10,
@@ -165,7 +185,7 @@ reconfig_game_exp_data() ->
       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
       {654321,
       [{#game.name, "War of worlds"},
-       {#game.press,  "white"},
+       {#game.press,  white},
        {#game.order_phase, 120},
        {#game.retreat_phase, 240},
        {#game.build_phase, 360},
@@ -209,6 +229,18 @@ game_search_exp_data() ->
                   "num_players=7"}}.
 
 %% Input data
+
+game_msg_data() ->
+    {ok, {struct,
+      [{"action", "game_msg"},
+       {"data",
+        {array,
+         [{struct,[{"session_id",
+                    "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+          {struct, [{"to", {array,
+                            ["england", "germany"]}}]},
+          {struct, [{"game_id", "1234"}]},
+          {struct, [{"content", "hi!"}]}]}}]}}.
 
 user_msg_data() ->
     {ok, {struct,
