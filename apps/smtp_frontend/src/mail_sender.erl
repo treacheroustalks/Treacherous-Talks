@@ -86,12 +86,11 @@ handle_cast(_Msg, State) ->
 %% @end
 %%------------------------------------------------------------------------------
 handle_info({push, [ServerAddr, UserAddr],
-     _Event = #push_event{type = Type, data =Data}}, State)->
-    [_, ToHost] = string:tokens(UserAddr, "@"),
+     _Event = #push_event{type = _Type, data =Data}}, State)->
 
     ?DEBUG("mail_sender####~p ~p~n", ["handle_info", _Event]),
-    smtp_output:send_mail(ServerAddr, UserAddr, ToHost,
-                           fe_message:get(Type, Data)),
+    smtp_output:send_mail(ServerAddr, UserAddr,
+                           fe_messages:get(off_game_msg, Data)),
     {noreply, State};
 handle_info(Info, State) ->
     io:format(user, "[mail_sender] unhandeled message ~n~p~n", [Info]),

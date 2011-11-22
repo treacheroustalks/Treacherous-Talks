@@ -36,7 +36,7 @@
 -include_lib("utils/include/command_parser.hrl").
 
 % controller callback
--export([reply/3]).
+-export([reply/3, send_mail/3]).
 
 -define(SUPPORTED_COMMANDS,
         "REGISTER, LOGIN, UPDATE, CREATE, JOIN, OVERVIEW, VIEWCURRENTGAMES").
@@ -53,6 +53,29 @@
 reply([From, To], Result, Data) ->
     % Note: From and To are interchanged when sending the mail
     send_mail(To, From, get_reply(Result, Data)).
+
+
+%% Send mail to specified user
+-spec send_mail(string(), string(), string()) -> ok.
+send_mail(From, To, Body) ->
+    Mail = lists:flatten(io_lib:format("From: ~s\r\n"
+                                       "To: ~s\r\n"
+                                       "Subject: Treacherous Talks\r\n\r\n"
+                                       "~s",
+                                       [From, To, Body])),
+    io:format("[SMTP][From: ~p][To: ~p]~n~s", [From, To, Mail]),
+    RelayHost = case application:get_env(relay_host) of
+        {ok, Host} ->
+            Host;
+        undefined ->
+            "mail.pcs"  %slightly better form of hardcoding - can be set in app config.
+    end,
+    SendResult = gen_smtp_client:send({From, [To], Mail},
+                                      [{relay, RelayHost},
+                                       {port,25},
+                                       {tls, never}]),
+    io:format("Send result was ~p~n", [SendResult]).
+
 
 %%-------------------------------------------------------------------
 %% Internal functions
@@ -72,23 +95,3 @@ get_reply(unknown_command, Data) ->
     fe_messages:resp(Msg ++ "Supported commands are:~n" ++ ?SUPPORTED_COMMANDS);
 get_reply(Result, Data) ->
     fe_messages:get(Result, Data).
-
-%% Send mail to specified user
-send_mail(From, To, Body) ->
-    Mail = lists:flatten(io_lib:format("From: ~s\r\n"
-                                       "To: ~s\r\n"
-                                       "Subject: Treacherous Talks\r\n\r\n"
-                                       "~s",
-                                       [From, To, Body])),
-    io:format("[SMTP][From: ~p][To: ~p]~n~s", [From, To, Mail]),
-    RelayHost = case application:get_env(relay_host) of
-        {ok, Host} ->
-            Host;
-        undefined ->
-            "mail.pcs"  %slightly better form of hardcoding - can be set in app config.
-    end,
-    SendResult = gen_smtp_client:send({From, [To], Mail},
-                                      [{relay, RelayHost},
-                                       {port,25},
-                                       {tls, never}]),
-    io:format("Send result was ~p~n", [SendResult]).

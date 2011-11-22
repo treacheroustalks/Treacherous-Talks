@@ -34,9 +34,11 @@
 
 -module(imap_client).
 
--export([read_first/1, empty_mailbox/1]).
+-export([read_nth/2, empty_mailbox/1]).
 
-%% Read mail number 1 in the main mailbox of Username
+-include_lib("eunit/include/eunit.hrl").
+
+%% Read mail number N in the main mailbox of Username
 %%
 %% email() -> string()    e.g. test@dilshod.pcs
 %% username() -> email()
@@ -44,13 +46,13 @@
 %% to() -> "To: " ++ email()
 %% subject() -> "Subject: ..."
 %% read_first(username()) -> {ok, {from(), to(), subject(), body()}}
-%%
-read_first(Username) ->
-%    debug(Username),
+%% N >= 1
+read_nth(Username, N) ->
+%    ?debugVal({Username, N}),
     {ok, Sock} = connect("mail.pcs"),
     login(Sock, Username, "password"),
     select(Sock),
-    case read_one(Sock, 1, 5) of
+    case read_one(Sock, N, 5) of
         {ok, FirstMail} ->
             Return = {ok, FirstMail};
         Error ->
@@ -118,6 +120,7 @@ select(Sock) ->
 
 
 fetch(Sock, Args) ->
+%?debugVal(Args),
     ok = gen_tcp:send(Sock, ". fetch " ++ Args ++ "\r\n"),
     {ok, Packet} = recv(Sock),
     case Packet of
@@ -126,8 +129,8 @@ fetch(Sock, Args) ->
         _ ->
             Response = binary_to_list(Packet),
             Lines = string:tokens(Response, "\n"),
-            Result = lists:nth(2,Lines),
-            Trimmed = string:substr(Result, 1, string:str(Result, "\r")-1),
+            Result = lists:flatten(lists:sublist(Lines, 2, length(Lines)-4)),
+            Trimmed = re:replace(Result, "\r", "", [global ,{return, list}]),
             {ok, Trimmed}
     end.
 
@@ -147,7 +150,3 @@ delete_all(Sock) ->
 
 recv(Sock) ->
     gen_tcp:recv(Sock, 0, 5000).
-
-
-%debug(Val) ->
-%    io:format("~p~n", [Val]).
