@@ -106,6 +106,12 @@ handle_call(_Request, _From, State) ->
     io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
+handle_cast({game_msg, GMsg = #game_message{}}, State) ->
+    {ok, _ID} =log_game_msg(undefined, GMsg),
+    Event = #push_event{type = in_game_msg, data = GMsg},
+    controller:push_event(GMsg#game_message.to_id, Event),
+    {noreply, State};
+
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
@@ -124,10 +130,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-log_user_msg(undefined, Msg) ->
+log_user_msg(undefined, Msg = #message{}) ->
     ID = db:get_unique_id(),
     log_user_msg(ID, Msg#message{id = ID});
-log_user_msg(ID, Msg) ->
+log_user_msg(ID, Msg = #message{}) ->
     BinID = db:int_to_bin(ID),
     MsgPropList = data_format:rec_to_plist(Msg),
     DbObj = db_obj:create(?B_MESSAGE, BinID, MsgPropList),
@@ -165,3 +171,12 @@ do_mark_as_read(MessageId) ->
         {error, notfound} ->
             {error, notfound}
     end.
+
+log_game_msg(undefined, GMsg = #game_message{}) ->
+    ID = db:get_unique_id(),
+    log_game_msg(ID, GMsg#game_message{id = ID});
+log_game_msg(ID, GMsg = #game_message{}) ->
+    BinID = db:int_to_bin(ID),
+    DbObj = db_obj:create(?B_GAME_MESSAGE, BinID, GMsg),
+    db:put(DbObj),
+    {ok, ID}.

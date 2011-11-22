@@ -24,7 +24,7 @@
 %%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
 %%%
 %%% @doc Defines how to push messages to different frontends.
-%%% 
+%%%
 %%%
 %%% @since : 17 Nov 2011 by Bermuda Triangle
 %%% @end
@@ -34,18 +34,19 @@
 -export([send/4]).
 
 -include_lib("datatypes/include/push_event.hrl").
+-include_lib("utils/include/debug.hrl").
 
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Sends a push_event to a frontend. for web and mail the general 
+%% Sends a push_event to a frontend. for web and mail the general
 %% case is sufficient, but for im it needs to be converted to an xml
 %% message.
 %%
 %% @spec send(Type::atom(),
 %%            Args::list(),
 %%            Pid::pid(),
-%%            Event::#push_event{}) -> 
+%%            Event::#push_event{}) ->
 %%         ok | {error, {not_a_push_event, any()}}
 %% @end
 %%-------------------------------------------------------------------
@@ -53,6 +54,7 @@ send(im, [Server, ImUser], Pid, Event = #push_event{}) ->
     Msg = xml_message:prepare(Server, ImUser, "chat",
                               fe_messages:get(Event#push_event.type,
                                               Event#push_event.data)),
+    ?DEBUG("~p~n", [Msg]),
     Pid ! {route, Server, ImUser, Msg},
     ok;
 send(_Type, Args, Pid, Event = #push_event{}) ->

@@ -167,6 +167,20 @@ get({user_msg, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
+get({game_msg, success}, GameId) ->
+    resp("Game Message was sent. Game ID is: \"~p\"~n", [GameId]);
+get({game_msg, invalid_data}, Error) ->
+    case Error of
+        not_allowed_send_msg ->
+            resp("Error:You are not allowed to send message in no press games! ~n");
+        game_does_not_exist ->
+            resp("Error: The game does not exist.~n");
+        game_phase_not_ongoing ->
+            resp("Error: The game is not active means. the game is not ongoing");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
+
 % Games current
 get({games_current, success}, Games) ->
     resp("Found ~p games:~n~n", [length(Games)]);
@@ -196,12 +210,17 @@ get({Cmd, parse_error}, Error) ->
 
 % push events
 % off game message
-get(off_game_msg, Msg) ->
-    {{Year, Month, Day}, {H, M, S}} = calendar:universal_time_to_local_time(
-                                        Msg#message.date_created),
-    resp("<~p/~p/~p ~p:~p:~p> ~s:~n~s", [Year, Month, Day, H, M, S,
-                                           Msg#message.from_nick,
-                                           Msg#message.content]);
+get(off_game_msg, Msg = #message{}) ->
+    resp(date_to_str(Msg#message.date_created) ++ "~s:~n~s",
+         [Msg#message.from_nick, Msg#message.content]);
+
+%in game message
+get(in_game_msg, GMsg =#game_message{}) ->
+    MM = resp(date_to_str(GMsg#game_message.date_created) ++
+             "Game:~p~nCountry:~p,~n ~s",
+         [GMsg#game_message.game_id,GMsg#game_message.from_country,
+          GMsg#game_message.content]),
+    MM;
 
 % Unimplemented command
 get({Cmd, _Status}, _Val) ->
@@ -218,6 +237,16 @@ get(games_current, Val) ->
     games_current(Val).
 
 
+%%-------------------------------------------------------------------
+%% @doc date_to_str/2
+%%
+%% convert erlang date to string
+%% @end
+%% [@spec get( date ) @end]
+%%-------------------------------------------------------------------
+date_to_str(Date) ->
+    {{Year, Month, Day}, {H, M, S}} = calendar:universal_time_to_local_time(Date),
+    io_lib:format("<~p/~p/~p ~p:~p:~p> ", [Year, Month, Day, H, M, S]).
 %%-------------------------------------------------------------------
 %% @doc resp/2
 %%

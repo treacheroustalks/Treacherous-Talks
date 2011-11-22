@@ -34,7 +34,8 @@
 
 -export ([user_msg/1,
           unread/1,
-          mark_as_read/1
+          mark_as_read/1,
+          game_msg/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -83,3 +84,12 @@ unread(UserId) ->
 -spec message:mark_as_read(MessageId :: integer()) -> ok | {error, notfound}.
 mark_as_read(MessageId) ->
     ?CALL_WORKER({mark_as_read, MessageId}).
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  get a record of game message and log the message and send it to users
+%% @end
+%% -----------------------------------------------------------------------------
+-spec game_msg(#game_message{}) -> ok.
+game_msg(GMsg = #game_message{}) ->
+    ?CAST_WORKER({game_msg, GMsg}).
+

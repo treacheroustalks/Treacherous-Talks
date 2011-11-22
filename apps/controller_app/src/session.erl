@@ -55,6 +55,7 @@
          join_game/2,
          game_order/2,
          user_msg/2,
+         game_msg/2,
          push_event/2,
          games_current/2,
          game_search/2
@@ -204,13 +205,23 @@ game_order(SessionId, Data = {_GameId, _OrderList}) ->
     ?SESSION_CALL(SessionId, game_order, Data).
 
 %%-------------------------------------------------------------------
-%% @doc game_order/2
-%% API for sending message
+%% @doc user_msg/2
+%% API for sending user message
 %%
 %% @end
 %%-------------------------------------------------------------------
 user_msg(SessionId, FEMsg = #frontend_msg{}) ->
     ?SESSION_CALL(SessionId, user_msg, FEMsg).
+
+
+%%-------------------------------------------------------------------
+%% @doc game_msg/2
+%% API for sending game message
+%%
+%% @end
+%%-------------------------------------------------------------------
+game_msg(SessionId, FEMsg = #frontend_msg{}) ->
+    ?SESSION_CALL(SessionId, game_msg, FEMsg).
 
 %%-------------------------------------------------------------------
 %% @doc push_event/2

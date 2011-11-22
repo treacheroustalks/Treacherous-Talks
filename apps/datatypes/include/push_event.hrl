@@ -24,7 +24,7 @@
 -ifndef(PUSH_EVENT).
 -define(PUSH_EVENT, true).
 
--record (push_event, {type :: atom(),
+-record (push_event, {type :: off_game_msg | in_game_msg,
                       data :: any()}).
 
 -endif.

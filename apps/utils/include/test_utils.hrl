@@ -22,6 +22,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -define(SESSION_ID, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==").
+-define(GAME_ID_VAL, "11112222").
 
 -define(SAMPLE_REGISTER,
 <<"sddfaadfaff\r
@@ -317,6 +318,79 @@ adfadfasdfaldfad">>
 
     SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
     TO: nick
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_GAME_MSG(Session, GameID),
+<<"
+    asdfasdfasdfasdf
+    MESSAGE
+
+    SESSION: " Session "
+    TO: england
+    GAMEID: " GameID "
+    CONTENT:
+
+    A sample message to nick player which
+    contain several line
+    have fun
+
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_GAME_MSG_WRONG(Session, GameID),
+<<"
+    asdfasdfasdfasdf
+    MESSAGE
+
+    TO: england
+    GAMEID: " GameID "
+    CONTENT:
+
+    A sample message to nick player which
+    contain several line
+    have fun
+
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_GAME_MSG_MULTICOUNTRY(Session, GameID),
+<<"
+    asdfasdfasdfasdf
+    MESSAGE
+
+    SESSION: " Session "
+    TO: germany england russia austria
+    GAMEID: " GameID "
+    CONTENT:
+
+    A sample message to nick player which
+    contain several line
+    have fun
+
+    END
+    2563564565asdfa
+">>
+).
+-define(SAMPLE_GAME_MSG_NO_TO(Session, GameID),
+<<"
+    asdfasdfasdfasdf
+    MESSAGE
+
+    SESSION: " Session "
+    GAMEID: " GameID "
+    CONTENT:
+
+    A sample message to nick player which
+    contain several line
+    have fun
+
     END
     2563564565asdfa
 ">>

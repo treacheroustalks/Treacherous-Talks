@@ -83,15 +83,15 @@ PASSWORD: pass
 FULLNAME: Full Nameeee
 EMAIL: ath@sth
 END").
--define(CREATE_COMMAND_CORRECT(Session),
+-define(CREATE_COMMAND_CORRECT(Session, Press, Waittime),
 "CREATE
 SESSION: " ++ Session ++ "
 GAMENAME: bob
-PRESSTYPE: none
+PRESSTYPE: " ++ Press ++"
 ORDERCIRCLE: 1D
 RETREATCIRCLE: 1D
 GAINLOSTCIRCLE: 1D
-WAITTIME: 1D
+WAITTIME: " ++ Waittime ++"
 END").
 -define(CREATE_COMMAND_MISSING_FIELDS(Session),
 "CREATE
@@ -104,14 +104,14 @@ END").
 "RECONFIG
 SESSION: " ++ Session ++ "
 GAMEID: " ++ GameID ++ "
-PRESSTYPE: none
+PRESSTYPE: grey
 ORDERCIRCLE: 2D
 END").
--define(JOIN_GAME_COMMAND(Session, GameID),
+-define(JOIN_GAME_COMMAND(Session, GameID, Country),
 "JOIN
 SESSION: " ++ Session ++ "
 GAMEID: " ++ GameID ++ "
-COUNTRY: england
+COUNTRY: " ++ Country ++ "
 END").
 -define(GAME_OVERVIEW_COMMAND(Session, GameID),
 "OVERVIEW
@@ -157,6 +157,17 @@ SESSION: " ++ Session ++ "
 TO: " ++ ToNick ++ "
 CONTENT:" ++ Msg ++ "
 END").
+
+-define(SEND_GAME_MSG(Session, GameID, ToCountry, Msg),
+"MESSAGE
+SESSION: " ++ Session ++ "
+GAMEID: " ++ GameID ++ "
+TO: " ++ ToCountry ++ "
+CONTENT:" ++ Msg ++ "
+END").
+
+-define(GAME_MSG, "in game message for one country :-)").
+
 %%------------------------------------------------------------------
 %% Responses
 %%------------------------------------------------------------------
@@ -190,6 +201,8 @@ Supported commands are:").
 -define(GAME_ORDER_RESPONSE_INVALID_DATA,"You cannot send orders to a game you are not playing.\n").
 -define(SEND_OFF_GAME_MSG_RESPONSE_SUCCESS, "Message was sent. Message ID is: ").
 -define(SEND_OFF_GAME_MSG_RESPONSE_FAILED, "Error: The user does not exist.").
+-define(SEND_GAME_MSG_RESPONSE_SUCCESS, "Game Message was sent. Game ID is: ").
+-define(SEND_GAME_MSG_RESPONSE_NOT_ONGOING, "Error: The game is not active means. the game is not ongoing").
 %%-------------------------------------------------------------------
 %% @doc
 %%-------------------------------------------------------------------
@@ -243,27 +256,27 @@ setup_reg_login_instantiator() ->
     xmpp_client:start_link(Client, Password),
     Nick = random_nick(),
     [[Client],
-     {Client, 
+     {Client,
       ?REGISTER_COMMAND_CORRECT(Nick),
       ?REG_RESPONSE_SUCCESS,
       "valid registration attempt"},
-     {Client, 
+     {Client,
       "REGISTER fdg END",
       ?REG_RESPONSE_BAD_SYNTAX,
       "register command with missing fields"},
-     {Client, 
+     {Client,
       "register me",
       ?RESPONSE_COMMAND_UNKNOWN,
       "request matching no command"},
-     {Client, 
+     {Client,
       ?LOGIN_COMMAND_CORRECT(Nick),
       ?LOGIN_RESPONSE_SUCCESS,
       "valid login attempt"},
-     {Client, 
+     {Client,
       ?LOGIN_COMMAND_BAD_PASSWORD(Nick),
       "Invalid login data.\n",
       "login request with invalid password"},
-     {Client, 
+     {Client,
       ?LOGIN_COMMAND_BAD_NICK,
       "Invalid login data.\n",
       "login request with invalid nickname"}].
@@ -276,82 +289,88 @@ setup_session_instantiator() ->
     ?debugVal(Session),
     InvalidSession = "dGVzdA==",
 
-    Game = xmpp_client:xmpp_call(Client, ?SERVICE_BOT, ?CREATE_COMMAND_CORRECT(Session)),
+    Game = xmpp_client:xmpp_call(Client, ?SERVICE_BOT,
+                               ?CREATE_COMMAND_CORRECT(Session, "white", "1M")),
     ?debugVal(Game),
     {match, [GameID]} = re:run(Game,
                                 ?CREATE_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
                                 [{capture, all_but_first, list}]),
     ?debugVal(GameID),
+
     [[Client],
-     {Client, 
+     {Client,
       ?GAME_ORDER_COMMAND(Session, GameID),
        ?GAME_ORDER_RESPONSE_INVALID_DATA,
       "game order invalid data"},
-     {Client, 
+     {Client,
       ?GAME_ORDER_COMMAND_WRONG(Session, GameID),
        ?GAME_ORDER_RESPONSE_INVALID_INPUT,
        "game order invalid input"},
 
-     {Client, 
+     {Client,
       ?UPDATE_COMMAND_CORRECT(Session),
       ?UPD_RESPONSE_SUCCESS,
       "valid update attempt"},
-     {Client, 
+     {Client,
       ?UPDATE_COMMAND_CORRECT(InvalidSession),
       ?UPD_RESPONSE_SESSION_ERROR,
       "update attempt with invalid session"},
-     {Client, 
+     {Client,
       ?UPDATE_COMMAND_MISSING_FIELD(Session),
       ?UPD_RESPONSE_BAD_SYNTAX,
       "update command with missing fields"},
-     {Client, 
-      ?CREATE_COMMAND_CORRECT(Session),
+     {Client,
+      ?CREATE_COMMAND_CORRECT(Session, "white", "1M"),
       ?CREATE_RESPONSE_SUCCESS,
       "valid create command"},
-     {Client, 
-      ?CREATE_COMMAND_CORRECT(InvalidSession),
+     {Client,
+      ?CREATE_COMMAND_CORRECT(InvalidSession, "white", "1M"),
       ?CREATE_RESPONSE_SESSION_ERROR,
       "create attempt with invalid session"},
-     {Client, 
+     {Client,
       ?CREATE_COMMAND_MISSING_FIELDS(Session),
       ?CREATE_RESPONSE_BAD_SYNTAX,
       "create command with missing fields"},
 
-     {Client, 
+     {Client,
       ?RECONFIG_COMMAND(Session, GameID),
       ?RECONFIG_RESPONSE_SUCCESS,
       "successful reconfig game"},
-     {Client, 
+     {Client,
       ?RECONFIG_COMMAND(Session, "1111222"),
       ?RECONFIG_RESPONSE_INVALID_DATA,
       "invalid reconfig game data"},
 
-     {Client, 
+     {Client,
       ?GAME_OVERVIEW_COMMAND(Session, GameID),
       ?GAME_OVERVIEW_RESPONSE_NOT_PLAY,
       "game overview not play this game"},
 
-     {Client, 
-      ?JOIN_GAME_COMMAND(Session, GameID),
+     {Client,
+      ?JOIN_GAME_COMMAND(Session, GameID, "england"),
       ?JOIN_GAME_RESPONSE_SUCCESS,
       "successful join game"},
-     {Client, 
-      ?JOIN_GAME_COMMAND(Session, GameID),
+     {Client,
+      ?JOIN_GAME_COMMAND(Session, GameID, "england"),
       ?JOIN_GAME_RESPONSE_INVALID_DATA,
       "invalid join game data"},
-     {Client, 
+     {Client,
       ?GAME_OVERVIEW_COMMAND(Session, GameID),
       ?GAME_OVERVIEW_RESPONSE_SUCCESS,
       "successful game overview"},
 
-     {Client, 
+     {Client,
       ?GAME_ORDER_COMMAND(Session, GameID),
       ?GAME_ORDER_RESPONSE_SUCCESS,
       "game order successfully sent"},
-     {Client, 
+     {Client,
       ?SEND_OFF_GAME_MSG(Session, "not_exisiting_user", "a message"),
       ?SEND_OFF_GAME_MSG_RESPONSE_FAILED,
-      "game order successfully sent"}
+      "game order successfully sent"},
+     {Client,
+       ?SEND_GAME_MSG(Session, GameID, "france", ?GAME_MSG),
+       ?SEND_GAME_MSG_RESPONSE_NOT_ONGOING,
+       "send game message to a game which is not started"}
     ].
 
 setup_two_user_instantiator() ->
@@ -362,18 +381,47 @@ setup_two_user_instantiator() ->
 
     Client2 = user2_test_client,
     xmpp_client:start_link(Client2, Password),
-    {_Session2, Nick2} = login_test_user(Client2),
+    {Session2, Nick2} = login_test_user(Client2),
+
+    GameID1 = create_game(Client1, Session1, "white", "1M"),
+    GameID2 = create_game(Client1, Session1, "grey", "1M"),
+
+    join_game(Client1, Session1, GameID1, "england"),
+    join_game(Client2, Session2, GameID1, "france"),
+
+    join_game(Client1, Session1, GameID2, "england"),
+    join_game(Client2, Session2, GameID2, "france"),
+
+    net_kernel:start([test]),
+    erlang:set_cookie(node(), 'treacherous_talks'),
+    ?debugVal(net_adm:ping('backend@127.0.0.1')),
+    ?debugVal(rpc:call('backend@127.0.0.1',game_timer,sync_event,[list_to_integer(GameID1), timeout])),
+    rpc:call('backend@127.0.0.1',game_timer,sync_event,[list_to_integer(GameID2), timeout]),
 
     Msg = "Hello, this is a message! :)",
 
     [[Client1, Client2],
-     {{Client1, 
+     {{Client1,
        ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg),
        ?SEND_OFF_GAME_MSG_RESPONSE_SUCCESS},
       {Client2,
        ".* \(" ++ Nick1 ++ "\):\n\(.*\)\n",
        [[Nick1, Msg]]},
-      "successful off game message sending"}
+      "successful off game message sending"},
+    {{Client1,
+       ?SEND_GAME_MSG(Session1, GameID1, "france", ?GAME_MSG),
+       ?SEND_GAME_MSG_RESPONSE_SUCCESS},
+      {Client2,
+       "\s*\(" ++ GameID1 ++ "\)\s*\nCountry.*,\n (.*\)\n",
+       [[GameID1, ?GAME_MSG]]},
+      "successful game message sending when press type is white"},
+     {{Client1,
+       ?SEND_GAME_MSG(Session1, GameID2, "france", ?GAME_MSG),
+       ?SEND_GAME_MSG_RESPONSE_SUCCESS},
+      {Client2,
+       "\s*\(" ++ GameID2 ++ "\)\s*\nCountry:unknown.*,\n (.*\)\n",
+       [[GameID2, ?GAME_MSG]]},
+      "successful game message sending when press type is grey"}
     ].
 
 offline_message_tst_() ->
@@ -533,3 +581,15 @@ login_test_user(Client, Nick) ->
                                 ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
                                 [{capture, all_but_first, list}]),
     {Session, Nick}.
+
+join_game(Client, Session,GameID, Country) ->
+    Request = ?JOIN_GAME_COMMAND(Session, GameID, Country),
+    _Response = xmpp_client:xmpp_call(Client, ?SERVICE_BOT, Request).
+
+create_game(Client, Session, Press, Waittime) ->
+    Game = xmpp_client:xmpp_call(Client, ?SERVICE_BOT,
+                                 ?CREATE_COMMAND_CORRECT(Session, Press, Waittime)),
+    {match, [GameID]} = re:run(Game,
+                                ?CREATE_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
+                                [{capture, all_but_first, list}]),
+    GameID.

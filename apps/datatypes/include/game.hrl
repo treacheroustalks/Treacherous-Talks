@@ -26,7 +26,7 @@
 
 -include_lib("datatypes/include/date.hrl").
 
--type press () :: any ().
+-type press () :: white | grey | none.
 -type password () :: string () | undefined.
 -type country () :: england |
                     germany |
@@ -67,8 +67,7 @@
 
 -record (game_user, {
     id :: integer (),
-    country :: country (),
-    last_game_order_id :: integer()}).
+    country :: country ()}).
 
 -record (game_player, {
     id :: integer (),
