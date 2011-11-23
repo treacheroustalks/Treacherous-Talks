@@ -36,10 +36,11 @@
 %% ------------------------------------------------------------------
 -export([
          init/0,
-         add/2,
+         add/3,
          remove/1,
          is_online/1,
          get_session_id/1,
+         get_all_by_type/1,
          get_all/0
         ]).
 
@@ -48,7 +49,8 @@
 %% ------------------------------------------------------------------
 -define(TABLE, session).
 -record(session, {user_id :: integer(),
-                  session_id :: string()
+                  session_id :: string(),
+                  client_type :: im | mail | web
                  }).
 
 %% ------------------------------------------------------------------
@@ -80,14 +82,16 @@ init() ->
 %% @doc
 %% Adds a user to the session presence.
 %%
-%% @spec add(UserId::integer(), SessionId::string()) ->
+%% @spec add(UserId::integer(), SessionId::string(),
+%%           ClientType::im | mail | web) ->
 %%           ok | {error, Reason}
 %% @end
 %%-------------------------------------------------------------------
-add(UserId, SessionId) ->
+add(UserId, SessionId, ClientType) ->
     AddFun = fun() ->
                      mnesia:write(#session{user_id = UserId,
-                                           session_id = SessionId})
+                                           session_id = SessionId,
+                                           client_type = ClientType})
              end,
     case mnesia:transaction(AddFun) of
         {atomic, ok} ->
@@ -98,7 +102,7 @@ add(UserId, SessionId) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Removes a user to the session presence.
+%% Removes a user from the session presence.
 %%
 %% @spec remove(UserId::integer()) ->
 %%           ok | {error, not_online} | {error, Reason}
@@ -125,7 +129,7 @@ remove(UserId) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Checks if a user is online
-%
+%%
 %% @spec is_online(UserId::integer()) -> boolean()
 %% @end
 %%-------------------------------------------------------------------
@@ -156,15 +160,37 @@ get_session_id(UserId) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Gets user id and session id of all online users, example:
-%% [{UserId, SessionId}] = get_all()
+%% [{UserId, SessionId, ClientType}] = get_all()
 %%
 %% @spec get_all() ->
-%%           [{integer(), string()}]
+%%           [{integer(), string(), im | mail | web}]
 %% @end
 %%-------------------------------------------------------------------
 get_all() ->
     All = mnesia:dirty_match_object(#session{user_id = '_',
-                                       session_id = '_'}),
-    lists:map(fun(#session{user_id = UserId, session_id = SessionId}) ->
-                      {UserId, SessionId}
+                                       session_id = '_',
+                                       client_type = '_'}),
+    lists:map(fun(#session{user_id = UserId,
+                           session_id = SessionId,
+                           client_type = ClientType}) ->
+                  {UserId, SessionId, ClientType}
+              end, All).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Gets user id and session id of all online users by their
+%% interface type, example:
+%% [{UserId, SessionId}] = get_all_by_type(ClientType)
+%%
+%% @spec get_all_by_type(im | mail | web) ->
+%%           [{integer(), string()}]
+%% @end
+%%-------------------------------------------------------------------
+get_all_by_type(ClientType) ->
+    All = mnesia:dirty_match_object(#session{user_id = '_',
+                                             session_id = '_',
+                                             client_type = ClientType}),
+    lists:map(fun(#session{user_id = UserId,
+                           session_id = SessionId}) ->
+                  {UserId, SessionId}
               end, All).

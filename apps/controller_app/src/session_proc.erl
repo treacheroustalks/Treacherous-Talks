@@ -86,7 +86,8 @@ start(User=#user{},
 %-spec init([#user{}, #sesion_history{}, #push_receiver{}]) -> {ok, #state{}}.
 init([User, History, PushReceiver]) ->
     Id = session_id:from_pid(self()),
-    session_presence:add(User#user.id, Id),
+    Type = PushReceiver#push_receiver.type,
+    session_presence:add(User#user.id, Id, Type),
     {ok, #state{user = User,
                 session_id = Id,
                 history = session_history:add(History, Id),
