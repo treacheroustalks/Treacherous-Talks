@@ -44,9 +44,9 @@ else
 fi
 
 # Extract the target node name from node.args
-NAME_ARG=`egrep '^-s?name' $VMARGS_PATH`
+NAME_ARG=`egrep '^-s?name' $RUNNER_ETC_DIR/nodename`
 if [ -z "$NAME_ARG" ]; then
-    echo "vm.args needs to have either -name or -sname parameter."
+    echo "nodename needs to have either -name or -sname parameter."
     exit 1
 fi
 
@@ -160,7 +160,7 @@ case "$1" in
         BINDIR=$ROOTDIR/erts-$ERTS_VSN/bin
         EMU=beam
         PROGNAME=`echo $0 | sed 's/.*\\///'`
-        CMD="$BINDIR/erlexec -boot $RUNNER_BASE_DIR/releases/$APP_VSN/$BOOTFILE -mode embedded -config $CONFIG_PATH -args_file $VMARGS_PATH -- ${1+"$@"}"
+        CMD="$BINDIR/erlexec -boot $RUNNER_BASE_DIR/releases/$APP_VSN/$BOOTFILE -mode embedded -config $CONFIG_PATH -args_file $VMARGS_PATH $NAME_ARG -- ${1+"$@"}"
         export EMU
         export ROOTDIR
         export BINDIR

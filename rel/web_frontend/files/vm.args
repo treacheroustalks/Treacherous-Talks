@@ -1,6 +1,3 @@
-## Name of the node
--name web_frontend@127.0.0.1
-
 ## Cookie for distributed erlang
 -setcookie treacherous_talks
 
