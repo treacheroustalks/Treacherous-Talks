@@ -29,12 +29,14 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+-include_lib("utils/include/debug.hrl").
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    io:format ("[~p] starting~n", [?MODULE]),
+    ?DEBUG("[~p] starting~n", [?MODULE]),
     ok = session_presence:init(),
     controller_app_sup:start_link().
 

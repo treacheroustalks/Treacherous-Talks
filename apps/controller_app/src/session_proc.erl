@@ -33,6 +33,8 @@
 -module(session_proc).
 -behaviour(gen_server).
 
+-include_lib("utils/include/debug.hrl").
+
 -include_lib("datatypes/include/push_receiver.hrl").
 -include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
@@ -269,8 +271,8 @@ handle_call({game_search, Query}, _From, State) ->
     {reply, Reply, State, ?TIMEOUT};
 
 %% Unhandled request
-handle_call(Request, _From, State) ->
-    io:format("Received unhandled call: ~p~n", [{Request, _From, State}]),
+handle_call(_Request, _From, State) ->
+    ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),
     {noreply, ok, State, ?TIMEOUT}.
 
 
@@ -285,7 +287,7 @@ handle_cast(stop, State) ->
     stop(State),
     {stop, normal, State};
 handle_cast(_Msg, State) ->
-    io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
+    ?DEBUG("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State, ?TIMEOUT}.
 
 handle_info(timeout, State) ->
@@ -296,7 +298,7 @@ handle_info(_Info, State) ->
 
 terminate(_Reason, State) ->
     stop(State),
-    io:format(user, "[~p] terminated ~p: reason: ~p, state: ~p ~n",
+    ?DEBUG(user, "[~p] terminated ~p: reason: ~p, state: ~p ~n",
                [?MODULE, self(), _Reason, State]),
     ok.
 

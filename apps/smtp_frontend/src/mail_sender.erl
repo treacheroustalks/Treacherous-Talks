@@ -54,7 +54,7 @@
 %% ====================================================================
 
 start_link() ->
-    io:format(user, "mail_sender####~p~p~n", ["start link", self()]),
+    ?DEBUG(user, "mail_sender####~p~p~n", ["start link", self()]),
     gen_server:start_link({local, ?SERVER}, ?MODULE, no_arg, []).
 
 -spec get_pid() -> pid().
@@ -66,7 +66,7 @@ get_pid() ->
 %% ====================================================================
 
 init(no_arg) ->
-    io:format(user, "mail_sender####~p~p~n", ["init", self()]),
+    ?DEBUG(user, "mail_sender####~p~p~n", ["init", self()]),
     {ok, #state{}}.
 
 handle_call(get_pid, _From, State) ->
@@ -92,8 +92,8 @@ handle_info({push, [ServerAddr, UserAddr],
     smtp_output:send_mail(ServerAddr, UserAddr,
                            fe_messages:get(off_game_msg, Data)),
     {noreply, State};
-handle_info(Info, State) ->
-    io:format(user, "[mail_sender] unhandeled message ~n~p~n", [Info]),
+handle_info(_Info, State) ->
+    ?DEBUG(user, "[mail_sender] unhandeled message ~n~p~n", [_Info]),
     {noreply, State}.
 
 terminate(_Reason, _State) ->

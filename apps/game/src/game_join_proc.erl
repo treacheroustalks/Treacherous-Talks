@@ -33,6 +33,8 @@
 
 -behaviour(gen_server).
 
+-include_lib("utils/include/debug.hrl").
+
 -include_lib("include/game.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/bucket.hrl").
@@ -165,8 +167,8 @@ handle_call(Request, _From, GamePlayersRec) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({stop, Killer}, State) ->
-    io:format("game_join_proc ~p being stopped by ~p~n", [self(), Killer]),
+handle_cast({stop, _Killer}, State) ->
+    ?DEBUG("game_join_proc ~p being stopped by ~p~n", [self(), _Killer]),
     {stop, normal, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.

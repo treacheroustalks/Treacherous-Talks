@@ -136,7 +136,7 @@ handle_cast(_Msg, Host) ->
 %%  handle all none call/cast messages
 %%-------------------------------------------------------------------
 handle_info(Msg, Host) ->
-    io:format("[tt_bot][handle_info][unhandled] ~p~n", [Msg]),
+    ?DEBUG("[tt_bot][handle_info][unhandled] ~p~n", [Msg]),
     {noreply, Host}.
 
 %%-------------------------------------------------------------------

@@ -24,6 +24,8 @@
 -module(game_worker).
 -behaviour(gen_server).
 
+-include_lib("utils/include/debug.hrl").
+
 -include_lib ("datatypes/include/game.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
 
@@ -119,18 +121,18 @@ handle_call({get_game_search, Query},_From, State) ->
     Reply = get_game_search(Query),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
-    io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
+    ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
 handle_cast(_Msg, State) ->
-    io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
+    ?DEBUG("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
 
 handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
-    io:format ("[~p] terminated ~p: reason: ~p, state: ~p ~n",
+    ?DEBUG("[~p] terminated ~p: reason: ~p, state: ~p ~n",
                [?MODULE, self(), _Reason, _State]),
     ok.
 
