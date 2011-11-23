@@ -1,0 +1,12 @@
+{application, system_manager,
+ [
+  {description, "An application that controls Treacherous Talks"},
+  {vsn, "1.0.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { system_manager_app, []}},
+  {env, []}
+ ]}.
