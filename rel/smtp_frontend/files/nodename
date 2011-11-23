@@ -1,0 +1,3 @@
+# Set nodename.
+# NOTE! Keep the dash in front.
+-name smtp_frontend@127.0.0.1
