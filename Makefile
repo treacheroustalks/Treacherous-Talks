@@ -19,6 +19,26 @@ standard: small_clean get_deps compile docs
 complete: standard test release tar_release
 	@echo ok
 
+plt:
+	@if [ ! -f ~/.dialyzer_plt ]; then                            \
+	  echo "################################################";    \
+	  echo "WARNING: ~/.dialyzer_plt was not found";              \
+	  echo "I am building it for you."                            \
+	  echo "This will take a while (this time).";                 \
+	  sleep 3;                                                    \
+	  echo "You might as well make some coffee..";                \
+	  sleep 2;                                                    \
+	  time dialyzer --build_plt --apps erts kernel stdlib mnesia; \
+	fi
+	 # delete the .eunit dirs, they confuse dialyzer:
+	find apps -name .eunit -type d -exec rm -rf '{}' \;
+	$(REBAR) compile
+	@echo "######################"
+	@echo "building apps/apps.plt"
+	dialyzer -r apps --build_plt --output_plt apps/apps.plt || echo ""
+
+dia:
+	dialyzer --plts apps/apps.plt ~/.dialyzer_plt -- -r apps
 
 ### Build rules
 
@@ -103,4 +123,4 @@ fetch_deps_file:
 
 .PHONY: standard complete get_deps compile docs small_clean clean test \
 	unittest inttest release clean_release copy_docs tar_release \
-	deb_release create_deps_file fetch_deps_file
+	deb_release create_deps_file fetch_deps_file plt dia
