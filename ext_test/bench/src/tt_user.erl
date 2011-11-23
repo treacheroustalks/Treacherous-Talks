@@ -29,12 +29,13 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(user).
+-module(tt_user).
 
 -export([new/1,
          run/4]).
 
 -include("basho_bench.hrl").
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -43,7 +44,7 @@
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
-    Node = basho_bench_config:get(node),
+    Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
     {ok, state}.
@@ -56,8 +57,8 @@ new(_Id) ->
 %% * Logout the created user
 %% @end
 %%-------------------------------------------------------------------
-run(user, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register(),
+run(test, _KeyGen, _ValueGen, _State) ->
+    {Nick, Password} = load_test:register_user(),
     {SessionId, Pid} = load_test:login(Nick, Password),
-    logout(SessionId, Pid),
+    load_test:logout(SessionId, Pid),
     {ok, state}.
