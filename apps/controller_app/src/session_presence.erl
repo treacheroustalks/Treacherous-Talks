@@ -46,6 +46,8 @@
          count_all/0
         ]).
 
+-include_lib("utils/include/debug.hrl").
+
 %% ------------------------------------------------------------------
 %% Internal macros and records
 %% ------------------------------------------------------------------
@@ -54,7 +56,6 @@
                   session_id :: string(),
                   client_type :: im | mail | web
                  }).
-
 %% ------------------------------------------------------------------
 %% Interface Function Implementation
 %% ------------------------------------------------------------------
@@ -62,29 +63,79 @@
 %%-------------------------------------------------------------------
 %% @doc
 %% Initializes the mnesia table
+%% if there is an item `{backend_nodes, [ nodes() ]' in the app.config,
+%% init will ping them and try to replicate the session table from the first
+%% one that reacts. Only if that list does not exist or no one reacts to a ping,
+%% a local session table will be created.
+%% This local table can furtheron be used by other starting backends as a
+%% replication source
 %%
 %% @spec init() -> ok | {aborted, Reason}
 %% @end
 %%-------------------------------------------------------------------
 init() ->
-    case mnesia:create_table(?TABLE, [{type, set},
-                                      {attributes,
-                                       record_info(fields, session)}])
-    of
-        {atomic, ok} ->
-            case mnesia:add_table_index(session, client_type)
+    Backend =
+        case application:get_env (backend_nodes) of
+            undefined -> undefined;
+            {ok, Backends} -> get_responding_backend (Backends)
+        end,
+    case Backend of
+        undefined ->
+            ?DEBUG ("didn't find responding backends in backend_nodes list.~n"),
+            ?DEBUG ("creating session table.~n"),
+            case mnesia:create_table(?TABLE, [{type, set},
+                                              {attributes,
+                                               record_info(fields, session)}])
             of
                 {atomic, ok} ->
+                    case mnesia:add_table_index(session, client_type)
+                    of
+                        {atomic, ok} ->
+                            ok;
+                        Other ->
+                            Other
+                    end;
+                {aborted, {already_exists, ?TABLE}} ->
                     ok;
-                Other ->
-                    Other
-            end;
-        {aborted, {already_exists, ?TABLE}} ->
-            ok;
-        Else ->
-            Else
+                Else ->
+                    Else
+                end;
+        Responding ->
+            ?DEBUG ("copying session data from backend ~p~n",
+                    [Responding]),
+            This = node (),
+            {ok, _} =
+                rpc:call (Responding,
+                          mnesia,
+                          change_config,
+                          [extra_db_nodes, [This]]),
+            mnesia:add_table_copy (session, node (), ram_copies),
+            ?DEBUG ("copying done"),
+            ok
     end.
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Go through a list of nodes and return the first one that is not equal to
+%% `node()' AND that is ping-able.
+%% @end
+%%-------------------------------------------------------------------
+-spec get_responding_backend([Node]) -> Node | undefined when
+      Node :: atom().
+get_responding_backend ([]) ->
+    undefined;
+get_responding_backend ([Backend | Backends]) ->
+    case node () of
+        Backend ->
+            get_responding_backend (Backends);
+        _ ->
+            case net_adm:ping (Backend) of
+                pang ->
+                    get_responding_backend (Backends);
+                pong ->
+                    Backend
+            end
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc
