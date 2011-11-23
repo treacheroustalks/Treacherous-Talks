@@ -21,43 +21,52 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Driver for the user flow
+%%% @doc Driver for users joining a game flow
 %%%
-%%% This module is to be run by bahso bench
+%%% This module is to be run by basho bench
 %%%
 %%% @since : 22 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(tt_user).
+-module(tt_game_join).
 
 -export([new/1, run/4]).
 
 -include("basho_bench.hrl").
 
+-record(state, {sessions}).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Initialization
-%% * Connect to the backend
+%% * Setup 7 users
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
-    {ok, state}.
+
+    Users = load_test:register_user(7),
+    UserData = load_test:login(Users),
+    Sessions = get_user_sessions(UserData),
+    {ok, #state{sessions=Sessions}}.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Run
-%% * Create a new user
-%% * Login the created user
-%% * Logout the created user
+%% * 7 users join the game
 %% @end
 %%-------------------------------------------------------------------
-run(test, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register_user(),
-    {SessionId, Pid} = load_test:login(Nick, Password),
-    load_test:logout(SessionId, Pid),
-    {ok, state}.
+run(test, _KeyGen, _ValueGen, State) ->
+    Sessions = State#state.sessions,
+    GameId = load_test:create_game(hd(Sessions)),
+    load_test:join_full_game(Sessions, GameId),
+    {ok, State}.
+
+%%-------------------------------------------------------------------
+%% Internal functions
+%%-------------------------------------------------------------------
+get_user_sessions(UserData) ->
+    [SessionId || {SessionId, _Pid} <- UserData].

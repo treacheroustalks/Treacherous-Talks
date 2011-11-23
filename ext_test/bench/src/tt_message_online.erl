@@ -21,43 +21,63 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Driver for the user flow
+%%% @doc Driver for the message flow - online version
 %%%
-%%% This module is to be run by bahso bench
+%%% This module is to be run by basho bench
 %%%
 %%% @since : 22 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(tt_user).
+-module(tt_message_online).
 
 -export([new/1, run/4]).
 
 -include("basho_bench.hrl").
 
+-record(state, {from, to}).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Initialization
-%% * Connect to the backend
+%% * Setup 2 users
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
-    {ok, state}.
+    % Create 2 users
+    Users = load_test:register_user(2),
+    UserData = load_test:login(Users),
+    Data = get_user_data(Users, UserData),
+    {ok, #state{from=lists:nth(1, Data), to=lists:nth(2, Data)}}.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Run
-%% * Create a new user
-%% * Login the created user
-%% * Logout the created user
+%% * Send message from one user to the other
+%% * Check for message reception
 %% @end
 %%-------------------------------------------------------------------
-run(test, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register_user(),
-    {SessionId, Pid} = load_test:login(Nick, Password),
-    load_test:logout(SessionId, Pid),
-    {ok, state}.
+run(test, _KeyGen, _ValueGen, State) ->
+    {_FromNick, FromSessionId, _FromPid} = State#state.from,
+    {ToNick, _ToSessionId, ToPid} = State#state.to,
+    load_test:send_msg(FromSessionId, ToNick),
+    case load_test:user_message_receiver(ToPid) of
+        {ok, _} ->
+            {ok, State};
+        Error ->
+            Error
+    end.
+
+%%-------------------------------------------------------------------
+%% Internal functions
+%%-------------------------------------------------------------------
+get_user_data(Users, UserData) ->
+    get_user_data(Users, UserData, []).
+
+get_user_data([], [], Data) ->
+    Data;
+get_user_data([{Nick, _Password}|Users], [{SessionId, Pid}|UserData], Data) ->
+    get_user_data(Users, UserData, [{Nick, SessionId, Pid}|Data]).

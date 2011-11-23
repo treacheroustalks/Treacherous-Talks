@@ -21,43 +21,60 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Driver for the user flow
+%%% @doc Driver for game play flow
 %%%
-%%% This module is to be run by bahso bench
+%%% This module is to be run by basho bench
 %%%
 %%% @since : 22 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(tt_user).
+-module(tt_game_play).
 
 -export([new/1, run/4]).
 
 -include("basho_bench.hrl").
 
+-record(state, {sessions, orders, node}).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Initialization
-%% * Connect to the backend
+%% * Setup 7 users
+%% * Get game orders
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
-    {ok, state}.
+
+    Users = load_test:register_user(7),
+    UserData = load_test:login(Users),
+    Sessions = load_test:get_user_sessions(UserData),
+    Orders = load_test:create_orders(),
+    {ok, #state{sessions=Sessions, orders=Orders, node=Node}}.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Run
-%% * Create a new user
-%% * Login the created user
-%% * Logout the created user
+%% * Setup new game
+%% * Send orders between users for 1 year period
 %% @end
 %%-------------------------------------------------------------------
-run(test, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register_user(),
-    {SessionId, Pid} = load_test:login(Nick, Password),
-    load_test:logout(SessionId, Pid),
-    {ok, state}.
+run(test, _KeyGen, _ValueGen, State) ->
+    Sessions = State#state.sessions,
+    Orders = State#state.orders,
+    Node = State#state.node,
+    GameId = load_test:create_game(hd(Sessions)),
+    GameUsers = load_test:join_full_game(Sessions, GameId),
+    load_test:start_game(Node, GameId),
+
+    % Run game for 1 year
+    Phases = load_test:get_phase_years(1),
+    lists:foreach(
+      fun(Phase) ->
+              load_test:send_orders(GameId, Orders, Phase, GameUsers),
+              load_test:phase_change(Node, GameId)
+      end, Phases),
+    {ok, State}.

@@ -21,43 +21,56 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Driver for the user flow
+%%% @doc Driver for the message flow - offline version
 %%%
-%%% This module is to be run by bahso bench
+%%% This module is to be run by basho bench
 %%%
 %%% @since : 22 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(tt_user).
+-module(tt_message_offline).
 
 -export([new/1, run/4]).
 
 -include("basho_bench.hrl").
 
+-record(state, {to}).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Initialization
-%% * Connect to the backend
+%% * Setup 2 users
+%% * Send message from one user to the other
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
-    {ok, state}.
+    % Create 2 users
+    {FromNick, FromPass} = load_test:register_user(),
+    {ToNick, ToPass} = load_test:register_user(),
+    % Login from user
+    {FromSessionId, _FromPid} = load_test:login(FromNick, FromPass),
+    % Send message
+    load_test:send_msg(FromSessionId, ToNick),
+    State = #state{to={ToNick, ToPass}},
+    {ok, State}.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Run
-%% * Create a new user
-%% * Login the created user
-%% * Logout the created user
+%% * Login second user
+%% * Read messages
 %% @end
 %%-------------------------------------------------------------------
-run(test, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register_user(),
-    {SessionId, Pid} = load_test:login(Nick, Password),
-    load_test:logout(SessionId, Pid),
-    {ok, state}.
+run(message_online, _KeyGen, _ValueGen, State) ->
+    {ToNick, ToPass} = State#state.to,
+    {_SessionId, ToPid} = load_test:login(ToNick, ToPass),
+    case load_test:user_message_receiver(ToPid) of
+        {ok, _} ->
+            {ok, State};
+        Error ->
+            Error
+    end.
