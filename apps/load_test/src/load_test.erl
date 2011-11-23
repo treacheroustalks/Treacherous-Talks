@@ -83,9 +83,13 @@
 register_user() ->
     Nick = "load_test_" ++ integer_to_list(random()),
     User = create_user(Nick),
-    Cmd = {register_user, {ok, User}},
-    controller:handle_action(Cmd, callback()),
-    {Nick, User#user.password}.
+    Cmd = {register, {ok, User}},
+    case controller:handle_action(Cmd, callback()) of
+        {{register, success}, _} ->
+            {Nick, User#user.password};
+        Error ->
+            erlang:error(Error)
+    end.
 
 -spec register_user(integer()) -> [{Nick::string(), Password::string()}].
 register_user(Count) ->
