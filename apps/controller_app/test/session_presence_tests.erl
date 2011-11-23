@@ -24,7 +24,7 @@
 %%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
 %%%
 %%% @doc Tests the session_presence interface.
-%%% 
+%%%
 %%% @end
 %%%
 %%% @since : 15 Nov 2011 by Bermuda Triangle
@@ -63,7 +63,8 @@ controller_test_() ->
       [
        ?_test(session_presence_add_remove()),
        ?_test(session_presence_get_session()),
-       ?_test(session_presence_list_sessions())
+       ?_test(session_presence_list_sessions()),
+       ?_test(session_presence_list_sessions_by_client_type())
       ]
      }}.
 
@@ -73,20 +74,23 @@ controller_test_() ->
 session_presence_get_session() ->
     UserId = get_test_id(),
     SessionId = "abcdefg",
+    ClientType = mail,
 
     GetResult = session_presence:get_session_id(UserId),
     ?assertEqual({error, not_online}, GetResult),
 
-    session_presence:add(UserId, SessionId),
+    session_presence:add(UserId, SessionId, ClientType),
     GetResult2 = session_presence:get_session_id(UserId),
-    ?assertEqual({ok, SessionId}, GetResult2).
+    ?assertEqual({ok, SessionId}, GetResult2),
 
+    session_presence:remove(UserId).
 
 session_presence_add_remove() ->
     UserId = get_test_id(),
     SessionId = "abcdefg",
+    ClientType = mail,
 
-    AddResult = session_presence:add(UserId, SessionId),
+    AddResult = session_presence:add(UserId, SessionId, ClientType),
     ?assertEqual(ok, AddResult),
     GetResult = session_presence:is_online(UserId),
     ?assertEqual(true, GetResult),
@@ -98,19 +102,63 @@ session_presence_add_remove() ->
 
     RmResult2 = session_presence:remove(UserId),
     ?assertEqual({error, not_online}, RmResult2).
-    
+
 
 session_presence_list_sessions() ->
     UserIds = lists:seq(1, 10),
     SessionIds = lists:map(fun integer_to_list/1, UserIds),
-    Zipped = lists:zip(UserIds, SessionIds),
-    lists:map(fun({UserId, SessionId}) ->
-                      session_presence:add(UserId, SessionId)
+    ClientTypes = lists:map(fun(Id) ->
+                                if
+                                    Id >= 1,
+                                    Id =< 3 -> im;
+                                    Id >= 4,
+                                    Id =< 6 -> mail;
+                                    Id >= 7,
+                                    Id =< 10 -> web
+                                end
+                            end, UserIds),
+    Zipped = lists:zip3(UserIds, SessionIds, ClientTypes),
+    lists:map(fun({UserId, SessionId, ClientType}) ->
+                      session_presence:add(UserId, SessionId, ClientType)
               end, Zipped),
 
     All = session_presence:get_all(),
     lists:map(fun(Val) ->
                       ?assertEqual(true, lists:member(Val, All))
+              end, Zipped).
+
+
+session_presence_list_sessions_by_client_type() ->
+    UserIds = lists:seq(1, 10),
+    SessionIds = lists:map(fun integer_to_list/1, UserIds),
+    ClientTypes = lists:map(fun(Id) ->
+                                if
+                                    Id >= 1,
+                                    Id =< 3 -> im;
+                                    Id >= 4,
+                                    Id =< 6 -> mail;
+                                    Id >= 7,
+                                    Id =< 10 -> web
+                                end
+                            end, UserIds),
+    Zipped = lists:zip3(UserIds, SessionIds, ClientTypes),
+    lists:map(fun({UserId, SessionId, ClientType}) ->
+                      session_presence:add(UserId, SessionId, ClientType)
+              end, Zipped),
+
+    AllIm = session_presence:get_all_by_type(im),
+    AllMail = session_presence:get_all_by_type(mail),
+    AllWeb = session_presence:get_all_by_type(web),
+    lists:map(fun(Val) ->
+                  {Id, Session, Type} = Val,
+                  case Type of
+                      im  ->
+                          ?assertEqual(true, lists:member({Id, Session}, AllIm));
+                      mail ->
+                          ?assertEqual(true, lists:member({Id, Session}, AllMail));
+                      web ->
+                          ?assertEqual(true, lists:member({Id, Session}, AllWeb))
+                  end
               end, Zipped).
 
 %%-------------------------------------------------------------------
