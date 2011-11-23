@@ -40,7 +40,7 @@
 -export([start_link/2, stop/1]).
 
 -export([login/3, xmpp_call/3, xmpp_cast/3,
-         last_received_msg/1, clear_last_received/1]).
+         last_received_msg/1, clear_last_received/1, get_next_msg/1]).
 
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -55,8 +55,8 @@
 %% @doc
 %%  use to start genserver to start process to make session
 %%  and connect to ejabberd. We can provide setup parameter to setup
-%%  session. 
-%% 
+%%  session.
+%%
 %% @spec start_link(Sender::string(), Password::string()) ->
 %%          {ok,Pid} | ignore | {error,Error}
 %% @end
@@ -90,13 +90,20 @@ stop(Sender) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%%  return the last received message
+%%  return the last received message which is stord in gen_server state
 %%-------------------------------------------------------------------
 last_received_msg(Sender) ->
     gen_server:call(Sender, last_received_msg).
 
 clear_last_received(Sender) ->
     gen_server:call(Sender, clear_last_received).
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  return the next received message
+%%-------------------------------------------------------------------
+get_next_msg(Sender) ->
+    gen_server:call(Sender, get_next_msg).
 
 %%====================================================================
 %% gen_server callbacks
@@ -146,6 +153,9 @@ handle_call(stop, _From , State = #state{session=MySession}) ->
 handle_call({xmpp_call, To, SendMsg}, From, State) ->
     send_chat(To, State#state.my_jid, State#state.session, SendMsg),
     {noreply, State#state{msg = SendMsg, reply_to=From}};
+
+handle_call(get_next_msg, From, State) ->
+    {noreply, State#state{reply_to=From}};
 
 handle_call(last_received_msg, _From, State) ->
     {reply, State#state.last_received_msg, State};

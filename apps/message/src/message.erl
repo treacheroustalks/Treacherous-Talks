@@ -23,8 +23,8 @@
 %%%-------------------------------------------------------------------
 %%% @author A.Rahim Kadkhodamohammadi <r.k.mohammadi@gmail.com>
 %%%
-%%% @doc Unit tests for updating user
-%%% @todo Rahim: Description: Unit tests? huh?
+%%% @doc
+%%%   All interface to call message app
 %%% @end
 %%%
 %%% @since : 15 Nov 2011 by Bermuda Triangle
@@ -34,12 +34,14 @@
 
 -export ([user_msg/1,
           unread/1,
-          mark_as_read/1,
+          mark_game_msg_as_read/1,
+          mark_user_msg_as_read/1,
           game_msg/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
+-include_lib("datatypes/include/bucket.hrl").
 
 %% ------------------------------------------------------------------
 %% Internal Macro Definitions
@@ -77,13 +79,25 @@ unread(UserId) ->
 
 %% --------------------------------------------------------------------
 %% @doc
-%%  Marks the message as read so that it will not be returned in
+%%  Marks the user message as read so that it will not be returned in
 %%  subsequent calls to message:unread/1
 %% @end
 %% --------------------------------------------------------------------
--spec message:mark_as_read(MessageId :: integer()) -> ok | {error, notfound}.
-mark_as_read(MessageId) ->
-    ?CALL_WORKER({mark_as_read, MessageId}).
+-spec message:mark_user_msg_as_read(MessageId :: integer()) ->
+          ok | {error, notfound}.
+mark_user_msg_as_read(MessageId) ->
+    ?CALL_WORKER({mark_as_read, MessageId, ?B_MESSAGE}).
+
+%% --------------------------------------------------------------------
+%% @doc
+%%  Marks the game message as read so that it will not be returned in
+%%  subsequent calls to message:unread/1
+%% @end
+%% --------------------------------------------------------------------
+-spec message:mark_game_msg_as_read(MessageId :: integer()) ->
+          ok | {error, notfound}.
+mark_game_msg_as_read(MessageId) ->
+    ?CALL_WORKER({mark_as_read, MessageId, ?B_GAME_MESSAGE}).
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  get a record of game message and log the message and send it to users

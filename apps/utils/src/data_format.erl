@@ -294,7 +294,8 @@ rec_to_plist(RecordValue) ->
     RecFields = case Record of
                     game -> record_info(fields, game);
                     user -> record_info(fields, user);
-                    message -> record_info(fields, message)
+                    message -> record_info(fields, message);
+                    game_message -> record_info(fields, game_message)
                 end,
     RecordInfo = [Field || Field <- RecFields],
     lists:zip(RecordInfo, tl(tuple_to_list(RecordValue))).

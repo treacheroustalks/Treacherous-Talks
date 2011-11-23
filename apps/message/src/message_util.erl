@@ -27,13 +27,13 @@
 -include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/message.hrl").
 
--export([get_message/1]).
+-export([get_message/3]).
 
-get_message(MessageId) ->
-    case db:get(?B_MESSAGE, db:int_to_bin(MessageId)) of
+get_message(MessageId, Bucket, RecordName) ->
+    case db:get(Bucket, db:int_to_bin(MessageId)) of
         {ok, DBObj} ->
             MessagePropList = db_obj:get_value(DBObj),
-            Message = data_format:plist_to_rec(message, MessagePropList),
+            Message = data_format:plist_to_rec(RecordName, MessagePropList),
             {ok, Message};
         {error, Error} ->
             {error, Error}
