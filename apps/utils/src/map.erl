@@ -45,6 +45,7 @@
           move_unit/4,
           get_units/1,
           get_units/2,
+          get_units_histogram/1,
           get_province_info/3,
           get_province_info/4,
           set_province_info/4,
@@ -97,6 +98,29 @@ get_units (Map) ->
       end,
       [],
       get_provinces (Map)).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  returns a nation -> number-of-units mapping.
+%%
+%%  Keys `:: nation ()' <br/>
+%%  Values `:: pos_integer()' <br/>
+%% Nations with 0 units don't show up
+%% @end
+%% -----------------------------------------------------------------------------
+-spec get_units_histogram (map ()) -> dict ().
+get_units_histogram (Map) ->
+    lists:foldl (fun ({_, {_, Nation}}, Acc) ->
+                         NewCnt = case dict:find (Nation, Acc) of
+                                   {ok, Cnt} ->
+                                       Cnt + 1;
+                                   error ->
+                                       1
+                                  end,
+                         dict:store (Nation, NewCnt, Acc)
+                 end,
+                 dict:new (),
+                 map:get_units (Map)).
 
 create_info () ->
     dict:new ().

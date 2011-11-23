@@ -112,7 +112,7 @@ process (Phase, Map, RULES_MOD, Orders) ->
                  ProcessReplies ++ Replies).
 
 -spec make_pairs ([any ()], Arity) -> [tuple ()] when
-      Arity :: pos_integer () | all_orders.
+      Arity :: integer () | all_orders.
 make_pairs (_, 0) ->
     [{}];
 make_pairs (List, 1) ->
