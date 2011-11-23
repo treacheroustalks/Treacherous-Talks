@@ -589,3 +589,34 @@ civil_disorder_test () ->
     ?assertEqual ([{army, austria}], map:get_units (Map, ukraine)),
     map_data:delete (Map).
 
+game_over_test () ->
+    Map = map_data:create (standard_game),
+    ReplaceWithAustrian =
+        fun ({Where, Unit}) ->
+                case Unit of
+                    {_, austria} ->
+                        0;
+                    {Type, Nation} ->
+                        map:remove_unit (Map,
+                                         {Type, Nation}, Where),
+                        map:add_unit (Map,
+                                      {Type, austria}, Where),
+                        1
+                end
+        end,
+    lists:foldl (fun (LocAndUnit, SumOfAustrian) ->
+                         if
+                             SumOfAustrian < 18 ->
+                                 SumOfAustrian +
+                                     ReplaceWithAustrian (LocAndUnit);
+                             true ->
+                                 SumOfAustrian
+                         end
+                 end,
+                 3, % austria starts out with three units
+                 map:get_units (Map)),
+    ?debugVal (map:get_units (Map)),
+    Response = rules:process (count_phase, Map, diplomacy_rules, []),
+    ?debugVal (Response),
+    ?assert (lists:member (game_over, Response)),
+    map_data:delete (Map).

@@ -37,15 +37,20 @@
 %% <table border="1">
 %%   <tr>
 %%     <td>`order_phase'</td>
-%%     <td>`[{dislodge, unit(), province ()}]'</td>
+%%     <td>`{dislodge, unit(), province ()}'</td>
 %%     <td>
 %%       the unit needs to be moved in retreat phase or it will be disbanded
 %%     </td>
 %%   </tr>
 %%   <tr>
 %%     <td>`count_phase'</td>
-%%     <td>`[{has_builds, nation(), integer()}]'</td>
+%%     <td>`{has_builds, nation(), integer()}'</td>
 %%     <td>the nation is allowed to build / has to disband that many units</td>
+%%   </tr>
+%%   <tr>
+%%     <td>`count_phase'</td>
+%%     <td>`game_over}'</td>
+%%     <td>the game is finished</td>
 %%   </tr>
 %% </table>
 %%
@@ -107,6 +112,8 @@
 %% creates the rules for a game type.
 %% The first parameter decides the game type, the second one the game phase
 %% currently, the only supported game type is the atom <pre>standard_game</pre>
+%% through clauses that differ in the game phase parameter, you can use a
+%% different set of rules for each game phase.
 %% @end
 %% -----------------------------------------------------------------------------
 -spec create (GameType, GamePhase) -> [tuple ()] when
@@ -133,7 +140,8 @@ create (standard_game, retreat_phase) ->
      remove_dislodge_state_rule ()];
 create (standard_game, count_phase) ->
     [no_orders_accepted_rule (),
-     count_units_rule ()];
+     count_units_rule (),
+     game_over_rule ()];
 create (standard_game, build_phase) ->
     [unit_can_build_there_rule (),
      can_build_rule (),
@@ -187,36 +195,6 @@ do_process (Phase, _Map, Order) ->
     erlang:error ({error,
                    {unhandled_case, ?MODULE, ?LINE, [Phase, 'Map', Order]}}).
 
-%% -----------------------------------------------------------------------------
-%% Helper function for disband_furthest_units functionality
-%% generates a tuple from the Map, Unit and Province that makes sorts first
-%% what should be disbanded first.
-%% -----------------------------------------------------------------------------
--spec get_sort_tuple (digraph (), unit (), province ()) ->
-                             {Dis, any (), province (), unit ()} when
-      Dis :: pos_integer () | 0.
-get_sort_tuple (Map, Unit = {UType, Nation}, Province) ->
-    MinDist =
-        lists:foldl (
-          fun (HomeProvince, Acc) ->
-                  Dist = map:get_distance (Map,
-                                           Province,
-                                           HomeProvince),
-                  case Acc of
-                      infinity ->
-                          Dist;
-                      _Other ->
-                          lists:min ([Acc, Dist])
-                  end
-          end,
-          infinity,
-          get_home_provinces (Map, Nation)),
-    TypeTag = case UType of
-                  fleet -> 1;
-                  army -> 2
-              end,
-    {-MinDist, TypeTag, Province, Unit}.
-
 %% remove orders for non-existing units
 unit_exists_rule () ->
     #rule{name = unit_exists,
@@ -255,54 +233,16 @@ can_build_rule () ->
            detector = fun can_build_detector/2,
            actor = fun can_build_actor/2}.
 
-can_build_detector (Map, {{build, {_Type, Nation}, _Somewhere}}) ->
-    {ok, License} = dict:find (Nation, get_build_licenses (Map)),
-    License =< 0;
-can_build_detector (_, _) ->
-    false.
-
-can_build_actor (Map, {BuildOrder}) ->
-    [{reply, {no_builds_left, BuildOrder}} |
-      delete_orders_actor (Map, {BuildOrder})].
+game_over_rule () ->
+    #rule {name = game_over,
+           arity = 0,
+           detector = fun game_over_detector/2,
+           actor = fun game_over_actor/2}.
 
 civil_disorder_rule () ->
     #rule {name = civil_disorder,
            arity = all_orders,
            actor = fun civil_disorder_actor/2}.
-
-civil_disorder_actor (Map, Orders) ->
-    CorrectedLicenses =
-        lists:foldl (fun (Order, Acc) ->
-                             case Order of
-                                 {build, {_, Nation}, _Province} ->
-                                     %% DANGER, Val not changed
-%                                     erlang:error ({error, 'VAL'}),
-                                     {ok, Val} = dict:find (Nation, Acc),
-                                     dict:store (Nation, Val, Acc);
-%                                 {disband_furthest_unit, Nation} ->
-%                                     {ok, Val} = dict:find (Nation, Acc),
-%                                     dict:store (Nation, Val + 1, Acc);
-                                 {disband, {_, Nation}, _Province} ->
-                                     {ok, Val} = dict:find (Nation, Acc),
-                                     dict:store (Nation, Val + 1, Acc);
-                                 _ -> Acc
-                             end
-                     end,
-                     get_build_licenses (Map),
-                     Orders),
-    NeedToDisband =
-        lists:filter (
-          fun ({_Nation, Counter}) ->
-                  Counter < 0
-          end,
-          dict:to_list (CorrectedLicenses)),
-    %% now emit the disband-furthest-units orders:
-    lists:map (fun ({Nation, Counter}) ->
-                       {add,
-                        {disband_furthest_units,
-                         Nation, -Counter}}
-               end,
-               NeedToDisband).
 
 %% remove units that where not dislodged yet
 remove_undislodged_units_rule () ->
@@ -378,6 +318,58 @@ support_rule () ->
 %% -----------------------------------------------------------------------------
 %% Implementation
 %% -----------------------------------------------------------------------------
+can_build_detector (Map, {{build, {_Type, Nation}, _Somewhere}}) ->
+    {ok, License} = dict:find (Nation, get_build_licenses (Map)),
+    License =< 0;
+can_build_detector (_, _) ->
+    false.
+
+can_build_actor (Map, {BuildOrder}) ->
+    [{reply, {no_builds_left, BuildOrder}} |
+      delete_orders_actor (Map, {BuildOrder})].
+
+civil_disorder_actor (Map, Orders) ->
+    CorrectedLicenses =
+        lists:foldl (fun (Order, Acc) ->
+                             case Order of
+                                 {build, {_, Nation}, _Province} ->
+                                     {ok, Val} = dict:find (Nation, Acc),
+                                     dict:store (Nation, Val, Acc);
+                                 {disband, {_, Nation}, _Province} ->
+                                     {ok, Val} = dict:find (Nation, Acc),
+                                     dict:store (Nation, Val + 1, Acc);
+                                 _ -> Acc
+                             end
+                     end,
+                     get_build_licenses (Map),
+                     Orders),
+    NeedToDisband =
+        lists:filter (
+          fun ({_Nation, Counter}) ->
+                  Counter < 0
+          end,
+          dict:to_list (CorrectedLicenses)),
+    %% now emit the disband-furthest-units orders:
+    lists:map (fun ({Nation, Counter}) ->
+                       {add,
+                        {disband_furthest_units,
+                         Nation, -Counter}}
+               end,
+               NeedToDisband).
+
+%% "does one nation have more-than-or-equal-to 18 units?"
+game_over_detector (Map, {}) ->
+    ?debugMsg ("game_over_detector"),
+    Histogram = map:get_units_histogram (Map),
+    ?debugVal (dict:to_list (Histogram)),
+    lists:any (fun ({_Nation, NumOfUnits}) ->
+                      NumOfUnits >= 18
+               end,
+               dict:to_list (Histogram)).
+
+-spec game_over_actor (map (), {}) -> [{reply, game_over}].
+game_over_actor (_, {}) ->
+    [{reply, game_over}].
 
 %% count the units in a map, count the owners of centers in a map and
 %% reply how much they have to build/remove
@@ -461,6 +453,186 @@ support_detector (_Map, {{support, _Unit, _Where, _Order}, _Order}) ->
     true;
 support_detector (_Map, _Orders = {_, _}) ->
     false.
+
+support_actor (Map, {OtherOrder, SupOrder = {support, _, _, _}}) ->
+    support_actor (Map, {SupOrder, OtherOrder});
+support_actor (Map,
+               {SupOrder = {support, {SupType, _}, SupPlace, _Order},
+                OtherOrder}) ->
+    case (is_supportable (OtherOrder)) of
+        true ->
+            To = get_moving_to (OtherOrder),
+            case map:is_reachable (Map, SupPlace, To, SupType) of
+                true ->
+                    do_add_support (Map, SupOrder),
+                    [];
+                false ->
+                    [{remove, SupOrder}]
+            end;
+        false ->
+            [{remove, SupOrder}]
+    end.
+
+hold_vs_move2_detector (_Map, {{move, _Unit1, _From1, To},
+                               {hold, _Unit2, To}}) ->
+    true;
+hold_vs_move2_detector (_Map, {{hold, _Unit1, To},
+                               {move, _Unit2, _From1, To}}) ->
+    true;
+hold_vs_move2_detector (_Map, _) ->
+    false.
+
+hold_vs_move2_actor (Map, {HoldOrder = {hold, HoldUnit, HoldPlace},
+                           MoveOrder = {move, _MoveUnit, _From, _HoldPlace}}) ->
+    HoldStrength = get_unit_strength (Map, HoldOrder),
+    MoveStrength = get_unit_strength (Map, MoveOrder),
+    if
+        HoldStrength >= MoveStrength ->
+            replace_by_hold_actor (Map, {MoveOrder});
+        true ->
+            map:set_unit_info (Map, HoldUnit, HoldPlace, dislodge, true),
+            [{remove, HoldOrder}, {reply, {dislodge, HoldUnit, HoldPlace}}]
+    end.
+
+bounce2_detector (_Map, {{move, _Unit1, _From1, _To},
+                         {move, _Unit2, _From2, _To}}) ->
+    true;
+bounce2_detector (_Map, {_, _}) ->
+    false.
+
+
+bounce2_actor (Map,
+               {O1 = {move, _, _, To},
+                O2 = {move, _, _, To}}) ->
+    Strength1 = get_unit_strength (Map, O1),
+    Strength2 = get_unit_strength (Map, O2),
+    if
+        Strength1 > Strength2 ->
+            replace_by_hold_actor (Map, {O2});
+        Strength2 > Strength1 ->
+            replace_by_hold_actor (Map, {O1});
+        true ->
+            replace_by_hold_actor (Map, {O1, O2})
+    end.
+
+unit_can_build_there_detector (Map,
+                               {{build, {Type, Nation}, Province}}) ->
+    case map:get_province_info (Map, Province, original_owner) of
+        Nation ->
+            case map:get_units (Map, Province) of
+                [] ->
+                    case map:get_reachable (Map, Province, Type) of
+                        [] ->
+                            true;  % act!
+                        _ ->
+                            false
+                    end;
+                _ ->
+                    true % act!
+            end;
+        _ ->
+            true % act!
+    end;
+unit_can_build_there_detector (_, _) ->
+    false.
+
+unit_can_build_there_actor (_Map, {Build}) ->
+    [{remove, Build}].
+
+unit_can_go_there_detector (Map, {M = {move, {Type, _Owner}, From, To}}) ->
+    not lists:member (To,
+                      map:get_reachable (Map, From, Type)) and
+        not is_covered_by_convoy (Map, M);
+unit_can_go_there_detector (_Map, _) ->
+    false.
+
+unit_does_not_exist (Map, {Order}) ->
+    not map:unit_exists (Map, get_first_from (Order), get_first_unit (Order)).
+
+trade_places_detector (_Map, {{move, _Unit1, From, To},
+                              {move, _Unit2, To, From}}) ->
+    true;
+trade_places_detector (_Map, _Other) ->
+    false.
+
+trade_places_actor (Map, {M1, M2}) ->
+    S1 = get_unit_strength (Map, M1),
+    S2 = get_unit_strength (Map, M2),
+    if
+        S1 > S2 ->
+            [{remove, M2},
+             {reply, {dislodge, get_moving_unit (M2), get_moving_from (M2)}}];
+        S2 > S1 ->
+            [{remove, M1},
+             {reply, {dislodge, get_moving_unit (M1), get_moving_from (M1)}}];
+        true ->
+            replace_by_hold_actor (Map, {M1, M2})
+    end.
+
+delete_orders_actor (_Map, {A}) ->
+    [{remove, A}];
+delete_orders_actor (_Map, {A,B}) ->
+    [{remove, A}, {remove, B}];
+delete_orders_actor (_Map, {A,B,C}) ->
+    [{remove, A}, {remove, B}, {remove, C}].
+
+replace_by_hold_actor (_Map, {A}) ->
+    [{remove, A},
+     {add, {hold, get_first_unit (A), get_first_from (A)}}];
+replace_by_hold_actor (_Map, {A,B}) ->
+    [{remove, A}, {remove, B},
+     {add, {hold, get_first_unit (A), get_first_from (A)}},
+     {add, {hold, get_first_unit (B), get_first_from (B)}}];
+replace_by_hold_actor (_Map, {A,B,C}) ->
+    [{remove, A}, {remove, B}, {remove, C},
+     {add, {hold, get_first_unit (A), get_first_from (A)}},
+     {add, {hold, get_first_unit (B), get_first_from (B)}},
+     {add, {hold, get_first_unit (C), get_first_from (C)}}].
+
+
+%% -----------------------------------------------------------------------------
+%% Helpers
+%% -----------------------------------------------------------------------------
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%   Helper function for disband_furthest_units functionality
+%%   generates a tuple from the Map, Unit and Province that makes sorts first
+%%   what should be disbanded first.
+%% @end
+%% -----------------------------------------------------------------------------
+-spec get_sort_tuple (digraph (), unit (), province ()) ->
+                             {Dis, any (), province (), unit ()} when
+      Dis :: pos_integer () | 0.
+get_sort_tuple (Map, Unit = {UType, Nation}, Province) ->
+    MinDist =
+        lists:foldl (
+          fun (HomeProvince, Acc) ->
+                  Dist = map:get_distance (Map,
+                                           Province,
+                                           HomeProvince),
+                  case Acc of
+                      infinity ->
+                          Dist;
+                      _Other ->
+                          lists:min ([Acc, Dist])
+                  end
+          end,
+          infinity,
+          get_home_provinces (Map, Nation)),
+    TypeTag = case UType of
+                  fleet -> 1;
+                  army -> 2
+              end,
+    {-MinDist, TypeTag, Province, Unit}.
+
+%-spec get_alive_nations (map ()) -> [nation ()].
+%get_alive_nations (Map) ->
+%    lists:foldl (fun ({_, {_, Nation}}, Acc) ->
+%                        ordsets:add_element (Nation, Acc)
+%                end,
+%                ordsets:new (),
+%                map:get_units (Map)).
 
 get_first_unit ({move, Unit, _, _}) ->
     Unit;
@@ -599,52 +771,6 @@ do_add_support (Map, SupportOrder = {support, _, _, SupportedOrder}) ->
                                [SupportOrder | SupportingOrders])
     end.
 
-support_actor (Map, {OtherOrder, SupOrder = {support, _, _, _}}) ->
-    support_actor (Map, {SupOrder, OtherOrder});
-support_actor (Map,
-               {SupOrder = {support, {SupType, _}, SupPlace, _Order},
-                OtherOrder}) ->
-    case (is_supportable (OtherOrder)) of
-        true ->
-            To = get_moving_to (OtherOrder),
-            case map:is_reachable (Map, SupPlace, To, SupType) of
-                true ->
-                    do_add_support (Map, SupOrder),
-                    [];
-                false ->
-                    [{remove, SupOrder}]
-            end;
-        false ->
-            [{remove, SupOrder}]
-    end.
-
-hold_vs_move2_detector (_Map, {{move, _Unit1, _From1, To},
-                               {hold, _Unit2, To}}) ->
-    true;
-hold_vs_move2_detector (_Map, {{hold, _Unit1, To},
-                               {move, _Unit2, _From1, To}}) ->
-    true;
-hold_vs_move2_detector (_Map, _) ->
-    false.
-
-hold_vs_move2_actor (Map, {HoldOrder = {hold, HoldUnit, HoldPlace},
-                           MoveOrder = {move, _MoveUnit, _From, _HoldPlace}}) ->
-    HoldStrength = get_unit_strength (Map, HoldOrder),
-    MoveStrength = get_unit_strength (Map, MoveOrder),
-    if
-        HoldStrength >= MoveStrength ->
-            replace_by_hold_actor (Map, {MoveOrder});
-        true ->
-            map:set_unit_info (Map, HoldUnit, HoldPlace, dislodge, true),
-            [{remove, HoldOrder}, {reply, {dislodge, HoldUnit, HoldPlace}}]
-    end.
-
-bounce2_detector (_Map, {{move, _Unit1, _From1, _To},
-                         {move, _Unit2, _From2, _To}}) ->
-    true;
-bounce2_detector (_Map, {_, _}) ->
-    false.
-
 get_unit_strength (Map, Order) ->
     %% supports are valid for a specific move only - we are counting them here:
     lists:foldl (
@@ -661,94 +787,6 @@ get_unit_strength (Map, Order) ->
                          get_moving_unit (Order),
                          get_first_from (Order),
                          support_orders, [])).
-
-bounce2_actor (Map,
-               {O1 = {move, _, _, To},
-                O2 = {move, _, _, To}}) ->
-    Strength1 = get_unit_strength (Map, O1),
-    Strength2 = get_unit_strength (Map, O2),
-    if
-        Strength1 > Strength2 ->
-            replace_by_hold_actor (Map, {O2});
-        Strength2 > Strength1 ->
-            replace_by_hold_actor (Map, {O1});
-        true ->
-            replace_by_hold_actor (Map, {O1, O2})
-    end.
-
-unit_can_build_there_detector (Map,
-                               {{build, {Type, Nation}, Province}}) ->
-    case map:get_province_info (Map, Province, original_owner) of
-        Nation ->
-            case map:get_units (Map, Province) of
-                [] ->
-                    case map:get_reachable (Map, Province, Type) of
-                        [] ->
-                            true;  % act!
-                        _ ->
-                            false
-                    end;
-                _ ->
-                    true % act!
-            end;
-        _ ->
-            true % act!
-    end;
-unit_can_build_there_detector (_, _) ->
-    false.
-
-unit_can_build_there_actor (_Map, {Build}) ->
-    [{remove, Build}].
-
-unit_can_go_there_detector (Map, {M = {move, {Type, _Owner}, From, To}}) ->
-    not lists:member (To,
-                      map:get_reachable (Map, From, Type)) and
-        not is_covered_by_convoy (Map, M);
-unit_can_go_there_detector (_Map, _) ->
-    false.
-
-unit_does_not_exist (Map, {Order}) ->
-    not map:unit_exists (Map, get_first_from (Order), get_first_unit (Order)).
-
-trade_places_detector (_Map, {{move, _Unit1, From, To},
-                              {move, _Unit2, To, From}}) ->
-    true;
-trade_places_detector (_Map, _Other) ->
-    false.
-
-trade_places_actor (Map, {M1, M2}) ->
-    S1 = get_unit_strength (Map, M1),
-    S2 = get_unit_strength (Map, M2),
-    if
-        S1 > S2 ->
-            [{remove, M2},
-             {reply, {dislodge, get_moving_unit (M2), get_moving_from (M2)}}];
-        S2 > S1 ->
-            [{remove, M1},
-             {reply, {dislodge, get_moving_unit (M1), get_moving_from (M1)}}];
-        true ->
-            replace_by_hold_actor (Map, {M1, M2})
-    end.
-
-delete_orders_actor (_Map, {A}) ->
-    [{remove, A}];
-delete_orders_actor (_Map, {A,B}) ->
-    [{remove, A}, {remove, B}];
-delete_orders_actor (_Map, {A,B,C}) ->
-    [{remove, A}, {remove, B}, {remove, C}].
-
-replace_by_hold_actor (_Map, {A}) ->
-    [{remove, A},
-     {add, {hold, get_first_unit (A), get_first_from (A)}}];
-replace_by_hold_actor (_Map, {A,B}) ->
-    [{remove, A}, {remove, B},
-     {add, {hold, get_first_unit (A), get_first_from (A)}},
-     {add, {hold, get_first_unit (B), get_first_from (B)}}];
-replace_by_hold_actor (_Map, {A,B,C}) ->
-    [{remove, A}, {remove, B}, {remove, C},
-     {add, {hold, get_first_unit (A), get_first_from (A)}},
-     {add, {hold, get_first_unit (B), get_first_from (B)}},
-     {add, {hold, get_first_unit (C), get_first_from (C)}}].
 
 get_home_provinces (Map, Nation) ->
     ordsets:from_list (
