@@ -75,6 +75,8 @@
 
 -export ([process/4]).
 
+-include_lib ("utils/include/debug.hrl").
+
 -include_lib ("eunit/include/eunit.hrl").
 -include_lib ("game/include/rule.hrl").
 
@@ -90,7 +92,7 @@
 %% -----------------------------------------------------------------------------
 -spec process (any (), map (), atom (), [order ()]) -> [tuple ()].
 process (Phase, Map, RULES_MOD, Orders) ->
-    io:format (user, "#### process ~p~n", [Phase]),
+    ?DEBUG(user, "#### process ~p~n", [Phase]),
     Rules = RULES_MOD:create (standard_game, Phase),
     {Replies, Orders1} = execute_rules (Map, Rules, Orders),
     ProcessAnswer =
@@ -173,14 +175,14 @@ separate_orders_and_replies (TransformedResponse) ->
       Order :: order ().
 execute_single_rule (Map, Rule, Orders) ->
     Pairs = make_pairs (Orders, Rule#rule.arity),
-    io:format (user, "execute rule ~p~n", [Rule#rule.name]),
+    ?DEBUG(user, "execute rule ~p~n", [Rule#rule.name]),
     RuleResponse =
         lists:foldl (
           fun (Pair, Acc) ->
                   case (Rule#rule.detector) (Map, Pair) of
                       true ->
                           Emit = (Rule#rule.actor) (Map, Pair),
-                          io:format (user,
+                          ?DEBUG(user,
                             "Rule ~p: Emitting '~p'~n",
                             [Rule#rule.name,
                              Emit]),
@@ -191,7 +193,7 @@ execute_single_rule (Map, Rule, Orders) ->
           end,
           [],
           Pairs),
-%    io:format (user, "executing ~p done~n", [Rule#rule.name]),
+%    ?DEBUG(user, "executing ~p done~n", [Rule#rule.name]),
     %% execute the instructions from the actors:
     TransformedResponse =
         transform_orders (Orders, RuleResponse),

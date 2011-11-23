@@ -24,6 +24,8 @@
 -module(game_timer_sup).
 -behaviour(supervisor).
 
+-include_lib("utils/include/debug.hrl").
+
 -include_lib ("datatypes/include/game.hrl").
 
 %% API
@@ -67,7 +69,7 @@ delete_timer(Game) ->
 %% Supervisor callbacks
 %% ===================================================================
 init(no_arg) ->
-    io:format ("[~p] starting ~p~n", [?MODULE, self()]),
+    ?DEBUG("[~p] starting ~p~n", [?MODULE, self()]),
     TimerSpec = {game_timer, {game_timer, start_link, []},
                  transient, 5000, worker, [game_timer]},
     {ok, { {simple_one_for_one, 5, 10}, [TimerSpec] } }.

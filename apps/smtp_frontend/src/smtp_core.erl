@@ -73,15 +73,15 @@
 %% and send Message to the client.
 %% @end
 %%------------------------------------------------------------------------------------------------
-init(Hostname, SessionCount, Address, Options) ->
-    io:format("peer: ~p ~p ~n", [Hostname, Address]),
+init(Hostname, SessionCount, _Address, Options) ->
+    ?DEBUG("peer: ~p ~p ~n", [Hostname, _Address]),
     case SessionCount > 20 of
         false ->
             Banner = [Hostname, " ESMTP smtp_server_example"],
             State = #state{options = Options, hostname = Hostname},
             {ok, Banner, State};
         true ->
-            io:format("Connection limit exceeded~n"),
+            ?DEBUG("Connection limit exceeded~n"),
             {stop, normal, ["421 ", Hostname, " is too busy to accept mail right now"]}
     end.
 
@@ -104,8 +104,8 @@ handle_HELO(<<"invalid">>, State) ->
     {error, "554 invalid hostname", State};
 handle_HELO(<<"trusted_host">>, State) ->
     {ok, State}; %% no size limit because we trust them.
-handle_HELO(Hostname, State) ->
-    io:format("HELO from ~s~n", [Hostname]),
+handle_HELO(_Hostname, State) ->
+    ?DEBUG("HELO from ~s~n", [_Hostname]),
     {ok, 655360, State}. % 640kb of HELO should be enough for anyone.
     %If {ok, State} was returned here, we'd use the default 10mb limit
 
@@ -125,8 +125,8 @@ handle_HELO(Hostname, State) ->
 handle_EHLO(<<"invalid">>, _Extensions, State) ->
     % contrived example
     {error, "554 invalid hostname", State};
-handle_EHLO(Hostname, Extensions, State) ->
-    io:format("EHLO from ~s~n", [Hostname]),
+handle_EHLO(_Hostname, Extensions, State) ->
+    ?DEBUG("EHLO from ~s~n", [_Hostname]),
     % You can advertise additional extensions, or remove some defaults
     MyExtensions = case proplists:get_value(auth, State#state.options, false) of
         true ->
@@ -150,8 +150,8 @@ handle_EHLO(Hostname, Extensions, State) ->
 %%------------------------------------------------------------------------------------------------
 handle_MAIL(<<"badguy@blacklist.com">>, State) ->
     {error, "552 go away", State};
-handle_MAIL(From, State) ->
-    io:format("Mail from ~s~n", [From]),
+handle_MAIL(_From, State) ->
+    ?DEBUG("Mail from ~s~n", [_From]),
     % you can accept or reject the FROM address here
     {ok, State}.
 
@@ -163,12 +163,12 @@ handle_MAIL(From, State) ->
 %% the option.
 %% @end
 %%------------------------------------------------------------------------------------------------
-handle_MAIL_extension(<<"X-SomeExtension">> = Extension, State) ->
-    io:format("Mail from extension ~s~n", [Extension]),
+handle_MAIL_extension(<<"X-SomeExtension">> = _Extension, State) ->
+    ?DEBUG("Mail from extension ~s~n", [_Extension]),
     % any MAIL extensions can be handled here
     {ok, State};
-handle_MAIL_extension(Extension, _State) ->
-    io:format("Unknown MAIL FROM extension ~s~n", [Extension]),
+handle_MAIL_extension(_Extension, _State) ->
+    ?DEBUG("Unknown MAIL FROM extension ~s~n", [_Extension]),
     error.
 
 
@@ -180,8 +180,8 @@ handle_MAIL_extension(Extension, _State) ->
 %%------------------------------------------------------------------------------------------------
 handle_RCPT(<<"nobody@example.com">>, State) ->
     {error, "550 No such recipient", State};
-handle_RCPT(To, State) ->
-    io:format("Mail to ~s~n", [To]),
+handle_RCPT(_To, State) ->
+    ?DEBUG("Mail to ~s~n", [_To]),
     % you can accept or reject RCPT TO addesses here, one per call
     {ok, State}.
 
@@ -192,12 +192,12 @@ handle_RCPT(To, State) ->
 %% Handle an extension to the RCPT verb
 %% @end
 %%------------------------------------------------------------------------------------------------
-handle_RCPT_extension(<<"X-SomeExtension">> = Extension, State) ->
+handle_RCPT_extension(<<"X-SomeExtension">> = _Extension, State) ->
     % any RCPT TO extensions can be handled here
-    io:format("Mail to extension ~s~n", [Extension]),
+    ?DEBUG("Mail to extension ~s~n", [_Extension]),
     {ok, State};
-handle_RCPT_extension(Extension, _State) ->
-    io:format("Unknown RCPT TO extension ~s~n", [Extension]),
+handle_RCPT_extension(_Extension, _State) ->
+    ?DEBUG("Unknown RCPT TO extension ~s~n", [_Extension]),
     error.
 
 
@@ -312,7 +312,7 @@ relay(_From, [], _Data) ->
 relay(From, [To|Rest], Data) ->
     % relay message to email address
     [_User, Host] = string:tokens(To, "@"),
-    io:format("Relay!~n"),
+    ?DEBUG("Relay!~n"),
     gen_smtp_client:send({From, [To], erlang:binary_to_list(Data)}, [{relay, Host},{port,25}]),
     relay(From, Rest, Data).
 
@@ -329,7 +329,7 @@ simple_relay(BinFrom, [BinTo|_Rest], BinData, MyHost) ->
 
     [_, ToHost] = string:tokens(To, "@"),
 
-    io:format("Server got mail:~n"
+    ?DEBUG("Server got mail:~n"
               "From: ~p~n"
               "To: ~p~n"
               "Data: ~p~n"

@@ -46,6 +46,8 @@
 %% message_config state
 -record(state, {}).
 
+-include_lib("utils/include/debug.hrl").
+
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
@@ -73,7 +75,7 @@ worker_count(Pid, Count) ->
 %% ------------------------------------------------------------------
 
 init(no_arg) ->
-    io:format ("[~p] starting ~p~n", [?MODULE, self()]),
+    ?DEBUG("[~p] starting ~p~n", [?MODULE, self()]),
     join_group(),
     {ok, #state{}}.
 
@@ -86,18 +88,18 @@ handle_call({worker_count, Count}, _From, State) ->
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 handle_call(_Request, _From, State) ->
-    io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
+    ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
 handle_cast(_Msg, State) ->
-    io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
+    ?DEBUG("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
 
 handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
-    io:format ("[~p] terminated ~p: reason: ~p, state: ~p ~n",
+    ?DEBUG("[~p] terminated ~p: reason: ~p, state: ~p ~n",
                [?MODULE, self(), _Reason, _State]),
     ok.
 

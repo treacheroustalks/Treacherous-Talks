@@ -25,12 +25,14 @@
 -behaviour(application).
 -export([start/2, stop/1]).
 
+-include_lib("utils/include/debug.hrl").
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    io:format ("starting [~p]~n", [?MODULE]),
+    ?DEBUG("starting [~p]~n", [?MODULE]),
     pg2:start_link (),
     case net_adm:ping('backend@127.0.0.1') of
         pang ->

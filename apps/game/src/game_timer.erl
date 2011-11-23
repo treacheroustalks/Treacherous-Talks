@@ -24,6 +24,8 @@
 -module(game_timer).
 -behaviour(gen_fsm).
 
+-include_lib("utils/include/debug.hrl").
+
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib ("eunit/include/eunit.hrl").
@@ -189,11 +191,11 @@ handle_event(_Event, StateName, State) ->
     {next_state, StateName, State}.
 
 handle_sync_event({stop, NewState}, _From, _StateName, State) ->
-    io:format("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
+    ?DEBUG("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
     end_game((State#state.game)#game.id, NewState),
     {stop, normal, {(State#state.game)#game.id, NewState}, State};
 handle_sync_event(stop, _From, _StateName, State) ->
-    io:format("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
+    ?DEBUG("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
     {stop, normal, stop_request, State};
 handle_sync_event(statename, _From, StateName, State) ->
     {reply, StateName, StateName, State};
@@ -209,7 +211,7 @@ handle_info(_Info, StateName, State) ->
     {next_state, StateName, State}.
 
 terminate(_Reason, _StateName, State) ->
-    io:format("Terminating game timer ~p~n", [State]),
+    ?DEBUG("Terminating game timer ~p~n", [State]),
     global:unregister_name({(State#state.game)#game.id, ?MODULE}),
     ok.
 
@@ -229,13 +231,13 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% @end
 %%-------------------------------------------------------------------
 phase_change(Game = #game{id = ID}, started) ->
-    io:format("Game ~p started~n", [ID]),
+    ?DEBUG("Game ~p started~n", [ID]),
     %% maybe tell the users about game start?
     game_worker:update_game(ID, Game),
     setup_game(ID),
     game_join_proc:stop(ID);
 phase_change(ID, build_phase) ->
-    io:format("Game ~p entered build_phase~n", [ID]),
+    ?DEBUG("Game ~p entered build_phase~n", [ID]),
     {ok, GameState} = game_utils:get_game_state(ID),
     % skip count phase if it is not fall
     case GameState#game_state.year_season of
@@ -249,7 +251,7 @@ phase_change(ID, build_phase) ->
             {ok, true}
     end;
 phase_change(ID, Phase) ->
-    io:format("Game ~p entered ~p~n", [ID, Phase]),
+    ?DEBUG("Game ~p entered ~p~n", [ID, Phase]),
     {ok, OldState} = game_utils:get_game_state(ID),
     NewCurrentGame = update_current_game(ID, Phase),
     new_state(NewCurrentGame, OldState#game_state.map).
@@ -267,7 +269,7 @@ process_phase(ID, Phase) ->
     {ok, GameState} = game_utils:get_game_state(ID),
     Map = game_utils:to_rule_map(GameState#game_state.map),
     ?debugVal(Orders = game_utils:get_all_orders(ID)),
-    io:format("Received orders: ~p~n", [Orders]),
+    ?DEBUG("Received orders: ~p~n", [Orders]),
     Result = rules:process(Phase, Map, ?RULES, Orders),
     update_state(GameState#game_state{map = game_utils:to_mapterm(Map)}),
     %% we probably want to handle the result in some way

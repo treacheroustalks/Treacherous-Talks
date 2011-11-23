@@ -38,6 +38,8 @@
 % controller callback
 -export([reply/3, send_mail/3]).
 
+-include_lib("utils/include/debug.hrl").
+
 -define(SUPPORTED_COMMANDS,
         "REGISTER, LOGIN, UPDATE, CREATE, JOIN, OVERVIEW, VIEWCURRENTGAMES, SEARCH").
 
@@ -63,18 +65,18 @@ send_mail(From, To, Body) ->
                                        "Subject: Treacherous Talks\r\n\r\n"
                                        "~s",
                                        [From, To, Body])),
-    io:format("[SMTP][From: ~p][To: ~p]~n~s", [From, To, Mail]),
+    ?DEBUG("[SMTP][From: ~p][To: ~p]~n~s", [From, To, Mail]),
     RelayHost = case application:get_env(relay_host) of
         {ok, Host} ->
             Host;
         undefined ->
             "mail.pcs"  %slightly better form of hardcoding - can be set in app config.
     end,
-    SendResult = gen_smtp_client:send({From, [To], Mail},
+    _SendResult = gen_smtp_client:send({From, [To], Mail},
                                       [{relay, RelayHost},
                                        {port,25},
                                        {tls, never}]),
-    io:format("Send result was ~p~n", [SendResult]).
+    ?DEBUG("Send result was ~p~n", [_SendResult]).
 
 
 %%-------------------------------------------------------------------

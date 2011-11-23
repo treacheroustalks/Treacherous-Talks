@@ -35,6 +35,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
          code_change/3]).
 
+-include_lib ("utils/include/debug.hrl").
+
 %% server state
 -record(state, {db_conn}).
 %% ------------------------------------------------------------------
@@ -169,14 +171,14 @@ handle_call({search_values, Bucket, Query},
 
 
 handle_call(_Request, _From, State) ->
-    io:format ("received unhandled call: ~p~n",[{_Request, _From, State}]),
+    ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
 
 %% ------------------------------------------------------------------
 %% gen_server:handle_cast/2
 %% ------------------------------------------------------------------
 handle_cast(_Msg, State) ->
-    io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
+    ?DEBUG("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.
 
 %% ------------------------------------------------------------------
@@ -189,7 +191,7 @@ handle_info(_Info, State) ->
 %% gen_server:terminate/2
 %% ------------------------------------------------------------------
 terminate(_Reason, _State) ->
-    io:format ("[~p] terminated ~p: reason: ~p, state: ~p ~n",
+    ?DEBUG("[~p] terminated ~p: reason: ~p, state: ~p ~n",
                [?MODULE, self(), _Reason, _State]),
     ok.
 

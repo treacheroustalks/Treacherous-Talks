@@ -38,6 +38,8 @@
 %% Supervisor callbacks
 -export([init/1]).
 
+-include_lib("utils/include/debug.hrl").
+
 %% ===================================================================
 %% API functions
 %% ===================================================================
@@ -55,7 +57,7 @@ worker_count(Count) ->
 %% Supervisor callbacks
 %% ===================================================================
 init(no_arg) ->
-    io:format ("[~p] starting ~p~n", [?MODULE, self()]),
+    ?DEBUG("[~p] starting ~p~n", [?MODULE, self()]),
     Workers = service_worker_sup:create_childspec(
                 message, message_workers, message_worker),
     {ok, { {one_for_one, 5, 10}, Workers } }.
