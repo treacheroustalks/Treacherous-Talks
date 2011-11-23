@@ -104,7 +104,8 @@ start(User=#user{}, Hist, PushReceiver = #push_receiver{}) ->
 stop(SessionId) ->
     ?SESSION_CAST(SessionId, stop).
 logout(SessionId, _Arg) ->
-    stop(SessionId).
+    stop(SessionId),
+    {ok, ok}.
 
 %%-------------------------------------------------------------------
 %% @doc

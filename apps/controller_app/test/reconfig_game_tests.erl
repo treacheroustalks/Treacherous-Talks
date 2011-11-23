@@ -36,13 +36,14 @@
 
 tests(Callback, SessId, GameId) ->
     [
-     ?_test(success(Callback, SessId, GameId)),
-     ?_test(invalid(Callback, SessId, GameId))
+     success(Callback, SessId, GameId),
+     invalid(Callback, SessId, GameId)
     ].
 %%-------------------------------------------------------------------
-%% Update user tests
+%% Reconfig game tests
 %%-------------------------------------------------------------------
 success(Callback, SessId, GameId) ->
+    ?debugMsg("RECONFIG_GAME TEST SUCCESS"),
     Data = get_test_data(success),
     Cmd = {reconfig_game, {ok, SessId, {GameId, Data}}},
     Result = controller:handle_action(Cmd, Callback),
@@ -51,9 +52,11 @@ success(Callback, SessId, GameId) ->
     ?assertEqual({reconfig_game, success}, CmdRes),
 
     GameId = ResultData,
-    ?assert(is_integer(GameId)).
+    ?assert(is_integer(GameId)),
+    ?debugMsg("RECONFIG_GAME TEST SUCCESS finished").
 
 invalid(Callback, SessId, _GameId) ->
+    ?debugMsg("RECONFIG_GAME TEST INVALID"),
     Data = get_test_data(success),
     FakeGameId = get_test_data(invalid),
     Cmd = {reconfig_game, {ok, SessId, {FakeGameId, Data}}},
@@ -61,8 +64,9 @@ invalid(Callback, SessId, _GameId) ->
     {CmdRes, ResultData} = Result,
 
     ?assertEqual({reconfig_game, invalid_data}, CmdRes),
-    ?assertEqual(game_does_not_exist, ResultData),
-    ok.
+    ?assertEqual(game_does_not_exist, ResultData), 
+    ?debugMsg("RECONFIG_GAME TEST INVALID finished").
+
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------

@@ -36,13 +36,14 @@
 
 tests(Callback, SessId, GameId) ->
     [
-     ?_test(success(Callback, SessId, GameId)),
-     ?_test(invalid(Callback, SessId, GameId))
+     success(Callback, SessId, GameId),
+     invalid(Callback, SessId, GameId)
     ].
 %%-------------------------------------------------------------------
-%% Update user tests
+%% Get game tests
 %%-------------------------------------------------------------------
 success(Callback, SessId, GameId) ->
+    ?debugMsg("GET_GAME TEST SUCCESS"),
     Cmd = {get_game, {ok, SessId, GameId}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, ResultData} = Result,
@@ -50,9 +51,11 @@ success(Callback, SessId, GameId) ->
     ?assertEqual({get_game, success}, CmdRes),
 
     Game = ResultData,
-    ?assertEqual(Game#game.id, GameId).
+    ?assertEqual(Game#game.id, GameId),
+    ?debugMsg("GET_GAME TEST SUCCESS finished").
 
 invalid(Callback, SessId, _GameId) ->
+    ?debugMsg("GET_GAME TEST INVALID"),
     FakeGameId = get_test_data(invalid),
     Cmd = {get_game, {ok, SessId, FakeGameId}},
     Result = controller:handle_action(Cmd, Callback),
@@ -60,7 +63,7 @@ invalid(Callback, SessId, _GameId) ->
 
     ?assertEqual({get_game, invalid_data}, CmdRes),
     ?assertEqual(game_does_not_exist, ResultData),
-    ok.
+    ?debugMsg("GET_GAME TEST INVALID finished").
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------

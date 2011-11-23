@@ -32,27 +32,25 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--export([tests/2, success/2, invalid/2]).
+-export([tests/2, success/2]).
 
 tests(Callback, SessId) ->
     [
-     ?_test(success(Callback, SessId)),
-     ?_test(invalid(Callback, SessId))
+     success(Callback, SessId)
     ].
 %%-------------------------------------------------------------------
 %% Update user tests
 %%-------------------------------------------------------------------
 success(Callback, SessId) ->
+    ?debugMsg("UPDATE_USER TEST SUCCESS"),
     Data = get_test_data(success),
     Cmd = {update_user, {ok, SessId, Data}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, _Info} = Result,
 
-    ?assertEqual({update_user, success}, CmdRes).
+    ?assertEqual({update_user, success}, CmdRes),
+    ?debugMsg("UPDATE_USER TEST SUCCESS finished").
 
-invalid(_Callback, _SessId) ->
-    % don't know how this could fail ...
-    ok.
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------

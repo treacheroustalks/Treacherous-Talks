@@ -43,7 +43,7 @@
 %% setup code
 %%-------------------------------------------------------------------
 apps() ->
-    [message, protobuffs, riakc, service, db, datatypes, user_management,
+    [service, datatypes, protobuffs, riakc, db, utils, message, user_management,
      game, controller_app].
 
 app_start() ->
@@ -57,14 +57,16 @@ app_start() ->
                                                    'could not start',
                                                    App,
                                                    'reason was', Other}})
-                           end,
-                           ?debugMsg (
-                              io_lib:format ("~p is running", [App]))
+                           end
+%                           ?debugMsg (
+%                              io_lib:format ("~p is running", [App]))
                    end,
                    apps ()),
-    error_logger:tty(false).
+    error_logger:tty(false),
+    register(receiver, spawn(fun() -> receiver([]) end)).
 
 app_stop(_) ->
+    whereis(receiver) ! stop,
     [ ?assertEqual(ok, application:stop(App)) || App <- lists:reverse(apps())],
     error_logger:tty(true).
 
@@ -79,19 +81,35 @@ callback() ->
 %%-------------------------------------------------------------------
 %% helper: event receiver
 %%-------------------------------------------------------------------
+receiver(Events) ->
+   receive
+       {push, no_args, Event} ->
+           receiver([Event|Events]);
+       {get_events, Pid} ->
+           Pid ! Events,
+           receiver([]);
+       stop ->
+           ok;
+       Other ->
+           ?debugMsg("Receiver received unknown message!"),
+           ?debugVal(Other),
+           receiver(Events)
+   end.
+    
+
 get_receiver() ->
-    #push_receiver{pid = self(),
+    #push_receiver{pid = whereis(receiver),
                    args = no_args,
                    type = default
                   }.
 
 get_event() ->
-   receive
-       {push, no_args, Event} -> {ok, Event};
-       Other -> {error, {not_an_event, Other}}
-   after
-       ?TIMEOUT -> {error, timeout}
-   end.
+    whereis(receiver) ! {get_events, self()},
+    receive
+        Any -> Any
+    after
+        ?TIMEOUT -> {error, timeout}
+    end.
 
 %%-------------------------------------------------------------------
 %% All controller interface tests
@@ -140,15 +158,11 @@ controller_joined_game_test_() ->
      fun joined_game_test_instantiator/1
     }.
 
-controller_game_order_test_() ->
-    {setup,
-     fun() ->
-             app_start(),
-             game_order_setup()
-     end,
-     fun app_stop/1,
-     fun game_order_test_instantiator/1
-    }.
+%%-------------------------------------------------------------------
+%% Test executer
+%%-------------------------------------------------------------------
+execute_tests(Tests) ->
+    lists:foreach(fun(Test) -> Test() end, Tests).
 
 %%-------------------------------------------------------------------
 %% Unknown command tests
@@ -182,7 +196,7 @@ parse_error(Callback) ->
 invalid_session(Callback) ->
     Commands = [
                 update_user, get_session_user, create_game, get_game,
-                reconfig_game, game_overview, join_game, game_order
+                reconfig_game, join_game, game_order
                ],
     InvalidId = session_id:from_pid(list_to_pid("<0.1.0>")),
 
@@ -199,19 +213,18 @@ invalid_session(Callback) ->
 session_setup() ->
     Mods = [
             update_user_tests, get_session_user_tests,
-            create_game_tests, user_msg_tests, logout_tests,
-            push_events_tests
+            create_game_tests, user_msg_tests, 
+            push_events_tests, logout_tests
            ],
     Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
 
     User = create_user(),
     Register = {register, {ok, User}},
-    NewUser= controller:handle_action(Register,
-                                      {fun(_,_,Data) -> Data end, []}),
+    NewUser= controller:handle_action(Register, Reply),
 
     Login = {login, {ok, {NewUser, get_receiver()}}},
-    SessId = controller:handle_action(Login,
-                                      {fun(_,_,Data) -> Data end, []}),
+    SessId = controller:handle_action(Login, Reply),
 
     lists:map(fun(Mod) ->
                       {Mod, Callback, SessId}
@@ -231,23 +244,21 @@ session_test_instantiator(Mods) ->
 pre_game_setup() ->
     Mods = [
             reconfig_game_tests, join_game_tests, get_game_tests,
-            games_current_tests, game_search_tests
+            game_search_tests
            ],
     Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
 
     User = create_user(),
     Register = {register, {ok, User}},
-    NewUser= controller:handle_action(Register,
-                                      {fun(_,_,Data) -> Data end, []}),
+    NewUser= controller:handle_action(Register, Reply),
 
     Login = {login, {ok, {NewUser, get_receiver()}}},
-    SessId = controller:handle_action(Login,
-                                      {fun(_,_,Data) -> Data end, []}),
+    SessId = controller:handle_action(Login, Reply),
 
     NewGame = create_game(),
     GameCreate = {create_game, {ok, SessId, NewGame}},
-    GameId = controller:handle_action(GameCreate,
-                                      {fun(_,_,Data) -> Data end, []}),
+    GameId = controller:handle_action(GameCreate, Reply),
 
     lists:map(fun(Mod) ->
                       {Mod, Callback, SessId, GameId}
@@ -266,27 +277,24 @@ pre_game_test_instantiator(Mods) ->
 %%-------------------------------------------------------------------
 joined_game_setup() ->
     Mods = [
-            game_overview_tests
+            games_current_tests, game_overview_tests, game_order_tests
            ],
     Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
 
     User = create_user(),
     Register = {register, {ok, User}},
-    NewUser= controller:handle_action(Register,
-                                      {fun(_,_,Data) -> Data end, []}),
+    NewUser= controller:handle_action(Register, Reply),
 
     Login = {login, {ok, {NewUser, get_receiver()}}},
-    SessId = controller:handle_action(Login,
-                                      {fun(_,_,Data) -> Data end, []}),
+    SessId = controller:handle_action(Login, Reply),
 
     NewGame = create_game(),
     GameCreate = {create_game, {ok, SessId, NewGame}},
-    GameId = controller:handle_action(GameCreate,
-                                      {fun(_,_,Data) -> Data end, []}),
+    GameId = controller:handle_action(GameCreate, Reply),
 
     JoinGame = {join_game, {ok, SessId, {GameId, germany}}},
-    controller:handle_action(JoinGame,
-                             {fun(_,_,Data) -> Data end, []}),
+    controller:handle_action(JoinGame, Reply),
 
     lists:map(fun(Mod) ->
                       {Mod, Callback, SessId, GameId}
@@ -299,44 +307,6 @@ joined_game_test_instantiator(Mods) ->
                                 Mod:tests(Callback, SessId, GameId)
                         end
                 end, Mods)).
-
-%%-------------------------------------------------------------------
-%% game_order tests
-%%-------------------------------------------------------------------
-game_order_setup() ->
-    Mods = [game_order_tests],
-    Callback = callback(),
-
-    User = create_user(),
-    Register = {register, {ok, User}},
-    NewUser= controller:handle_action(Register,
-                                      {fun(_,_,Data) -> Data end, []}),
-
-    Login = {login, {ok, {NewUser, get_receiver()}}},
-    SessId = controller:handle_action(Login,
-                                      {fun(_,_,Data) -> Data end, []}),
-
-    NewGame = create_game(),
-    GameCreate = {create_game, {ok, SessId, NewGame}},
-    GameId = controller:handle_action(GameCreate,
-                                      {fun(_,_,Data) -> Data end, []}),
-
-    JoinGame = {join_game, {ok, SessId, {GameId, germany}}},
-    controller:handle_action(JoinGame,
-                             {fun(_,_,Data) -> Data end, []}),
-    lists:map(fun(Mod) ->
-                      {Mod, Callback, SessId, GameId}
-              end, Mods).
-
-game_order_test_instantiator(Mods) ->
-    lists:flatten(
-      lists:map(fun({Mod, Callback, SessId, GameId}) ->
-                        fun() ->
-                                [Mod:success(Callback, SessId, GameId),
-                                 Mod:invalid(Callback, SessId, GameId)]
-                        end
-                end, Mods)).
-
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------
@@ -362,4 +332,4 @@ create_game() ->
           retreat_phase = 12*60,
           build_phase = 12*60,
           password="pass",
-          waiting_time = 48*60}.
+          waiting_time = 1}.

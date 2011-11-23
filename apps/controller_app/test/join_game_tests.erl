@@ -36,22 +36,25 @@
 
 tests(Callback, SessId, GameId) ->
     [
-     ?_test(success(Callback, SessId, GameId)),
-     ?_test(invalid(Callback, SessId, GameId))
+     success(Callback, SessId, GameId),
+     invalid(Callback, SessId, GameId)
     ].
 %%-------------------------------------------------------------------
-%% Update user tests
+%% Join game tests
 %%-------------------------------------------------------------------
 success(Callback, SessId, GameId) ->
+    ?debugMsg("JOIN_GAME TEST SUCCESS"),
     Cmd = {join_game, {ok, SessId, {GameId, germany}}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, ResultData} = Result,
 
     ?assertEqual({join_game, success}, CmdRes),
 
-    ?assertEqual(GameId, ResultData).
+    ?assertEqual(GameId, ResultData),
+    ?debugMsg("JOIN_GAME TEST SUCCESS finished").
 
 invalid(Callback, SessId, GameId) ->
+    ?debugMsg("JOIN_GAME TEST INVALID"),
     % same as success, but since we joined germany already
     % we can't do it again....
     % @todo add check if person is already in the game somewhere
@@ -61,7 +64,8 @@ invalid(Callback, SessId, GameId) ->
 
     ?assertEqual({join_game, invalid_data}, CmdRes),
 
-    ?assertEqual(user_already_joined, ResultData).
+    ?assertEqual(user_already_joined, ResultData),
+    ?debugMsg("JOIN_GAME TEST INVALID finished").
 
 %%-------------------------------------------------------------------
 %% Test data

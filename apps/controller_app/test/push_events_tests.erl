@@ -40,20 +40,23 @@
 
 tests(Callback, SessId) ->
     [
-     ?_test(success(Callback, SessId))
+     success(Callback, SessId)
     ].
 
 %%-------------------------------------------------------------------
 %% Push an event
 %%-------------------------------------------------------------------
 success(_Callback, SessId) ->
-    User = session:get_session_user(SessId, no_arg),
+    ?debugMsg("PUSH_EVENT TEST SUCCESS"),
+    {ok, User} = session:get_session_user(SessId, no_arg),
     UserId = User#user.id,
 
     Event = #push_event{type = test_event,
                         data = {some, test, data}},
     controller:push_event(UserId, Event),
+    timer:sleep(1),
 
-    Result = controller_tests:get_event(),
+    Events = controller_tests:get_event(),
 
-    ?assertEqual({ok, Event}, Result).
+    ?assertEqual([Event], Events),
+    ?debugMsg("PUSH_EVENT TEST SUCCESS finished").

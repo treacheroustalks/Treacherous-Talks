@@ -36,13 +36,14 @@
 
 tests(Callback, SessId) ->
     [
-     ?_test(success(Callback, SessId)),
-     ?_test(invalid(Callback, SessId))
+     success(Callback, SessId),
+     invalid(Callback, SessId)
     ].
 %%-------------------------------------------------------------------
 %% Update user tests
 %%-------------------------------------------------------------------
 success(Callback, SessId) ->
+    ?debugMsg("CREATE_GAME TEST SUCCESS"),
     Data = get_test_data(success),
     Cmd = {create_game, {ok, SessId, Data}},
     Result = controller:handle_action(Cmd, Callback),
@@ -51,11 +52,13 @@ success(Callback, SessId) ->
     ?assertEqual({create_game, success}, CmdRes),
 
     GameId = ResultData,
-    ?assert(is_integer(GameId)).
+    ?assert(is_integer(GameId)),
+    ?debugMsg("CREATE_GAME TEST SUCCESS finished").
 
 invalid(_Callback, _SessId) ->
+    ?debugMsg("CREATE_GAME TEST INVALID"),
     % @todo no invalid case yet
-    ok.
+    ?debugMsg("CREATE_GAME TEST INVALID finished").
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------

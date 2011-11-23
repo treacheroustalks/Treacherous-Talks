@@ -36,22 +36,27 @@
 
 tests(Callback, SessId, GameId) ->
     [
-     ?_test(success(Callback, SessId, GameId)),
-     ?_test(invalid(Callback, SessId, GameId))
+     success(Callback, SessId, GameId),
+     invalid(Callback, SessId, GameId)
     ].
 %%-------------------------------------------------------------------
-%% Update user tests
+%% game overview tests
 %%-------------------------------------------------------------------
 success(Callback, SessId, GameId) ->
+    ?debugMsg("GAMES_OVERVIEW TEST SUCCESS"),
+    game_timer:sync_event(GameId, timeout),
+    timer:sleep(1),
     Cmd = {game_overview, {ok, SessId, GameId}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, ResultData} = Result,
 
     ?assertEqual({game_overview, success}, CmdRes),
 
-    ?assert(is_record(ResultData, game_overview)).
+    ?assert(is_record(ResultData, game_overview)),
+    ?debugMsg("GAMES_OVERVIEW TEST SUCCESS finished").
 
 invalid(Callback, SessId, _GameId) ->
+    ?debugMsg("GAMES_OVERVIEW TEST INVALID"),
     NewGame = controller_tests:create_game(),
     GameCreate = {create_game, {ok, SessId, NewGame}},
     NewGameId = controller:handle_action(GameCreate,
@@ -61,7 +66,8 @@ invalid(Callback, SessId, _GameId) ->
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, _ResultData} = Result,
 
-    ?assertEqual({game_overview, invalid_data}, CmdRes).
+    ?assertEqual({game_overview, invalid_data}, CmdRes),
+    ?debugMsg("GAMES_OVERVIEW TEST INVALID finished").
 
 %%-------------------------------------------------------------------
 %% Test data

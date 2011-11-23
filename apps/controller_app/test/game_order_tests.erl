@@ -32,27 +32,24 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--export([tests/3, success/3, invalid/3]).
+-export([tests/3, success/3]).
 
 tests(Callback, SessId, GameId) ->
     [
-     ?_test(success(Callback, SessId, GameId)),
-     ?_test(invalid(Callback, SessId, GameId))
+     success(Callback, SessId, GameId)
     ].
 %%-------------------------------------------------------------------
-%% Update user tests
+%% game order tests
 %%-------------------------------------------------------------------
 success(Callback, SessId, GameId) ->
+    ?debugMsg("GAME_ORDER TEST SUCCESS"),
     Data = game_order_sample(success),
     Cmd = {game_order, {ok, SessId, {GameId, Data}}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, _Info} = Result,
 
-    ?assertEqual({game_order,success}, CmdRes).
-
-invalid(_Callback, _SessId, _GameId) ->
-    % don't know how this could fail ...
-    ok.
+    ?assertEqual({game_order,success}, CmdRes),
+    ?debugMsg("GAME_ORDER TEST SUCCESS finished").
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------

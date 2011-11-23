@@ -39,8 +39,7 @@
 %% Internal functions, exported for eUnit, do not use!
 -export([
          register/1,
-         login/1,
-         get_user/2
+         login/1
         ]).
 
 -include_lib("datatypes/include/push_receiver.hrl").
@@ -203,15 +202,3 @@ register(User) ->
 %%-------------------------------------------------------------------
 login(Data = {#user{}, #push_receiver{}}) ->
     ?CALL_WORKER({login, Data}).
-
-
-%%-------------------------------------------------------------------
-%% @deprecated only for eunit
-%% @doc get_user/2
-%%
-%% API for getting a user
-%% @end
-%% [@spec get_user(integer()|string()) @end]
-%%-------------------------------------------------------------------
-get_user(Type, Key) ->
-    ?CALL_WORKER({get_user, Type, Key}).

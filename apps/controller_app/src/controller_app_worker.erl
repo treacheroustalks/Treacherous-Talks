@@ -183,21 +183,6 @@ handle_call({login, {Login, PushInfo}}, _From, State) ->
                 {error, Error}
         end,
     {reply, Result, State};
-%%-------------------------------------------------------------------
-%% @doc
-%% Handles call for getting a user
-%% @end
-%% [@spec handle_call({get_user::atom(), atom(),
-%%                     integer()|string()}, From::{pid(), Tag}, #state{}) ->
-%%%         {noreply, #state{}}.]
-%% @end
-%%-------------------------------------------------------------------
-handle_call({get_user, Id}, From, State) ->
-    Result = user_management:get(From, Id),
-    {reply, Result, State};
-handle_call({get_user, Type, Key}, From, State) ->
-    Result = user_management:get(From, Type, Key),
-    {reply, Result, State};
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),
     {noreply, ok, State}.

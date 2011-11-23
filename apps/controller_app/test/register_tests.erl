@@ -43,15 +43,18 @@ tests(Callback) ->
 %% Register tests
 %%-------------------------------------------------------------------
 success(Callback) ->
+    ?debugMsg("REGISTER TEST SUCCESS"),
     User = get_test_data(success),
     Cmd = {register, {ok, User}},
 
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, NewUser} = Result,
     ?assertEqual({register, success}, CmdRes),
-    ?assertEqual(User#user{id = NewUser#user.id}, NewUser).
+    ?assertEqual(User#user{id = NewUser#user.id}, NewUser),
+    ?debugMsg("REGISTER TEST SUCCESS finished").
 
 invalid(Callback) ->
+    ?debugMsg("REGISTER TEST INAVLID"),
     User = get_test_data(invalid),
     Cmd = {register, {ok, User}},
 
@@ -60,7 +63,8 @@ invalid(Callback) ->
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, Info} = Result,
     ?assertEqual({register, invalid_data}, CmdRes),
-    ?assertEqual(nick_already_exists, Info).
+    ?assertEqual(nick_already_exists, Info),
+    ?debugMsg("REGISTER TEST INAVLID finished").
 
 %%-------------------------------------------------------------------
 %% Test data

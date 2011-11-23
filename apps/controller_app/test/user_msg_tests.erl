@@ -34,43 +34,52 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/bucket.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 
 -export([tests/2, success/2, invalid/2]).
 
 tests(Callback, SessId) ->
     [
-     ?_test(success(Callback, SessId)),
-     ?_test(invalid(Callback, SessId))
+     success(Callback, SessId),
+     invalid(Callback, SessId)
     ].
 %%-------------------------------------------------------------------
 %% Update user tests
 %%-------------------------------------------------------------------
 success(Callback, SessId) ->
-    ?debugMsg(">>>>>>>>>>>>>>>>successful log off game mesage"),
+    ?debugMsg("USER_MSG TEST SUCCESS"),
     Data = create_valid_message(),
     Cmd = {user_msg, {ok, SessId, Data}},
     user_management:create(to_user()),
 
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, _Info} = Result,
-    ?assertEqual({user_msg, success}, CmdRes).
+    ?assertEqual({user_msg, success}, CmdRes),
+    ?debugMsg("USER_MSG TEST SUCCESS finished").
 
 invalid(Callback, SessId) ->
+    ?debugMsg("USER_MSG TEST INVALID"),
     Data = create_invalid_message(),
     Cmd = {user_msg, {ok, SessId, Data}},
     Result = controller:handle_action(Cmd, Callback),
-    ?assertEqual({{user_msg,invalid_data},invalid_nick}, Result).
+    ?assertEqual({{user_msg,invalid_data},invalid_nick}, Result),
+    ?debugMsg("USER_MSG TEST INVALID finished").
+
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------
 create_invalid_message() ->
-      {frontend_msg,"no_such_user","\n\n    A sample message to nick player which\n"
-                       "    contain several line\n    have fun\n\n    "}.
+      #frontend_msg{to = "no_such_user",
+                    content = "\n\n    A sample message to nick player which
+                              contain several line\n    have fun\n\n    "
+                   }.
 
 create_valid_message() ->
-      {frontend_msg,"valid_user","\n\n    A sample message to nick player which\n"
-                       "    contain several line\n    have fun\n\n    "}.
+      #frontend_msg{to = "valid_user",
+                    content = "\n\n    A sample message to nick player which
+                              contain several line\n    have fun\n\n    "
+                   }.
 
 to_user_id() ->
     9999.

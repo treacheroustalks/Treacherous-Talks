@@ -37,16 +37,17 @@
 -export([tests/3, success/3]).
 
 tests(Callback, SessId, GameId) ->
-    [?_test(success(Callback, SessId, GameId))].
+    [success(Callback, SessId, GameId)].
 %%-------------------------------------------------------------------
-%% Update user tests
+%% games search tests
 %%-------------------------------------------------------------------
 success(Callback, SessId, GameId) ->
-    ?debugMsg("game_search test"),
+    ?debugMsg("GAMES_SEARCH TEST SUCCESS"),
     Data = "id=" ++ integer_to_list(GameId),
     Cmd = {game_search, {ok, SessId, Data}},
     Result = controller:handle_action(Cmd, Callback),
-    {CmdRes, {ok, Games}} = Result,
+    {CmdRes, Games} = Result,
     ?assertEqual({game_search, success}, CmdRes),
     Game = hd(Games),
-    ?assertEqual(GameId, Game#game.id).
+    ?assertEqual(GameId, Game#game.id),
+    ?debugMsg("GAMES_SEARCH TEST SUCCESS finished").

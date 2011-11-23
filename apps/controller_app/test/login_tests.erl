@@ -53,6 +53,7 @@ tests(Callback) ->
 %% Login tests
 %%-------------------------------------------------------------------
 success(Callback) ->
+    ?debugMsg("LOGIN TEST SUCCESS"),
     User = get_test_data(success),
     Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
     Result = controller:handle_action(Cmd, Callback),
@@ -64,9 +65,11 @@ success(Callback) ->
     ?assertEqual(true, SessResult),
 
     PresenceResult = session_presence:is_online(User#user.id),
-    ?assertEqual(true, PresenceResult).
+    ?assertEqual(true, PresenceResult),
+    ?debugMsg("LOGIN TEST SUCCESS finished").
 
 mult_nicks(Callback) ->
+    ?debugMsg("LOGIN TEST MULT_NICKS"),
     User = get_test_data(mult_nicks),
     Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
 
@@ -76,9 +79,11 @@ mult_nicks(Callback) ->
     ?assertEqual(nick_not_unique, Info),
 
     PresenceResult = session_presence:is_online(User#user.id),
-    ?assertEqual(false, PresenceResult).
+    ?assertEqual(false, PresenceResult),
+    ?debugMsg("LOGIN TEST MULT_NICKS finished").
 
 user_not_existing(Callback) ->
+    ?debugMsg("LOGIN TEST USER_NOT_EXISTING"),
     User = get_test_data(user_not_existing),
     Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
 
@@ -88,9 +93,11 @@ user_not_existing(Callback) ->
     ?assertEqual(invalid_login_data, Info),
 
     PresenceResult = session_presence:is_online(User#user.id),
-    ?assertEqual(false, PresenceResult).
+    ?assertEqual(false, PresenceResult),
+    ?debugMsg("LOGIN TEST USER_NOT_EXISTING finished").
 
 wrong_password(Callback) ->
+    ?debugMsg("LOGIN TEST WRONG_PASSWORD"),
     User = get_test_data(wrong_password),
     Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
 
@@ -100,9 +107,11 @@ wrong_password(Callback) ->
     ?assertEqual(invalid_login_data, Info),
 
     PresenceResult = session_presence:is_online(User#user.id),
-    ?assertEqual(false, PresenceResult).
+    ?assertEqual(false, PresenceResult),
+    ?debugMsg("LOGIN TEST WRONG_PASSWORD finished").
 
 kill_old_session(Callback) ->
+    ?debugMsg("LOGIN TEST KILL_OLD_SESSION"),
     {User, Session} = get_test_data(kill_old_session),
     Cmd = {login, {ok, {User, controller_tests:get_receiver()}}},
      Result = controller:handle_action(Cmd, Callback),
@@ -118,7 +127,8 @@ kill_old_session(Callback) ->
     ?assertEqual(false, SessResult),
 
     PresenceResult = session_presence:is_online(User#user.id),
-    ?assertEqual(true, PresenceResult).
+    ?assertEqual(true, PresenceResult),
+    ?debugMsg("LOGIN TEST KILL_OLD_SESSION finished").
 
 %%-------------------------------------------------------------------
 %% Test data

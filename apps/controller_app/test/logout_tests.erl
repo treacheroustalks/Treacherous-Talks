@@ -39,14 +39,15 @@
 
 tests(Callback, SessId) ->
     [
-     ?_test(success(Callback, SessId))
+     success(Callback, SessId)
     ].
 
 %%-------------------------------------------------------------------
 %% Update user tests
 %%-------------------------------------------------------------------
 success(Callback, SessId) ->
-    User = session:get_session_user(SessId, no_arg),
+    ?debugMsg("LOGOUT TEST SUCCESS"),
+    {ok, User} = session:get_session_user(SessId, no_arg),
 
     Cmd = {logout, {ok, SessId, []}},
     Result = controller:handle_action(Cmd, Callback),
@@ -54,4 +55,5 @@ success(Callback, SessId) ->
     ?assertMatch({{logout, success}, ok}, Result),
 
     PresenceResult = session_presence:is_online(User#user.id),
-    ?assertEqual(true, PresenceResult).
+    ?assertEqual(true, PresenceResult),
+    ?debugMsg("LOGOUT TEST SUCCESS finished").
