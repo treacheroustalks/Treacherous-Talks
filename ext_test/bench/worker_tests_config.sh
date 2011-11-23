@@ -1,0 +1,5 @@
+SERVER_USER="server4"
+SERVER="server4.pcs"
+B_DIR="backend"
+RIAK_DIR="riak/"
+SCHEMA_DIR="riak_schema/"
