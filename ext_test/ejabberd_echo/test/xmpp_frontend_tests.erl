@@ -254,7 +254,7 @@ instantiator_two_user_test_() ->
      fun two_user_instantiator/1}.
 
 offline_message_test_() ->
-    fun offline_message_tst_/0.
+    offline_message_tst_().
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -434,11 +434,7 @@ setup_two_user_instantiator() ->
     join_game(Client1, Session1, GameID2, "england"),
     join_game(Client2, Session2, GameID2, "france"),
 
-    net_kernel:start([test]),
-    erlang:set_cookie(node(), 'treacherous_talks'),
-    ?debugVal(net_adm:ping('backend@127.0.0.1')),
-    ?debugVal(rpc:call('backend@127.0.0.1',game_timer,sync_event,[list_to_integer(GameID1), timeout])),
-    rpc:call('backend@127.0.0.1',game_timer,sync_event,[list_to_integer(GameID2), timeout]),
+    change_game_phase([GameID1, GameID2]),
 
     Msg = "Hello, this is a message! :)",
 
@@ -467,35 +463,111 @@ setup_two_user_instantiator() ->
     ].
 
 offline_message_tst_() ->
-    ?debugMsg ("Testing sending of offline message"),
-    Password = "password",
-    Client1 = user1_test_client,
-    Client2 = user2_test_client,
-    Nick1 = random_nick(),
-    Nick2 = random_nick(),
+    [{"deliver off game message to user when get online",
+      fun() ->
 
-    Msg = "Hello, this is an offline message!",
+              ?debugMsg ("Testing sending of offline off-game message"),
+              Password = "password",
+              Client1 = user1_test_client,
+              Client2 = user2_test_client,
+              Nick1 = random_nick(),
+              Nick2 = random_nick(),
 
-    %% create user #2 and log him out:
-    xmpp_client:start_link(Client2, Password),
-    login_test_user (Client2, Nick2),
-    xmpp_client:stop (Client2),
+              Msg = "Hello, this is an offline message!",
 
-    %% create user #1, send an offline message to #2 and log out:
-    xmpp_client:start_link(Client1, Password),
-    {Session1, Nick1} = login_test_user (Client1, Nick1),
-    xmpp_client:xmpp_call(Client1,
-                          ?SERVICE_BOT,
-                          ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg)),
-    xmpp_client:stop (Client1),
+              %% create user #2 and log him out:
+              xmpp_client:start_link(Client2, Password),
+              login_test_user (Client2, Nick2),
+              xmpp_client:stop (Client2),
 
-    %% wait a bit, log user #2 on and check that `Msg' was received:
-    receive after 1000 -> ok end,
-    xmpp_client:start_link (Client2, Password),
-    Response =
-        xmpp_client:xmpp_call(
-          Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
-    {match, _} = re:run (Response, Msg).
+              %% create user #1, send an offline message to #2 and log out:
+              xmpp_client:start_link(Client1, Password),
+              {Session1, Nick1} = login_test_user (Client1, Nick1),
+              xmpp_client:xmpp_call(Client1,
+                                    ?SERVICE_BOT,
+                                    ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg)),
+              xmpp_client:stop (Client1),
+
+              %% wait a bit, log user #2 on and check that `Msg' was received:
+              receive after 1000 -> ok end,
+              xmpp_client:start_link (Client2, Password),
+              Response =
+                  xmpp_client:xmpp_call(
+                    Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
+              {match, _} = re:run (Response, Msg)
+      end},
+     {"deliver in game message to user when get online",
+      fun() ->
+              ?debugMsg ("Testing sending of offline in game message start ..."),
+              Password = "password",
+              Client1 = user1_test_client,
+              Client2 = user2_test_client,
+              Client3 = user3_test_client,
+              Nick1 = random_nick(),
+              Nick2 = random_nick(),
+              Nick3 = random_nick(),
+
+              Msg = "Hello, this is an offline message!",
+              GMsg= "Hello, this is a game message for two countries",
+
+              %createt users and login
+              xmpp_client:start_link(Client1, Password),
+              {Session11, Nick1} = login_test_user (Client1, Nick1),
+
+              xmpp_client:start_link(Client2, Password),
+              {Session21, Nick2}= login_test_user (Client2, Nick2),
+
+              xmpp_client:start_link(Client3, Password),
+              {Session31, Nick3}= login_test_user (Client3, Nick3),
+
+              %% create a game to send in game messages
+              GameID = create_game(Client1, Session11, "white", "1M"),
+
+              join_game(Client1, Session11, GameID, "england"),
+              join_game(Client2, Session21, GameID, "france"),
+              join_game(Client3, Session31, GameID, "germany"),
+
+              change_game_phase([GameID]),
+
+              % log out the second and third client
+              xmpp_client:stop (Client2),
+              xmpp_client:stop (Client3),
+
+              % one in-game message and one off-game message send to client 2
+              % one in-gmae message to client 3
+              %% send an offline message to #2
+              ToCountries = "france , germany",
+              xmpp_client:xmpp_call(Client1,
+                                    ?SERVICE_BOT,
+                                    ?SEND_OFF_GAME_MSG(Session11, Nick2, Msg)),
+              % send game message to 2 countries (Client2 and client3)
+              xmpp_client:xmpp_call(Client1,
+                                    ?SERVICE_BOT,
+                                    ?SEND_GAME_MSG(Session11, GameID, ToCountries, GMsg)),
+              xmpp_client:stop (Client1),
+
+              %% wait a bit, log user #2 on and check that `Msg' was received:
+              receive after 1000 -> ok end,
+              xmpp_client:start_link (Client2, Password),
+
+              % client2 must get one off game message and one in game message
+              Response21 =
+                  xmpp_client:xmpp_call(
+                    Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
+              {match, _} = re:run (Response21, Msg),
+
+              Response22 = xmpp_client:get_next_msg(Client2),
+              {match, _} = re:run (Response22, GMsg),
+
+              % client3 that will get only one in game message
+              xmpp_client:start_link (Client3, Password),
+              Response3 =
+                  xmpp_client:xmpp_call(
+                    Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick3)),
+              {match, _} = re:run (Response3, GMsg),
+              ?debugMsg ("Testing sending of offline in and off game message DONE")
+      end}
+    ].
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -635,3 +707,19 @@ create_game(Client, Session, Press, Waittime) ->
                                 ?CREATE_RESPONSE_SUCCESS ++ ".*\"(.*)\"",
                                 [{capture, all_but_first, list}]),
     GameID.
+%%------------------------------------------------------------------------------
+%%    @doc
+%%    call this function with list of game ids to change their phase from
+%%     waitting to ongoing.
+%%    @end
+%%------------------------------------------------------------------------------
+change_game_phase(GameIDs) ->
+    net_kernel:start([test]),
+    erlang:set_cookie(node(), 'treacherous_talks'),
+    ?debugVal(net_adm:ping('backend@127.0.0.1')),
+    lists:foreach(fun(GameID) ->
+                          ?debugVal(rpc:call('backend@127.0.0.1',game_timer,
+                                             sync_event,
+                                             [list_to_integer(GameID), timeout]))
+                  end,
+                  GameIDs).

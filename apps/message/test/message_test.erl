@@ -56,21 +56,33 @@ app_started_teardown (_) ->
 
 test_msg() ->
     #message{from_nick = "bob",
-             from_id = 5555,
+             from_id = user_id1(),
              to_nick = "valid_nick",
-             to_id = 2222,
+             to_id = to_user_id(),
              content = "hi"
             }.
 test_msg2() ->
     #message{from_nick = "dave",
-             from_id = 4444,
+             from_id = user_id2(),
              to_nick = "valid_nick",
-             to_id = 2222,
+             to_id = to_user_id(),
              content = "hello"
+            }.
+test_game_msg(ToUser) ->
+    #game_message{from_country = germany,
+                  game_id = 123456,
+             from_id = user_id1(),
+             to_country = france,
+             to_id = ToUser,
+             content = "game message"
             }.
 
 test_key() ->
     1234.
+user_id1() ->
+    5555.
+user_id2() ->
+    4444.
 
 to_user_id() ->
     2222.
@@ -79,10 +91,6 @@ to_user() ->
     #user{id = to_user_id(), nick = "valid_nick", email="sth@sth.pcs"}.
 to_user2() ->
     #user{id = 3333, nick = "valid_nick2", email="sthelse@sth.pcs"}.
-
-expected_link_value() ->
-    [{{<<"user">>,db:int_to_bin(to_user_id())},<<"to_user">>},
-     {{<<"user">>,<<"5555">>},<<"from_user">>}].
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -104,14 +112,22 @@ ping_tst_ () ->
     [fun()-> {pong, _Pid} = message_worker:ping () end].
 
 message_worker_tst_() ->
-    [fun() ->
-        message_worker:log_user_msg(test_key(), test_msg()),
-        DBObj = get_DB_obj(?B_MESSAGE, test_key()),
-        ?assertEqual(expected_link_value(), db_obj:get_links(DBObj)),
-        ActualValue = message_util:get_message(test_key()),
+    [{"write a user message in db",
+      fun() ->
+        message_worker:log_message(test_key(), test_msg(), ?B_MESSAGE),
+        ActualValue = message_util:get_message(test_key(), ?B_MESSAGE, message),
         ?assertEqual({ok, test_msg()},ActualValue),
         db:delete(?B_MESSAGE, db:int_to_bin(test_key()))
-     end].
+     end},
+     {"write a game message in db",
+      fun() ->
+        message_worker:log_message(test_key(), test_game_msg(1122), ?B_GAME_MESSAGE),
+        ActualValue = message_util:get_message(test_key(), ?B_GAME_MESSAGE,
+                                               game_message),
+        ?assertEqual({ok, test_game_msg(1122)},ActualValue),
+        db:delete(?B_GAME_MESSAGE, db:int_to_bin(test_key()))
+     end}
+     ].
 
 message_fail_tst_() ->
     [fun() ->
@@ -128,12 +144,8 @@ message_success_tst_() ->
              % send msg to "to_user"
              {ok, Key} = message:user_msg(test_msg()),
 
-             % check if links are correct
-             DBObj = get_DB_obj(?B_MESSAGE, Key),
-             ?assertEqual(expected_link_value(), db_obj:get_links(DBObj)),
-
              % check if the msg has been correctly stored in db
-             {ok, ActualMessage} = message_util:get_message(Key),
+             {ok, ActualMessage} = message_util:get_message(Key, ?B_MESSAGE, message),
              Expected = (test_msg())#message{id = Key,
                                            date_created =
                                                ActualMessage#message.date_created},
@@ -177,19 +189,19 @@ unread_tst_() ->
                % check if the msg has been correctly stored in db
                Result = message:unread((to_user())#user.id),
 
-               {ok, Unread} = Result,
+               {ok, {UnreadUserMsg, []}} = Result,
 
                % exactly as many as expected, ie NOT OtherMessage
-               ?assertEqual(2, length(Unread)),
+               ?assertEqual(2, length(UnreadUserMsg)),
 
                % cheat: copy in the data instead of mecking
-               Actual1 = lists:keyfind(Key1, #message.id, Unread),
+               Actual1 = lists:keyfind(Key1, #message.id, UnreadUserMsg),
 
                Expected1 = (test_msg())#message{id = Key1,
                                                 date_created = Actual1#message.date_created,
                                                 status = unread},
 
-               Actual2 = lists:keyfind(Key2, #message.id, Unread),
+               Actual2 = lists:keyfind(Key2, #message.id, UnreadUserMsg),
                Expected2 = (test_msg2())#message{id = Key2,
                                                  date_created = Actual2#message.date_created,
                                                  status = unread},
@@ -197,36 +209,113 @@ unread_tst_() ->
                ?assertEqual(Expected1, Actual1),
                ?assertEqual(Expected2, Actual2)
        end},
-      {"Only unread messages are retrieved",
+      {"All user and game message of given user retrieved, and they contain what they should",
+       fun() -> % test
+               % send msg to "to_user"
+               {ok, Key1} = message:user_msg(test_msg()),
+               {ok, Key2} = message:user_msg(test_msg2()),
+
+               % send game message to "to_user"
+               ok = message:game_msg(test_game_msg(to_user_id())),
+
+               % send message to a different user. We don't expect to see this in
+               % the result of message:unread/1
+               OtherMessage = ( test_msg2() )#message{ to_id = (to_user2())#user.id,
+                                                       to_nick = (to_user2())#user.nick },
+               {ok, _Key3} = message:user_msg(OtherMessage),
+               % game messsage for another user
+               GameMsg2 = (test_game_msg(user_id2()))#game_message{
+                                                          to_country = england},
+               ok = message:game_msg(GameMsg2),
+
+               % check if the msg has been correctly stored in db
+               Result = message:unread((to_user())#user.id),
+
+               {ok, {UnreadUserMsges, UnreadGameMsges}} = Result,
+
+               % exactly as many as expected, ie NOT OtherMessage
+               ?assertEqual(2, length(UnreadUserMsges)),
+               ?assertEqual(1, length(UnreadGameMsges)),
+
+               % cheat: copy in the data instead of mecking
+               Actual1 = lists:keyfind(Key1, #message.id, UnreadUserMsges),
+
+               Expected1 = (test_msg())#message{id = Key1,
+                                                date_created = Actual1#message.date_created,
+                                                status = unread},
+
+               Actual2 = lists:keyfind(Key2, #message.id, UnreadUserMsges),
+               Expected2 = (test_msg2())#message{id = Key2,
+                                                 date_created = Actual2#message.date_created,
+                                                 status = unread},
+               [GameMsg] = UnreadGameMsges,
+               Expected3 = (test_game_msg(to_user_id()))#game_message{
+                                                    id =GameMsg#game_message.id},
+
+               % exactly as expected
+               ?assertEqual(Expected1, Actual1),
+               ?assertEqual(Expected2, Actual2),
+               ?assertEqual(Expected3, GameMsg)
+
+       end},
+      {"user and game messages are retrieved",
        fun() -> % test
                % send msg to "to_user"
                {ok, Key1} = message:user_msg(test_msg()),
                {ok, _Key2} = message:user_msg(test_msg2()),
 
-               % mark one as read
-               message:mark_as_read(Key1),
+               % send game message to "to_user"
+               ok = message:game_msg(test_game_msg(to_user_id())),
+               GameMsg2 = (test_game_msg(to_user_id()))#game_message{
+                                                          from_country = england,
+                                                          from_id = user_id2()},
+               ok = message:game_msg(GameMsg2),
+
+               % mark one of each game and user message as read
+               message:mark_user_msg_as_read(Key1),
+               make_game_msg_as_read(to_user_id(), user_id2()),
 
                % exactly one is now unread
-               {ok, [Unread]} = message:unread((to_user())#user.id),
+               {ok, {[UnreadUserMsg], [UnreadGameMsg]}} = message:unread((to_user())#user.id),
 
-               ?assertEqual((test_msg2())#message.content, Unread#message.content)
+               ?assertEqual((test_msg2())#message.content, UnreadUserMsg#message.content),
+               Expected = (test_game_msg(to_user_id()))#game_message.from_country,
+               ?assertEqual(Expected,
+                            UnreadGameMsg#game_message.from_country)
        end},
-      {"message:mark_as_unread/1 positive test",
+      {"message:mark_as_unread/2 positive test",
        fun() ->
+               %check for message bucket
                {ok, Key1} = message:user_msg(test_msg()),
-               {ok, Message} = message_util:get_message(Key1),
+               {ok, Message} = message_util:get_message(Key1, ?B_MESSAGE, message),
                ?assertEqual(unread, Message#message.status),
 
-               ok = message:mark_as_read(Key1),
-               {ok, ReadMessage} = message_util:get_message(Key1),
-               ?assertEqual(read, ReadMessage#message.status)
+               ok = message:mark_user_msg_as_read(Key1),
+               {ok, ReadMessage} = message_util:get_message(Key1, ?B_MESSAGE, message),
+               ?assertEqual(read, ReadMessage#message.status),
+
+               %check for game_message bucket
+               ok = message:game_msg(test_game_msg(to_user_id())),
+               {ok, {[], [UnreadGameMsg]}} = message:unread((to_user())#user.id),
+               GameMsgKey = UnreadGameMsg#game_message.id,
+               {ok, GMsg} = message_util:get_message(GameMsgKey,
+                                                        ?B_GAME_MESSAGE,
+                                                        game_message),
+               ?assertEqual(unread, GMsg#game_message.status),
+
+               ok = message:mark_game_msg_as_read(GameMsgKey),
+               {ok, ReadGMsg} = message_util:get_message(GameMsgKey,
+                                                        ?B_GAME_MESSAGE,
+                                                        game_message),
+               ?assertEqual(read, ReadGMsg#game_message.status)
        end},
       {"message:mark_as_unread/1 negative test",
        fun() ->
                % Make sure it doesn't exist
                Key = 12345,
                db:delete(?B_MESSAGE, db:int_to_bin(Key)),
-               ?assertEqual({error, notfound}, message:mark_as_read(Key))
+               ?assertEqual({error, notfound},
+                            message:mark_user_msg_as_read(Key))
        end}
     ]}.
 
@@ -242,10 +331,20 @@ get_DB_obj(Bucket, Key) ->
     end.
 
 delete_user_messages(UserId) ->
+    delete_messages(UserId,?B_MESSAGE),
+    delete_messages(UserId,?B_GAME_MESSAGE).
+
+delete_messages(UserId,Bucket) ->
     Query = io_lib:format("to_id=~p", [UserId]),
-    {ok, Result} = db:search(?B_MESSAGE, Query),
+    {ok, Result} = db:search(Bucket, Query),
     Keys = data_format:search_result_keys(Result),
     lists:map(fun(Key) ->
-                      db:delete(?B_MESSAGE, db:int_to_bin(Key))
+                      db:delete(Bucket, db:int_to_bin(Key))
               end,
               Keys).
+
+make_game_msg_as_read(ToUserId, FromUserId) ->
+    {ok, {_, UnreadGameMsges}} = message:unread(ToUserId),
+    GMsg = lists:keyfind(FromUserId, #game_message.from_id, UnreadGameMsges),
+    ?debugVal(GMsg),
+    message:mark_game_msg_as_read(GMsg#game_message.id).

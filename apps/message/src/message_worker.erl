@@ -44,7 +44,7 @@
          code_change/3]).
 
 %% export for eunit
--export([log_user_msg/2]).
+-export([log_message/3]).
 
 -include_lib("utils/include/debug.hrl").
 
@@ -79,8 +79,8 @@ handle_call({unread, UserId}, _From, State) ->
     Unread = do_unread(UserId),
     {reply, Unread, State};
 
-handle_call({mark_as_read, MessageId}, _From, State) ->
-    Result = do_mark_as_read(MessageId),
+handle_call({mark_as_read, MessageId, Bucket}, _From, State) ->
+    Result = do_mark_as_read(MessageId, Bucket),
     {reply, Result, State};
 
 handle_call({user_msg, Msg=#message{}}, _From, State) ->
@@ -134,51 +134,62 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 log_user_msg(undefined, Msg = #message{}) ->
     ID = db:get_unique_id(),
-    log_user_msg(ID, Msg#message{id = ID});
-log_user_msg(ID, Msg = #message{}) ->
-    BinID = db:int_to_bin(ID),
-    MsgPropList = data_format:rec_to_plist(Msg),
-    DbObj = db_obj:create(?B_MESSAGE, BinID, MsgPropList),
-    DbLinkObj = db_obj:add_link(DbObj,
-                                {{?B_USER,
-                                  db:int_to_bin(Msg#message.from_id)},
-                                 ?MESSAGE_FROM_USER_LINK}),
-    DbLinkObj2 = db_obj:add_link(DbLinkObj,
-                                 {{?B_USER,
-                                   db:int_to_bin(Msg#message.to_id)},
-                                  ?MESSAGE_TO_USER_LINK}),
-    db:put(DbLinkObj2),
-    {ok, ID}.
+    log_message(ID, Msg#message{id = ID}, ?B_MESSAGE).
+
+log_game_msg(undefined, GMsg = #game_message{}) ->
+    ID = db:get_unique_id(),
+    log_message(ID, GMsg#game_message{id = ID}, ?B_GAME_MESSAGE).
 
 do_unread(UserId) ->
+    {ok, UserMsges} = get_unread_msges(UserId, ?B_MESSAGE, message),
+    {ok, GameMsges} = get_unread_msges(UserId, ?B_GAME_MESSAGE, game_message),
+    {ok, {UserMsges, GameMsges}}.
+
+
+get_unread_msges(UserId, Bucket, RecordName) ->
     Query = lists:flatten(io_lib:format("to_id=~p AND status=unread", [UserId])),
-    {ok, PropLists} = db:search_values(?B_MESSAGE, Query),
+    {ok, PropLists} = db:search_values(Bucket, Query),
     Messages = lists:map(fun(PropList) ->
-                                 data_format:plist_to_rec(message, PropList)
+                                 data_format:plist_to_rec(RecordName, PropList)
                          end,
                          PropLists),
     {ok, Messages}.
 
-do_mark_as_read(MessageId) ->
-    case db:get(?B_MESSAGE, db:int_to_bin(MessageId)) of
+do_mark_as_read(MessageId, Bucket)
+  when Bucket == ?B_MESSAGE;
+       Bucket == ?B_GAME_MESSAGE ->
+    case db:get(Bucket, db:int_to_bin(MessageId)) of
         {ok, DBObj} ->
             PropList = db_obj:get_value(DBObj),
             % modify via the record format to maintain the property order easily
-            Message = data_format:plist_to_rec(message, PropList),
-            ReadMessage = Message#message{status=read},
-            ReadPropList = data_format:rec_to_plist(ReadMessage),
-            ReadDBObj = db_obj:set_value(DBObj, ReadPropList),
+            UpdatedPropList =
+                case Bucket of
+                    ?B_MESSAGE ->
+                        Message = data_format:plist_to_rec(message, PropList),
+                        ReadMessage = Message#message{status=read},
+                        data_format:rec_to_plist(ReadMessage);
+                    ?B_GAME_MESSAGE ->
+                        Message = data_format:plist_to_rec(game_message, PropList),
+                        ReadGameMessage = Message#game_message{status=read},
+                        data_format:rec_to_plist(ReadGameMessage)
+                end,
+            ReadDBObj = db_obj:set_value(DBObj, UpdatedPropList),
             db:put(ReadDBObj),
             ok;
         {error, notfound} ->
             {error, notfound}
     end.
 
-log_game_msg(undefined, GMsg = #game_message{}) ->
-    ID = db:get_unique_id(),
-    log_game_msg(ID, GMsg#game_message{id = ID});
-log_game_msg(ID, GMsg = #game_message{}) ->
+%%------------------------------------------------------------------------------
+%%  @doc
+%%    this function gets id, record and bucket name and convert the record
+%%    to proplist and stor.
+%%  @end
+%%------------------------------------------------------------------------------
+log_message(ID, Msg, Bucket) ->
     BinID = db:int_to_bin(ID),
-    DbObj = db_obj:create(?B_GAME_MESSAGE, BinID, GMsg),
+    % convert record to proplist to be able to do search
+    MsgPropList = data_format:rec_to_plist(Msg),
+    DbObj = db_obj:create(Bucket, BinID, MsgPropList),
     db:put(DbObj),
     {ok, ID}.

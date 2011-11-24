@@ -261,25 +261,31 @@ game_search(SessionId, Query) ->
 %% --------------------------------------------------------------------
 %% @doc
 %%  Delivers the messages that were sent to a user, after he has logged in
-%%  by calling {@link session:user_msg/2} <br/>
+%%  by calling {@link session:user_msg/2}. It will deliver both off-game and
+%%   in-game messages.<br/>
+%%  For every kind of messages it will set appropriate type for push_event.
 %% <em>WARNINGS</em>:<br/>
 %%  <ol>
 %%   <li>assumes an existing user session process</li>
-%%   <li>sends everything as `off_game_msg' since `on_game_msg's are not
-%%       supported yet</li>
 %%  </ol>
 %% @end
 %% --------------------------------------------------------------------
 -spec deliver_offline_messages (NewSessionId :: list (), User :: #user{}) ->
                                        ok | {error, Reason :: any ()}.
 deliver_offline_messages (NewSessionId, User) ->
-    {ok, Messages} = message:unread (User#user.id),
+    {ok, {UserMsges, GameMsges}} = message:unread (User#user.id),
     lists:foreach (fun (Msg) ->
                            session:push_event(
                              NewSessionId,
                              #push_event{type = off_game_msg, data = Msg}),
-                           message:mark_as_read (Msg#message.id)
+                           message:mark_user_msg_as_read (Msg#message.id)
                    end,
-                   Messages),
-    
-    Messages.
+                   UserMsges),
+    lists:foreach (fun (GMsg) ->
+                           session:push_event(
+                             NewSessionId,
+                             #push_event{type = in_game_msg, data = GMsg}),
+                           message:mark_game_msg_as_read (GMsg#game_message.id)
+                   end,
+                   GameMsges),
+    {UserMsges, GameMsges}.
