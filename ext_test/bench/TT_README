@@ -1,0 +1,17 @@
+Load testing with basho bench:
+
+Howto:
+1. run ./get_basho_bench
+  * downloads basho_bench
+  * updates the rebar.config
+
+2. build it:
+  * make
+
+3. run ./worker_tests.sh
+  * runs a test with different worker settings
+  * changes the worker config of the remote backend server and restarts it
+  * runs basho_bencho
+  * copies results
+  * and so on, for all supplied worker settings
+
