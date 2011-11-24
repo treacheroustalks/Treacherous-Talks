@@ -26,6 +26,7 @@
 
 -include_lib ("eunit/include/eunit.hrl").
 -include_lib ("datatypes/include/game.hrl").
+-include_lib ("datatypes/include/bucket.hrl").
 
 -define (TEST_TIMEOUT, 3000).
 
@@ -77,7 +78,8 @@ phase_timer_test_ () ->
       game_timer_create_tst_(),
       game_timer_state_tst_(),
       game_current_tst_(),
-      game_timer_end_tst_()
+      game_timer_end_tst_(),
+      game_timer_game_over_tst_()
      ]}.
 
 ping_tst_ () ->
@@ -197,13 +199,44 @@ game_timer_end_tst_() ->
              ?assert(is_process_alive(TimerPid)),
              ?assertEqual(game_timer:sync_event(ID, timeout), {ok, order_phase}),
              ?assertEqual({ID, finished}, game_timer:stop(ID, finished)),
-             
+
              ?assertEqual({ok, Game#game{status = finished}}, game:get_game(ID)),
              %% check that the game timer does not exist
              ?assertNot(is_process_alive(TimerPid)),
              ?assertEqual(undefined, global:whereis_name({game_timer, ID}))
      end].
 
+%%--------------------------------------------------------------------
+%% Game Over test
+%%--------------------------------------------------------------------
+game_timer_game_over_tst_() ->
+    [fun() ->
+             GameRecord = test_game(),
+             ?debugVal(Game = sync_get(sync_new(GameRecord))),
+             ID = Game#game.id,
+             TimerPid = global:whereis_name({game_timer, ID}),
+             %% timeout brings us to "started" / order phase
+             game_timer:sync_event(ID, timeout),
+             % retreat phase
+             game_timer:sync_event(ID, timeout),
+             % order phase
+             game_timer:sync_event(ID, timeout),
+             % retreat phase
+             game_timer:sync_event(ID, timeout),
+
+             % manipulate map and fast forward to count phase
+             DigraphMap = create_winner_map(),
+             update_state(ID, game_utils:to_mapterm(DigraphMap)),
+             game_utils:delete_map(DigraphMap),
+             % this will process the retreat phase and change to
+             % count phase, when we _should_ see that Austria
+             % has won the game, and the game timer should terminate
+             game_timer:sync_event(ID, timeout),
+
+             {ok, FinishedGame} = game:get_game(ID),
+             ?assertEqual(finished, FinishedGame#game.status),
+             ?assertNot(is_process_alive(TimerPid))
+     end].
 
 %%--------------------------------------------------------------------
 %% Helper functions for creating and getting games
@@ -215,3 +248,41 @@ sync_new(Game=#game{}) ->
 sync_get(ID) ->
     {ok, Game} = game:get_game(ID),
     Game.
+
+
+%% Creates a map with Austria as winner
+create_winner_map() ->
+    Map = map_data:create (standard_game),
+    ReplaceWithAustrian =
+        fun ({Where, Unit}) ->
+                case Unit of
+                    {_, austria} ->
+                        0;
+                    {Type, Nation} ->
+                        map:remove_unit (Map,
+                                         {Type, Nation}, Where),
+                        map:add_unit (Map,
+                                      {Type, austria}, Where),
+                        1
+                end
+        end,
+    lists:foldl (fun (LocAndUnit, SumOfAustrian) ->
+                         if
+                             SumOfAustrian < 18 ->
+                                 SumOfAustrian +
+                                     ReplaceWithAustrian (LocAndUnit);
+                             true ->
+                                 SumOfAustrian
+                         end
+                 end,
+                 3, % austria starts out with three units
+                 map:get_units (Map)),
+    Map.
+
+%% Updates the map for the current state of game with id ID
+update_state(ID, Map) ->
+    Key = game_utils:get_keyprefix({id, ID}),
+    {ok, StateObj} = db:get(?B_GAME_STATE, Key),
+    State = db_obj:get_value(StateObj),
+    ?debugVal(FakedState = State#game_state{map = Map}),
+    ?debugVal(game_utils:update_db_obj(StateObj, FakedState)).

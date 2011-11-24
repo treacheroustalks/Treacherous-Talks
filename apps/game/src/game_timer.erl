@@ -172,7 +172,9 @@ retreat_phase(_Event, State) ->
         {ok, skip} ->
             phase_change(?ID(State), order_phase),
             Timeout = timer:minutes((State#state.game)#game.order_phase),
-            {next_state, order_phase, State#state{phase = order_phase}, Timeout}
+            {next_state, order_phase, State#state{phase = order_phase}, Timeout};
+        {stop, Reason, game_over} ->
+            {stop, Reason, State}
     end.
 retreat_phase(_Event, From, State) ->
     syncevent(retreat_phase, From, State).
@@ -212,7 +214,6 @@ handle_info(_Info, StateName, State) ->
 
 terminate(_Reason, _StateName, State) ->
     ?DEBUG("Terminating game timer ~p~n", [State]),
-    global:unregister_name({(State#state.game)#game.id, ?MODULE}),
     ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
@@ -244,11 +245,20 @@ phase_change(ID, build_phase) ->
         {_Year, spring} -> {ok, skip};
         _Other ->
             Map = game_utils:to_rule_map(GameState#game_state.map),
-            _Result = rules:process(count_phase, Map, ?RULES, []),
-            %% inform players of Result
-            NewCurrentGame = update_current_game(ID, build_phase),
-            new_state(NewCurrentGame, GameState#game_state.map),
-            {ok, true}
+            Results = rules:process(count_phase, Map, ?RULES, []),
+            game_utils:delete_map(Map),
+            case ?debugVal(lists:member (game_over, Results)) of
+                false ->
+                    % inform players of their possible builds?
+                    NewCurrentGame = update_current_game(ID, build_phase),
+                    new_state(NewCurrentGame, GameState#game_state.map),
+                    {ok, true};
+                true ->
+                    % game over!
+                    ?DEBUG("Game over ~p~n", [ID]),
+                    end_game(ID, finished),
+                    {stop, normal, game_over}
+            end
     end;
 phase_change(ID, Phase) ->
     ?DEBUG("Game ~p entered ~p~n", [ID, Phase]),
@@ -272,6 +282,7 @@ process_phase(ID, Phase) ->
     ?DEBUG("Received orders: ~p~n", [Orders]),
     Result = rules:process(Phase, Map, ?RULES, Orders),
     update_state(GameState#game_state{map = game_utils:to_mapterm(Map)}),
+    game_utils:delete_map(Map),
     %% we probably want to handle the result in some way
     %% like informing the users
     {ok, Result}.
@@ -327,8 +338,7 @@ update_state(#game_state{id = ID} = NewState) ->
 %% @doc
 %% Creates a game state record and current game record for a game with id ID.
 %% @spec
-%% setup_game(ID :: integer()) ->
-%%    Result :: any()
+%% setup_game(ID :: integer()) -> ok
 %% @end
 %%-------------------------------------------------------------------
 setup_game(ID) ->
@@ -359,7 +369,8 @@ setup_game(ID) ->
     CurrentGameLinkObj = db_obj:add_link(DBCurrentGame,
                                          {{?B_GAME_STATE, StateKey},
                                           ?CURRENT_GAME_LINK_STATE}),
-    db:put(CurrentGameLinkObj).
+    db:put(CurrentGameLinkObj),
+    game_utils:delete_map(Map).
 
 
 %%-------------------------------------------------------------------
@@ -426,7 +437,7 @@ syncevent(retreat_phase, From, State) ->
     ?debugMsg("Received retreat_phase sync event"),
     process_phase(?ID(State), retreat_phase),
     %% retreat is handled and we enter count phase
-    case phase_change(?ID(State), build_phase) of
+    case ?debugVal(phase_change(?ID(State), build_phase)) of
         {ok, true} ->
             Timeout = timer:minutes((State#state.game)#game.build_phase),
             gen_fsm:reply(From, {ok, build_phase}),
@@ -435,7 +446,10 @@ syncevent(retreat_phase, From, State) ->
             phase_change(?ID(State), order_phase),
             Timeout = timer:minutes((State#state.game)#game.order_phase),
             gen_fsm:reply(From, {ok, order_phase}),
-            {next_state, order_phase, State#state{phase = order_phase}, Timeout}
+            {next_state, order_phase, State#state{phase = order_phase}, Timeout};
+        {stop, Reason, game_over} ->
+            gen_fsm:reply(From, {ok, game_over}),
+            {stop, Reason, State}
     end;
 syncevent(build_phase, From, State) ->
     ?debugMsg("Received build_phase sync event"),
