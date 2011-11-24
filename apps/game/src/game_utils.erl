@@ -42,6 +42,7 @@
          get_current_game/1,
          get_game_state/1,
          get_default_map/0,
+         delete_map/1,
          to_mapterm/1,
          to_rule_map/1,
          get_keys_by_idx/2,
@@ -183,6 +184,16 @@ userlist(GameID) ->
 %% ------------------------------------------------------------------
 get_default_map() ->
     map_data:create (standard_game).
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Deletes a map
+%% @spec
+%% delete_map(Map :: digraph()) -> ok
+%% @end
+%% ------------------------------------------------------------------
+delete_map(Map) ->
+    map_data:delete (Map).
 
 %% ------------------------------------------------------------------
 %% @doc

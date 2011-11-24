@@ -411,10 +411,11 @@ get_game_overview_tst_ () ->
              game_timer:sync_event(Game#game.id, timeout),
              Reply = sync_get_game_overview (Game#game.id, UserID),
              ?debugVal(Reply),
-             StandardMap = digraph_io:to_erlang_term(
-                             map_data:create(standard_game)),
+             DigraphMap = map_data:create(standard_game),
+             StandardMap = digraph_io:to_erlang_term(DigraphMap),
              StoredMap = Reply#game_overview.map,
              ?assertEqual(StandardMap, StoredMap),
+             game_utils:delete_map(DigraphMap),
              ?debugMsg("Game phase changed, and map is the same"),
              ?debugMsg("get game state test end")
      end,
