@@ -36,7 +36,7 @@
 
 -behaviour(gen_server).
 
--include("include/sysconfig.hrl").
+-include_lib("datatypes/include/clusterconf.hrl").
 
 %% Set a timeout for API calls.
 -define(TIMEOUT, 30000).

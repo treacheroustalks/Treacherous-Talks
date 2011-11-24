@@ -1,0 +1,12 @@
+{application, cluster_manager,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { cluster_manager_app, []}},
+  {env, []}
+ ]}.

@@ -15,6 +15,6 @@
 %%  The list of relconf terms determines which releases will be started here.
 -type hostconf() :: {host, hostname(), [relconf()]}.
 
-%% System Configuration.
-%% A sysconf consists of 0 or more hostconf terms.
--type sysconf() :: [hostconf()].
+%% Cluster Configuration.
+%% A clustconf consists of 0 or more hostconf terms.
+-type clustconf() :: [hostconf()].

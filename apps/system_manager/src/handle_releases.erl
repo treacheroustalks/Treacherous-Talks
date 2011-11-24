@@ -35,8 +35,7 @@
 %%%-------------------------------------------------------------------
 -module(handle_releases).
 
--include("include/sysconfig.hrl").
-
+-include_lib("datatypes/include/clusterconf.hrl").
 -include_lib("utils/include/debug.hrl").
 
 %% ------------------------------------------------------------------
