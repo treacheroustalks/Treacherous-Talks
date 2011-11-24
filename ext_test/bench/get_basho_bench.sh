@@ -13,8 +13,9 @@ function get_bench {
     git checkout $VERSION &&
     cd .. &&
     # move files to the correct place
+    rm -rf ebin/
     mv src/* $DIR/src/ &&
-    mv $DIR/* . &&
+    mv -f $DIR/* .
     rm -rf $DIR
 }
 
