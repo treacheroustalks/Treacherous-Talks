@@ -41,7 +41,9 @@
          is_online/1,
          get_session_id/1,
          get_all_by_type/1,
-         get_all/0
+         get_all/0,
+         count_all_by_type/1,
+         count_all/0
         ]).
 
 %% ------------------------------------------------------------------
@@ -70,7 +72,13 @@ init() ->
                                        record_info(fields, session)}])
     of
         {atomic, ok} ->
-            ok;
+            case mnesia:add_table_index(session, client_type)
+            of
+                {atomic, ok} ->
+                    ok;
+                Other ->
+                    Other
+            end;
         {aborted, {already_exists, ?TABLE}} ->
             ok;
         Else ->
@@ -187,10 +195,32 @@ get_all() ->
 %% @end
 %%-------------------------------------------------------------------
 get_all_by_type(ClientType) ->
-    All = mnesia:dirty_match_object(#session{user_id = '_',
-                                             session_id = '_',
-                                             client_type = ClientType}),
+    All = mnesia:dirty_index_read(?TABLE, ClientType, client_type),
     lists:map(fun(#session{user_id = UserId,
                            session_id = SessionId}) ->
                   {UserId, SessionId}
               end, All).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Gives number of all online users, example:
+%% Number = count_all()
+%%
+%% @spec count_all() ->
+%%           integer()
+%% @end
+%%-------------------------------------------------------------------
+count_all() ->
+    mnesia:table_info(?TABLE,size).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Gives number of all online users of particular interface, example:
+%% Number = count_all_by_type(ClientType)
+%%
+%% @spec count_all_by_type(im | mail | client) ->
+%%           integer()
+%% @end
+%%-------------------------------------------------------------------
+count_all_by_type(ClientType) ->
+    length(get_all_by_type(ClientType)).
