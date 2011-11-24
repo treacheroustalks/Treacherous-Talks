@@ -64,7 +64,9 @@ controller_test_() ->
        ?_test(session_presence_add_remove()),
        ?_test(session_presence_get_session()),
        ?_test(session_presence_list_sessions()),
-       ?_test(session_presence_list_sessions_by_client_type())
+       ?_test(session_presence_list_sessions_by_client_type()),
+       ?_test(session_presence_count_sessions()),
+       ?_test(session_presence_count_sessions_by_client_type())
       ]
      }}.
 
@@ -105,19 +107,7 @@ session_presence_add_remove() ->
 
 
 session_presence_list_sessions() ->
-    UserIds = lists:seq(1, 10),
-    SessionIds = lists:map(fun integer_to_list/1, UserIds),
-    ClientTypes = lists:map(fun(Id) ->
-                                if
-                                    Id >= 1,
-                                    Id =< 3 -> im;
-                                    Id >= 4,
-                                    Id =< 6 -> mail;
-                                    Id >= 7,
-                                    Id =< 10 -> web
-                                end
-                            end, UserIds),
-    Zipped = lists:zip3(UserIds, SessionIds, ClientTypes),
+    Zipped = get_zipped_raw_data(),
     lists:map(fun({UserId, SessionId, ClientType}) ->
                       session_presence:add(UserId, SessionId, ClientType)
               end, Zipped),
@@ -129,19 +119,7 @@ session_presence_list_sessions() ->
 
 
 session_presence_list_sessions_by_client_type() ->
-    UserIds = lists:seq(1, 10),
-    SessionIds = lists:map(fun integer_to_list/1, UserIds),
-    ClientTypes = lists:map(fun(Id) ->
-                                if
-                                    Id >= 1,
-                                    Id =< 3 -> im;
-                                    Id >= 4,
-                                    Id =< 6 -> mail;
-                                    Id >= 7,
-                                    Id =< 10 -> web
-                                end
-                            end, UserIds),
-    Zipped = lists:zip3(UserIds, SessionIds, ClientTypes),
+    Zipped = get_zipped_raw_data(),
     lists:map(fun({UserId, SessionId, ClientType}) ->
                       session_presence:add(UserId, SessionId, ClientType)
               end, Zipped),
@@ -161,8 +139,48 @@ session_presence_list_sessions_by_client_type() ->
                   end
               end, Zipped).
 
+
+session_presence_count_sessions() ->
+    Zipped = get_zipped_raw_data(),
+    mnesia:clear_table(session),
+    lists:map(fun({UserId, SessionId, ClientType}) ->
+                      session_presence:add(UserId, SessionId, ClientType)
+              end, Zipped),
+    Count = session_presence:count_all(),
+    ?assertEqual(10, Count).
+
+
+session_presence_count_sessions_by_client_type() ->
+    Zipped = get_zipped_raw_data(),
+    mnesia:clear_table(session),
+    lists:map(fun({UserId, SessionId, ClientType}) ->
+                      session_presence:add(UserId, SessionId, ClientType)
+              end, Zipped),
+    CountIm = session_presence:count_all_by_type(im),
+    CountMail = session_presence:count_all_by_type(mail),
+    CountWeb = session_presence:count_all_by_type(web),
+    ?assertEqual(3, CountIm),
+    ?assertEqual(3, CountMail),
+    ?assertEqual(4, CountWeb).
+
+
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------
 get_test_id() ->
     123456789.
+
+get_zipped_raw_data() ->
+    UserIds = lists:seq(1, 10),
+    SessionIds = lists:map(fun integer_to_list/1, UserIds),
+    ClientTypes = lists:map(fun(Id) ->
+                                if
+                                    Id >= 1,
+                                    Id =< 3 -> im;
+                                    Id >= 4,
+                                    Id =< 6 -> mail;
+                                    Id >= 7,
+                                    Id =< 10 -> web
+                                end
+                            end, UserIds),
+    lists:zip3(UserIds, SessionIds, ClientTypes).
