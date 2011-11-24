@@ -8,5 +8,6 @@
                   stdlib
                  ]},
   {mod, { system_manager_app, []}},
-  {env, []}
+  {env, [{release_path, "../../"}
+        ]}
  ]}.

@@ -39,6 +39,8 @@ fi
 # Use releases/VSN/sys.config if it exists otherwise use etc/app.config
 if [ -e "$RUNNER_BASE_DIR/releases/$APP_VSN/sys.config" ]; then
     CONFIG_PATH="$RUNNER_BASE_DIR/releases/$APP_VSN/sys.config"
+elif [ -e "$RUNNER_ETC_DIR/app-override.config" ]; then
+    CONFIG_PATH="$RUNNER_ETC_DIR/app-override.config"
 else
     CONFIG_PATH="$RUNNER_ETC_DIR/app.config"
 fi
