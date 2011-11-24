@@ -216,7 +216,6 @@ game_update_tst_() ->
               UpdatedGame = Game#game{description = "Updated game"},
               % Update the game with the same id as Game to UpdatedGame
               game:reconfig_game(UpdatedGame),
-              timer:sleep(50),
               %% Now the game should have changed in the DB to have
               %% status = ongoing, change that before assert
               ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
@@ -235,7 +234,6 @@ game_update_tst_() ->
              % update it
              ModifiedGame = Game#game{press = white_press},
              game:reconfig_game(ModifiedGame),
-             timer:sleep(50),
 
              % prove that we find it
              {ok, Keys2} = game:get_keys_by_idx(#game.press, white_press),
@@ -275,7 +273,6 @@ game_update_tst_() ->
              UpdatedGame = Game#game{description = "Updated game"},
              % Update the game with the same id as Game to UpdatedGame
              game:reconfig_game(UpdatedGame),
-             timer:sleep(50),
              %% Now the game should have changed in the DB to have
              %% status = ongoing, change that before assert
              ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
@@ -318,7 +315,6 @@ join_game_tst_() ->
              % join new player with id=1122 and country=england
              JoinResult = game:join_game(Game#game.id, 1122, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
-             timer:sleep(50),
              GamePlayers = sync_get_game_player (Game#game.id),
              ?assertEqual(1, length(GamePlayers#game_player.players)),
              ?debugMsg("join game test end")
@@ -330,7 +326,6 @@ join_game_tst_() ->
              Game = sync_get(sync_new(GameRecord)),
              % join new player with id=1122 and country=england
              game:join_game(Game#game.id, 1122, england),
-             timer:sleep(50),
              JoinResult = game:join_game(Game#game.id, 221122, england),
              ?assertEqual({error, country_not_available}, JoinResult),
              ?debugMsg("join game test end")
@@ -342,7 +337,6 @@ join_game_tst_() ->
              Game = sync_get(sync_new(GameRecord)),
              % join new player with id=1122 and country=england
              game:join_game(Game#game.id, 1122, england),
-             timer:sleep(50),
              JoinResult = game:join_game(Game#game.id, 1122, austria),
              ?assertEqual({error, user_already_joined}, JoinResult),
              ?debugMsg("join game test end")
