@@ -218,6 +218,9 @@ function event_action(data) {
     case "register_invalid_data":
         clear_message();
         break;
+    case "game_msg_invalid_data":
+        clear_message();
+        break;
     case "get_session_user_success":
         if (is_empty_page(data.page) && page == dash_page) {
             // This case occurs when a logged in user reloads a page

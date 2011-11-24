@@ -32,6 +32,9 @@
 -module(web_parser).
 -export([parse/1]).
 
+% export for eunit
+-export([parse_countries_str/1]).
+
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
@@ -93,7 +96,7 @@ parse(RawData) ->
               get_field("session_id", Data),
               #game{name = get_field("name", Data),
                     description = get_field("description", Data),
-                    press = get_field("press", Data),
+                    press = parse_press_str(get_field("press", Data)),
                     password = get_field("password", Data),
                     order_phase = OrderPhase,
                     retreat_phase = RetreatPhase,
@@ -113,7 +116,7 @@ parse(RawData) ->
               get_field("session_id", Data),
               {GameId,
               [{#game.name, get_field("name", Data)},
-               {#game.press,  get_field("press", Data)},
+               {#game.press,  parse_press_str(get_field("press", Data))},
                {#game.order_phase, OrderPhase},
                {#game.retreat_phase, RetreatPhase},
                {#game.build_phase, BuildPhase},
@@ -143,6 +146,12 @@ parse(RawData) ->
         "game_search" ->
             Query = get_search_query(Data),
             {game_search, {ok, get_field("session_id", Data), Query}};
+        "game_msg" ->
+            {game_msg, {ok,
+                        get_field ("session_id", Data),
+                        #frontend_msg{game_id = get_integer ("game_id", Data),
+                               to = parse_countries_str(get_field ("to", Data)),
+                                      content = get_field ("content", Data)}}};
         "user_msg" ->
             {user_msg, {ok,
                         get_field ("session_id", Data),
@@ -216,3 +225,15 @@ remove_struct([], Acc) ->
     Acc;
 remove_struct([{struct, [Elem]}|T], Acc) ->
     remove_struct(T, [Elem|Acc]).
+
+parse_countries_str(null) -> % implicit broadcast
+    [austria, england, france, germany, italy, russia, turkey];
+parse_countries_str({array, CountryStrList}) ->
+    [list_to_existing_atom(X)|| X <- CountryStrList].
+
+parse_press_str(PressStr) ->
+    case PressStr of
+        "white" -> white;
+        "grey" -> grey;
+        _ -> none
+    end.

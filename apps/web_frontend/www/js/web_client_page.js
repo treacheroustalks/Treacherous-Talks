@@ -208,7 +208,12 @@ function get_game_overview(game_id) {
     call_server('game_overview', dataObj);
 }
 
-function send_chat_message() {
+function send_off_game_message() {
+    var form = get_form_data('#chat_form');
+    if (check_field_empty(form.chat_msg, 'message, cannot send empty message'))
+        return false;
+    if (check_field_empty(form.chat_to, 'recipient, no recipient specified'))
+        return false;
     var dataObj = {
         "content" : [
             { "session_id" : get_cookie() },
@@ -220,6 +225,24 @@ function send_chat_message() {
     $('#chat_msg').val('');
 }
 
+function send_in_game_message() {
+    var form = get_form_data('#press_msg_form');
+    if (check_field_empty(form.press_game_id, 'Press Game Id'))
+        return false;
+    if (check_field_int(form.press_game_id, 'Press Game Id'))
+        return false;
+    if (check_field_empty(form.press_msg, 'Cannot send empty message'))
+        return false;
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie() },
+            { "game_id" : $('#press_game_id').val() },
+            { "to" : $('#press_to').val() },
+            { "content" : $('#press_msg').val() }
+        ]
+    };
+    call_server('game_msg', dataObj);
+}
 
 /*------------------------------------------------------------------------------
  Form cleanup functions
@@ -712,8 +735,13 @@ function set_message(type, message) {
             || message == "")
         return false;
 
+    var in_game = false;
     switch (type) {
-    case 'chat':
+    // receive msg success
+    case 'recv_in_game_msg':
+        in_game = true;
+    case 'recv_off_game_msg':
+        var chatArea = in_game ? $('#press_incoming_text') : $('#chat_text');
         var getKeys = function(obj){
             var keys = [];
             for(var key in obj){
@@ -721,13 +749,24 @@ function set_message(type, message) {
             }
             return keys;
         }
-        var chatArea = $('#chat_text');
         print('keys=' + getKeys(chatArea));
 
         chatArea.val(chatArea.val() + '\n' + message);
         //I know, I know... but it's the only way I could make this work :-/
         chatArea.scrollTop(99999);
         chatArea.slideDown();
+        break;
+    // send msg success
+    case 'send_in_game_msg':
+        in_game = true;
+    case 'send_off_game_msg':
+        var chatArea = in_game ? $('#press_incoming_text') : $('#chat_text');
+        var toCountries = $('#press_to').val();
+        chatArea.val(chatArea.val() + '\nYou to ' +
+        (toCountries ? toCountries : 'all') + ': ' + $('#press_msg').val());
+        chatArea.scrollTop(99999);
+        chatArea.slideDown();
+        $('#press_msg').val('');
         break;
     case 'invisible':
         print(message);

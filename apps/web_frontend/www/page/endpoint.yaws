@@ -84,7 +84,7 @@ socket_server(WebSocket, ProtocolVersion) ->
         {push, [Websocket, ProtocolVersion], Event} = P ->
             case Event of
                 #push_event{type = Type, data = Msg} ->
-                    reply ([WebSocket, ProtocolVersion], off_game_msg, Msg);
+                    reply ([WebSocket, ProtocolVersion], Type, Msg);
                 _ ->
                     io:format("received illegal push: ~p~n", [P]),
                     ok
@@ -134,19 +134,28 @@ msg_success(Ret=#ret{}) ->
 msg_error(Ret=#ret{}) ->
     Ret#ret{message_type="error"}.
 
-msg_chat (Ret=#ret{}) ->
-    Ret#ret{message_type="chat"}.
+msg_ret (Ret=#ret{}, MsgType) ->
+    Ret#ret{message_type = MsgType}.
 
 msg_invisible (Ret=#ret{}) ->
     Ret#ret{message_type="invisible"}.
 
 get_ret ({user_msg, success}, Ret, _Data) ->
-    % just print it to the log:
-    msg_invisible (Ret);
+    msg_ret (Ret, "send_off_game_msg");
 get_ret ({off_game_msg, ok}, Ret, Data) ->
     get_ret (off_game_msg, Ret, Data);
 get_ret (off_game_msg, Ret = #ret{}, _Data) ->
-    msg_chat (Ret);
+    msg_ret (Ret, "recv_off_game_msg");
+
+get_ret ({game_msg, success}, Ret, _Data) ->
+    msg_ret (Ret, "send_in_game_msg");
+get_ret ({game_msg, invalid_data}, Ret, _Data) ->
+    msg_error(Ret);
+get_ret ({in_game_msg, ok}, Ret, Data) ->
+    get_ret (in_game_msg, Ret, Data);
+get_ret (in_game_msg, Ret = #ret{}, _Data) ->
+    msg_ret (Ret, "recv_in_game_msg");
+
 get_ret({register, success}, Ret=#ret{}, _Data) ->
     msg_success(Ret#ret{page="home"});
 get_ret({register, invalid_data}, Ret=#ret{}, _Data) ->
