@@ -26,6 +26,7 @@
 -export([init/0, get_pid/1, store_pid/2, delete_pid/1]).
 
 -include("include/game.hrl").
+-include_lib("utils/include/debug.hrl").
 
 %% I think this should be called during the node boot
 %mnesia:start().
@@ -37,15 +38,22 @@
 %% I think this should be called during the game app startup
 %%---------------------------------------------------------
 init() ->
-    case mnesia:create_table(game_join_proc,
-                             [{attributes,
-                               record_info(fields, game_join_proc)}]) of
-        {atomic, ok} ->
-            ok;
-        {aborted,{already_exists,game_join_proc}} ->
-            ok;
-        Else ->
-            Else
+    case mnesia_utils:replicate (game_join_proc) of
+        {error, no_reachable_backend} ->
+            ?DEBUG("didn't find responding backends.~n"),
+            ?DEBUG("creating fresh game_join_proc table~n"),
+            case mnesia:create_table(game_join_proc,
+                                     [{attributes,
+                                       record_info(fields, game_join_proc)}]) of
+                {atomic, ok} ->
+                    ok;
+                {aborted,{already_exists,game_join_proc}} ->
+                    ok;
+                Else ->
+                    Else
+            end;
+        ok ->
+            ok
     end.
 
 

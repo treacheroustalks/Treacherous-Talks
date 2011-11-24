@@ -74,15 +74,10 @@
 %% @end
 %%-------------------------------------------------------------------
 init() ->
-    Backend =
-        case application:get_env (backend_nodes) of
-            undefined -> undefined;
-            {ok, Backends} -> get_responding_backend (Backends)
-        end,
-    case Backend of
-        undefined ->
-            ?DEBUG ("didn't find responding backends in backend_nodes list.~n"),
-            ?DEBUG ("creating session table.~n"),
+    case mnesia_utils:replicate (session) of
+        {error, no_reachable_backend} ->
+            ?DEBUG ("didn't find responding backends.~n"),
+            ?DEBUG ("creating fresh session table.~n"),
             case mnesia:create_table(?TABLE, [{type, set},
                                               {attributes,
                                                record_info(fields, session)}])
@@ -100,41 +95,8 @@ init() ->
                 Else ->
                     Else
                 end;
-        Responding ->
-            ?DEBUG ("copying session data from backend ~p~n",
-                    [Responding]),
-            This = node (),
-            {ok, _} =
-                rpc:call (Responding,
-                          mnesia,
-                          change_config,
-                          [extra_db_nodes, [This]]),
-            mnesia:add_table_copy (session, node (), ram_copies),
-            ?DEBUG ("copying done"),
+        ok ->
             ok
-    end.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Go through a list of nodes and return the first one that is not equal to
-%% `node()' AND that is ping-able.
-%% @end
-%%-------------------------------------------------------------------
--spec get_responding_backend([Node]) -> Node | undefined when
-      Node :: atom().
-get_responding_backend ([]) ->
-    undefined;
-get_responding_backend ([Backend | Backends]) ->
-    case node () of
-        Backend ->
-            get_responding_backend (Backends);
-        _ ->
-            case net_adm:ping (Backend) of
-                pang ->
-                    get_responding_backend (Backends);
-                pong ->
-                    Backend
-            end
     end.
 
 %%-------------------------------------------------------------------
