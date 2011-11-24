@@ -355,6 +355,9 @@ translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
                 {build, {Unit, Country}, Wh};
             remove ->
                 {_, Unit, Wh} = H,
+                {disband, {Unit, Country}, Wh};
+            disband ->
+                {_, Unit, Wh} = H,
                 {disband, {Unit, Country}, Wh}
         end,
     case TranslatedOrder of

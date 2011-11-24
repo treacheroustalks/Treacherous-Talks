@@ -35,26 +35,29 @@
 %% Public API
 %% ------------------------------------------------------------------
 -export([
-         register_user/0,
-         register_user/1,
-         login/2,
-         login/1,
+         register_user/0, register_user/1,
+         login/2, login/1,
          logout/2,
-         send_msg/2,
+         send_msg/2, send_game_msg/3,
          read_push_msg/1,
-         create_game/1,
-         create_game/2,
-         join_game/3,
-         join_full_game/2,
+         create_game/1, create_game/2,
+         join_game/3, join_full_game/2,
+         start_game/2, start_games/2,
+         phase_change/2,
          game_overview/2,
-         create_orders/0,
-         send_orders/7,
-         send_game_msg/3,
+         create_orders/0, send_order/4, send_orders/4,
          search_current/1,
-         start_game/2,
-         start_games/2,
-         phase_change/2
+         get_all_countries/0,
+         game_message_receiver/1, game_multiple_message_receiver/1,
+         user_message_receiver/1,
+         get_user_pids/1, get_user_sessions/1,
+         get_phase_years/1
         ]).
+
+% Number of times we poll message inbox
+-define(MESSAGE_COUNT, 100).
+% Time we wait before we poll the message inbox (in milliseconds)
+-define(MESSAGE_SLEEP, 10).
 
 %% ------------------------------------------------------------------
 %% exports for eUnit only
@@ -79,6 +82,10 @@
 %% ------------------------------------------------------------------
 %% API implementation
 %% ------------------------------------------------------------------
+
+%% ------------------------------------------------------------------
+%% Register a new user
+%% ------------------------------------------------------------------
 -spec register_user() -> {Nick::string(), Password::string()}.
 register_user() ->
     Nick = "load_test_" ++ integer_to_list(random()),
@@ -91,34 +98,40 @@ register_user() ->
             erlang:error(Error)
     end.
 
+%% ------------------------------------------------------------------
+%% Register multiple users
+%% ------------------------------------------------------------------
 -spec register_user(integer()) -> [{Nick::string(), Password::string()}].
 register_user(Count) ->
-    register_user(Count, []).
+    lists:map(fun(_Num) -> register_user() end, lists:seq(1, Count)).
 
-register_user(0, Users) ->
-    Users;
-register_user(Count, Users) ->
-    User = register_user(),
-    register_user(Count-1, [User|Users]).
-
+%% ------------------------------------------------------------------
+%% Login user
+%% ------------------------------------------------------------------
 -spec login(Nick::string(), Password::string()) ->
-                   {SessionId::string(), Pid::pid()}.
+          {SessionId::string(), Pid::pid()}.
 login(Nick, Password) ->
-    Pid = spawn(fun() ->receiver(#state{}) end),
+    Pid = spawn(fun() ->push_receiver(#state{}) end),
     Receiver = #push_receiver{
-      pid = Pid,
-      args = no_args,
-      type = default},
+                              pid = Pid,
+                              args = no_args,
+                              type = default},
     Cmd = {login, {ok, {#user{nick = Nick, password = Password},
                         Receiver}}},
     {{login, success}, SessionId} = controller:handle_action(Cmd, callback()),
     {SessionId, Pid}.
 
+%% ------------------------------------------------------------------
+%% Login multiple users
+%% ------------------------------------------------------------------
 -spec login([{Nick::string(), Password::string()}]) ->
           [{SessionId::string(), Pid::pid()}].
 login(Users) ->
     lists:map(fun({Nick, Password}) -> login(Nick, Password) end, Users).
 
+%% ------------------------------------------------------------------
+%% Logout given user
+%% ------------------------------------------------------------------
 %@todo -spec logout(SessionId::string(), Pid::pid()) -> {[#message{}], [#game_message{}]}.
 logout(SessionId, Pid) ->
     Cmd = {logout, {ok, SessionId, []}},
@@ -128,6 +141,9 @@ logout(SessionId, Pid) ->
     Pid ! stop,
     ReturnVal.
 
+%% ------------------------------------------------------------------
+%% Send message to a user
+%% ------------------------------------------------------------------
 -spec send_msg(SessionId::string(), Nick::string()) -> ok.
 send_msg(SessionId, Nick) ->
     Msg = create_msg(Nick),
@@ -135,10 +151,20 @@ send_msg(SessionId, Nick) ->
     {{user_msg, success}, _} = controller:handle_action(Cmd, callback()),
     ok.
 
-% @todo -spec read_push_msg(Pid::pid()) -> {[#message{}], [#game_message{}]}.
+%% ------------------------------------------------------------------
+%% Read pushed messages
+%% ------------------------------------------------------------------
+-spec read_push_msg(Pid::pid()) -> {[#message{}], [#game_message{}]}.
 read_push_msg(Pid) ->
-    Pid ! {read_msg, self()}.
+    Pid ! {read_msg, self()},
+    receive
+        Data ->
+            Data
+    end.
 
+%% ------------------------------------------------------------------
+%% Create game
+%% ------------------------------------------------------------------
 -spec create_game(SessionId::string()) -> GameId::integer().
 create_game(SessionId) ->
     Game = create_game(),
@@ -147,77 +173,91 @@ create_game(SessionId) ->
         controller:handle_action(Cmd, callback()),
     GameId.
 
+%% ------------------------------------------------------------------
+%% Create multiple games
+%% ------------------------------------------------------------------
 -spec create_game(SessionId::string(), Count::integer()) -> [GameId::integer()].
 create_game(SessionId, Count) ->
-    create_game(SessionId, Count, []).
+    lists:map(fun(_Num) ->
+                      create_game(SessionId)
+              end, lists:seq(1, Count)).
 
-create_game(_SessionId, 0, Games) ->
-    Games;
-create_game(SessionId, Count, Games) ->
-    Game = create_game(SessionId),
-    create_game(SessionId, Count-1, [Game|Games]).
-
+%% ------------------------------------------------------------------
+%% Join a user to the given game
+%% ------------------------------------------------------------------
 -spec join_game(SessionId::string(), GameId::integer(), Country::country()) ->
-                       ok | any().
+          ok | any().
 join_game(SessionId, GameId, Country) ->
     Cmd = {join_game, {ok, SessionId, {GameId, Country}}},
-     case controller:handle_action(Cmd, callback()) of
-         {{join_game, success}, _} ->
-             ok;
-         {{join_game, invalid_data}, Error}->
-             Error
-     end.
+    case controller:handle_action(Cmd, callback()) of
+        {{join_game, success}, _} ->
+            ok;
+        {{join_game, invalid_data}, Error}->
+            Error
+    end.
 
+%% ------------------------------------------------------------------
+%% Join given users to the game
+%% ------------------------------------------------------------------
 -spec join_full_game([SessionId::string()], GameId::integer()) ->
-                       ok | any().
+          [{SessionId::string(), Country::atom()}].
 join_full_game(Sessions, GameId) ->
-    GU = lists:zip(Sessions, get_all_countries()),
-    [join_game(SessionId, GameId, Country) || {SessionId, Country} <- GU],
-    ok.
+    GameUsers = lists:zip(Sessions, get_all_countries()),
+    lists:foreach(fun({SessionId, Country}) ->
+                          join_game(SessionId, GameId, Country)
+                  end, GameUsers),
+    GameUsers.
 
+%% ------------------------------------------------------------------
+%% Move given game to the next phase
+%% ------------------------------------------------------------------
 -spec phase_change(Node::string(), GameId::integer()) -> ok.
 phase_change(Node, GameId) ->
-    rpc:call(Node, game_timer, sync_event, [GameId, timeout]),
-    ok.
+    rpc:call(Node, game_timer, sync_event, [GameId, timeout]).
 
+%% ------------------------------------------------------------------
+%% Trigger the start of the game
+%% ------------------------------------------------------------------
 -spec start_game(Node::string(), GameId::integer()) -> ok.
 start_game(Node, GameId) ->
     phase_change(Node, GameId).
 
+%% ------------------------------------------------------------------
+%% Trigger the start of multiple games
+%% ------------------------------------------------------------------
 -spec start_games(Node::string(), [GameId::integer()]) -> ok.
 start_games(Node, Games) ->
-    lists:foreach(fun(GameId) -> phase_change(Node, GameId) end, Games).
+    lists:foreach(fun(GameId) -> start_game(Node, GameId) end, Games).
 
+%% ------------------------------------------------------------------
+%% Get the overview of the game
+%% ------------------------------------------------------------------
 -spec game_overview(SessionId::string(),
                     GameId::integer()) -> #game_overview{}.
 game_overview(SessionId, GameId) ->
     Cmd = {game_overview, {ok, SessionId, GameId}},
-    {{game_overview, success}, GameOverview} = controller:handle_action(Cmd, callback()),
+    {{game_overview, success},
+     GameOverview} = controller:handle_action(Cmd, callback()),
     GameOverview.
 
+%% ------------------------------------------------------------------
+%% Get orders from gen_moves
+%% ------------------------------------------------------------------
 -spec create_orders() -> [dict()].
 create_orders() ->
     Orders = gen_moves:generate_orders(map_data:create(standard_game)),
-    Countries = get_all_countries(),
-    CountryTransform = fun(Dict, Country) ->
-                               {ok, Ord} = dict:find({orders, Country}, Dict),
-                               NewOrd = lists:map(fun order_transform/1, Ord),
-                               dict:store({orders, Country}, NewOrd, Dict)
-                       end,
     lists:map(fun(Dict) ->
-                      lists:map(fun(Country) ->
-                                        CountryTransform(Dict, Country)
-                                end, Countries)
+                      countries_transform(get_all_countries(), Dict)
               end, Orders).
 
--spec send_orders(Orders::[dict()],
-                  Phase::atom(),
-                  Season::atom(),
-                  Year::integer(),
-                  SessionId::string(),
-                  GameId::integer(),
-                  Country::country()) -> ok.
-send_orders(Orders, Phase, Season, Year, SessionId, GameId, Country) ->
+%% ------------------------------------------------------------------
+%% Send orders for one country
+%% ------------------------------------------------------------------
+-spec send_order(GameId::integer(),
+                 Orders::[dict()],
+                 {Phase::atom(), Season::atom(), Year::integer()},
+                 {SessionId::string(), Country::country()}) -> ok.
+send_order(GameId, Orders, {Phase, Season, Year}, {SessionId, Country}) ->
     [OrderDict] = lists:filter(fun(Dict) ->
                                        {ok, Phase2} = dict:find(phase, Dict),
                                        {ok, Season2} = dict:find(season, Dict),
@@ -231,12 +271,26 @@ send_orders(Orders, Phase, Season, Year, SessionId, GameId, Country) ->
                                                false
                                        end
                                end, Orders),
-    {ok, Orders} = dict:find({orders, Country}, OrderDict),
-    ?debugVal(Orders),
-    Cmd = {game_order, {ok, SessionId, {GameId, Orders}}},
+    {ok, CountryOrders} = dict:find({orders, Country}, OrderDict),
+    Cmd = {game_order, {ok, SessionId, {GameId, CountryOrders}}},
     controller:handle_action(Cmd, callback()),
     ok.
 
+%% ------------------------------------------------------------------
+%% Send orders for many countries
+%% ------------------------------------------------------------------
+-spec send_orders(GameId::integer(),
+                 Orders::[dict()],
+                 Phase::{atom(), atom(), integer()},
+                 [{SessionId::string(), Country::country()}]) -> ok.
+send_orders(GameId, Orders, Phase, GameUsers) ->
+    lists:foreach(fun(GameUser) ->
+                          load_test:send_orders(GameId, Orders, Phase, GameUser)
+                  end, GameUsers).
+
+%% ------------------------------------------------------------------
+%% Send game message
+%% ------------------------------------------------------------------
 -spec send_game_msg(SessionId::string(),
                     GameID::integer(),
                     Countries::[country()]) -> ok.
@@ -246,12 +300,72 @@ send_game_msg(SessionId, GameID, Countries) ->
     {{game_msg, success}, _} = controller:handle_action(Cmd, callback()),
     ok.
 
+%% ------------------------------------------------------------------
+%% Get current games of a user via search
+%% ------------------------------------------------------------------
 -spec search_current(SessionId::string()) -> [#game{}].
 search_current(SessionId) ->
     Cmd = {games_current, {ok, SessionId, no_arg}},
     {{games_current, success}, Games} = controller:handle_action(Cmd, callback()),
     Games.
 
+%% ------------------------------------------------------------------
+%% Check user's inbox for game messages
+%% ------------------------------------------------------------------
+-spec game_message_receiver(Pid::pid()) ->
+          {ok, success} | {error, Error::string()}.
+game_message_receiver(Pid) ->
+    message_receiver({0, Pid, game}).
+
+%% ------------------------------------------------------------------
+%% Check multiple users' inbox for game messages
+%% ------------------------------------------------------------------
+-spec game_multiple_message_receiver(Pids::[pid()]) ->
+          {ok, success} | {error, Error::string()}.
+game_multiple_message_receiver([]) ->
+    {ok, success};
+game_multiple_message_receiver([Pid|Pids]) ->
+    case message_receiver({0, Pid, game}) of
+        {ok, _} ->
+            game_multiple_message_receiver(Pids);
+        Error ->
+            Error
+    end.
+
+%% ------------------------------------------------------------------
+%% Check user's inbox for user messages
+%% ------------------------------------------------------------------
+-spec user_message_receiver(Pid::pid()) ->
+          {ok, success} | {error, Error::string()}.
+user_message_receiver(Pid) ->
+    message_receiver({0, Pid, user}).
+
+%% ------------------------------------------------------------------
+%% Get only session ids for users from data returned from register_user
+%% ------------------------------------------------------------------
+-spec get_user_sessions(Users::[{SessionId::string(), Pid::pid()}]) ->
+          [SessionId::string()].
+get_user_sessions(Users) ->
+    [SessionId ||{SessionId, _Pid} <- Users].
+
+%% ------------------------------------------------------------------
+%% Get only pids for users from data returned from register_user
+%% ------------------------------------------------------------------
+-spec get_user_pids(Users::[{SessionId::string(), Pid::pid()}]) ->
+          [Pid::pid()].
+get_user_pids(Users) ->
+    [Pid ||{_SessionId, Pid} <- Users].
+
+%% ------------------------------------------------------------------
+%% Get phases for specified number of years
+%% ------------------------------------------------------------------
+-spec get_phase_years(Count::integer()) -> [{atom(), atom(), string()}].
+get_phase_years(Count) ->
+    Data = lists:map(fun(Num) ->
+                             Year = 1900 + Num,
+                             get_phase_year(Year)
+                     end, lists:seq(1, Count)),
+    lists:flatten(Data).
 
 %% ------------------------------------------------------------------
 %% Internal functions
@@ -283,18 +397,18 @@ create_game() ->
           retreat_phase = 1,
           build_phase = 1,
           password="",
-          waiting_time = 1,
+          waiting_time = 60,
           num_players = 7
          }.
 
 create_msg(Nick) ->
-      #frontend_msg{to = Nick,
-                    content = "Hello, some message!"}.
+    #frontend_msg{to = Nick,
+                  content = "Hello, some message!"}.
 
-create_game_msg(_GameId, Countries) ->
-      #frontend_msg{to = Countries,
-% @todo                    game_id = GameId,
-                    content = "Hello, some message!"}.
+create_game_msg(GameId, Countries) ->
+    #frontend_msg{to = Countries,
+                  game_id = GameId,
+                  content = "Hello, some message!"}.
 
 callback(_Args, Result, Info) ->
     {Result, Info}.
@@ -337,28 +451,69 @@ order_transform(Order) ->
 %% ------------------------------------------------------------------
 %% Receiver process
 %% ------------------------------------------------------------------
-receiver(State) ->
+push_receiver(State) ->
     receive
         {push, _Args, #push_event{
-                 type = off_game_msg,
-                 data = Msg}} ->
+                                  type = off_game_msg,
+                                  data = Msg}} ->
             OldMsg = State#state.msg,
-            receiver(State#state{msg = [Msg | OldMsg]});
+            push_receiver(State#state{msg = [Msg | OldMsg]});
         {push, _Args, #push_event{
-                 type = in_game_msg,
-                 data = Msg}} ->
+                                  type = in_game_msg,
+                                  data = Msg}} ->
             OldMsg = State#state.game_msg,
-            receiver(State#state{game_msg = [Msg | OldMsg]});
+            push_receiver(State#state{game_msg = [Msg | OldMsg]});
         {read_msg, Pid} ->
             Msg = State#state.msg,
             GameMsg = State#state.game_msg,
             Pid ! {Msg, GameMsg},
-            receiver(#state{});
+            push_receiver(#state{});
         stop ->
             ok;
         _ ->
-            receiver(State)
+            push_receiver(State)
+    end.
+
+message_receiver({Count, Pid, Type}) ->
+    receive
+        after 0 ->
+            {Messages, GameMessages} = read_push_msg(Pid),
+            Size = case Type of
+                       game ->
+                           length(GameMessages);
+                       user ->
+                           length(Messages)
+                   end,
+            case Size of
+                0 ->
+                    case Count > ?MESSAGE_COUNT of
+                        true ->
+                            {error, message_not_received};
+                        false ->
+                            timer:sleep(?MESSAGE_SLEEP),
+                            message_receiver({Count+1, Pid, Type})
+                    end;
+                1 ->
+                    {ok, success};
+                _ ->
+                    {error, magic_message}
+            end
     end.
 
 get_all_countries() ->
     [england, germany, france, italy, russia, turkey, austria].
+
+countries_transform([], Dict) ->
+    Dict;
+countries_transform([Country|Countries], Dict) ->
+    {ok, Ord} = dict:find({orders, Country}, Dict),
+    NewOrd = lists:map(fun order_transform/1, Ord),
+    NewDict = dict:store({orders, Country}, NewOrd, Dict),
+    countries_transform(Countries, NewDict).
+
+get_phase_year(Year) ->
+    [{order_phase, spring, Year},
+     {retreat_phase, spring, Year},
+     {order_phase, fall, Year},
+     {retreat_phase, fall, Year},
+     {build_phase, fall, Year}].

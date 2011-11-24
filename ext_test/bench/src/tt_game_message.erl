@@ -21,43 +21,58 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Driver for the user flow
+%%% @doc Driver sending game messages flow
 %%%
-%%% This module is to be run by bahso bench
+%%% This module is to be run by basho bench
 %%%
 %%% @since : 22 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(tt_user).
+-module(tt_game_message).
 
 -export([new/1, run/4]).
 
 -include("basho_bench.hrl").
 
+-record(state, {creator_session, pids, game_id}).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Initialization
-%% * Connect to the backend
+%% * Setup 7 users
+%% * Setup 1 game for these 7 users
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
-    {ok, state}.
+
+    Users = load_test:register_user(7),
+    UserData = load_test:login(Users),
+    Sessions = load_test:get_user_sessions(UserData),
+    Pids = load_test:get_user_pids(UserData),
+    GameId = load_test:create_game(hd(Sessions)),
+    load_test:join_full_game(Sessions, GameId),
+    load_test:start_game(Node, GameId),
+    {ok, #state{creator_session=hd(Sessions), pids=Pids, game_id=GameId}}.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Run
-%% * Create a new user
-%% * Login the created user
-%% * Logout the created user
+%% * Send game message to all countries
+%% * Check if all countries have received the message
 %% @end
 %%-------------------------------------------------------------------
-run(test, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register_user(),
-    {SessionId, Pid} = load_test:login(Nick, Password),
-    load_test:logout(SessionId, Pid),
-    {ok, state}.
+run(test, _KeyGen, _ValueGen, State) ->
+    GameId = State#state.game_id,
+    Pids = State#state.pids,
+    SessionId = State#state.creator_session,
+    load_test:send_game_msg(SessionId, GameId, load_test:get_all_countries()),
+    case load_test:game_multiple_message_receiver(Pids) of
+        {ok, success} ->
+            {ok, State};
+        Error ->
+            Error
+    end.

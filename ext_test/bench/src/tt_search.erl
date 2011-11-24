@@ -21,43 +21,53 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Driver for the user flow
+%%% @doc Driver for the search flow
 %%%
-%%% This module is to be run by bahso bench
+%%% This module is to be run by basho bench
 %%%
 %%% @since : 22 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(tt_user).
+-module(tt_search).
 
 -export([new/1, run/4]).
 
 -include("basho_bench.hrl").
 
+-record(state, {session}).
+
+-define(GAME_COUNT, 10).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Initialization
-%% * Connect to the backend
+%% * Setup a user
+%% * Create new game
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
     pg2:start(),
     pong = net_adm:ping(Node),
-    {ok, state}.
+
+    {Nick, Password} = load_test:register_user(),
+    {SessionId, _Pid} = load_test:login(Nick, Password),
+    load_test:create_game(SessionId, ?GAME_COUNT),
+    {ok, #state{session=SessionId}}.
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Run
-%% * Create a new user
-%% * Login the created user
-%% * Logout the created user
+%% * Search for the created game
 %% @end
 %%-------------------------------------------------------------------
-run(test, _KeyGen, _ValueGen, _State) ->
-    {Nick, Password} = load_test:register_user(),
-    {SessionId, Pid} = load_test:login(Nick, Password),
-    load_test:logout(SessionId, Pid),
-    {ok, state}.
+run(test, _KeyGen, _ValueGen, State) ->
+    SessionId = State#state.session,
+    Games = load_test:search_current(SessionId),
+    case length(Games) of
+        ?GAME_COUNT ->
+            {ok, State};
+        _ ->
+            {error, search_results_fail}
+    end.
