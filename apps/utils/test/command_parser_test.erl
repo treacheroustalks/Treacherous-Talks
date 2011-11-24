@@ -91,14 +91,14 @@ reconfig_test_() ->
 order_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS2, test),
     %io:format(user, "~p~n", [ActualOutput]),
-    Expected = {game_order,{ok,?SESSION_ID,
-               {3958230945903,
-                [{convoy,fleet,north_sea,army,london,norwegian_sea},
-                 {convoy,fleet,north_sea,army,london,norwegian_sea},
-                 {move,army,london,norwegian_sea,any_coast},
-                 {move,army,london,norwegian_sea,north_coast},
-                 {move,any_unit,london,norwegian_sea,any_coast},
-                 {move,army,london,norwegian_sea,any_coast}]}}},
+    Expected = {game_order,{ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==",
+                {3958230945903,
+                 [{convoy,fleet,north_sea,army,london,norwegian_sea},
+                  {convoy,fleet,north_sea,army,london,norwegian_sea},
+                  {move,army,london,norwegian_sea,any_coast},
+                  {move,army,london,norwegian_sea,north_coast},
+                  {move,army,london,norwegian_sea,any_coast},
+                  {move,army,london,norwegian_sea,any_coast}]}}},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
@@ -123,6 +123,7 @@ wrong_user_msg_test_() ->
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
+
 wrong_session_user_msg_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_USER_MSG("@1234")
                                         , im),
@@ -181,7 +182,7 @@ game_msg_test_() ->
              ?assertEqual(Expected, ActualOutput)
      end,
      fun() ->
-             ?debugMsg("implicitly boradcast to all countries"),
+             ?debugMsg("implicitly broadcast to all countries"),
              ActualOutput = command_parser:parse(
                               ?SAMPLE_GAME_MSG_NO_TO(?SESSION_ID,
                                                             ?GAME_ID_VAL), im),
@@ -195,4 +196,26 @@ game_msg_test_() ->
 
              ?assertEqual(Expected, ActualOutput)
      end
+    ].
+
+unit_missing_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS_UNIT_MISSING, im),
+    %io:format(user, "~p~n", [ActualOutput]),
+    Expected = {game_order,
+    {error,
+        {invalid_input,
+            [{error,{"invalid action#",[[],"Lon","-",[],"Nrg",[],[]]}}]}}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
+action_missing_test_() ->
+    ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS_ACTION_MISSING, im),
+    %io:format(user, "~p~n", [ActualOutput]),
+    Expected = {game_order,
+                   {error,
+                       {invalid_input,
+                           [{error,"    A Nrg#bad order format"}]}}},
+    [
+        ?_assertEqual(Expected, ActualOutput)
     ].

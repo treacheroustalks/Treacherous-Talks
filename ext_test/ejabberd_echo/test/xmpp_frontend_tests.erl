@@ -128,7 +128,7 @@ SESSION: " ++ Session ++ "
 GAMEID: " ++ GameID ++ "
 
 A Lon-Nrg
-Lon-Nrg
+A Lon-Nrg
 A Lon -> Nrg nc
 Army Lon move Nrg
 
@@ -144,7 +144,7 @@ SESSION: " ++ Session ++ "
 GAMEID: " ++ GameID ++ "
 
 A Nrg
-Lon-Nrg
+A Lon-Nrg
 A Lon -> Nrg nc
 Army Lon move Nrg
 

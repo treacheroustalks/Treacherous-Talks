@@ -85,8 +85,8 @@
 %%     F Fin Support Bre
 %%
 %% ---the following remove orders are equivalent-----------------
-%%     Remove A mun
-%%     R A mun
+%%     Disband A mun
+%%     D A mun
 %%
 %% ---the following build orders are equivalent-----------------
 %%     Build A mun
@@ -99,7 +99,8 @@ parse_orders (EmailBody) when is_binary(EmailBody) ->
 parse_orders ([]) -> {error, "empty order"};
 parse_orders (EmailBody) ->
     init_valid_region(),
-    MailLines = string:tokens(EmailBody, "\n,"),
+    CutTailBlank = string:strip(EmailBody, right),
+    MailLines = string:tokens(CutTailBlank, "\n,"),
 
     % error will be throw out from get_field_value/2
     catch begin
@@ -161,7 +162,9 @@ interpret_str_orders ([CurrentLine|Rest], OrderParser, StrOrderList) ->
                     interpret_str_orders (Rest, OrderParser, [InterpretedLine|StrOrderList])
             end;
         nomatch ->
-            interpret_str_orders (Rest, OrderParser, StrOrderList)
+            % catch every error line
+            interpret_str_orders (Rest, OrderParser, [{error, CurrentLine ++
+                                            "#bad order format"}|StrOrderList])
     end.
 
 %%------------------------------------------------------------------------------
@@ -184,32 +187,31 @@ interpret_order_line (OrderLine) ->
     Coast = translate_coast(CoastStr),
 
     case SubjAct of
-        move when SubjLoc /=nil, ObjSrc/=nil ->
+        move when SubjLoc /=nil, ObjSrc/=nil, SubjUnit/=nil->
             #move{subj_unit = SubjUnit, subj_src_loc = SubjLoc,
                   subj_dst_loc = ObjSrc, coast = Coast};
-        support when ObjDst == nil, SubjLoc /=nil, ObjSrc /=nil ->
+        support when ObjDst == nil, SubjLoc /=nil, ObjSrc /=nil,
+                     SubjUnit/=nil, ObjUnit/=nil ->
             #support_hold{subj_unit = SubjUnit, subj_loc = SubjLoc,
                           obj_unit = ObjUnit, obj_loc = ObjSrc};
-        support when SubjLoc /=nil, ObjSrc /=nil, ObjDst /=nil ->
+        support when SubjLoc /=nil, ObjSrc /=nil, ObjDst /=nil,
+                     SubjUnit/=nil, ObjUnit/=nil->
             #support_move{subj_unit = SubjUnit, subj_loc = SubjLoc,
                           obj_unit = ObjUnit, obj_src_loc = ObjSrc,
                           obj_dst_loc = ObjDst, coast = Coast};
-        hold when SubjLoc /=nil->
+        hold when SubjLoc /=nil, SubjUnit/=nil->
             #hold{subj_unit = SubjUnit, subj_loc = SubjLoc};
-        convoy when SubjLoc /=nil, ObjSrc /=nil, ObjDst /=nil ->
+        convoy when SubjLoc /=nil, ObjSrc /=nil, ObjDst /=nil,
+                    SubjUnit/=nil, ObjUnit/=nil ->
             #convoy{subj_unit = SubjUnit,
                     subj_loc = SubjLoc,
                     obj_unit = ObjUnit,
                     obj_src_loc = ObjSrc, obj_dst_loc = ObjDst};
-        build when ObjUnit /=nil, ObjSrc /=nil ->
+        build when ObjUnit /=nil, ObjSrc /=nil, ObjUnit/=nil ->
             % @TODO default coast for special coastal province
             #build{obj_unit = ObjUnit, obj_loc = ObjSrc, coast = Coast};
-        remove when ObjSrc /= nil ->
-            #remove{obj_unit = ObjUnit, obj_loc = ObjSrc};
-        disband when SubjLoc /= nil ->
-            #disband{subj_unit = SubjUnit, subj_loc = SubjLoc};
-        waive ->
-            #waive{};
+        disband when ObjSrc /= nil, ObjUnit/=nil ->
+            #disband{obj_unit = ObjUnit, obj_loc = ObjSrc};
         _ ->
             throw({error, {"invalid action#",OrderLine}})
     end.
@@ -243,7 +245,8 @@ translate_unit(Key) ->
 
 
 translate_action(Key) ->
-    get_translation(Key, ?TRANS_ACTION, "action name").
+    NewKey = string:strip(Key),
+    get_translation(NewKey, ?TRANS_ACTION, "action name").
 
 
 translate_abbv_to_fullname_atom(Key) ->

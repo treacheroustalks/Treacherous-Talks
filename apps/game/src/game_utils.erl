@@ -308,7 +308,7 @@ translate_game_order(GameId, GameOrderList,Country) ->
 translate_game_order(_GameId, [],_Country, Acc, _Map) ->
     Acc;
 translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
-    Type=element(1,H),
+    ?debugVal(Type=element(1,H)),
     TranslatedOrder =
         case Type of
             move ->
@@ -353,7 +353,7 @@ translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
             build ->
                 {_, Unit, Wh, _} = H,
                 {build, {Unit, Country}, Wh};
-            remove ->
+            disband ->
                 {_, Unit, Wh} = H,
                 {disband, {Unit, Country}, Wh}
         end,
