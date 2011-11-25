@@ -35,10 +35,17 @@
 %%%-------------------------------------------------------------------
 -module(handle_releases).
 
+-include("include/sysconfig.hrl").
+
+-include_lib("utils/include/debug.hrl").
+
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
--export([start_release/1, stop_release/1, ping_release/1]).
+-export([start_release/1,
+         stop_release/1,
+         ping_release/1,
+         ping_release_and_wait/2]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -47,45 +54,66 @@
 %%-------------------------------------------------------------------
 %% @doc
 %% Starts a release given the name of it. This assumes that the start script for
-%% a release is named like "Name/bin/Name". It will also return the stdout of
-%% the command as a binary.
+%% a release is named like "Relname/bin/Relname". It will also return the stdout
+%% of the command as a binary.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec start_release(string()) ->
-    {ok, binary()} | {error, any()}.
-start_release(Name) ->
-    run_release_script(Name, "start").
+-spec start_release(relname()) -> {ok, binary()} | {error, term()}.
+start_release(Relname) ->
+    run_release_script(Relname, "start").
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Stops a release given the name of it. This assumes that the start script for
-%% a release is named like "Name/bin/Name". It will also return the stdout of
-%% the command as a binary.
+%% a release is named like "Relname/bin/Relname". It will also return the stdout
+%% of the command as a binary.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec stop_release(string()) ->
-    {ok, binary()} | {error, any()}.
-stop_release(Name) ->
-    run_release_script(Name, "stop").
+-spec stop_release(relname()) -> {ok, binary()} | {error, term()}.
+stop_release(Relname) ->
+    run_release_script(Relname, "stop").
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Pings a release given the name of it and returns if it is up or down. This
-%% assumes that the start script for a release is named like "Name/bin/Name".
+%% assumes that the start script for a release is named like
+%% "Relname/bin/Relname".
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec ping_release(string()) ->
-    up | down.
-ping_release(Name) ->
-    case run_release_script(Name, "ping") of
+-spec ping_release(relname()) -> up | down | {error, term()}.
+ping_release(Relname) ->
+    case run_release_script(Relname, "ping") of
         {ok, _} ->
             up;
-        {error, _} ->
-            down
+        {error, {1, _}} ->
+            down;
+        Error ->
+            Error
     end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Pings a given release and checks for an "up" reply. If the reply is "down",
+%% it will sleep one second and ping again. This is repeated either until an
+%% "up" reply is received or when it reaches the NbrOfTimes limit.
+%%
+%% @end
+%%-------------------------------------------------------------------
+-spec ping_release_and_wait(relname(), integer()) ->
+    up | down | {error, term()}.
+ping_release_and_wait(Relname, NbrOfTimes) when NbrOfTimes > 1 ->
+    case ping_release(Relname) of
+        down ->
+            timer:sleep(1000),
+            ping_release_and_wait(Relname, NbrOfTimes-1);
+        Other ->
+            Other
+    end;
+ping_release_and_wait(Relname, _NbrOfTimes) ->
+    ping_release(Relname).
 
 %% ------------------------------------------------------------------
 %% Internal Functions
@@ -98,9 +126,13 @@ ping_release(Name) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
-run_release_script(Name, Action) ->
-    Releasepath = application:get_env(release_path),
-    Filename = filename:join([Releasepath, Name, "bin", Name]),
+run_release_script(Relname, Action) ->
+    {ok, Releasepath} = application:get_env(release_path),
+    % It is important to do absname since os:find_executable is of another
+    % opinion what a relative path is relative to than the filename lib.
+    Filename = filename:absname(
+                 filename:join([Releasepath, Relname, "bin", Relname])),
+    ?DEBUG("Doing ~p on file ~p~n", [Action, Filename]),
     cmd(Filename, [Action]).
 
 % The following three functions are copied straight off the net since Erlang
