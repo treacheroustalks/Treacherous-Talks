@@ -193,9 +193,14 @@ get({game_search, success}, Games) ->
 get({game_search, invalid_data}, Error) ->
     resp_unhandled_error(Error);
 
+
 % Invalid session
 get({_Cmd, invalid_session}, _Val) ->
     resp("Invalid user session. Please log in to continue.~n");
+
+% access denied
+get({Cmd, access_denied}, _Val) ->
+    resp("Access denied. You are not allowed to run [~p].~n", [Cmd]);
 
 % Command parse error
 get({Cmd, parse_error}, Error) ->
