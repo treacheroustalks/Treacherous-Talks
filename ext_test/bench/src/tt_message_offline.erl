@@ -35,7 +35,7 @@
 
 -include("basho_bench.hrl").
 
--record(state, {to}).
+-record(state, {from, to}).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -52,10 +52,8 @@ new(_Id) ->
     {FromNick, FromPass} = load_test:register_user(),
     {ToNick, ToPass} = load_test:register_user(),
     % Login from user
-    {FromSessionId, _FromPid} = load_test:login(FromNick, FromPass),
-    % Send message
-    load_test:send_msg(FromSessionId, ToNick),
-    State = #state{to={ToNick, ToPass}},
+    {FromSessionId, FromPid} = load_test:login(FromNick, FromPass),
+    State = #state{to={ToNick, ToPass}, from={FromSessionId, FromPid}},
     {ok, State}.
 
 %%-------------------------------------------------------------------
@@ -65,12 +63,23 @@ new(_Id) ->
 %% * Read messages
 %% @end
 %%-------------------------------------------------------------------
-run(message_online, _KeyGen, _ValueGen, State) ->
+run(test, _KeyGen, _ValueGen, State) ->
+    {FromSessionId, _FromPid} = State#state.from,
     {ToNick, ToPass} = State#state.to,
-    {_SessionId, ToPid} = load_test:login(ToNick, ToPass),
+
+    % Send message
+    load_test:send_msg(FromSessionId, ToNick),
+
+    % Login second user
+    {ToSessionId, ToPid} = load_test:login(ToNick, ToPass),
+
+    % Check if message is received
     case load_test:user_message_receiver(ToPid) of
         {ok, _} ->
+            % logout the second user
+            load_test:logout(ToSessionId, ToPid),
             {ok, State};
-        Error ->
-            Error
+        {error, Error} ->
+            load_test:logout(ToSessionId, ToPid),
+            {error, Error, State}
     end.
