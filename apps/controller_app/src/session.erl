@@ -294,7 +294,7 @@ get_db_stats(SessionId, _Data) ->
 %% @end
 %% --------------------------------------------------------------------
 -spec deliver_offline_messages (NewSessionId :: list (), User :: #user{}) ->
-                                       ok | {error, Reason :: any ()}.
+                                       {[#message{}], [#game_message{}]}.
 deliver_offline_messages (NewSessionId, User) ->
     {ok, {UserMsges, GameMsges}} = message:unread (User#user.id),
     lists:foreach (fun (Msg) ->

@@ -73,7 +73,8 @@ user_msg(Msg=#message{}) ->
 %%  Returns the list of unread messages where UserId is the recipient.
 %% @end
 %% --------------------------------------------------------------------
--spec message:unread(UserId :: integer()) -> [#message{}].
+-spec message:unread(UserId :: integer()) -> {ok, {[#message{}],
+                                                   [#game_message{}]}}.
 unread(UserId) ->
     ?CALL_WORKER({unread, UserId}).
 

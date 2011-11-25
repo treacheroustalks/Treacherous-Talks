@@ -21,27 +21,44 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc
-%%% All the bucket names are to be included in this file
-%%% @end
-%%%
-%%% @since : 18 Oct 2011 by Bermuda Triangle
-%%% @end
-%%%
-%%%-------------------------------------------------------------------
+-module(necromancer_sup).
 
--define(B_SESSION, <<"session">>).
--define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_CURRENT, <<"game_current">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
--define(B_SESSION_HISTORY, <<"session_history">>).
--define(B_GAME_STATE, <<"game_state">>).
+-behaviour(supervisor).
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+-include_lib ("utils/include/debug.hrl").
 
--define(B_GAME_MESSAGE, <<"game_message">>).
--define(B_CORPSES, <<"corpses">>).
+%% API
+-export([start_link/0]).
+
+%% Supervisor callbacks
+-export([init/1]).
+
+%% Helper macro for declaring children of supervisor
+-define(CHILD(I, Type), CHILD (I, Type, [])).
+-define(CHILD(I, Type, Args), {I,
+                               {I, start_link, Args},
+                               permanent,
+                               5000,
+                               Type,
+                               [I]}).
+
+%% ===================================================================
+%% API functions
+%% ===================================================================
+
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, no_arg).
+
+%% ===================================================================
+%% Supervisor callbacks
+%% ===================================================================
+
+init(no_arg) ->
+    ?DEBUG ("init(no_arg)~n"),
+    GetCs = fun (Backend) ->
+                    corpses:get_corpses (Backend)
+            end,
+    {ok, { {one_for_one, 5, 10},
+           [
+            ?CHILD (necromancer, worker, [GetCs])
+           ]} }.

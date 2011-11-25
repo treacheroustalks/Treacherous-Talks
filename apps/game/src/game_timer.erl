@@ -34,7 +34,8 @@
 %% ------------------------------------------------------------------
 -export([start_link/1, event/2, sync_event/2,
          current_state/1, get_game_state/1,
-         stop/1, stop/2]).
+         stop/1, stop/2,
+         handle_corpse/1]).
 
 %% ------------------------------------------------------------------
 %% gen_fsm Function Exports
@@ -134,7 +135,6 @@ init(Game) ->
     Timeout = timer:minutes(Game#game.waiting_time),
     {ok, waiting_phase, #state{game = Game, phase = waiting_phase}, Timeout}.
 
-
 waiting_phase({reconfig, UpdatedGame}, State) ->
     Timeout = timer:minutes(UpdatedGame#game.waiting_time),
     {next_state, waiting_phase, State#state{game = UpdatedGame}, Timeout};
@@ -143,9 +143,11 @@ waiting_phase(timeout, State) ->
     NewState = State#state{phase = order_phase,
                            game = State#state.game#game{status = ongoing}},
     phase_change(NewState#state.game, started),
+    corpses:save_corpse (game_timer, State#state.game#game.id,
+                         State#state.game),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     {next_state, order_phase, NewState, Timeout};
-waiting_phase(_Event, State) ->
+waiting_phase(start, State) ->
     %% any other event than timeout or reconfig
     Timeout = timer:minutes((State#state.game)#game.waiting_time),
     {next_state, waiting_phase, State, Timeout}.
@@ -383,6 +385,8 @@ setup_game(ID) ->
 %%-------------------------------------------------------------------
 end_game(GameID, NewStatus) ->
     {ok, Game} = game:get_game(GameID),
+    db:delete (?B_CORPSES, list_to_binary (atom_to_list (?MODULE) ++
+                                           integer_to_list (GameID))),
     FinishedGame = Game#game{status = NewStatus},
     game_worker:update_game(GameID, FinishedGame).
 
@@ -410,6 +414,10 @@ new_state(CurrentGame, Map) ->
                                         ?GAME_STATE_LINK_GAME}),
     db:put(GameStateLinkObj).
 
+handle_corpse ({Key, GameRec}) when is_record (GameRec, game)->
+    ?DEBUG ("handle_corpse({~p, ~p})", [Key, GameRec]),
+    ?DEBUG ("new_game -> ~p~n", [game:new_game (GameRec)]),
+    db:delete (?B_CORPSES, Key).
 
 %%-------------------------------------------------------------------
 %% @doc

@@ -63,7 +63,12 @@
                                       P1, P2, P3, P4)).
 
 connect() ->
-    connect (application:get_env (riak)).
+    case application:get_env (riak) of
+        {ok, R} ->
+            connect (R);
+        Other ->
+            erlang:error ({error, {riak_could_not_connect, {env_was, Other}}})
+    end.
 
 connect({Channel, {Host, Port}}) when is_list (Host),
                                       is_integer (Port) ->

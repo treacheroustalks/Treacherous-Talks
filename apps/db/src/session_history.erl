@@ -182,7 +182,8 @@ resolve_history_siblings(DbObj) ->
             NewHist = lists:foldl(
                         fun(Sibling, History) ->
                                 SibHist = db_obj:get_value(Sibling),
-                                add(History, latest(SibHist))
+                                {ok, Latest} = latest(SibHist),
+                                add(History, Latest)
                         end, Hist, Siblings),
             db_obj:set_value(HistObj, NewHist);
         false ->
