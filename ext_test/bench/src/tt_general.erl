@@ -95,15 +95,15 @@ run(test, _KeyGen, _ValueGen, State) ->
 
     case {PhaseRet, GamesRet, MsgRet} of
         {{ok, _}, 0, {ok, _}} ->
-            {error, game_search_fail};
+            {error, game_search_fail, State};
         {{ok, _}, _, {ok, _}} ->
             {ok, State};
         {{error, Error}, _, _} ->
-            {error, Error};
+            {error, Error, State};
         {_, _, {error, Error}} ->
-            {error, Error};
+            {error, Error, State};
         _ ->
-            {error, unknown_failure}
+            {error, unknown_failure, State}
     end.
 
 %%-------------------------------------------------------------------

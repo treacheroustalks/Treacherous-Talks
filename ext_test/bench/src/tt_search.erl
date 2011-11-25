@@ -69,5 +69,5 @@ run(test, _KeyGen, _ValueGen, State) ->
         ?GAME_COUNT ->
             {ok, State};
         _ ->
-            {error, search_results_fail}
+            {error, search_results_fail, State}
     end.

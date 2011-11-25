@@ -73,6 +73,6 @@ run(test, _KeyGen, _ValueGen, State) ->
     case load_test:game_multiple_message_receiver(Pids) of
         {ok, success} ->
             {ok, State};
-        Error ->
-            Error
+        {error, Error} ->
+            {error, Error, State}
     end.

@@ -67,8 +67,8 @@ run(test, _KeyGen, _ValueGen, State) ->
     case load_test:user_message_receiver(ToPid) of
         {ok, _} ->
             {ok, State};
-        Error ->
-            Error
+        {error, Error} ->
+            {error, Error, State}
     end.
 
 %%-------------------------------------------------------------------

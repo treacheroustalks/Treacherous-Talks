@@ -36,8 +36,7 @@
 %% ------------------------------------------------------------------
 -export([
          register_user/0, register_user/1,
-         login/2, login/1,
-         logout/2,
+         login/2, login/1, logout/2,
          send_msg/2, send_game_msg/3,
          read_push_msg/1,
          create_game/1, create_game/2,
@@ -132,7 +131,8 @@ login(Users) ->
 %% ------------------------------------------------------------------
 %% Logout given user
 %% ------------------------------------------------------------------
-%@todo -spec logout(SessionId::string(), Pid::pid()) -> {[#message{}], [#game_message{}]}.
+-spec logout(SessionId::string(), Pid::pid()) ->
+          {[#message{}], [#game_message{}]}.
 logout(SessionId, Pid) ->
     Cmd = {logout, {ok, SessionId, []}},
     controller:handle_action(Cmd, callback()),
@@ -285,7 +285,7 @@ send_order(GameId, Orders, {Phase, Season, Year}, {SessionId, Country}) ->
                  [{SessionId::string(), Country::country()}]) -> ok.
 send_orders(GameId, Orders, Phase, GameUsers) ->
     lists:foreach(fun(GameUser) ->
-                          load_test:send_orders(GameId, Orders, Phase, GameUser)
+                          load_test:send_order(GameId, Orders, Phase, GameUser)
                   end, GameUsers).
 
 %% ------------------------------------------------------------------
@@ -448,9 +448,7 @@ order_transform(Order) ->
             #disband{subj_unit = Unit, subj_loc = Loc}
     end.
 
-%% ------------------------------------------------------------------
 %% Receiver process
-%% ------------------------------------------------------------------
 push_receiver(State) ->
     receive
         {push, _Args, #push_event{
