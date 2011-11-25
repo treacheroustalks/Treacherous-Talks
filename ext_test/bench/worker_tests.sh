@@ -2,7 +2,8 @@
 
 source ../common_functions.sh
 
-source worker_tests_config
+source load_test_config
+source test_functions.sh
 declare WORKER=""
 declare DRIVER="tt_user"
 declare WORKER_COUNT="1 10 50"
@@ -50,8 +51,8 @@ function checkArguments {
 ###
 function main {
     echonormal "Config:"
-    echo "User: $SERVER_USER"
-    echo "Server: $SERVER"
+    echo "User: $TEST_USER"
+    echo "Server: $TEST_SERVER"
     echo "Backend dir: $B_DIR"
     echo "Riak dir: $RIAK_DIR"
     echo "Schema dir: $SCHEMA_DIR"
@@ -62,11 +63,12 @@ function main {
     TT_CONFIG=config/$DRIVER.config
     echonormal "Updating tt_node in $TT_CONFIG"
     # change local config
-    sed -i "s:{.*tt_node,.*}:{tt_node, 'backend@$SERVER'}:g" $TT_CONFIG
+    sed -i "s:{.*tt_node,.*}:{tt_node, 'backend@$TEST_SERVER'}:g" $TT_CONFIG
 
     CONFIG="etc/app.config"
     TIMESTAMP=`date +"%y.%m.%d_%H-%M"`
     W_DIR=worker_tests/$DRIVER-$TIMESTAMP/$WORKER
+    IP=`host $TEST_SERVER | sed "s:.* ::"`
 
     echonormal "Starting worker load test"
     for c in $WORKER_COUNT; do
@@ -81,37 +83,23 @@ function main {
         else
             UPDATE_CMD="sed -i \"s:{.*$WORKER,.*}:{$WORKER, $c}:g\" $B_DIR/$CONFIG &&"
         fi
-        CMD="
- echo \"Stopping backend\" ;
- $B_DIR/bin/backend stop;
-
- echo \"Stopping riak\" ;
- $RIAK_DIR/bin/riak stop;
- echo \"Emptying riak\" ;
- rm -rf $RIAK_DIR/data/leveldb &&
- echo \"Starting riak\" ;
- $RIAK_DIR/bin/riak start &&
- echo \"Reinstalling search schema\" ;
- $SCHEMA_DIR/install_schema.sh $RIAK_DIR &&
-
- echo \"Changing backend config\" ;
- $UPDATE_CMD
- echo \"Starting backend\" &&
- $B_DIR/bin/backend start"
-        ssh -t $SERVER_USER@$SERVER $CMD
-
-        # sleep - backend needs to start
-        echonormal "Waiting for the backend"
-        sleep 10
+        copy-riak $TEST_USER $TEST_SERVER \
+            $LOCAL_RIAK_DIR $RIAK_DIR\1 \
+            $LOCAL_SCHEMA_DIR $SCHEMA_DIR \
+            1
+        copy-backend $TEST_USER $TEST_SERVER $LOCAL_B_DIR $B_DIR $IP 1 "$UPDATE_CMD"
+        sleep 2
 
         # run the test
         echonormal "Running basho bench"
         ./basho_bench $TT_CONFIG
 
         # move the results
-        echonormal "Moving results to $W_DIR/$c/"
-        mkdir -p $W_DIR/$c
-        cp tests/current/* $W_DIR/$c/
+        echonormal "Moving results to $W_DIR/$c/" &&
+        mkdir -p $W_DIR/$c &&
+        cp tests/current/* $W_DIR/$c/ &&
+        priv/summary.r -i $W_DIR/$c/ &&
+        xdg-open $W_DIR/$c/summary.png
     done
 }
 

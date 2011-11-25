@@ -65,6 +65,7 @@
 -vsn("1.0.0").
 
 -include_lib ("eunit/include/eunit.hrl").
+-include_lib ("utils/include/debug.hrl").
 
 -export ([generate_orders/1,
           apply_order_season/2]).
@@ -105,7 +106,7 @@ pick (List) ->
 -spec gen_move (any (), tuple (), atom ()) -> tuple ().
 gen_move (Map, Unit = {Type, _}, From) ->
     Options = lists:delete (From, map:get_reachable (Map, From, Type)),
-    ?debugVal ({Map, Unit, From, '->', Options}),
+    ?DEBUG("~p", [{Map, Unit, From, '->', Options}]),
     case pick (Options) of
         {error, empty} ->
             {hold, Unit, From};
@@ -227,15 +228,20 @@ dict_add_order_season (Map, Phase, Nation, Dict) ->
     Units = map:get_units (Map),
     NationUnits = lists:filter (fun ({_, {_, N}}) -> N == Nation end,
                                 Units),
-    {SomeUnits, _} = lists:split (random:uniform (length (NationUnits)),
-                                  NationUnits),
-    ?debugVal (SomeUnits),
-    Orders =
-        lists:foldl (fun ({Where, Unit}, Orders) ->
-                             [generate_order (Phase, Map, Unit, Where) | Orders]
-                     end,
-                     [],
-                     SomeUnits),
+    Orders = case length(NationUnits) of
+                 0 ->
+                     [];
+                 Length ->
+                     {SomeUnits, _} = lists:split(random:uniform(Length),
+                                                  NationUnits),
+                     ?DEBUG("~p", [SomeUnits]),
+                     lists:foldl (fun ({Where, Unit}, Orders) ->
+                                          [generate_order(Phase, Map,
+                                                          Unit, Where) | Orders]
+                                  end,
+                                  [],
+                                  SomeUnits)
+             end,
     dict:store ({orders, Nation}, Orders, Dict).
 
 %% -----------------------------------------------------------------------------
@@ -261,5 +267,5 @@ apply_order_season (Map, OrderDict) ->
                            end,
                            [], OrderDict),
     Phase = dict:fetch (phase, OrderDict),
-    ?debugVal (AllOrders),
+    ?DEBUG("~p", [AllOrders]),
     rules:process (Phase, Map, diplomacy_rules, AllOrders).

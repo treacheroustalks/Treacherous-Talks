@@ -48,8 +48,7 @@
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
-    pg2:start(),
-    pong = net_adm:ping(Node),
+    load_test:connect(Node, 30),
 
     {Nick, Password} = load_test:register_user(),
     {SessionId, _Pid} = load_test:login(Nick, Password),

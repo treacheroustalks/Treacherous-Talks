@@ -359,9 +359,9 @@ civil_disorder_actor (Map, Orders) ->
 
 %% "does one nation have more-than-or-equal-to 18 units?"
 game_over_detector (Map, {}) ->
-    ?debugMsg ("game_over_detector"),
+%%    ?debugMsg ("game_over_detector"),
     Histogram = map:get_units_histogram (Map),
-    ?debugVal (dict:to_list (Histogram)),
+%%    ?debugVal (dict:to_list (Histogram)),
     lists:any (fun ({_Nation, NumOfUnits}) ->
                       NumOfUnits >= 18
                end,

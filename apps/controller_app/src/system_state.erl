@@ -45,7 +45,8 @@
          get_system_load/0,
          get_cpu_usage/0,
          get_detailed_cpu_usage/1,
-         get_memory_usage/0
+         get_memory_usage/0,
+         get_reductions/0
         ]).
 
 
@@ -131,3 +132,15 @@ get_memory_usage() ->
                   {alloc_memory, AllocatedMem}],
     SystemMemoryData = memsup:get_system_memory_data(),
     MemoryData ++ SystemMemoryData.
+
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Returns the reductions on this nodes:
+%% {Total_Exact_Reductions, Exact_Reductions_Since_Last_Call}.
+%% @end
+%%-------------------------------------------------------------------
+-spec get_reductions() -> {integer(), integer()}.
+get_reductions() ->
+    erlang:statistics(exact_reductions).

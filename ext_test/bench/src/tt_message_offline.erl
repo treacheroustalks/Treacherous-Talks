@@ -46,8 +46,7 @@
 %%-------------------------------------------------------------------
 new(_Id) ->
     Node = basho_bench_config:get(tt_node),
-    pg2:start(),
-    pong = net_adm:ping(Node),
+    load_test:connect(Node, 30),
     % Create 2 users
     {FromNick, FromPass} = load_test:register_user(),
     {ToNick, ToPass} = load_test:register_user(),

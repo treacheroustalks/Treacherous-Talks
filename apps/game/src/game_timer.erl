@@ -152,7 +152,7 @@ waiting_phase(start, State) ->
     Timeout = timer:minutes((State#state.game)#game.waiting_time),
     {next_state, waiting_phase, State, Timeout}.
 waiting_phase(_Event, From, State) ->
-    ?debugVal(syncevent(waiting_phase, From, State)).
+    syncevent(waiting_phase, From, State).
 
 
 order_phase(_Event, State) ->
@@ -214,8 +214,8 @@ handle_sync_event(_Event, _From, StateName, State) ->
 handle_info(_Info, StateName, State) ->
     {next_state, StateName, State}.
 
-terminate(_Reason, _StateName, State) ->
-    ?DEBUG("Terminating game timer ~p~n", [State]),
+terminate(_Reason, _StateName, _State) ->
+    ?DEBUG("Terminating game timer ~p~n", [_State]),
     ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
@@ -249,7 +249,7 @@ phase_change(ID, build_phase) ->
             Map = game_utils:to_rule_map(GameState#game_state.map),
             Results = rules:process(count_phase, Map, ?RULES, []),
             game_utils:delete_map(Map),
-            case ?debugVal(lists:member (game_over, Results)) of
+            case lists:member (game_over, Results) of
                 false ->
                     % inform players of their possible builds?
                     NewCurrentGame = update_current_game(ID, build_phase),
@@ -280,7 +280,7 @@ phase_change(ID, Phase) ->
 process_phase(ID, Phase) ->
     {ok, GameState} = game_utils:get_game_state(ID),
     Map = game_utils:to_rule_map(GameState#game_state.map),
-    ?debugVal(Orders = game_utils:get_all_orders(ID)),
+    Orders = game_utils:get_all_orders(ID),
     ?DEBUG("Received orders: ~p~n", [Orders]),
     Result = rules:process(Phase, Map, ?RULES, Orders),
     update_state(GameState#game_state{map = game_utils:to_mapterm(Map)}),
@@ -400,7 +400,6 @@ end_game(GameID, NewStatus) ->
 %% @end
 %%-------------------------------------------------------------------
 new_state(CurrentGame, Map) ->
-    ?debugVal(CurrentGame),
     Key = game_utils:get_keyprefix({game_current, CurrentGame}),
     GameState = #game_state{id = CurrentGame#game_current.id,
                             year_season = CurrentGame#game_current.year_season,
@@ -435,17 +434,17 @@ syncevent(waiting_phase, From, State) ->
     gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, NewState, Timeout};
 syncevent(order_phase, From, State) ->
-    ?debugMsg("Received order_phase sync event"),
-    ?debugVal(process_phase(?ID(State), order_phase)),
-    ?debugVal(phase_change(?ID(State), retreat_phase)),
+%%    ?debugMsg("Received order_phase sync event"),
+    process_phase(?ID(State), order_phase),
+    phase_change(?ID(State), retreat_phase),
     Timeout = timer:minutes((State#state.game)#game.retreat_phase),
     gen_fsm:reply(From, {ok, retreat_phase}),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout};
 syncevent(retreat_phase, From, State) ->
-    ?debugMsg("Received retreat_phase sync event"),
+%%    ?debugMsg("Received retreat_phase sync event"),
     process_phase(?ID(State), retreat_phase),
     %% retreat is handled and we enter count phase
-    case ?debugVal(phase_change(?ID(State), build_phase)) of
+    case phase_change(?ID(State), build_phase) of
         {ok, true} ->
             Timeout = timer:minutes((State#state.game)#game.build_phase),
             gen_fsm:reply(From, {ok, build_phase}),
@@ -460,7 +459,7 @@ syncevent(retreat_phase, From, State) ->
             {stop, Reason, State}
     end;
 syncevent(build_phase, From, State) ->
-    ?debugMsg("Received build_phase sync event"),
+%    ?debugMsg("Received build_phase sync event"),
     process_phase(?ID(State), build_phase),
     phase_change(?ID(State), order_phase),
     Timeout = timer:minutes((State#state.game)#game.order_phase),

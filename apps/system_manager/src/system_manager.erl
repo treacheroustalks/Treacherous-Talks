@@ -288,11 +288,11 @@ add_riak_search_schema(SchemaDir, Filename) ->
     SchemaName = re:replace(Filename, "\.schema", "", [{return, list}]),
     SetSchema = ["set-schema ", SchemaName, " ", SchemaFile],
     case handle_releases:run_riak_search_command(["install ", SchemaName]) of
-        {ok, Text} ->
-            ?DEBUG("Got return from search-cmd: ~p.~n", [Text]),
+        {ok, _Text} ->
+            ?DEBUG("Got return from search-cmd: ~p.~n", [_Text]),
             case handle_releases:run_riak_search_command(SetSchema) of
-                {ok, Text2} ->
-                    ?DEBUG("Got return from search-cmd: ~p.~n", [Text2]),
+                {ok, _Text2} ->
+                    ?DEBUG("Got return from search-cmd: ~p.~n", [_Text2]),
                     ok;
                 Other ->
                     Other

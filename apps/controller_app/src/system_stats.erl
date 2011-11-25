@@ -24,7 +24,7 @@
 
 -module(system_stats).
 
--export([get_system_stats/1]).
+-export([get_system_stats/1, max_mem_proc/0]).
 -include_lib("utils/include/debug.hrl").
 
 %%---------------------------------------------------------------------
@@ -86,15 +86,18 @@ get_machine_stats() ->
                                  {Node,
                                   SystemLoad,
                                   CpuUsage,
-                                  MemoryUsage} = Element,
+                                  MemoryUsage,
+                                  Reductions} = Element,
                                  io_lib:format("Node:\t\t~s~n"
                                                "System load:\t~p~n"
                                                "CPU usage:\t~p~n"
-                                               "Memory usage:\t~p~n",
+                                               "Memory usage:\t~p~n"
+                                               "Reductions:\t~p~n",
                                                [Node,
                                                 SystemLoad,
                                                 CpuUsage,
-                                                MemoryUsage])
+                                                MemoryUsage,
+                                                Reductions])
                              end, get_machines_states()),
     MachineHeadline ++ MachineStats ++ ?BREAKLINE.
 
@@ -122,8 +125,9 @@ get_machines_states() ->
                   Node = node(Pid),
                   {SysLoad,
                    CpuUsg,
-                   MemUsg} = controller_app_config:machine_state(Pid),
-                  {Node, SysLoad, CpuUsg, MemUsg}
+                   MemUsg,
+                   Red} = controller_app_config:machine_state(Pid),
+                  {Node, SysLoad, CpuUsg, MemUsg, Red}
               end, controller_app_config:node_pids()).
 
 %% ------------------------------------------------------------------
@@ -145,11 +149,14 @@ get_frontend_stats() ->
 %% ------------------------------------------------------------------
 get_all_app_stats() ->
     % get data for each app (system stats record)
+    DbStats = get_app_stats(db_config, db),
+    ControllerStats = get_app_stats(controller_app_config, controller_app),
     GameStats = get_app_stats(game_config, game),
     MessageStats = get_app_stats(message_config, message),
     AppHeadline = break_line("applications"),
     % build the output
-    Appstats = appstats_text_output([GameStats, MessageStats]),
+    Appstats = appstats_text_output([DbStats, ControllerStats,
+                                     GameStats, MessageStats]),
     AppHeadline ++ Appstats ++ ?BREAKLINE.
 
 
@@ -234,9 +241,66 @@ max_min_avg(Key, [{_Tag, QLen}| Workers], Max, Min, Tot, Num) ->
     end,
     max_min_avg(Key, Workers, NewMax, NewMin, Tot+QLen, Num+1).
 
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Finds the module which uses the most memory in total
+%% (all processes that spawned from that module)
+%% @end
+%%-------------------------------------------------------------------
+max_mem_proc() ->
+    ProcList = proc_mem_list(),
+    MemDict = mod_mem_sum(ProcList),
+    dict:fold(fun(Key, Val, {I, Max}) ->
+                      case Val > Max of
+                          true -> {Key, Val};
+                          false -> {I, Max}
+                      end
+              end, {no_mod, 0}, MemDict).
+
+
 %% ------------------------------------------------------------------
 %% Other stuff
 %% ------------------------------------------------------------------
 break_line(HeadText) ->
     Headline = string:to_upper(HeadText) ++ ?BREAKLINE,
     io_lib:format("~60s~n", [Headline]).
+%%-------------------------------------------------------------------
+%% @doc Returns a list like:
+%% [{pid(), Mod, Memory}]
+%% where for every process there is a tuple like that.
+%% @end
+%%-------------------------------------------------------------------
+proc_mem_list() ->
+    ProcModFun = fun(Pid) ->
+                         {memory, Val} = erlang:process_info(Pid, memory),
+                         {dictionary, Dict} = erlang:process_info(Pid, dictionary),
+                         case lists:keyfind('$initial_call', 1, Dict) of
+                             false -> ignore;
+                             {_, Mod} ->
+                                 {Pid, Mod, Val}
+                         end
+                 end,
+    ProcMods = lists:map(ProcModFun, processes()),
+    FilterFun = fun(ignore) ->
+                        false;
+                   (_) -> true
+                end,
+    lists:filter(FilterFun, ProcMods).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Sums for every module in ProcMemList up how much memory usage 
+%% originates from that module.
+%% @end
+%%-------------------------------------------------------------------
+mod_mem_sum(ProcMemList) ->
+    lists:foldl(fun({_P, I, M}, Dict) ->
+                        case dict:find(I, Dict) of
+                            {ok, Val} ->
+                                dict:store(I, Val+M, Dict);
+                            _ -> dict:store(I, M, Dict)
+                        end
+                end, dict:new(), ProcMemList).

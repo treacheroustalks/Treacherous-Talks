@@ -37,7 +37,30 @@
 
 start(_StartType, _StartArgs) ->
     ?DEBUG("[~p] starting~n", [?MODULE]),
-    db_sup:start_link().
+    {ok, RiakIp} = application:get_env(riak_ip),
+    {ok, ProtoBufPort} = application:get_env(riak_protobuf_port),
+    Riak = {pb, {RiakIp, ProtoBufPort}},
+    {ok, Conn} = db_c:connect(Riak),
+    case ping_riak(Conn, 20) of
+        pong ->
+            db_c:disconnect(Conn),
+            db_sup:start_link();
+        pang ->
+            db_c:disconnect(Conn),
+            {error, riak_not_running}
+    end.
 
 stop(_State) ->
     ok.
+
+
+ping_riak(_Conn, 0) ->
+    pang;
+ping_riak(Conn, Tries) ->
+    case db_c:ping(Conn) of
+        pong ->
+            pong;
+        _ ->
+            timer:sleep(1000),
+            ping_riak(Conn, Tries-1)
+    end.

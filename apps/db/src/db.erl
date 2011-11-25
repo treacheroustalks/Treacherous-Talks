@@ -64,7 +64,11 @@
 %% Private macros
 %% -----------------------------------------------------------------
 -define(WORKER, db_worker).
--define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER), Cmd)).
+-define(CALL_WORKER(Cmd), try gen_server:call(
+                                service_worker:select_pid(?WORKER), Cmd)
+                          catch
+                              exit:{timeout, _} -> {error, timeout}
+                          end).
 
 %% -----------------------------------------------------------------
 %% Public interface

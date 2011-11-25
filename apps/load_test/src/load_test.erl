@@ -50,7 +50,8 @@
          game_message_receiver/1, game_multiple_message_receiver/1,
          user_message_receiver/1,
          get_user_pids/1, get_user_sessions/1,
-         get_phase_years/1
+         get_phase_years/1,
+         connect/2
         ]).
 
 % Number of times we poll message inbox
@@ -245,7 +246,9 @@ game_overview(SessionId, GameId) ->
 %% ------------------------------------------------------------------
 -spec create_orders() -> [dict()].
 create_orders() ->
-    Orders = gen_moves:generate_orders(map_data:create(standard_game)),
+    Map = map_data:create(standard_game),
+    Orders = gen_moves:generate_orders(Map),
+    map_data:delete(Map),
     lists:map(fun(Dict) ->
                       countries_transform(get_all_countries(), Dict)
               end, Orders).
@@ -445,7 +448,7 @@ order_transform(Order) ->
         {build, {Unit, _}, Loc} ->
             #build{obj_unit = Unit, obj_loc = Loc};
         {disband, {Unit, _}, Loc} ->
-            #disband{subj_unit = Unit, subj_loc = Loc}
+            #disband{obj_unit = Unit, obj_loc = Loc}
     end.
 
 %% Receiver process
@@ -473,29 +476,24 @@ push_receiver(State) ->
     end.
 
 message_receiver({Count, Pid, Type}) ->
-    receive
-        after 0 ->
-            {Messages, GameMessages} = read_push_msg(Pid),
-            Size = case Type of
-                       game ->
-                           length(GameMessages);
-                       user ->
-                           length(Messages)
-                   end,
-            case Size of
-                0 ->
-                    case Count > ?MESSAGE_COUNT of
-                        true ->
-                            {error, message_not_received};
-                        false ->
-                            timer:sleep(?MESSAGE_SLEEP),
-                            message_receiver({Count+1, Pid, Type})
-                    end;
-                1 ->
-                    {ok, success};
-                _ ->
-                    {error, magic_message}
-            end
+    {Messages, GameMessages} = read_push_msg(Pid),
+    Size = case Type of
+               game ->
+                   length(GameMessages);
+               user ->
+                   length(Messages)
+           end,
+    case Size of
+        0 ->
+            case Count > ?MESSAGE_COUNT of
+                true ->
+                    {error, message_not_received};
+                false ->
+                    timer:sleep(?MESSAGE_SLEEP),
+                    message_receiver({Count+1, Pid, Type})
+            end;
+        _ ->
+            {ok, success}
     end.
 
 get_all_countries() ->
@@ -515,3 +513,41 @@ get_phase_year(Year) ->
      {order_phase, fall, Year},
      {retreat_phase, fall, Year},
      {build_phase, fall, Year}].
+
+
+connect(Node, Tries) ->
+    pong = ping(Node, Tries),
+    ok = start_pg2(Tries).
+
+ping(_Node, 0) ->
+    pang;
+ping(Node, Tries) ->
+    case net_adm:ping(Node) of
+        pong ->
+            io:format("Got pong from ~p~n", [Node]),
+            pong;
+        _ ->
+            io:format("ping to ~p failed, remaining tries: ~p~n",
+                      [Node, Tries-1]),
+            timer:sleep(1000),
+            ping(Node, Tries-1)
+    end.
+
+start_pg2(Tries) ->
+    pg2:start(),
+    wait_for_pg2(Tries).
+
+wait_for_pg2(0) ->
+    {error, no_pg2_workers};
+wait_for_pg2(Tries) ->
+    Workers = [controller_app_worker, db_worker, message_worker, game_worker],
+    case lists:all(fun(Worker) ->
+                           lists:member(Worker, pg2:which_groups())
+                   end, Workers)
+    of
+        true ->
+            ok;
+        false ->
+            timer:sleep(1000),
+            wait_for_pg2(Tries-1)
+    end.

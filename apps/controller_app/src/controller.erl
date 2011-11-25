@@ -54,7 +54,11 @@
 -define(WORKER, controller_app_worker).
 -define(SELECT_WORKER, service_worker:select_pid(?WORKER)).
 -define(CAST_WORKER(Cmd), gen_server:cast(?SELECT_WORKER, Cmd)).
--define(CALL_WORKER(Cmd), gen_server:call(?SELECT_WORKER, Cmd)).
+-define(CALL_WORKER(Cmd), try gen_server:call(
+                                service_worker:select_pid(?WORKER), Cmd)
+                          catch
+                              exit:{timeout, _} -> {error, timeout}
+                          end).
 
 %% ------------------------------------------------------------------
 %% External API Function Definitions

@@ -48,7 +48,11 @@
 %% ------------------------------------------------------------------
 -define(WORKER, message_worker).
 -define(CAST_WORKER(Cmd), gen_server:cast(service_worker:select_pid(?WORKER), Cmd)).
--define(CALL_WORKER(Cmd), gen_server:call(service_worker:select_pid(?WORKER), Cmd)).
+-define(CALL_WORKER(Cmd), try gen_server:call(
+                                service_worker:select_pid(?WORKER), Cmd)
+                          catch
+                              exit:{timeout, _} -> {error, timeout}
+                          end).
 
 %% ------------------------------------------------------------------
 %% External API Function Definitions

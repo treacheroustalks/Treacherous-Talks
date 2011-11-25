@@ -69,47 +69,57 @@ handle_call(ping, _From, State) ->
 handle_call(ping_riak,
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:ping(Conn),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({get, Bucket, Key},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:get(Conn, Bucket, Key),
+    garbage_collect(),
     {reply, Result, State};
 handle_call({get, Bucket, Key, Options},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:get(Conn, Bucket, Key, Options),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({get_index, Bucket, IdxTup},
             _From, #state{db_conn=Conn} = State) ->
+    garbage_collect(),
     Result = db_c:get_index(Conn, Bucket, IdxTup),
     {reply, Result, State};
 
 handle_call({get_values, Bucket, Keys},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:get_values(Conn, Bucket, Keys),
+    garbage_collect(),
     {reply, Result, State};
 handle_call({get_values, Bucket, Keys, Timeout},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:get_values(Conn, Bucket, Keys, Timeout),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({put, Obj},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:put(Conn, Obj),
+    garbage_collect(),
     {reply, Result, State};
 handle_call({put, Obj, Options},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:put(Conn, Obj, Options),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({delete, Bucket, Key},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:delete(Conn, Bucket, Key),
+    garbage_collect(),
     {reply, Result, State};
 handle_call({delete, Bucket, Key, Options},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:delete(Conn, Bucket, Key, Options),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({empty_bucket, Bucket},
@@ -122,54 +132,65 @@ handle_call({empty_bucket, Bucket},
                  Error ->
                      Error
              end,
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call(list_buckets,
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:list_buckets(Conn),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({list_keys, Bucket},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:list_keys(Conn, Bucket),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({get_bucket, Bucket},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:get_bucket(Conn, Bucket),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({set_bucket, Bucket, BucketProps},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:set_bucket(Conn, Bucket, BucketProps),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({mapred, Inputs, Query},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:mapred(Conn, Inputs, Query),
+    garbage_collect(),
     {reply, Result, State};
 handle_call({mapred, Inputs, Query, Timeout},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:mapred(Conn, Inputs, Query, Timeout),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({mapred_bucket, Bucket, Query},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:mapred_bucket(Conn, Bucket, Query),
+    garbage_collect(),
     {reply, Result, State};
 handle_call({mapred_bucket, Bucket, Query, Timeout},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:mapred_bucket(Conn, Bucket, Query, Timeout),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({search, Bucket, Query},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:search(Conn, Bucket, Query),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call({search_values, Bucket, Query},
             _From, #state{db_conn=Conn} = State) ->
     Result = db_c:search_values(Conn, Bucket, Query),
+    garbage_collect(),
     {reply, Result, State};
 
 handle_call(get_db_stats, _From, #state{db_stats_addr = DbStatsAddr} = State) ->
@@ -181,6 +202,7 @@ handle_call(get_db_stats, _From, #state{db_stats_addr = DbStatsAddr} = State) ->
         _ ->
             {error, get_stats_start_socket_fail}
     end,
+    garbage_collect(),
     {reply, Result, State};
 
 

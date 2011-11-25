@@ -72,7 +72,7 @@ get_keyprefix({id, ID}) ->
         {ok, Current} ->
             get_keyprefix({game_current, Current});
         {error, notfound} ->
-            ?debugMsg("Error not found! Keyprefix"),
+%            ?debugMsg("Error not found! Keyprefix"),
             % This case occurs when the game is in the wait state
             integer_to_list(ID) ++ "-1900-spring-order_phase"
     end;
@@ -301,8 +301,11 @@ update_db_obj(OldObj, NewVal) ->
 translate_game_order(GameId, GameOrderList,Country) ->
     case get_game_map(GameId) of
         {ok, Map} ->
-            translate_game_order(GameId, GameOrderList,Country, [],
-                                 to_rule_map(Map));
+            RuleMap = to_rule_map(Map),
+            Result = translate_game_order(GameId, GameOrderList,Country, [],
+                                          RuleMap),
+            delete_map(RuleMap),
+            Result;
         Error ->
             Error
     end.
@@ -310,7 +313,7 @@ translate_game_order(GameId, GameOrderList,Country) ->
 translate_game_order(_GameId, [],_Country, Acc, _Map) ->
     Acc;
 translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
-    ?debugVal(Type=element(1,H)),
+    Type=element(1,H),
     TranslatedOrder =
         case Type of
             move ->
