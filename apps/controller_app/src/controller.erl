@@ -121,6 +121,9 @@
 %%               {CallbackFun::Fun, Args::[any()]},
 %%               SessionId::Integer()) -> ok.
 %% @end]
+%%
+%%   Note: whenever a new command add to controller we need to update
+%%    both tt_acl:moderator_cmd() and tt_acl:user_cmd
 %%-------------------------------------------------------------------
 handle_action({Command, {ok, Data}}, {CallbackFun, Args})
   when Command == register;
@@ -149,11 +152,17 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);
         true->
-            case session:Command(SessionId, Data) of
-                {error, Error} ->
-                    CallbackFun(Args, {Command, invalid_data}, Error);
-                {ok, Result} ->
-                    CallbackFun(Args, {Command, success}, Result)
+            {ok, #user{role = Role}} = session:get_session_user(SessionId, user),
+            case tt_acl:has_access(Command, Role) of
+                false ->
+                    CallbackFun(Args, {Command, access_denied}, Role);
+                true ->
+                    case session:Command(SessionId, Data) of
+                        {error, Error} ->
+                            CallbackFun(Args, {Command, invalid_data}, Error);
+                        {ok, Result} ->
+                            CallbackFun(Args, {Command, success}, Result)
+                    end
             end
     end;
 handle_action({Command, Error}, {CallbackFun, Args}) ->

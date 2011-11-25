@@ -21,27 +21,40 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
--ifndef(USER_DATAMODEL).
--define(USER_DATAMODEL, true).
+%%% @doc Unit tests for the tt_acl interface.
+%%% @end
+%%%
+%%% @since : 25 Nov 2011 by Bermuda Triangle
+%%% @end
+%%%-------------------------------------------------------------------
+-module(tt_acl_test).
 
--include_lib("datatypes/include/date.hrl").
-
--type role() :: user | moderator | operator.
-
--record (user, {id :: integer(),
-                nick :: nonempty_string (),
-                email :: nonempty_string (),
-                password :: nonempty_string (),
-                name :: nonempty_string (),
-                role = user :: role (),
-                channel :: atom (),
-                last_ip :: {integer (), integer (), integer (), integer ()},
-                last_login :: date () | never,
-                score = 0 :: integer (),
-                date_created :: date (),
-                date_updated :: date (),
-                last_session :: string()
-               }).
+-include_lib("eunit/include/eunit.hrl").
 
 
--endif.
+
+set_up() ->
+    ?debugMsg("tt_acl test start ...").
+teardown(_) ->
+    ?debugMsg("tt_acl test DONE").
+
+tt_acl_test_ () ->
+    {setup,
+     fun set_up/0,
+     fun teardown/1,
+     has_access_tst_()
+    }.
+
+%% testing the tt_acl interface
+has_access_tst_() ->
+    [{"test the tt_acl interface for oprator",
+      fun() ->
+              ?assertEqual(true,
+                           tt_acl:has_access(update_user, operator))
+      end},
+     {"test the tt_acl interface for normal user",
+      fun() ->
+              ?assertEqual(true,
+                           tt_acl:has_access(update_user, user))
+      end}
+    ].

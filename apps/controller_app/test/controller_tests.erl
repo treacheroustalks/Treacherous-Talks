@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%%% @copyright
 %%% Copyright (C) 2011 by Bermuda Triangle
 %%%
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
 %%% of this software and associated documentation files (the "Software"), to deal
+%%% @copyright
 %%% in the Software without restriction, including without limitation the rights
 %%% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 %%% copies of the Software, and to permit persons to whom the Software is
@@ -95,7 +95,7 @@ receiver(Events) ->
            ?debugVal(Other),
            receiver(Events)
    end.
-    
+
 
 get_receiver() ->
     #push_receiver{pid = whereis(receiver),
@@ -213,7 +213,7 @@ invalid_session(Callback) ->
 session_setup() ->
     Mods = [
             update_user_tests, get_session_user_tests,
-            create_game_tests, user_msg_tests, 
+            create_game_tests, user_msg_tests,
             push_events_tests, logout_tests
            ],
     Callback = callback(),
