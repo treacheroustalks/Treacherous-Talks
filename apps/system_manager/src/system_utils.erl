@@ -21,66 +21,68 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @author Erik Timan <erol7391@student.uu.se>
-%%%
-%%% @doc The system manager application handles configuration of the Treacherous
-%%% Talks system. It is intended to be the single point of entry for configuring
-%%% and controlling the whole system on a server.
-%%%
+%%% @doc Utility functions for management of an entire distributed TT cluster.
 %%% @end
 %%%
-%%% @since : 23 Nov 2011 by Bermuda Triangle
+%%% @since : 24 Nov 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
--module(system_manager).
 
--behaviour(gen_server).
+-module(system_utils).
 
 -include("include/sysconfig.hrl").
 
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
--export([start_link/0]).
-
-%% ------------------------------------------------------------------
-%% gen_server Function Exports
-%% ------------------------------------------------------------------
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
-         code_change/3]).
+-export([generate_startup_order/1]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-start_link() ->
-    gen_server:start_link(?MODULE, no_arg, []).
-
-%% ------------------------------------------------------------------
-%% gen_server Function Definitions
-%% ------------------------------------------------------------------
-
-init(no_arg) ->
-    {ok, {}}.
-
-handle_call(ping, _From, State) ->
-    {reply, {pong, self()}, State}.
-
-handle_cast(_Msg, State) ->
-    io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
-    {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    io:format ("[~p] terminated ~p: reason: ~p, state: ~p ~n",
-               [?MODULE, self(), _Reason, _State]),
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+%% @doc
+%%  Generate a startup order from a given sysconf()
+%%  which simply puts any riak release before any backend, and any
+%%  backend before anything else.
+%%
+%%  For now, two or more of the same release types will be returned in
+%%  the order they occurred in the sysconf() but this should not
+%%  be relied upon.
+%% @end
+-spec generate_startup_order(sysconf()) -> [{hostname(), relname()}].
+generate_startup_order(SysConf) ->
+    lists:sort(fun startup_sort/2, get_releases(SysConf)).
 
 %% ------------------------------------------------------------------
 %% Internal Functions
 %% ------------------------------------------------------------------
+
+% Riak comes before anything.
+startup_sort({_,riak}=A, B=_Anything) ->
+    io:format("~p ~p~n", [A,B]),
+    true;
+% Riak comes after nothing.
+startup_sort(_Anything=A, B={_, riak}) ->
+    io:format("~p ~p~n", [A,B]),
+    false;
+% Backend comes before anything but riak.
+startup_sort({_, backend}=A, B=_Anything) ->
+    io:format("~p ~p~n", [A,B]),
+    true;
+% Backend comes after nothing but riak.
+startup_sort(_Anything=A, B={_,backend}) ->
+    io:format("~p ~p~n", [A,B]),
+    false;
+% Anything else is equal.
+startup_sort(_=A, B=_) ->
+    io:format("~p ~p~n", [A,B]),
+    true.
+
+get_releases([]) -> [];
+get_releases([{host, Host, RelConfs}|Rest]) ->
+    host_releases(Host, RelConfs) ++ get_releases(Rest).
+
+host_releases(_Host, []) -> [];
+host_releases(Host, [{release, Relname, _RelConf}|Rest]) ->
+    [{Host, Relname}|host_releases(Host, Rest)].
