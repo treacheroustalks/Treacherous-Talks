@@ -67,7 +67,7 @@ create(#user{id = IdIn} = UserIn) ->
                      IdIn ->
                          IdIn
                  end,
-            User = UserIn#user{id = Id},
+            User = UserIn#user{id = Id, date_created = erlang:universaltime()},
 
             BinId = db:int_to_bin(Id),
             DbObj = db_obj:create(?B_USER, BinId, User),

@@ -21,6 +21,18 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
+-define(SUPPORTED_COMMANDS,
+            ?REGISTER ++ "," ++
+            ?LOGIN ++ "," ++
+            ?UPDATE ++ "," ++
+            ?RECONFIG ++ "," ++
+            ?CREATE ++ "," ++
+            ?JOIN ++ "," ++
+            ?ORDER ++ "," ++
+            ?OVERVIEW ++ "," ++
+            ?VIEWCURRENTGAMES ++ "," ++
+            ?SEARCH ++ "," ++
+            ?GETPROFILE).
 -define(REGISTER, "REGISTER").
 -define(UPDATE, "UPDATE").
 -define(LOGIN, "LOGIN").
@@ -31,6 +43,7 @@
 -define(JOIN, "JOIN").
 -define(ORDER, "ORDER").
 -define(SEARCH, "SEARCH").
+-define(GETPROFILE, "GETPROFILE").
 -define(END, "END").
 
 
@@ -40,6 +53,8 @@
 -define(FULLNAME, "FULLNAME").
 -define(EMAIL, "EMAIL").
 -define(CHANNEL, "CHANNEL").
+-define(ROLE, "ROLE").
+-define(DATE_CREATED, "DATE_CREATED").
 
 
 -define(GAMEID, "GAMEID").

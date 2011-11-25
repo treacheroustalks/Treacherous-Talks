@@ -166,7 +166,8 @@ new_game(undefined, #game{} = Game) ->
 new_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
     % Store Game record as proplist for search
-    GamePropList = data_format:rec_to_plist(Game),
+    GamePropList = data_format:rec_to_plist(Game#game{date_created =
+                                                        erlang:universaltime()}),
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
     GameObjWithIndex = db_obj:set_indices(DBGameObj,

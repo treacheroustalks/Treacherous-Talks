@@ -41,7 +41,8 @@
          parse_game_msg/1,
          parse_game_search/1,
          parse_games_current/1,
-         parse_join/1]).
+         parse_join/1,
+         parse_get_session_user/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -52,6 +53,34 @@
 -include("include/command_parser.hrl").% User command keyword
 
 %%------------------------------------------------------------------------------
+%% @doc parse_get_session_user/1
+%%
+%% parse get profile.
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_get_session_user(Data :: binary() ) ->
+          {ok, integer(), no_arg} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_get_session_user(Data) ->
+    RequiredField = [?SESSION],
+    ReqValue = get_required_fields(RequiredField, Data),
+    case lists:member(field_missing, ReqValue) of
+        true ->
+            {error, {required_fields, RequiredField}};
+        false ->
+            [SessionId] = ReqValue,
+
+            case get_error_list(ReqValue,  get_check_type(RequiredField),
+                                RequiredField) of
+                [] ->
+                    {ok, SessionId, no_arg};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+%%------------------------------------------------------------------------------
 %% @doc parse_game_msg/1
 %%
 %% Parses a game message string into a frontend message record.
@@ -60,7 +89,7 @@
 %% @end
 %%------------------------------------------------------------------------------
 -spec parse_game_msg(Data :: binary() ) ->
-          {ok, #frontend_msg{}} |
+          {ok, integer(), #frontend_msg{}} |
           {error, {required_fields, list()}} |
           {error, {invalid_input, list()}}.
 parse_game_msg(Data) ->
@@ -119,7 +148,7 @@ parse_to_countries([H|Rest], Acc) ->
 %% @end
 %%------------------------------------------------------------------------------
 -spec parse_user_msg(Data :: binary() ) ->
-          {ok, #frontend_msg{}} |
+          {ok, integer(), #frontend_msg{}} |
           {error, {required_fields, list()}} |
           {error, {invalid_input, list()}}.
 parse_user_msg(Data) ->

@@ -40,9 +40,6 @@
 
 -include_lib("utils/include/debug.hrl").
 
--define(SUPPORTED_COMMANDS,
-        "REGISTER, LOGIN, UPDATE, CREATE, JOIN, OVERVIEW, VIEWCURRENTGAMES, SEARCH").
-
 %%-------------------------------------------------------------------
 %% @doc
 %% This function replies to the user depending on the result of the
@@ -100,6 +97,7 @@ get_reply({game_search, success}, Data) ->
     Msg = fe_messages:get({game_search, success}, Data),
     GameSearch = fe_messages:get(game_search, Data),
     fe_messages:resp(Msg ++ GameSearch);
+
 % Unknown command
 get_reply(unknown_command, Data) ->
     Msg = fe_messages:get(unknown_command, Data),

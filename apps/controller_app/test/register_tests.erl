@@ -50,7 +50,8 @@ success(Callback) ->
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, NewUser} = Result,
     ?assertEqual({register, success}, CmdRes),
-    ?assertEqual(User#user{id = NewUser#user.id}, NewUser),
+    ?assertEqual(User#user{id = NewUser#user.id,
+                           date_created=NewUser#user.date_created}, NewUser),
     ?debugMsg("REGISTER TEST SUCCESS finished").
 
 invalid(Callback) ->

@@ -181,6 +181,16 @@ END").
 "SEARCH
 SESSION: " ++ Session ++ "
 END").
+-define(GET_PROFILE_COMMAND(Session),
+"
+    asdfasdfasdfasdf
+    GETPROFILE
+
+    SESSION: " ++ Session ++ "
+
+    END
+    2563564565asdfa
+").
 
 %%------------------------------------------------------------------
 %% Responses
@@ -226,6 +236,9 @@ Supported commands are:").
 -define(SEND_OFF_GAME_MSG_RESPONSE_FAILED, "Error: The user does not exist.").
 -define(SEND_GAME_MSG_RESPONSE_SUCCESS, "Game Message was sent. Game ID is: ").
 -define(SEND_GAME_MSG_RESPONSE_NOT_ONGOING, "Error: The game is not active means. the game is not ongoing").
+
+-define(GET_PROFILE_RESPONSE_SUCCESS, "Your Profile:\nNICKNAME:").
+
 %%-------------------------------------------------------------------
 %% @doc
 %%-------------------------------------------------------------------
@@ -412,7 +425,12 @@ setup_session_instantiator() ->
      {Client,
       ?GAME_SEARCH_COMMAND_EMPTY_QUERY(Session),
       ?GAME_SEARCH_RESPONSE_ERROR,
-      "query was empty"}].
+      "query was empty"},
+
+     {Client,
+      ?GET_PROFILE_COMMAND(Session),
+      ?GET_PROFILE_RESPONSE_SUCCESS,
+      "get user profile"}].
 
 
 setup_two_user_instantiator() ->
