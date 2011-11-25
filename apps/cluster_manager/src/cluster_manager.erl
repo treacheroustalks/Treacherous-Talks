@@ -43,28 +43,31 @@ main([ConfigPath]) ->
         {error, enoent} ->
             usage();
         {ok, [Config]} ->
+            % http://erlang.2086793.n4.nabble.com/Making-rpc-calls-from-escript-tp2108031p2108033.html
+            net_kernel:start([foobar, longnames]),
+            erlang:set_cookie(node(), 'treacherous_talks'),
             StartingOrder = cluster_utils:generate_startup_order(Config),
-            io:format("Config: ~p~n"
-                      "Starting order:~p~n",
-                      [Config, StartingOrder]),
+%            io:format("Config: ~p~n"
+%                      "Starting order:~p~n",
+%                      [Config, StartingOrder]),
             ProcessedConfig = cluster_utils:preprocess_clustconf(Config),
-            io:format("Processed config ~p~n", [ProcessedConfig]),
+%            io:format("Processed config ~p~n", [ProcessedConfig]),
             distribute_config(ProcessedConfig),
             start_releases(StartingOrder)
     end.
 
 distribute_config([]) -> ok;
 distribute_config([{host, Host, HostConfig}|Rest]) ->
-    Node = "system_manager@" ++ Host,
-    io:format("rpc:call( ~s, system_manager, update_config, ~p )~n",
-              [Node, HostConfig]),
+    Node = list_to_atom("system_manager@" ++ Host),
+    Res = (catch rpc:call(Node, system_manager, update_config, [{host, Host, HostConfig}])),
+    io:format("update_config ~p on ~p was ~p~n", [HostConfig, Node, Res]),
     distribute_config(Rest).
 
 start_releases([]) -> ok;
 start_releases([{Host, Release}|Rest]) ->
-    Node = "system_manager@" ++ Host,
-    io:format("rpc:call( ~s, system_manager, start_release, ~p )~n",
-              [Node, Release]),
+    Node = list_to_atom("system_manager@" ++ Host),
+    Res = (catch rpc:call(Node, system_manager, start_release, [Release])),
+    io:format("start_release ~p on ~p was ~p~n", [Release, Node, Res]),
     start_releases(Rest).
 
 
