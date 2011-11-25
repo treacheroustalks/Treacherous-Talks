@@ -27,8 +27,8 @@
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
--export ([start_link/0, node_pids/0, node_count/0, worker_count/1, worker_count/2,
-          ping/0]).
+-export ([start_link/0, node_pids/0, node_count/0, worker_count/1,
+          worker_count/2, ping/0, queue_info/1]).
 
 %% gen_server Function Exports
 %% ------------------------------------------------------------------
@@ -39,6 +39,8 @@
 %% game_config state
 -record(state, {}).
 
+-define(WORKERMOD, game_worker).
+
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
@@ -48,6 +50,9 @@ start_link() ->
 
 ping() ->
     gen_server:call(select_pid(), ping).
+
+queue_info(Pid) ->
+    gen_server:call(Pid, queue_info).
 
 node_pids() ->
     service_conf:node_pids(?MODULE).
@@ -72,6 +77,9 @@ init(no_arg) ->
 
 handle_call(worker_count, _From, State) ->
     Count = game_worker_sup:worker_count(),
+    {reply, Count, State};
+handle_call(queue_info, _From, State) ->
+    Count = service_conf:queue_count(?WORKERMOD),
     {reply, Count, State};
 handle_call({worker_count, Count}, _From, State) ->
     Response = game_worker_sup:worker_count(Count),

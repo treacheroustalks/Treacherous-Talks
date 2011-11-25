@@ -33,7 +33,8 @@
 -module(service_conf).
 
 %% Public interface
--export([node_pids/1, node_count/1, worker_count/1, worker_count/2]).
+-export([node_pids/1, node_count/1, worker_count/1, worker_count/2,
+        queue_count/1]).
 
 
 %%-------------------------------------------------------------------
@@ -70,7 +71,7 @@ worker_count(Pid) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Changes the number of workers on the node where Pid lives, 
+%% Changes the number of workers on the node where Pid lives,
 %% and returns the new number.
 %% @end
 %% @spec worker_count(Pid::pid(), Count::integer()) -> integer()
@@ -80,3 +81,18 @@ worker_count(Pid) ->
 worker_count(Pid, Count) ->
     gen_server:call(Pid, {worker_count, Count}).
 
+%-------------------------------------------------------------------
+%% @doc
+%% Returns a list of message queue lengths for each local worker of
+%% module Mod
+%% @end
+%% @spec queue_count(Mod :: atom()) ->
+%%           [{message_queue_len, Len :: integer()}]
+%% @end
+%%-------------------------------------------------------------------
+queue_count(Mod) ->
+    WorkerInfo =
+        lists:map(fun(Pid) ->
+                          erlang:process_info(Pid, message_queue_len)
+                  end, pg2:get_local_members(Mod)),
+    {node(), WorkerInfo}.
