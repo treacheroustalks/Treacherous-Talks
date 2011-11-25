@@ -55,6 +55,7 @@
          mapred_bucket/2, mapred_bucket/3,
          get_unique_id/0,
          int_to_bin/1, int_to_bin/2,
+         get_db_stats/0,
          search/2, search_values/2
         ]).
 
@@ -359,6 +360,14 @@ search(Bucket, Query) ->
 search_values(Bucket, Query) ->
     ?CALL_WORKER({search_values, Bucket, Query}).
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Allow operator to view database system status
+%%
+%% @end
+%%-------------------------------------------------------------------
+get_db_stats() ->
+    ?CALL_WORKER(get_db_stats).
 
 %%-------------------------------------------------------------------
 %% @doc

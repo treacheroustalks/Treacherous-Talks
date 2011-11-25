@@ -70,6 +70,25 @@ get({login, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
+% Operator get DB status
+get({get_db_stats, success}, Json) ->
+    Json;
+get({get_db_stats, invalid_data}, Error) ->
+    case Error of
+        get_stats_body_fail ->
+            resp("Load Json body failed.~n");
+        not_operator ->
+            resp("Permission denied, not operator.~n");
+        get_stats_timeout ->
+            resp("Receive stats data timeout.~n");
+        get_stats_tcp_error ->
+            resp("TCP error.~n");
+        get_stats_start_socket_fail ->
+            resp("Cannot start connection.~n");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
+
 % Get session user
 get({get_session_user, success}, _Val) ->
     resp("");

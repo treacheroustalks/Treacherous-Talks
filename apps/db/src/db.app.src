@@ -12,6 +12,8 @@
   {mod, { db_app, []}},
   {env, [
          {db_workers, 50},
-         {riak, {pb, {"127.0.0.1", 8081}}}
+         {riak_ip, "127.0.0.1"},
+         {riak_database_port, 8091},
+         {riak_protobuf_port, 8081}
         ]}
  ]}.
