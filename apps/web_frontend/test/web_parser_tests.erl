@@ -209,7 +209,7 @@ game_order_exp_data() ->
                   {654321,
                    [{move,army,london,norwegian_sea,any_coast},
                     {move,army,london,norwegian_sea,north_coast},
-                    {move,any_unit,london,norwegian_sea,any_coast},
+                    {move,army,london,norwegian_sea,any_coast},
                     {move,army,london,norwegian_sea,any_coast}]}}}.
 
 games_current_exp_data() ->
@@ -360,7 +360,7 @@ game_order_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]},
-            {struct,[{"game_order", "A Lon-Nrg\r\nLon-Nrg\r\nA Lon -> Nrg nc\r\nArmy Lon move Nrg"}]}]}}]}}.
+            {struct,[{"game_order", "A Lon-Nrg\r\nA Lon-Nrg\r\nA Lon -> Nrg nc\r\nArmy Lon move Nrg"}]}]}}]}}.
 
 games_current_data() ->
     {ok,{struct,

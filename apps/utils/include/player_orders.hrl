@@ -27,9 +27,9 @@
 -define(ORD_PARSER_SETTING, [{capture,[1, 2, 3, 4, 5, 7, 8] ,list}]).
 -define(UNIT_PTN, "(army|fleet|a|f)?").
 -define(LOC_PTN, "([a-z_]{3,})?").
--define(ACT_PTN, "(->|-|remove|move|support|hold$|convoy|disband$|build|waive|m|s|h$|c|d$|b|r|w$)").
--define(MOV_PTN, "(->|-|move|m)?").
--define(COAST_PTN, "([ens]c)?").
+-define(ACT_PTN, "(->|-|move|support|hold\s*$|convoy|disband|build|m|s|h\s*$|c|^\s*b|^\s*d)").
+-define(MOV_PTN, "(->|-|move|m )?").
+-define(COAST_PTN, "([ens]c$)?").
 -define(ORD_PARSER,
 "\s*"?UNIT_PTN"\s*"?LOC_PTN"\s*"?ACT_PTN"\s*"?UNIT_PTN"\s*"?LOC_PTN"\s*"?MOV_PTN"\s*"?LOC_PTN"\s*"?COAST_PTN"\s*").
 
@@ -74,10 +74,8 @@
 % obj_src_loc=apu, obj_dst_loc=tri, coast=nil}
 -record(convoy, {subj_unit, subj_loc, obj_unit, obj_src_loc, obj_dst_loc}).
 
--record(disband, {subj_unit, subj_loc}).
+-record(disband, {obj_unit, obj_loc}).
 -record(build, {obj_unit, obj_loc, coast}).
--record(remove, {obj_unit, obj_loc}).
--record(waive, {}).
 
 -define(TRANS_COAST,
 [{"nc", north_coast},
@@ -91,7 +89,7 @@
  {"f", fleet},
  {"army", army},
  {"fleet", fleet},
- {[], any_unit}]
+ {[],nil}]
 ).
 
 -define(TRANS_ACTION,
@@ -102,17 +100,13 @@
  {"s", support},
  {"c", convoy},
  {"d", disband},
- {"r", remove},
  {"b", build},
- {"w", waive},
  {"move", move},
  {"hold", hold},
  {"support", support},
  {"convoy", convoy},
  {"disband", disband},
- {"remove", remove},
- {"build", build},
- {"waive", waive}]
+ {"build", build}]
 ).
 
 -define(TRANS_LOC_ABBV,

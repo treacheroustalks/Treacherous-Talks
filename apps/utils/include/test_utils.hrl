@@ -229,52 +229,38 @@ adfadfasdfaldfad">>
     SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
     GAMEID: 3958230945903
 
-------move----------------
     A Lon-Nrg
-    Lon-Nrg
+    A Belgium m Mun
     A Lon -> Nrg nc
     Army Lon move Nrg
+    Army Bre->Mar
+    Fleet Mid_Atlantic_Ocean move North_Atlantic_Ocean nc
+    A Bre-Mar
 
----short-convoy-----------
     F Nth C A Lon-Nrg
     F Nth Convoy A Lon move Nrg
-
----njudge-convoy-move-----
-    A Bre-Fin-Wes-Gol-Mar
-    A Bre->Fin->Wes->Gol->Mar
-
-------long convoy---------
-    A Bre-Mar
-    F Fin C A Bre-Mar
     F Wes C A Bre-Mar
-    F Gol C A Bre-Mar
-
-    Army Bre-> Mar
     F Fin C A Bre move Mar
     F Wes Convoy A Bre->Mar
     Fleet Gol C A Bre - Mar
 
-
-------hold----------------
-    A Bre H
+    A munich H
     Army Bre hold
-    hol hold
+    a hol hold
 
-------support hold--------
-    F Fin S Bre
-    Fleet Fin support Bre
-
-------support move--------
+    F Fin S A Bre
+    F marseilles S A albania
+    Fleet Fin support A Bre
     A MUN S F KIE-BER
-    Army MUN Support Fleet KIE move BER
+    Army   MUN   Support   Fleet   KIE   move   BER
+    Army   MUN   Support   A   belgium   m   BER
 
-------retreat-------------
-    A Mun disband
+    disband A Mun
+    D A mun
 
-------build---------------
-    remove A mun
     build F Mun nc
-    waive, Fleet Mid_Atlantic_Ocean move North_Atlantic_Ocean nc
+    B F Mun nc
+
 
     END
 
@@ -304,7 +290,47 @@ adfadfasdfaldfad">>
     GAMEID: 3958230945903
 
     A Lon-Nrg
+    A Lon m Nrg
+    A Lon -> Nrg nc
+    Army Lon move Nrg
+
+    F Nth C A Lon-Nrg
+    F Nth Convoy A Lon move Nrg
+
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_TEST_ORDERS_UNIT_MISSING,
+<<"
+    asdfasdfasdfasdf
+    ORDER
+
+    SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
+    GAMEID: 3958230945903
+
     Lon-Nrg
+    A Lon m Nrg
+    A Lon -> Nrg nc
+    Army Lon move Nrg
+
+    F Nth C A Lon-Nrg
+    F Nth Convoy A Lon move Nrg
+
+    END
+    2563564565asdfa
+">>
+).
+-define(SAMPLE_TEST_ORDERS_ACTION_MISSING,
+<<"
+    asdfasdfasdfasdf
+    ORDER
+
+    SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==
+    GAMEID: 3958230945903
+
+    A Nrg
     A Lon -> Nrg nc
     Army Lon move Nrg
 

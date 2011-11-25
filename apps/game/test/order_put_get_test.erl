@@ -50,7 +50,7 @@ input_test_order_list() ->
      {move, army, vienna, galicia, nc},
      {move, army, warsaw, galicia, nc},
      {build, army, warsaw, nc},
-     {remove, army, warsaw}
+     {disband, army, warsaw}
     ].
 
 input_updated_order_list() ->
