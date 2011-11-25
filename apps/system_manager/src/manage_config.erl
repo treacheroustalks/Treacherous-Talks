@@ -42,10 +42,14 @@
 %% Read an app.config as an erlang term.
 %% @end
 %% ------------------------------------------------------------------
--spec read_config(string()) -> {ok, term()}.
+-spec read_config(string()) -> {ok, term()} | {error, term()}.
 read_config(Path) ->
-    {ok, [Config]} = file:consult(Path),
-    {ok, Config}.
+    case file:consult(Path) of
+        {ok, [Config]} ->
+            {ok, Config};
+        Error ->
+            Error
+    end.
 
 %% ------------------------------------------------------------------
 %% @doc

@@ -38,6 +38,8 @@
 
 -include_lib("datatypes/include/clusterconf.hrl").
 
+-include_lib("utils/include/debug.hrl").
+
 %% Set a timeout for API calls.
 -define(TIMEOUT, 30000).
 
@@ -109,6 +111,7 @@ ping_release(Relname) ->
 %% ------------------------------------------------------------------
 
 init([]) ->
+    process_flag(trap_exit, true),
     {ok, {}}.
 
 handle_call(ping, _From, State) ->
@@ -116,8 +119,10 @@ handle_call(ping, _From, State) ->
 handle_call({update_config, HostConfig}, _From, State) ->
     {reply, int_update_config(HostConfig), State};
 handle_call({start_release, Relname}, _From, State) ->
+    ok = save_status_of_release(Relname, started),
     {reply, int_start_release(Relname), State};
 handle_call({stop_release, Relname}, _From, State) ->
+    ok = save_status_of_release(Relname, stopped),
     {reply, int_stop_release(Relname), State};
 handle_call({ping_release, Relname}, _From, State) ->
     {reply, handle_releases:ping_release(Relname), State}.
@@ -129,6 +134,11 @@ handle_cast(_Msg, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
+terminate(shutdown, _State) ->
+    {ok, Releases} = get_started_releases(),
+    ?DEBUG("Shutting down the following releases: ~p~n", [Releases]),
+    [ int_stop_release(Release) || Release <- Releases ],
+    ok;
 terminate(_Reason, _State) ->
     io:format ("[~p] terminated ~p: reason: ~p, state: ~p ~n",
                [?MODULE, self(), _Reason, _State]),
@@ -259,4 +269,49 @@ int_stop_release(Relname) ->
             ok;
         Error ->
             Error
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Saves the current status of a release to the file status-of-releases in the
+%% log directory. It updates the information in the file as needed.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec save_status_of_release(relname(), atom()) ->
+    ok | {error, term()}.
+save_status_of_release(Relname, Status) ->
+    Filename = filename:join(["log", "status-of-releases"]),
+    ?DEBUG("Saving status ~p of release ~p.~n", [Status, Relname]),
+    % See if we can read the old status
+    case manage_config:read_config(Filename) of
+        {ok, OldList} ->
+            NewList = manage_config:update_config(OldList, [{Relname, Status}]),
+            manage_config:write_config(Filename, NewList);
+        {error, enoent} ->
+            % No old file, nothing to merge. Just write to a new one.
+            manage_config:write_config(Filename, [{Relname, Status}]);
+        Other ->
+            Other
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Gets a list of started releases by reading and parsing the file
+%% status-of-releases.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec get_started_releases() -> {ok, list()} | {error, term()}.
+get_started_releases() ->
+    Filename = filename:join(["log", "status-of-releases"]),
+    case manage_config:read_config(Filename) of
+        {ok, List} ->
+            % Get a list of the started releases by going through the list and
+            % matching on started ones.
+            {ok, [Release || {Release, started} <- List]};
+        {error, enoent} ->
+            {ok, []};
+        Other ->
+            Other
     end.
