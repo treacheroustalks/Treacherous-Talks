@@ -46,8 +46,7 @@ dia:
 # errors since they only mean that we already have cloned it
 get_deps:
 	$(REBAR) get-deps
-	cd deps; git clone https://github.com/ahilsend/yaws.git 2>&1 || echo ok
-	cd deps/yaws; git checkout websocket_hy10 2>&1
+	cd deps; git clone -b websocket_hy10 https://github.com/ahilsend/yaws.git 2>&1 || echo ok
 
 # Build Yaws in the old boring way and in parallel with make -j4
 compile:
@@ -85,8 +84,13 @@ inttest: release
 release: clean_release copy_docs
 	$(REBAR) generate
 
+# Remove all things in system-release except for Riak (if it's there) since we
+# don't build it with our tools. To make rmdir work even when $SYSREL doesn't
+# exist, we create it first... And then we try to remove it if it is empty.
 clean_release:
-	rm -rf $(SYSREL)/*
+	mkdir -p $(SYSREL)
+	find $(SYSREL)/* -depth -maxdepth 0 ! -iname riak -print0 | xargs -0 rm -rf
+	rmdir --ignore-fail-on-non-empty $(SYSREL)
 
 # This rule copies docs to SYSREL/docs so that they are easier to collect for
 # Buildbot
@@ -113,14 +117,30 @@ deb_release:
 
 ### Helper rules for internal development
 
-create_deps_file: clean get_deps
-	tar -czf dependencies.tar.gz deps/
+create_deps_file: clean clean_release get_deps riak_release
+	tar -czf dependencies.tar.gz deps/ $(SYSREL)/
 
 fetch_deps_file:
 	wget -nv 'http://buildbot.pcs/mirror/dependencies.tar.gz' 2>&1
 	tar -xf dependencies.tar.gz
 	rm dependencies.tar.gz
 
+# This is an ugly way to get Riak into our debian packages and development
+# environment. It simply fetches Riak, builds it and creates a release. That
+# release is then moved into $SYSREL.
+riak_release:
+	rm -rf riak-build
+	mkdir -p riak-build
+	cd riak-build; wget -nv 'http://downloads.basho.com/riak/riak-1.0.2/riak-1.0.2.tar.gz' 2>&1
+	cd riak-build; tar -xf riak-*.tar.gz
+	cd riak-build; rm riak-*.tar.gz
+	cd riak-build/riak-*; make rel
+	rm -rf $(SYSREL)/riak
+	mkdir -p $(SYSREL)/riak
+	mv riak-build/riak-*/rel/riak $(SYSREL)
+	rm -rf riak-build
+
+
 .PHONY: standard complete get_deps compile docs small_clean clean test \
 	unittest inttest release clean_release copy_docs tar_release \
-	deb_release create_deps_file fetch_deps_file plt dia
+	deb_release create_deps_file fetch_deps_file plt dia riak_release
