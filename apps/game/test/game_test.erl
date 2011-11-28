@@ -529,12 +529,15 @@ get_games_current_tst_ () ->
 game_search_ext_tst_ () ->
     [fun() ->
              ?debugMsg("Search cleanup"),
+             debugNow(),
              {ok, Results} = game:search("pressTypeA OR press=pressTypeB OR "
                                          "press=pressTypeC"),
-             lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
+             lists:map(fun(GameId) -> sync_delete(GameId) end, Results),
+             debugNow()
      end,
      fun() ->
              ?debugMsg("GAME SEARCH TESTS: START"),
+             debugNow(),
              % Setup games
              GameRecord = test_game(),
              Game1 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
@@ -542,6 +545,8 @@ game_search_ext_tst_ () ->
              Game3 = sync_get(sync_new(GameRecord#game{press=pressTypeB})),
              Game4 = sync_get(sync_new(GameRecord#game{press=pressTypeC})),
              Game5 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
+             ?debugMsg("Done creating and getting test games."),
+             debugNow(),
 
              ?debugMsg("Search games with only AND clause with match"),
              Query1 = "press=pressTypeA AND password=pass",
@@ -576,12 +581,16 @@ game_search_ext_tst_ () ->
              ?assert(lists:member(Game4, Results4)),
 
              ?debugMsg("GAME SEARCH TESTS: DONE"),
+             debugNow(),
+
              % Cleanup
              sync_delete(Game1#game.id),
              sync_delete(Game2#game.id),
              sync_delete(Game3#game.id),
              sync_delete(Game4#game.id),
-             sync_delete(Game5#game.id)
+             sync_delete(Game5#game.id),
+             ?debugMsg("Done cleaning up test games"),
+             debugNow()
      end].
 
 
@@ -644,3 +653,8 @@ create_mock_user(User) ->
 delete_mock_user(User) ->
     BinKey = db:int_to_bin(User#user.id),
     db:delete(?B_USER, BinKey).
+
+debugNow() ->
+    NowUniversal = calendar:now_to_universal_time(os:timestamp()),
+    NowStr = io_lib:format("~p",[NowUniversal]),
+    ?debugMsg(NowStr).
