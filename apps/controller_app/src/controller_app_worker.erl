@@ -95,7 +95,9 @@ init(no_arg) ->
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
-
+handle_call(system_stats, _From, State) ->
+    Stats = system_stats:get_system_stats(),
+    {reply, Stats, State};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for creation of a user

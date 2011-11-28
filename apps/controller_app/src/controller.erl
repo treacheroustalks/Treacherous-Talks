@@ -39,7 +39,8 @@
 %% Internal functions, exported for eUnit, do not use!
 -export([
          register/1,
-         login/1
+         login/1,
+         system_stats/0
         ]).
 
 -include_lib("datatypes/include/push_receiver.hrl").
@@ -211,3 +212,14 @@ register(User) ->
 %%-------------------------------------------------------------------
 login(Data = {#user{}, #push_receiver{}}) ->
     ?CALL_WORKER({login, Data}).
+
+%%-------------------------------------------------------------------
+%% @doc system_stats
+%%
+%% API for getting system statistics
+%%
+%% @spec system_stats() -> any()
+%% @end
+%%-------------------------------------------------------------------
+system_stats() ->
+    ?CALL_WORKER(system_stats).
