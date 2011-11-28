@@ -34,11 +34,13 @@
 
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/bucket.hrl").
+-include_lib ("eunit/include/eunit.hrl").
 
 %% Public application interface
 -export([
+         assign_moderator/2,
          create/1,
-         get/1, get/2,
+         get/1,
          get_by_idx/2,
          update/1
         ]).
@@ -104,7 +106,9 @@ update(#user{id = Id} = NewUser) when is_integer(Id) ->
             {error, does_not_exist};
         Error ->
             {error, Error}
-    end.
+    end;
+update(_User) ->
+    {error, does_not_exist}.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -145,21 +149,33 @@ get(Id) ->
             erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
     end.
 
-get(Type, Key) ->
-    {ok, Keys} = db:list_keys(?B_USER),
-    lists:foldl(
-      fun(Id, Acc) ->
-              {ok, Item} = db:get(?B_USER, Id),
-              Value = db_obj:get_value (Item),
-              if
-                  Key == '_' ->
-                      [db_obj:get_value(Item) | Acc];
-                  element (Type, Value) == Key ->
-                      [db_obj:get_value(Item) | Acc];
-                  true -> Acc
-              end
-      end,
-      [], Keys).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates an existing user, to add the moderator role or to remove
+%% the moderator role.
+%%
+%% @spec assign_moderator(Username :: string(), Action :: atom()) ->
+%%         {ok, #user{}} | {error, user_not_found}
+%% @end
+%%-------------------------------------------------------------------
+assign_moderator(Username, Action) ->
+    case get_by_idx(#user.nick, Username) of
+        {ok, {index_list, _UserList}} ->
+            {error, user_not_found};
+        {ok, UserObj} ->
+            User = db_obj:get_value(UserObj),
+            case Action of
+                add ->
+                    ModUser = User#user{role = moderator};
+                remove ->
+                    ModUser = User#user{role = user}
+            end,
+            update(ModUser);
+        _Error ->
+            {error, user_not_found}
+    end.
+
 
 %% ------------------------------------------------------------------
 %% Internal Functions

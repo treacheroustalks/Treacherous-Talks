@@ -59,7 +59,8 @@
          push_event/2,
          games_current/2,
          get_db_stats/2,
-         game_search/2
+         game_search/2,
+         assign_moderator/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -301,3 +302,16 @@ deliver_offline_messages (NewSessionId, User) ->
                    end,
                    GameMsges),
     {UserMsges, GameMsges}.
+
+
+%%-------------------------------------------------------------------
+%% @doc assign_moderator/2
+%% Updates a user role to a moderator role
+%%
+%% @spec assign_moderator(SessionId :: string,
+%%                        {Username :: string(), Action :: atom()}) ->
+%%         {ok, #user{}}
+%% @end
+%%-------------------------------------------------------------------
+assign_moderator(SessionId, Data = {_Username, _Action}) ->
+    ?SESSION_CALL(SessionId, assign_moderator, Data).

@@ -306,6 +306,21 @@ handle_call(get_db_stats, _From, State = #state{user = User}) ->
             {error, not_operator}
     end,
     {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for upgrading a user to a moderator. Action
+%% can be the atom add or remove.
+%% @end
+%% @spec
+%% handle_call({assign_moderator::atom(),
+%%              {Username::string(), Action :: atom}},
+%%             From::{pid(), Tag}, #state{}) ->
+%%     {reply, ok, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({assign_moderator, {Username, Action}}, _From, State) ->
+    User = user_management:assign_moderator(Username, Action),
+    {reply, User, State, ?TIMEOUT};
 
 %% Unhandled request
 handle_call(_Request, _From, State) ->

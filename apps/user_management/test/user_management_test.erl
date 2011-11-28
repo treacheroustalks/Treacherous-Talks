@@ -42,6 +42,16 @@ app_stop(_Client) ->
     error_logger:tty(true).
 
 %% main test
+
+assign_mod_test_() ->
+    {"add moderator test",
+     {setup,
+      fun app_start/0,
+      fun app_stop/1,
+      [add_moderator_t(),
+      remove_moderator_t()]
+     }}.
+
 create_user_without_key_test_() ->
     {"create a user without key",
       {setup,
@@ -81,7 +91,7 @@ update_user_test_() ->
      {setup,
       fun app_start/0,
       fun app_stop/1,
-      fun update_user/0
+      update_user()
       }}.
 
 update_non_existing_user_test_() ->
@@ -89,7 +99,7 @@ update_non_existing_user_test_() ->
      {setup,
       fun app_start/0,
       fun app_stop/1,
-      fun update_non_existing_user/0
+      update_non_existing_user()
       }}.
 
 get_user_test_() ->
@@ -97,10 +107,9 @@ get_user_test_() ->
      {setup,
       fun app_start/0,
       fun app_stop/1,
-      [fun get_user_t/0,
-       fun get_user_fail_t/0,
-       fun get_user_key_t/0]
-      }}.
+      [get_user_t(),
+       get_user_fail_t()]
+     }}.
 
 get_user_by_idx_test_() ->
     {"get a user by index",
@@ -119,6 +128,8 @@ get_user_by_idx_test_() ->
       fun get_user_by_idx_instantiator/1
       }}.
 
+
+
 get_user_t() ->
     fun() ->
             {ok, User} = user_management:create(create_user()),
@@ -126,18 +137,13 @@ get_user_t() ->
             ?assertEqual(User, Result)
     end.
 
-get_user_key_t () ->
-    fun () ->
-            {ok, User} = user_management:create(create_user ()),
-            Result = user_management:get(#user.nick, User#user.nick),
-            ?assert(is_list(Result))
-    end.
-
 get_user_fail_t() ->
     fun() ->
             Result = user_management:get(db_c:get_unique_id()),
             ?assertEqual({error, notfound}, Result)
     end.
+
+
 
 %% tests generators
 create_user_t(#user{} = User) ->
@@ -189,6 +195,24 @@ get_user_by_idx(#user{} = User, Field) ->
             erlang:error(error, Other)
     end.
 
+add_moderator_t() ->
+    fun() ->
+            {ok, User} = user_management:create(create_user()),
+            Username = User#user.nick,
+            ExpectedUser = User#user{role = moderator},
+            {ok, Result} = user_management:assign_moderator(Username, add),
+            ?assertEqual(ExpectedUser, Result)
+    end.
+
+remove_moderator_t() ->
+    fun() ->
+            {ok, User} = user_management:create(create_user()),
+            Username = User#user.nick,
+            ExpectedUser = User#user{role = user},
+            user_management:assign_moderator(Username, add),
+            {ok, Result} = user_management:assign_moderator(Username, remove),
+            ?assertEqual(ExpectedUser, Result)
+    end.
 
 %% helper functions
 create_user() ->

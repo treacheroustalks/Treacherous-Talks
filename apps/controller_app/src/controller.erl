@@ -82,9 +82,11 @@
 %%              games_current |
 %%              user_msg |
 %%              game_msg |
+%%              assign_moderator |
 %%              unkown_command.
 %%
-%% result() :: success | parse_error | invalid_data | invalid_session | error.
+%% result() :: success | parse_error | invalid_data | invalid_session
+%%             | access_denied | error.
 %%
 %% Standard return (error) values for invalid_data
 %% register ->          [nick_already_exists]
@@ -117,6 +119,7 @@
 %%                       get_stats_tcp_error,
 %%                       get_stats_start_socket_fail,
 %%                       not_operator]
+%% assign_moderator ->     [user_not_found]
 %%
 %% @end
 %%
@@ -154,7 +157,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == games_current;
        Command == game_search;
        Command == get_db_stats;
-       Command == game_msg ->
+       Command == game_msg;
+       Command == assign_moderator ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

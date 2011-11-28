@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
+%%% @copyright
 %%% Copyright (C) 2011 by Bermuda Triangle
 %%%
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
 %%% of this software and associated documentation files (the "Software"), to deal
-%%% @copyright
 %%% in the Software without restriction, including without limitation the rights
 %%% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 %%% copies of the Software, and to permit persons to whom the Software is
@@ -36,7 +36,8 @@
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
 
--export([create_user/0, create_game/0, get_receiver/0, get_event/0]).
+-export([create_user/0, create_game/0, get_receiver/0, get_event/0,
+        create_operator/0]).
 
 -define(TIMEOUT, 3000).
 %%-------------------------------------------------------------------
@@ -125,7 +126,8 @@ controller_test_() ->
        ?_test(invalid_session(callback()))
       ] ++
       register_tests:tests(callback()) ++
-      login_tests:tests(callback())
+      login_tests:tests(callback()) ++
+      assign_moderator_tests:tests(callback())
      }}.
 
 controller_session_test_() ->
@@ -168,6 +170,7 @@ controller_joined_game_test_() ->
      fun joined_game_test_instantiator/1
     }.
 
+
 %%-------------------------------------------------------------------
 %% Test executer
 %%-------------------------------------------------------------------
@@ -190,7 +193,7 @@ parse_error(Callback) ->
     Commands = [
                 login, register, update_user, get_session_user,
                 create_game, get_game, reconfig_game, game_overview,
-                join_game, game_order
+                join_game, game_order, assign_moderator
                ],
 
     lists:foreach(fun(Cmd) ->
@@ -206,7 +209,7 @@ parse_error(Callback) ->
 invalid_session(Callback) ->
     Commands = [
                 update_user, get_session_user, create_game, get_game,
-                reconfig_game, join_game, game_order
+                reconfig_game, join_game, game_order, assign_moderator
                ],
     InvalidId = session_id:from_pid(list_to_pid("<0.1.0>")),
 
@@ -365,3 +368,17 @@ create_game() ->
           build_phase = 12*60,
           password="pass",
           waiting_time = 1}.
+
+create_operator() ->
+    #user{id = undefined,
+          nick = "testuser" ++ integer_to_list(db_c:get_unique_id()),
+          email = "test@user.com",
+          password = "test_passw0rd",
+          name = "Test User",
+          role = operator,
+          channel = mail,
+          last_ip = {127, 0, 0, 0},
+          last_login = never,
+          score = 0,
+          date_created = {{2011, 10, 18}, {10, 42, 15}},
+          date_updated = {{2011, 10, 18}, {10, 42, 16}}}.
