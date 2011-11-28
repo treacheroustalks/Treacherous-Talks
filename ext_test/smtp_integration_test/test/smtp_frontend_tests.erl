@@ -24,6 +24,7 @@
 -module(smtp_frontend_tests).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("utils/include/test_utils.hrl").
 
 -define(MAIL_USERNAME, smtp_test_utils:from_address()).
 
@@ -80,34 +81,50 @@
 % Two accounts using the same email address but different nicks.
 % Both register, login, then one sends a message to the other.
 % We check that the message content is found in the mailbox after sending.
-online_msg_recv_test() ->
-    Nick1 = random_nick(),
-    Nick2 = random_nick(),
+online_msg_recv_test_() ->
+    {setup,
+     fun() -> %setup
+             ?debugFmt("Setup online_msg_recv_test ~p", [?NOW_UNIV]),
+             Nick1 = random_nick(),
+             Nick2 = random_nick(),
 
-    register(Nick1),
-    register(Nick2),
+             register(Nick1),
+             register(Nick2),
+             ?debugFmt("Registered test users ~p", [?NOW_UNIV]),
 
-    Session1 = login(Nick1),
-    Session2 = login(Nick2),
+             Session1 = login(Nick1),
+             Session2 = login(Nick2),
+             ?debugFmt("Logged in test users ~p", [?NOW_UNIV]),
 
-    imap_client:empty_mailbox(?MAIL_USERNAME),
-    % from nick 1 to nick 2
-    SendMessageMsg = ?OFF_GAME_MSG_MSG(Session1, Nick2),
-    smtp_test_utils:send_mail(SendMessageMsg),
+             imap_client:empty_mailbox(?MAIL_USERNAME),
+             ?debugFmt("Done setting up online_msg_recv_test ~p", [?NOW_UNIV]),
+             {Nick1, Session1, Nick2, Session2}
+     end,
+     fun({Nick1, Session1, Nick2, Session2}) -> % instantiator
+                                                % from nick 1 to nick 2
+             fun() ->
+                     ?debugFmt("Start online_msg_recv_test ~p", [?NOW_UNIV]),
+                     SendMessageMsg = ?OFF_GAME_MSG_MSG(Session1, Nick2),
+                     smtp_test_utils:send_mail(SendMessageMsg),
+                     ?debugFmt("Sent test message ~p", [?NOW_UNIV]),
 
-    % Message 1 and 2 in the inbox should be confirmation of sending
-    % and the actual message. The order is not guaranteed.
-    {_From, _To, _Subject, Message2} =
-        imap_client:read_nth(?MAIL_USERNAME, 2),
-    {_From, _To, _Subject, Message1} =
-        imap_client:read_nth(?MAIL_USERNAME, 1),
-    ?debugFmt("~nMessage 1 = ~p~n"
-              "Message 2 = ~p~n",
-              [Message1, Message2]),
-    Idx1 = string:str(Message1, "hello world"),
-    Idx2 = string:str(Message2, "hello world"),
-    Found = 0 /= (Idx1 bor Idx2),
-    ?assert(Found).
+                     % Message 1 and 2 in the inbox should be confirmation of sending
+                     % and the actual message. The order is not guaranteed.
+                     {_From, _To, _Subject, Message2} =
+                         imap_client:read_nth(?MAIL_USERNAME, 2),
+                     {_From, _To, _Subject, Message1} =
+                         imap_client:read_nth(?MAIL_USERNAME, 1),
+                     ?debugFmt("~nMessage 1 = ~p~n"
+                               "Message 2 = ~p~n",
+                               [Message1, Message2]),
+                     Idx1 = string:str(Message1, "hello world"),
+                     Idx2 = string:str(Message2, "hello world"),
+                     Found = 0 /= (Idx1 bor Idx2),
+                     ?assert(Found),
+
+                     ?debugFmt("Finished online_msg_recv_test ~p", [?NOW_UNIV])
+             end
+     end}.
 
 
 

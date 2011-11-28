@@ -444,3 +444,5 @@ adfadfasdfaldfad">>
     2563564565asdfa
 ">>
 ).
+
+-define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).

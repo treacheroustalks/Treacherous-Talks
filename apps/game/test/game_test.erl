@@ -24,6 +24,7 @@
 -module(game_test).
 
 -include_lib ("eunit/include/eunit.hrl").
+-include_lib ("utils/include/test_utils.hrl").
 -include_lib ("datatypes/include/game.hrl").
 -include_lib ("datatypes/include/user.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
@@ -527,17 +528,14 @@ get_games_current_tst_ () ->
 %% Tests the game search functionality for the exported function
 %%------------------------------------------------------------------------------
 game_search_ext_tst_ () ->
-    [fun() ->
-             ?debugMsg("Search cleanup"),
-             debugNow(),
+    {setup,
+     fun() -> %setup
+             ?debugFmt("Search cleanup ~p", [?NOW_UNIV]),
              {ok, Results} = game:search("pressTypeA OR press=pressTypeB OR "
                                          "press=pressTypeC"),
              lists:map(fun(GameId) -> sync_delete(GameId) end, Results),
-             debugNow()
-     end,
-     fun() ->
-             ?debugMsg("GAME SEARCH TESTS: START"),
-             debugNow(),
+             ?debugFmt("Search cleanup done ~p",[?NOW_UNIV]),
+
              % Setup games
              GameRecord = test_game(),
              Game1 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
@@ -545,53 +543,59 @@ game_search_ext_tst_ () ->
              Game3 = sync_get(sync_new(GameRecord#game{press=pressTypeB})),
              Game4 = sync_get(sync_new(GameRecord#game{press=pressTypeC})),
              Game5 = sync_get(sync_new(GameRecord#game{press=pressTypeA})),
-             ?debugMsg("Done creating and getting test games."),
-             debugNow(),
+             ?debugFmt("Done creating and getting test games. ~p", [?NOW_UNIV]),
 
-             ?debugMsg("Search games with only AND clause with match"),
-             Query1 = "press=pressTypeA AND password=pass",
-             {ok, Results1} = game:get_game_search(Query1),
-             ?assert(length(Results1) =:= 3),
-             ?assert(lists:member(Game1, Results1)),
-             ?assert(lists:member(Game2, Results1)),
-             ?assert(lists:member(Game5, Results1)),
-
-             ?debugMsg("Search games with only AND clause without match "),
-             Query2 = "press=pressTypeA AND password=dummy",
-             {ok, Results2} = game:get_game_search(Query2),
-             ?assert(length(Results2) =:= 0),
-
-             ?debugMsg("Search games with only OR clause"),
-             Query3 = "press=pressTypeB OR press=pressTypeC",
-             {ok, Results3} = game:get_game_search(Query3),
-             ?assert(length(Results3) =:= 2),
-             ?assert(lists:member(Game3, Results3)),
-             ?assert(lists:member(Game4, Results3)),
-
-             ?debugMsg("Search games with ALL clauses"),
-             lists:flatten(io_lib:format("id=~p", [Game5#game.id])),
-             Query4 = "press=pressTypeA AND password=pass OR press=pressTypeB "
-                       "OR press=pressTypeC "
-                       "NOT id=" ++ integer_to_list(Game5#game.id),
-             {ok, Results4} = game:get_game_search(Query4),
-             ?assert(length(Results4) =:= 4),
-             ?assert(lists:member(Game1, Results4)),
-             ?assert(lists:member(Game2, Results4)),
-             ?assert(lists:member(Game3, Results4)),
-             ?assert(lists:member(Game4, Results4)),
-
-             ?debugMsg("GAME SEARCH TESTS: DONE"),
-             debugNow(),
-
+             %return data for generating test
+             {Game1, Game2, Game3, Game4, Game5}
+     end,
+     fun({Game1, Game2, Game3, Game4, Game5}) -> %cleanup
              % Cleanup
              sync_delete(Game1#game.id),
              sync_delete(Game2#game.id),
              sync_delete(Game3#game.id),
              sync_delete(Game4#game.id),
              sync_delete(Game5#game.id),
-             ?debugMsg("Done cleaning up test games"),
-             debugNow()
-     end].
+             ?debugFmt("Done cleaning up test games ~p",[?NOW_UNIV])
+     end,
+     fun({Game1, Game2, Game3, Game4, Game5}) -> % instantiator
+             fun() ->
+                     ?debugFmt("GAME SEARCH TESTS: START ~p", [?NOW_UNIV]),
+
+                     ?debugMsg("Search games with only AND clause with match"),
+                     Query1 = "press=pressTypeA AND password=pass",
+                     {ok, Results1} = game:get_game_search(Query1),
+                     ?assert(length(Results1) =:= 3),
+                     ?assert(lists:member(Game1, Results1)),
+                     ?assert(lists:member(Game2, Results1)),
+                     ?assert(lists:member(Game5, Results1)),
+
+                     ?debugMsg("Search games with only AND clause without match "),
+                     Query2 = "press=pressTypeA AND password=dummy",
+                     {ok, Results2} = game:get_game_search(Query2),
+                     ?assert(length(Results2) =:= 0),
+
+                     ?debugMsg("Search games with only OR clause"),
+                     Query3 = "press=pressTypeB OR press=pressTypeC",
+                     {ok, Results3} = game:get_game_search(Query3),
+                     ?assert(length(Results3) =:= 2),
+                     ?assert(lists:member(Game3, Results3)),
+                     ?assert(lists:member(Game4, Results3)),
+
+                     ?debugMsg("Search games with ALL clauses"),
+                     lists:flatten(io_lib:format("id=~p", [Game5#game.id])),
+                     Query4 = "press=pressTypeA AND password=pass OR press=pressTypeB "
+                         "OR press=pressTypeC "
+                         "NOT id=" ++ integer_to_list(Game5#game.id),
+                     {ok, Results4} = game:get_game_search(Query4),
+                     ?assert(length(Results4) =:= 4),
+                     ?assert(lists:member(Game1, Results4)),
+                     ?assert(lists:member(Game2, Results4)),
+                     ?assert(lists:member(Game3, Results4)),
+                     ?assert(lists:member(Game4, Results4)),
+
+                     ?debugFmt("GAME SEARCH TESTS: DONE ~p",[?NOW_UNIV])
+             end
+     end}.
 
 
 %%------------------------------------------------------------------------------
@@ -653,8 +657,3 @@ create_mock_user(User) ->
 delete_mock_user(User) ->
     BinKey = db:int_to_bin(User#user.id),
     db:delete(?B_USER, BinKey).
-
-debugNow() ->
-    NowUniversal = calendar:now_to_universal_time(os:timestamp()),
-    NowStr = io_lib:format("~p",[NowUniversal]),
-    ?debugMsg(NowStr).
