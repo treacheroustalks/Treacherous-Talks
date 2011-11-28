@@ -138,6 +138,16 @@ controller_session_test_() ->
      fun session_test_instantiator/1
     }.
 
+controller_operator_session_test_() ->
+    {setup,
+     fun() ->
+             app_start(),
+             operator_session_setup()
+     end,
+     fun app_stop/1,
+     fun session_test_instantiator/1
+    }.
+
 controller_pre_game_test_() ->
     {setup,
      fun() ->
@@ -237,6 +247,28 @@ session_test_instantiator(Mods) ->
                                 Mod:tests(Callback, SessId)
                         end
                 end, Mods)).
+
+%%-------------------------------------------------------------------
+%% Operator tests
+%%-------------------------------------------------------------------
+operator_session_setup() ->
+    Mods = [
+            operator_tests
+           ],
+    Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
+
+    User = create_user(),
+    Operator = User#user{role = operator},
+    Register = {register, {ok, Operator}},
+    NewUser= controller:handle_action(Register, Reply),
+
+    Login = {login, {ok, {NewUser, get_receiver()}}},
+    SessId = controller:handle_action(Login, Reply),
+
+    lists:map(fun(Mod) ->
+                      {Mod, Callback, SessId}
+              end, Mods).
 
 %%-------------------------------------------------------------------
 %% Pre-Game tests

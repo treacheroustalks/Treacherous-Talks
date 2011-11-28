@@ -270,6 +270,9 @@ function event_action(data) {
     case "game_search_success":
         load_game_search(event_data);
         break;
+    case "get_db_stats_success":
+        print(event_data);
+        break;
     default:
         break;
     }

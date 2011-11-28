@@ -232,6 +232,13 @@ get_ret({game_order, success}, Ret=#ret{}, _Data) ->
 get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret({get_db_stats, success}, Ret=#ret{}, JsonDbStats) ->
+    Data = [{"db_stats", JsonDbStats}],
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData});
+get_ret({get_db_stats, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
 get_ret({games_current, success}, Ret=#ret{}, Games) ->
     RequiredFields = [id, name, status, description,
                       press, order_phase, retreat_phase, build_phase,

@@ -112,6 +112,11 @@
 %% game_msg ->          [not_allowed_send_msg,
 %%                      game_does_not_exist,
 %%                      game_phase_not_ongoing]
+%% get_db_stats ->      [get_stats_body_fail,
+%%                       get_stats_timeout,
+%%                       get_stats_tcp_error,
+%%                       get_stats_start_socket_fail,
+%%                       not_operator]
 %%
 %% @end
 %%
@@ -147,7 +152,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == logout;
        Command == user_msg;
        Command == games_current;
-       Command == game_search ;
+       Command == game_search;
+       Command == get_db_stats;
        Command == game_msg ->
     case session:alive(SessionId) of
         false ->
@@ -168,7 +174,6 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
     end;
 handle_action({Command, Error}, {CallbackFun, Args}) ->
     CallbackFun(Args, {Command, parse_error}, Error);
-
 handle_action(unknown_command, {CallbackFun, Args}) ->
     CallbackFun(Args, unknown_command, []);
 handle_action(Cmd, {CallbackFun, Args}) ->

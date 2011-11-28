@@ -54,6 +54,7 @@ db_put_get_test_() ->
       ?_test(list_keys()),
       ?_test(get_index_with_siblings()),
       ?_test(get_resolve()),
+      ?_test(get_db_stats()),
       ?_test(get_values())
      ]
     }.
@@ -63,32 +64,37 @@ ping_riak() ->
     Result = db:ping_riak(),
     ?assertEqual(pong, Result).
 
+%% get_db_stats test
+get_db_stats() ->
+    {Reply,_}=db:get_db_stats(),
+    ?assertEqual(ok, Reply).
+
 %% put/get test
 put_get() ->
     Bucket = <<"put_get_test">>,
     Key = <<"some key">>,
     Val = a_value,
     Obj = db_obj:create(Bucket, Key, Val),
-    
+
     db:put(Obj),
-    
+
     {ok, ResObj} = db:get(Bucket, Key),
     ?assertEqual(Val, db_obj:get_value(ResObj)),
     db:delete(Bucket, Key).
-    
+
 %% delete test
 delete() ->
     Bucket = <<"delete_test">>,
     Key = <<"some key">>,
     Val = a_value,
     Obj = db_obj:create(Bucket, Key, Val),
-    
+
     db:put(Obj),
     db:delete(Bucket, Key),
 
     Result = db:get(Bucket, Key),
     ?assertEqual({error, notfound}, Result).
-    
+
 %% get_index test
 get_index() ->
     Bucket = <<"get_index_test">>,
@@ -98,26 +104,26 @@ get_index() ->
 
     Idx = {<<"index_bin">>, term_to_binary(Val)},
     Obj2 = db_obj:add_index(Obj, Idx),
-    
+
     db:put(Obj2),
-    
+
     Result = db:get_index(Bucket, Idx),
     ?assertEqual({ok, [[Bucket, Key]]}, Result),
     db:delete(Bucket, Key).
-    
+
 %% get_index test
 list_keys() ->
     Bucket = <<"list_keys_test">>,
     Key = <<"some key">>,
     Val = a_value,
     Obj = db_obj:create(Bucket, Key, Val),
-    
+
     db:put(Obj),
-    
+
     Result = db:list_keys(Bucket),
     ?assertEqual({ok, [Key]}, Result),
     db:delete(Bucket, Key).
-    
+
 %% get_index test
 get_index_with_siblings() ->
     Bucket = <<"index_siblings_test">>,
@@ -166,7 +172,7 @@ get_resolve() ->
 
     {ok, ReverseResultObj} = db:get_resolve(Bucket, Key, ReverseHist, LastSessField),
     ?assertEqual(Sib1Val, db_obj:get_value(ReverseResultObj)).
-    
+
 %% put/get test
 get_values() ->
     Bucket = <<"get_list_test">>,
@@ -193,8 +199,8 @@ get_values() ->
                           ?assertEqual(true, lists:member(Val, ResValues))
                   end, Values).
 
-    
-    
+
+
 %% test int_to_bin
 int_to_bin_test() ->
     Id = 123456789,

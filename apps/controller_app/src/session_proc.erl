@@ -292,12 +292,25 @@ handle_call(games_current, _From,
 handle_call({game_search, Query}, _From, State) ->
     Reply = game:get_game_search(Query),
     {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Allow operator to view db status
+%%
+%% @end
+%%-------------------------------------------------------------------
+handle_call(get_db_stats, _From, State = #state{user = User}) ->
+    Reply = case User#user.role of
+        operator ->
+            db:get_db_stats();
+        _ ->
+            {error, not_operator}
+    end,
+    {reply, Reply, State, ?TIMEOUT};
 
 %% Unhandled request
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),
     {noreply, ok, State, ?TIMEOUT}.
-
 
 handle_cast(Event = #push_event{}, State = #state{push_receiver = Receiver}) ->
     Pid = Receiver#push_receiver.pid,

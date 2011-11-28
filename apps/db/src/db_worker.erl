@@ -38,7 +38,7 @@
 -include_lib ("utils/include/debug.hrl").
 
 %% server state
--record(state, {db_conn}).
+-record(state, {db_conn, db_stats_addr}).
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
@@ -54,9 +54,12 @@ ping() ->
 %% ------------------------------------------------------------------
 init(no_arg) ->
     service_worker:join_group(?MODULE),
-    {ok, Riak} = application:get_env(riak),
+    {ok, RiakIp} = application:get_env(riak_ip),
+    {ok, ProtoBufPort} = application:get_env(riak_protobuf_port),
+    {ok, DatabasePort} = application:get_env(riak_database_port),
+    Riak = {pb, {RiakIp, ProtoBufPort}},
     {ok, Conn} = db_c:connect(Riak),
-    {ok, #state{db_conn = Conn}}.
+    {ok, #state{db_conn = Conn, db_stats_addr = {RiakIp, DatabasePort}}}.
 
 %% ------------------------------------------------------------------
 %% gen_server:handle_call/3
@@ -169,6 +172,17 @@ handle_call({search_values, Bucket, Query},
     Result = db_c:search_values(Conn, Bucket, Query),
     {reply, Result, State};
 
+handle_call(get_db_stats, _From, #state{db_stats_addr = DbStatsAddr} = State) ->
+    {IpStr, PortInt} = DbStatsAddr,
+    Result = case gen_tcp:connect(IpStr, PortInt, [binary, {packet,0}]) of
+        {ok, Socket} ->
+            gen_tcp:send(Socket, "GET /stats HTTP/1.0\r\n\r\n"),
+            receive_db_stats_data(Socket, []);
+        _ ->
+            {error, get_stats_start_socket_fail}
+    end,
+    {reply, Result, State};
+
 
 handle_call(_Request, _From, State) ->
     ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
@@ -204,4 +218,23 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-
+receive_db_stats_data(Socket, BinAcc) ->
+    receive
+        {tcp, Socket, Bin} ->
+            receive_db_stats_data(Socket, [Bin | BinAcc]);
+        {tcp_closed, Socket} ->
+            Data = list_to_binary(lists:reverse(BinAcc)),
+            % extract Json body, discard header
+            case re:run(Data, "\r\n\r\n(.*)",
+                        [{capture, all_but_first, list}]) of
+                {match, [Json]} ->
+                    {ok, Json};
+                nomatch ->
+                    {error, get_stats_body_fail}
+            end;
+        {tcp_error, Socket, _Reason} ->
+            {error, get_stats_tcp_error}
+    after
+        5000 ->
+            {error, get_stats_timeout}
+    end.

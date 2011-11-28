@@ -58,6 +58,7 @@
          game_msg/2,
          push_event/2,
          games_current/2,
+         get_db_stats/2,
          game_search/2
         ]).
 
@@ -257,6 +258,17 @@ games_current(SessionId, _Data) ->
 %%-------------------------------------------------------------------
 game_search(SessionId, Query) ->
     ?SESSION_CALL(SessionId, game_search, Query).
+
+%%-------------------------------------------------------------------
+%% @doc get_db_stats/2
+%% Allow operator to view database status
+%%
+%% @spec get_db_stats(string(), term()) ->
+%%         {ok, [{atom(), term()}]}
+%% @end
+%%-------------------------------------------------------------------
+get_db_stats(SessionId, _Data) ->
+    ?SESSION_CALL(SessionId, get_db_stats).
 
 %% --------------------------------------------------------------------
 %% @doc

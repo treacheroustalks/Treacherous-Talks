@@ -146,6 +146,8 @@ parse(RawData) ->
         "game_search" ->
             Query = get_search_query(Data),
             {game_search, {ok, get_field("session_id", Data), Query}};
+        "get_db_stats" ->
+            {get_db_stats, {ok, get_field("session_id", Data), []}};
         "game_msg" ->
             {game_msg, {ok,
                         get_field ("session_id", Data),

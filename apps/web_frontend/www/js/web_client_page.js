@@ -244,6 +244,15 @@ function send_in_game_message() {
     call_server('game_msg', dataObj);
 }
 
+function get_db_stats() {
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie() }
+        ]
+    };
+    call_server('get_db_stats', dataObj);
+}
+
 /*------------------------------------------------------------------------------
  Form cleanup functions
  -----------------------------------------------------------------------------*/
