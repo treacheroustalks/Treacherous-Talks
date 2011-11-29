@@ -23,10 +23,10 @@
 %%%-------------------------------------------------------------------
 %%% @author Dilshod Aliev <Dilshod.Aliev.1565@student.uu.se>
 %%%
-%%% @doc System state. Monitors the system's state.
+%%% @doc Monitors the system's state.
 %%%
-%%% Several functions from os_mon application have been used in this
-%%% module.
+%%% Several functions from <code>os_mon</code> application have been used
+%%% in this module.
 %%% @reference See
 %%% <a href="http://www.erlang.org/doc/man/os_mon_app.html">
 %%% OS_MON</a>
@@ -79,7 +79,7 @@ get_cpu_usage() ->
 
 %%%------------------------------------------------------------------
 %% @doc
-%% Gets more detailed CPU usage information than get_cpu_usage()
+%% Gets more detailed CPU usage information than <code>get_cpu_usage()</code>
 %%
 %% @spec get_detailed_cpu_usage(detailed | per_cpu) ->
 %%           tuple() | list() | {error, Reason}
@@ -94,12 +94,14 @@ get_detailed_cpu_usage(Opt) ->
 %% Gets memory usage information.
 %% It returns a list of tuples with atoms and values, where atoms
 %% are short descriptions of particular types of memory
-%% (except pid and alloc_pid, which are process id and number of
-%% allocated bytes of the largest Erlang process on the node, respectively),
+%% (except <code>pid</code> and <code>alloc_pid</code>, which are process id
+%%  and number of allocated bytes of the largest Erlang process on the node,
+%%  respectively),
 %% and values are integers that present memory sizes as number of bytes,
 %% example:
 %%
-%% [{pid, Pid},
+%% <code>
+%% [{pid, pid()},
 %%  {alloc_pid, integer()},
 %%  {alloc_memory, integer()},
 %%  {system_total_memory,integer()},
@@ -109,12 +111,17 @@ get_detailed_cpu_usage(Opt) ->
 %%  {buffered_memory,integer()},
 %%  {free_memory,integer()},
 %%  {total_memory,integer()}] = get_memory_usage()
+%%</code>
 %%
-%% get_memory_usage() is a combination of memsup:get_memory_data()
-%% and memsup:get_system_memory_data functions which are part of the
-%% os_mon application.
+%% <code>get_memory_usage()</code> is a combination of
+%% <code>memsup:get_memory_data()</code> and
+%% <code>memsup:get_system_memory_data</code> functions which are part of the
+%% <code>os_mon</code> application.
 %%
-%% @spec get_memory_usage() -> list() | {error, Reason}
+%% @spec get_memory_usage() -> MemoryUsage | {error, Reason}
+%% where
+%%     MemoryUsage = [Tuples]
+%%     Tuples = tuple()
 %% @end
 %%%------------------------------------------------------------------
 get_memory_usage() ->

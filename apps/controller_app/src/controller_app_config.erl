@@ -28,7 +28,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 -export ([start_link/0, node_pids/0, node_count/0, worker_count/1,
-          worker_count/2, ping/0]).
+          worker_count/2, ping/0, machine_state/1]).
 
 %% gen_server Function Exports
 %% ------------------------------------------------------------------
@@ -49,6 +49,29 @@ start_link() ->
 
 ping() ->
     gen_server:call(select_pid(), ping).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Makes synchronous call to gen_server Pid::pid() which is the process ID
+%% of the node where the <code>controller_app_config</code> is running,
+%% and waits for a reply from <code>handle_call/3</code>.
+%% The output is the tuple which contains the information about
+%% <code>system_state</code> of the node with the given above Pid.
+%%
+%% @end
+%% @spec
+%% machine_state(Pid::pid()) -> MachineState
+%% where
+%%     MachineState = {SystemLoad,
+%%                     CpuUsage::float(),
+%%                     MemoryUsage}
+%%     SystemLoad = {Avg1::integer(), Avg5::integer(), Avg15::integer()}
+%%     MemoryUsage = [Tuples]
+%%     Tuples = tuple()
+%% @end
+%%--------------------------------------------------------------------
+machine_state(Pid) ->
+    gen_server:call(Pid, machine_state).
 
 node_pids() ->
     service_conf:node_pids(?MODULE).
@@ -74,6 +97,15 @@ init(no_arg) ->
 handle_call(worker_count, _From, State) ->
     Count = controller_app_worker_sup:worker_count(),
     {reply, Count, State};
+
+%%--------------------------------------------------------------------
+%% Handles the request from gen_server call by invoking the
+%% get_machine_state() function, which returns the tuple with the
+%% information about the system state of the node.
+%%--------------------------------------------------------------------
+handle_call(machine_state, _From, State) ->
+    MachineState = get_machine_state(),
+    {reply, MachineState, State};
 handle_call({worker_count, Count}, _From, State) ->
     Response = controller_app_worker_sup:worker_count(Count),
     {reply, Response, State};
@@ -101,10 +133,18 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-
 join_group() ->
     pg2:create(?MODULE),
     pg2:join(?MODULE, self()).
 
 select_pid() ->
     pg2:get_closest_pid(?MODULE).
+
+%%-------------------------------------------------------------------
+%% Gets the CPU load, CPU usage and Memory usage of the machine
+%%-------------------------------------------------------------------
+get_machine_state() ->
+    SystemLoad = system_state:get_system_load(),
+    CpuUsage = system_state:get_cpu_usage(),
+    MemoryUsage = system_state:get_memory_usage(),
+    {SystemLoad, CpuUsage, MemoryUsage}.

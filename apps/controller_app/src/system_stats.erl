@@ -52,13 +52,75 @@
 %% @doc
 %% Gets some system statistics
 %% @end
-%% @spec get_system_stats() -> string()
+%% @spec get_system_stats() -> {ok, string()}
 %% @end
 %%-------------------------------------------------------------------
 get_system_stats() ->
     AppStats = get_all_app_stats(),
     FrontendStats = get_frontend_stats(),
-    io:format(FrontendStats ++ AppStats).
+    MachineStats = get_machine_stats(),
+    Stats = lists:flatten(MachineStats ++ FrontendStats ++ AppStats),
+    ?DEBUG("~n~s", [Stats]),
+    {ok, Stats}.
+
+%% ------------------------------------------------------------------
+%% Machine Statistics - text output
+%% ------------------------------------------------------------------
+%% ------------------------------------------------------------------
+%% @doc
+%% Converts each element of the list, that <code>get_machines_states()</code>
+%% returns, to the character list, then combines the converted value with
+%% other string values, and returns the result.
+%%
+%% @spec
+%% get_machine_stats() -> string()
+%% @end
+%%--------------------------------------------------------------------
+get_machine_stats() ->
+    MachineHeadline = break_line("machine state"),
+    MachineStats = lists:map(fun(Element) ->
+                                 {Node,
+                                  SystemLoad,
+                                  CpuUsage,
+                                  MemoryUsage} = Element,
+                                 io_lib:format("Node:\t\t~s~n"
+                                               "System load:\t~p~n"
+                                               "CPU usage:\t~p~n"
+                                               "Memory usage:\t~p~n",
+                                               [Node,
+                                                SystemLoad,
+                                                CpuUsage,
+                                                MemoryUsage])
+                             end, get_machines_states()),
+    MachineHeadline ++ MachineStats ++ ?BREAKLINE.
+
+%% ------------------------------------------------------------------
+%% Machine Statistics - data
+%% ------------------------------------------------------------------
+%% ------------------------------------------------------------------
+%% @doc
+%% Returns state of the machines which are in the nodes list
+%%
+%% @spec
+%% get_machines_states() -> List
+%% where
+%%     List = [{Node::node(),
+%%              SysLoad,
+%%              CpuUsg::float(),
+%%              MemUsg}]
+%%     SysLoad = {Avg1::integer(), Avg5::integer(), Avg15::integer()}
+%%     MemUsg = [Tuples]
+%%     Tuples = tuple()
+%% @end
+%%--------------------------------------------------------------------
+get_machines_states() ->
+    lists:map(fun(Pid) ->
+                  Node = node(Pid),
+                  {SysLoad,
+                   CpuUsg,
+                   MemUsg} = controller_app_config:machine_state(Pid),
+                  {Node, SysLoad, CpuUsg, MemUsg}
+              end, controller_app_config:node_pids()).
 
 %% ------------------------------------------------------------------
 %% Frontend Statistics - text output
@@ -69,8 +131,9 @@ get_frontend_stats() ->
     Mail = session_presence:count_all_by_type(mail),
     Web = session_presence:count_all_by_type(web),
     Total = session_presence:count_all(),
-    UserStats = io_lib:format("Total users:\t~p~nIM users:\t~p~nMail users:\t~p~nWeb users:\t~p~n",
-                  [Total, IM, Mail, Web]),
+    UserStats = io_lib:format("Total users:\t~p~nIM users:\t~p~n"
+                              "Mail users:\t~p~nWeb users:\t~p~n",
+                              [Total, IM, Mail, Web]),
     FrontendHeadline ++ UserStats ++ ?BREAKLINE.
 
 %% ------------------------------------------------------------------
@@ -103,7 +166,10 @@ appstats_text_output([AppStats | StatsList], Stats) ->
                             MinQueue = integer_to_list(Min),
                             Count = integer_to_list(WorkerCount),
                             Acc ++
-                                io_lib:format("\tNode:\t~s\tWorkers:\t~s~n\t\t\tMax queue:\t~s~n\t\t\tMin queue:\t~s~n\t\t\tAvg. queue:\t~.1f~n",
+                                io_lib:format("\tNode:\t~s\tWorkers:\t~s~n\t\t"
+                                              "\tMax queue:\t~s~n\t\t"
+                                              "\tMin queue:\t~s~n\t\t"
+                                              "\tAvg. queue:\t~.1f~n",
                                               [Node, Count,MaxQueue,
                                                MinQueue, AvgQueue])
                     end, "", NodeWorkerList),
