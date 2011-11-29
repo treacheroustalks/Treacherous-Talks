@@ -1,5 +1,5 @@
 -ifndef(DEBUG_TT).
-%%-define(DEBUG_TT, true).
+-define(DEBUG_TT, true).
 -define(DEBUG_ENABLE, true).
 -ifdef(DEBUG_ENABLE).
 -define(DEBUG(Format),

@@ -34,6 +34,7 @@
 
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
+-include_lib("datatypes/include/user.hrl").
 
 -export([get/2, resp/1, resp/2, resp_unhandled_error/1]).
 
@@ -211,6 +212,17 @@ get({game_search, success}, Games) ->
     resp("Found ~p games~n~n", [length(Games)]);
 get({game_search, invalid_data}, Error) ->
     resp_unhandled_error(Error);
+
+%add/ remove user from moderator list
+get({assign_moderator, success}, User) ->
+    resp("You updated the role of ~p to ~p~n", [User#user.nick, User#user.role]);
+get({assign_moderator, invalid_data}, Error) ->
+    case Error of
+        user_not_found ->
+            resp("The nick does not exist");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
 
 
 % Invalid session

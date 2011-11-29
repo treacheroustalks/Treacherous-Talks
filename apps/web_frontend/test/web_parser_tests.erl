@@ -56,6 +56,7 @@ parser_test_() ->
       fun game_order/0,
       fun games_current/0,
       fun get_db_stats/0,
+      fun assign_moderator/0,
       fun game_search/0
      ]}.
 
@@ -117,6 +118,10 @@ user_msg() ->
 game_msg() ->
     ?assertEqual (game_msg_exp_data(),
                   web_parser:parse(game_msg_data())).
+
+assign_moderator() ->
+    ?assertEqual (assign_moderator_exp_data(),
+                  web_parser:parse(assign_moderator_data())).
 
 parse_countries_str() ->
     ?assertEqual ([england, germany, france],
@@ -235,6 +240,10 @@ game_search_exp_data() ->
                   "build_phase=10 AND "
                   "waiting_time=10 AND "
                   "num_players=7"}}.
+assign_moderator_exp_data() ->
+    {assign_moderator,
+                   {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                       {"nick",remove}}}.
 
 %% Input data
 
@@ -246,6 +255,15 @@ get_db_stats_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
 
+assign_moderator_data() ->
+    {ok, {struct,
+          [{"action","assign_moderator"},
+           {"data",
+            {array,
+             [{struct,[{"session_id",
+                        "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+              {struct,[{"nick","nick"}]},
+              {struct,[{"is_moderator","remove"}]}]}}]}}.
 
 game_msg_data() ->
     {ok, {struct,
