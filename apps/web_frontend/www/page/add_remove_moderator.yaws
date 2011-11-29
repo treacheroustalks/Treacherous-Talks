@@ -1,0 +1,33 @@
+<!-- Add remove moderator page -->
+<div class="page-header">
+  <h1>Assign moderator <small>Add or remove user's moderator privilege</small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <fieldset>
+    <legend>Add/Remove Moderator</legend>
+    <form id="add_remove_moderator_form">
+        <div class="clear"></div>
+        <div class="clearfix">
+            <label for="nick">Nick</label>
+            <div class="input">
+                <input id="nick" name="nick" type="text" />
+            </div>
+        </div>
+        <div class="clear"></div>
+        <div class="clearfix">
+            <label for="is_moderator">Set as moderator</label>
+            <div class="input">
+                <input id="is_moderator" name="is_moderator" type="checkbox" value="add" />
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Update" onclick="validate(); return false;">&nbsp;
+            <button type="reset" class="btn" onclick="load_operator_page();">Cancel</button>
+        </div>
+    </form>
+    </fieldset>
+  </div>
+</div>

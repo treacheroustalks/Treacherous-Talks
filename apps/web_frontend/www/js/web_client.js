@@ -26,7 +26,8 @@ var debug = true;
 var userObj = {
     "email" : undefined,
     "nick" : undefined,
-    "name" : undefined
+    "name" : undefined,
+    "role" : undefined
 };
 
 /*------------------------------------------------------------------------------
@@ -156,6 +157,7 @@ function load_userObj(data) {
     userObj.email = data.email;
     userObj.nick = data.nick;
     userObj.name = data.name;
+    userObj.role = data.role;
 }
 
 /*------------------------------------------------------------------------------
@@ -222,6 +224,7 @@ function event_action(data) {
         clear_message();
         break;
     case "get_session_user_success":
+        load_userObj(event_data);
         if (is_empty_page(data.page) && page == dash_page) {
             // This case occurs when a logged in user reloads a page
             load_page();
@@ -229,7 +232,6 @@ function event_action(data) {
             home_page = dash_page;
         } else
             handle_event_page_load(data);
-        load_userObj(event_data);
         clear_message();
         break;
     case "get_session_user_invalid_data":
@@ -239,8 +241,8 @@ function event_action(data) {
         logout();
         break;
     case "update_user_success":
-        clear_message();
         load_userObj(event_data);
+        clear_message();
         break;
     case "update_user_invalid_data":
         clear_message();

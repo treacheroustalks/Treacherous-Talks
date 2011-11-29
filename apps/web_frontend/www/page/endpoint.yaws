@@ -170,7 +170,7 @@ get_ret({login, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({get_session_user, success}, Ret=#ret{}, User) ->
-    RequiredFields = [nick, email, name],
+    RequiredFields = [nick, email, name, role],
     Data = data_format:rec_to_plist(User, {string, RequiredFields}),
     EventData = json2:obj_from_list(Data),
     msg_success(Ret#ret{event_data = EventData,
@@ -251,6 +251,12 @@ get_ret({games_current, success}, Ret=#ret{}, Games) ->
                         page = "games_current"});
 get_ret({games_current, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
+
+get_ret({assign_moderator, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({assign_moderator, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
 
 get_ret({game_search, success}, Ret=#ret{}, Games) ->
     RequiredFields = [id, name, status, description,

@@ -18,11 +18,35 @@
  */
 function load_page(callback) {
     var page_url = window.document.location + 'page/' + page + '.yaws';
+    $("#admin_menu").hide();
+    $("#chat_section").hide();
+    if(page != "home"){
+        if(userObj.role == "operator"){
+            $("#admin_menu").show();
+        }
+        $("#chat_section").show();
+    }
     $.get(page_url, function(data) {
         pageDiv.html(data);
         if (callback != undefined)
             callback();
     });
+}
+
+/**
+ * Load the operator control pannel page
+ */
+function load_add_remove_moderator_page() {
+    page = 'add_remove_moderator';
+    load_page();
+}
+
+/**
+ * Load the operator control pannel page
+ */
+function load_operator_page() {
+    page = 'operator';
+    load_page();
 }
 
 /**
@@ -293,11 +317,31 @@ function handle_enter() {
     case 'game_search':
         validate_game_search();
         break;
+    case 'add_remove_moderator':
+        validate_add_remove_moderator();
+        break;
     default:
         break;
     }
 }
 
+function  validate_add_remove_moderator() {
+    var form = get_form_data('#add_remove_moderator_form');
+    var moderator = form.is_moderator == "add"?"add":"remove";
+    if (check_field_empty(form.nick, 'nick'))
+        return false;
+
+    var dataObj = {
+        "content" : [{
+            "session_id" : get_cookie()
+        }, {
+            "nick" : form.nick
+        }, {
+            "is_moderator" : moderator
+        } ]
+    };
+    call_server('assign_moderator', dataObj);
+}
 /**
  * Validate user login data and if successful, send it to server
  */

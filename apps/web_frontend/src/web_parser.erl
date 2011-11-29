@@ -158,7 +158,12 @@ parse(RawData) ->
             {user_msg, {ok,
                         get_field ("session_id", Data),
                         #frontend_msg{to = get_field ("to", Data),
-                                      content = get_field ("content", Data)}}}
+                                      content = get_field ("content", Data)}}};
+        "assign_moderator" ->
+            {assign_moderator, {ok,
+                        get_field ("session_id", Data),
+                        {get_field ("nick", Data),
+                         parse_moderator_str(get_field ("is_moderator", Data))}}}
     end.
 
 
@@ -238,4 +243,10 @@ parse_press_str(PressStr) ->
         "white" -> white;
         "grey" -> grey;
         _ -> none
+    end.
+
+parse_moderator_str(PressStr) ->
+    case PressStr of
+        "add" -> add;
+        "remove" -> remove
     end.

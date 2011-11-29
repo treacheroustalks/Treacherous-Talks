@@ -1,0 +1,12 @@
+<!-- operator interface page -->
+<div class="page-header">
+  <h1>Operator control panel <small>interface for operator</small></h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+    <a href="javascript:void(0);" onclick="load_add_remove_moderator_page();">Add/Remove moderator</a> <br>
+    <a href="javascript:void(0);" onclick="load_server_management_page();">Server Management</a> <br>
+  </div>
+</div>
