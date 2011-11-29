@@ -1,0 +1,12 @@
+{application, websocket_client,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { websocket_client, []}},
+  {env, []}
+ ]}.
