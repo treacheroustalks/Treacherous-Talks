@@ -320,13 +320,8 @@ handle_call({game_search, Query}, _From, State) ->
 %%
 %% @end
 %%-------------------------------------------------------------------
-handle_call(get_db_stats, _From, State = #state{user = User}) ->
-    Reply = case User#user.role of
-        operator ->
-            db:get_db_stats();
-        _ ->
-            {error, not_operator}
-    end,
+handle_call(get_db_stats, _From, State) ->
+    Reply = db:get_db_stats(),
     {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc

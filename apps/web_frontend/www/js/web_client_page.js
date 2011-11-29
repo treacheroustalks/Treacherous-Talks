@@ -38,7 +38,34 @@ function load_page(callback) {
 }
 
 /**
- * Load the operator control pannel page
+ * Load the server management  page
+ */
+function get_system_status() {
+    page = 'operator';
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        } ]
+    };
+    call_server('get_system_status', dataObj);
+}
+
+function load_get_system_status(event_data) {
+    $('#system_status_data').html('<p>' + nl2br(event_data.system_status) + '</p>');
+}
+
+function load_get_database_status(event_data) {
+    var jsonObj = jQuery.parseJSON(event_data.database_status);
+    var keys = get_keys(jsonObj);
+    var acc = "";
+    for(var i=0;i<keys.length;i++){
+        acc+= keys[i]+":    <b>"+jsonObj[keys[i]]+"</b><br>"
+    }
+    $('#database_status_data').html('<p>' + acc + '</p>');
+}
+
+/**
+ * Load a page for setting moderator
  */
 function load_add_remove_moderator_page() {
     page = 'add_remove_moderator';
@@ -201,6 +228,7 @@ function login_update_elements() {
  * Element updates on the page when user logs out
  */
 function logout_update_elements() {
+    clean_userObj();
     $("#logout").hide();
     $("#login_form").show();
     $("#register_menu").show();
@@ -290,7 +318,8 @@ function send_power_message() {
     call_server('power_msg', dataObj);
 }
 
-function get_db_stats() {
+function get_database_status() {
+    page = 'operator';
     var dataObj = {
         "content" : [
             { "session_id" : get_cookie() }

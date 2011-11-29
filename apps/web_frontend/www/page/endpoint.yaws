@@ -237,9 +237,9 @@ get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({get_db_stats, success}, Ret=#ret{}, JsonDbStats) ->
-    Data = [{"db_stats", JsonDbStats}],
+    Data = [{"database_status", JsonDbStats}],
     EventData = json2:obj_from_list(Data),
-    msg_success(Ret#ret{event_data = EventData});
+    msg_invisible(Ret#ret{event_data = EventData, page = "database_status"});
 get_ret({get_db_stats, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
@@ -261,6 +261,11 @@ get_ret({assign_moderator, success}, Ret=#ret{}, _Data) ->
 get_ret({assign_moderator, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret({get_system_status, success}, Ret=#ret{}, Data) ->
+    PropList = [{"system_status", Data}],
+    EventData = json2:obj_from_list(PropList),
+    msg_invisible(Ret#ret{event_data = EventData,
+                        page="system_status"});
 
 get_ret({game_search, success}, Ret=#ret{}, Games) ->
     RequiredFields = [id, name, status, description,

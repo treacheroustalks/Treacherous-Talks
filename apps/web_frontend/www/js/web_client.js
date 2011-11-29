@@ -160,6 +160,18 @@ function load_userObj(data) {
     userObj.role = data.role;
 }
 
+/**
+ * clean the local userObj
+ *
+ * @return
+ */
+function clean_userObj() {
+    userObj.email = undefined;
+    userObj.nick = undefined;
+    userObj.name = undefined;
+    userObj.role = undefined;
+}
+
 /*------------------------------------------------------------------------------
  Event handler functions
  -----------------------------------------------------------------------------*/
@@ -273,7 +285,10 @@ function event_action(data) {
         load_game_search(event_data);
         break;
     case "get_db_stats_success":
-        print(event_data);
+        load_get_database_status(event_data);
+        break;
+    case "get_system_status_success":
+        load_get_system_status(event_data);
         break;
     default:
         break;
