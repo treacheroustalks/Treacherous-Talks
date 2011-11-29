@@ -150,6 +150,16 @@ controller_operator_session_test_() ->
      fun session_test_instantiator/1
     }.
 
+controller_moderator_session_game_test_() ->
+    {setup,
+     fun() ->
+             app_start(),
+             moderator_session_joined_game_setup()
+     end,
+     fun app_stop/1,
+     fun moderator_session_joined_game_test_instantiator/1
+    }.
+
 controller_pre_game_test_() ->
     {setup,
      fun() ->
@@ -199,7 +209,7 @@ parse_error(Callback) ->
     Commands = [
                 login, register, update_user, get_session_user,
                 create_game, get_game, reconfig_game, game_overview,
-                join_game, game_order, assign_moderator
+                join_game, game_order, assign_moderator, power_msg
                ],
 
     lists:foreach(fun(Cmd) ->
@@ -215,7 +225,8 @@ parse_error(Callback) ->
 invalid_session(Callback) ->
     Commands = [
                 update_user, get_session_user, create_game, get_game,
-                reconfig_game, join_game, game_order, assign_moderator
+                reconfig_game, join_game, game_order, assign_moderator,
+                power_msg
                ],
     InvalidId = session_id:from_pid(list_to_pid("<0.1.0>")),
 
@@ -356,6 +367,52 @@ joined_game_test_instantiator(Mods) ->
       lists:map(fun({Mod, Callback, SessId, GameId}) ->
                         fun() ->
                                 Mod:tests(Callback, SessId, GameId)
+                        end
+                end, Mods)).
+
+%%-------------------------------------------------------------------
+%% Moderator with game tests
+%%-------------------------------------------------------------------
+moderator_session_joined_game_setup() ->
+    Mods = [
+            power_msg_tests
+           ],
+    Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
+
+    % create moderator
+    ModUser = create_user(),
+    Moderator = ModUser#user{role = moderator},
+    RegisterMod = {register, {ok, Moderator}},
+    NewUserMod = controller:handle_action(RegisterMod, Reply),
+
+    LoginMod = {login, {ok, {NewUserMod, get_receiver()}}},
+    SessIdMod = controller:handle_action(LoginMod, Reply),
+
+    % create gameplayer and join game
+    User = create_user(),
+    Register = {register, {ok, User}},
+    NewUser= controller:handle_action(Register, Reply),
+
+    Login = {login, {ok, {NewUser, get_receiver()}}},
+    SessId = controller:handle_action(Login, Reply),
+
+    NewGame = create_game(),
+    GameCreate = {create_game, {ok, SessId, NewGame}},
+    GameId = controller:handle_action(GameCreate, Reply),
+
+    JoinGame = {join_game, {ok, SessId, {GameId, germany}}},
+    controller:handle_action(JoinGame, Reply),
+
+    lists:map(fun(Module) ->
+                      {Module, Callback, SessIdMod, GameId, germany}
+              end, Mods).
+
+moderator_session_joined_game_test_instantiator(Mods) ->
+    lists:flatten(
+      lists:map(fun({Mod, Callback, SessId, GameId, Country}) ->
+                        fun() ->
+                                Mod:tests(Callback, SessId, GameId, Country)
                         end
                 end, Mods)).
 %%-------------------------------------------------------------------

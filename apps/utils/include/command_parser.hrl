@@ -84,6 +84,7 @@
 
 
 -define(MESSAGE, "MESSAGE").
+-define(POWERMESSAGE, "POWERMESSAGE").
 -define(CONTENT, "CONTENT").
 -define(TO, "TO").
 -define(VALID_PRESS, [white, grey, none]).

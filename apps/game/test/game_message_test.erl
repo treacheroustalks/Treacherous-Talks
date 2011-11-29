@@ -49,20 +49,22 @@ app_started_teardown (_) ->
     [application:stop (App) || App <- lists:reverse (apps ())],
     meck:unload(controller).
 
-
 %%------------------------------------------------------------------------------
 %% @doc
 %%  the top level test
 %% @end
 %%------------------------------------------------------------------------------
-move_get_put_test_ () ->
+game_messaging_test_ () ->
     {setup,
      fun app_started_setup/0,
      fun app_started_teardown/1,
      [ping_tst_(),
       get_target_players_tst_(),
-      game_msg_send_tst_()
+      game_msg_send_tst_(),
+      mod_msg_success_tst_(),
+      user_msg_fail_tst_()
      ]}.
+
 
 ping_tst_ () ->
     [fun()-> {pong, _Pid} = game_worker:ping () end].
@@ -81,6 +83,52 @@ test_game (Press) ->
 %%------------------------------------------------------------------------------
 %% Tests the get game state functionality
 %%------------------------------------------------------------------------------
+mod_msg_success_tst_() ->
+    fun() ->
+            GameRecord = test_game(grey),
+            % Create a new Game
+            Game = sync_get(sync_new(GameRecord)),
+            % join players and countries
+            JoinResult = game:join_game(Game#game.id, 1111, england),
+            ?assertEqual({ok, Game#game.id}, JoinResult),
+            JoinResult2 = game:join_game(Game#game.id, 2222, germany),
+            ?assertEqual({ok, Game#game.id}, JoinResult2),
+            JoinResult3 = game:join_game(Game#game.id, 3333, france),
+            ?assertEqual({ok, Game#game.id}, JoinResult3),
+            game_timer:sync_event(Game#game.id, timeout),
+
+            GMsg = #game_message{content = "test moderator game message",
+                                 from_id= 1357,
+                                 game_id = Game#game.id},
+            %?debugVal(_Result = game:game_msg(GMsg, Countries, moderator)),
+            {UserIDs, Senders} = sync_game_msg(GMsg,
+                                               [germany, france], moderator),
+
+            ?assert(lists:member(2222, UserIDs)),
+            ?assert(lists:member(3333, UserIDs)),
+            ?assertEqual([moderator, moderator], Senders)
+    end.
+
+user_msg_fail_tst_() ->
+    fun() ->
+            GameRecord = test_game(grey),
+            % Create a new Game
+            Game = sync_get(sync_new(GameRecord)),
+            % join players and countries
+            JoinResult = game:join_game(Game#game.id, 1111, england),
+            ?assertEqual({ok, Game#game.id}, JoinResult),
+            JoinResult2 = game:join_game(Game#game.id, 2222, germany),
+            ?assertEqual({ok, Game#game.id}, JoinResult2),
+            JoinResult3 = game:join_game(Game#game.id, 3333, france),
+            ?assertEqual({ok, Game#game.id}, JoinResult3),
+            game_timer:sync_event(Game#game.id, timeout),
+
+            % the sender is not a game player!
+            GMsg = #game_message{content = "test user game message", from_id= 1357,
+                                 game_id = Game#game.id},
+            ?debugVal(Res = game:game_msg(GMsg, [germany, france], user)),
+            ?assertEqual({error, user_not_playing_this_game}, Res)
+    end.
 
 get_target_players_tst_() ->
     [fun() ->
@@ -119,7 +167,7 @@ game_msg_send_tst_() ->
              GMsg = #game_message{content = "test send game message", from_id= 1111,
                                   game_id = Game#game.id},
 
-             {Result1, Result2} = sync_game_msg(GMsg, [germany, france]),
+             {Result1, Result2} = sync_game_msg(GMsg, [germany, france], user),
              ?assertEqual([], UserIDs -- Result1),
              ?assertEqual([], FromCountries -- Result2)
     end,
@@ -139,7 +187,7 @@ game_msg_send_tst_() ->
              timer:sleep(50),
              GMsg = #game_message{content = "test send game message", from_id= 1111,
                                   game_id = Game#game.id},
-             Result = game:game_msg(GMsg, [germany, france]),
+             Result = game:game_msg(GMsg, [germany, france], user),
              ?assertEqual({error,game_phase_not_ongoing}, Result)
     end,
      fun() ->
@@ -162,8 +210,8 @@ game_msg_send_tst_() ->
              timer:sleep(50),
              GMsg = #game_message{content = "test send game message", from_id= 1111,
                                   game_id = Game#game.id},
-
-             {Result1, Result2} = sync_game_msg(GMsg, [germany, france]),
+             ?debugMsg("sync_game_msg"),
+             ?debugVal({Result1, Result2} = sync_game_msg(GMsg, [germany, france], user)),
              ?assertEqual([], UserIDs -- Result1),
              ?assertEqual([], FromCountries -- Result2)
     end].
@@ -182,11 +230,11 @@ game_msg_send_tst_() ->
 %%   of the sender.
 %% @end
 %%------------------------------------------------------------------------------
-sync_game_msg(GMsg, Countries) ->
+sync_game_msg(GMsg, Countries, Role) ->
     Pid = spawn(?MODULE, receive_init, []),
     register(game_msg, Pid),
 
-    {ok, _GameID} = game:game_msg(GMsg, Countries),
+    {ok, _GameID} = game:game_msg(GMsg, Countries, Role),
     receive
     after
         3000 ->

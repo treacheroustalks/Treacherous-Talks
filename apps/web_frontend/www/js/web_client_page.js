@@ -20,9 +20,13 @@ function load_page(callback) {
     var page_url = window.document.location + 'page/' + page + '.yaws';
     $("#admin_menu").hide();
     $("#chat_section").hide();
-    if(page != "home"){
+    $("#power_msg").hide();
+    if(page != "home" && page != "register"){
         if(userObj.role == "operator"){
             $("#admin_menu").show();
+        }
+        if(userObj.role == "operator" || userObj.role == "moderator"){
+            $("#power_msg").show();
         }
         $("#chat_section").show();
     }
@@ -246,7 +250,6 @@ function send_off_game_message() {
         ]
     };
     call_server('user_msg', dataObj);
-    $('#chat_msg').val('');
 }
 
 function send_in_game_message() {
@@ -266,6 +269,25 @@ function send_in_game_message() {
         ]
     };
     call_server('game_msg', dataObj);
+}
+
+function send_power_message() {
+    var form = get_form_data('#press_msg_form');
+    if (check_field_empty(form.press_game_id, 'Press Game Id'))
+        return false;
+    if (check_field_int(form.press_game_id, 'Press Game Id'))
+        return false;
+    if (check_field_empty(form.press_msg, 'Cannot send empty message'))
+        return false;
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie() },
+            { "game_id" : $('#press_game_id').val() },
+            { "to" : $('#press_to').val() },
+            { "content" : $('#press_msg').val() }
+        ]
+    };
+    call_server('power_msg', dataObj);
 }
 
 function get_db_stats() {
@@ -810,16 +832,33 @@ function set_message(type, message) {
         chatArea.slideDown();
         break;
     // send msg success
-    case 'send_in_game_msg':
-        in_game = true;
-    case 'send_off_game_msg':
-        var chatArea = in_game ? $('#press_incoming_text') : $('#chat_text');
+    case 'send_power_msg':
+        var chatArea = $('#press_incoming_text');
         var toCountries = $('#press_to').val();
-        chatArea.val(chatArea.val() + '\nYou to ' +
-        (toCountries ? toCountries : 'all') + ': ' + $('#press_msg').val());
+        chatArea.val(chatArea.val() + '\nPowerUser(You) to ' + $('#press_game_id').val() +
+        '[' + (toCountries ? toCountries : 'all') + ']: ' + $('#press_msg').val());
         chatArea.scrollTop(99999);
         chatArea.slideDown();
         $('#press_msg').val('');
+        break;
+    case 'send_in_game_msg':
+        //in_game = true;
+        var chatArea = $('#press_incoming_text');
+        var toCountries = $('#press_to').val();
+        chatArea.val(chatArea.val() + '\nYou to [' +
+        (toCountries ? toCountries : 'all') + ']: ' + $('#press_msg').val());
+        chatArea.scrollTop(99999);
+        chatArea.slideDown();
+        $('#press_msg').val('');
+        break;
+    case 'send_off_game_msg':
+        var chatArea = $('#chat_text');
+        var receiver = $('#chat_to').val();
+        chatArea.val(chatArea.val() + '\nYou to ' + receiver + ': '
+        + $('#chat_msg').val());
+        chatArea.scrollTop(99999);
+        chatArea.slideDown();
+        $('#chat_msg').val('');
         break;
     case 'invisible':
         print(message);

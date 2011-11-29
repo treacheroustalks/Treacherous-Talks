@@ -196,7 +196,19 @@ get({game_msg, invalid_data}, Error) ->
         game_does_not_exist ->
             resp("Error: The game does not exist.~n");
         game_phase_not_ongoing ->
-            resp("Error: The game is not active means. the game is not ongoing");
+            resp("Error: Cannot send messages to a game that is not ongoing");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
+
+get({power_msg, success}, GameId) ->
+    resp("Power user game gessage was sent to game ~p.", [GameId]);
+get({power_msg, invalid_data}, Error) ->
+    case Error of
+        game_does_not_exist ->
+            resp("Error: The game does not exist.~n");
+        game_phase_not_ongoing ->
+            resp("Error: Cannot send messages to a game that is not ongoing");
         _ ->
             resp_unhandled_error(Error)
     end;
@@ -256,11 +268,20 @@ get(off_game_msg, Msg = #message{}) ->
 
 %in game message
 get(in_game_msg, GMsg =#game_message{}) ->
-    MM = resp(data_format:date_to_str(GMsg#game_message.date_created) ++
-             "Game:~p~nCountry:~p,~n ~s",
-         [GMsg#game_message.game_id,GMsg#game_message.from_country,
-          GMsg#game_message.content]),
-    MM;
+    Sender = GMsg#game_message.from_country,
+    case is_power_user(Sender) of
+        false ->
+            resp(data_format:date_to_str(GMsg#game_message.date_created) ++
+                 "Game:~p~nCountry:~p,~n ~s",
+                 [GMsg#game_message.game_id, Sender,
+                  GMsg#game_message.content]);
+        _PowerUser ->
+            resp(data_format:date_to_str(GMsg#game_message.date_created) ++
+                 "Message from ~p~nGame: ~p~n~s",
+                 [Sender, GMsg#game_message.game_id,
+                  GMsg#game_message.content])
+    end;
+
 
 % Unimplemented command
 get({Cmd, _Status}, _Val) ->
@@ -339,3 +360,19 @@ finished_game_overview({GameInfo, PlayerInfo, Game, FinalMap}) ->
 get_games_in_textual_form(Games) ->
     CurrentGames = data_format:games_list_to_text(Games),
     lists:flatten(CurrentGames).
+
+
+%%-------------------------------------------------------------------
+%% Internal helper functions
+%%-------------------------------------------------------------------
+%% ------------------------------------------------------------------
+%% @doc
+%% Checks if a user role is a power user (moderator or operator)
+%% @spec
+%% is_power_user(Role :: atom()) -> boolean()
+%% @end
+%% ------------------------------------------------------------------
+is_power_user(Role) when Role == moderator ; Role == operator ->
+    true;
+is_power_user(_Role) ->
+    false.

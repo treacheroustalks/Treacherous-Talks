@@ -135,7 +135,7 @@ handle_call({user_msg, FEMsg = #frontend_msg{}}, _From,
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Handles call for game messages
+%% Handles call for game messages to be sent as a user
 %% @end
 %% [@spec handle_call({game_msg::atom(), #frontend_msg{},
 %%                     From::{pid(), Tag}, #state{}) -> {reply,Reply,#state{}}.]
@@ -153,7 +153,29 @@ handle_call({game_msg, FEMsg = #frontend_msg{}}, _From,
     Message = #game_message{from_id = User#user.id,
                             game_id = FEMsg#frontend_msg.game_id,
                             content = FEMsg#frontend_msg.content},
-    Reply = game:game_msg(Message, FEMsg#frontend_msg.to),
+    Reply = game:game_msg(Message, FEMsg#frontend_msg.to, user),
+    {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for power user messaging to game players, to be sent
+%% as from a moderator or operator
+%% @end
+%% [@spec handle_call({power_msg::atom(), #frontend_msg{},
+%%                     From::{pid(), Tag}, #state{}) -> {reply,Reply,#state{}}.]
+%%
+%% succeed return {ok, messageID :: integer()}
+%% fail return :
+%%           {error, game_does_not_exist}|
+%%           {error, game_phase_not_ongoing} |
+%%           {error, Error :: any()}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({power_msg, FEMsg = #frontend_msg{}}, _From,
+            State = #state{user=User}) ->
+    Message = #game_message{from_id = User#user.id,
+                            game_id = FEMsg#frontend_msg.game_id,
+                            content = FEMsg#frontend_msg.content},
+    Reply = game:game_msg(Message, FEMsg#frontend_msg.to, User#user.role),
     {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc

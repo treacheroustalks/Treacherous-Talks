@@ -240,10 +240,8 @@ Supported commands are:").
 -define(SEND_OFF_GAME_MSG_RESPONSE_SUCCESS, "Message was sent. Message ID is: ").
 -define(SEND_OFF_GAME_MSG_RESPONSE_FAILED, "Error: The user does not exist.").
 -define(SEND_GAME_MSG_RESPONSE_SUCCESS, "Game Message was sent. Game ID is: ").
--define(SEND_GAME_MSG_RESPONSE_NOT_ONGOING, "Error: The game is not active means. the game is not ongoing").
-
 -define(GET_PROFILE_RESPONSE_SUCCESS, "Your Profile:\nNICKNAME:").
-
+-define(SEND_GAME_MSG_RESPONSE_NOT_ONGOING, "Error: Cannot send messages to a game that is not ongoing").
 %%-------------------------------------------------------------------
 %% @doc
 %%-------------------------------------------------------------------
@@ -453,7 +451,6 @@ setup_two_user_instantiator() ->
     join_game(Client2, Session2, GameID2, "france"),
 
     change_game_phase([GameID1, GameID2]),
-
     Msg = "Hello, this is a message! :)",
 
     [[Client1, Client2],
@@ -664,7 +661,6 @@ two_user_instantiator([_Clients| Tests]) ->
                                         {capture, all_but_first, list},
                                         {newline, anycrlf}]),
                       ?assertEqual({match, Expect2}, Result2)
-
               end
       end, Tests).
 

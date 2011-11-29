@@ -30,6 +30,7 @@
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("datatypes/include/message.hrl").
 -include_lib ("datatypes/include/push_event.hrl").
+-include_lib ("datatypes/include/user.hrl").
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -43,8 +44,8 @@
          code_change/3]).
 
 %% Exports for eunit and game timer
--export([get_game_order_key/2, get_target_players/2, get_target_players/3,
-         send_game_msg/2]).
+-export([get_game_order_key/2, get_target_players/3,
+         send_game_msg/3]).
 
 %% ------------------------------------------------------------------
 %% External exports
@@ -80,8 +81,8 @@ handle_call({put_game_order, GameId, UserId, GameOrderList}, _From, State) ->
     Reply = put_game_order(GameId, UserId, GameOrderList),
     {reply, Reply, State};
 
-handle_call({game_msg, Message = #game_message{}, ToCountries}, _From, State) ->
-    Reply = send_game_msg(Message, ToCountries),
+handle_call({game_msg, Message = #game_message{}, ToCountries, Role}, _From, State) ->
+    Reply = send_game_msg(Message, ToCountries, Role),
     {reply, Reply, State};
 
 handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
@@ -377,23 +378,29 @@ get_player_country (GameID, UserID) ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec get_target_players({integer(), integer()}, [atom()]) ->
+-spec get_target_players({integer(), integer()}, [atom()], role()) ->
           {ok, {atom(), [#game_user{}]}} | {error, any()}.
-get_target_players({FromID, GameID}, CountryList) ->
+get_target_players({FromID, GameID}, CountryList, Role) ->
     case get_game_player(GameID) of
         {ok, GPRec = #game_player{}} ->
             Players = GPRec#game_player.players,
-            case get_country_by_id(FromID, Players) of
-                {error, Error} ->
-                    {error, Error};
-                GU = #game_user{} ->
-                    FromCountry = GU#game_user.country,
+            case game_utils:is_power_user(Role) of
+                false ->
+                    case get_country_by_id(FromID, Players) of
+                        GU = #game_user{} ->
+                            FromCountry = GU#game_user.country,
+                            ToGUList = get_target_players(CountryList, Players, []),
+                            {ok, {FromCountry, ToGUList}};
+                        Error ->
+                            Error
+                    end;
+                _PowerUser ->
                     ToGUList = get_target_players(CountryList, Players, []),
-                   {ok, {FromCountry, ToGUList}}
+                    {ok, {Role, ToGUList}}
             end;
         Other ->
             Other
-    end.
+    end;
 get_target_players(_, [], AccGUList) ->
     AccGUList;
 get_target_players(CountryList, [GU = #game_user{country=C}|Rest],AccGUList)->
@@ -480,22 +487,23 @@ get_game_search(Query) ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec send_game_msg(#game_message{}, list()) ->{ok, integer()} |
+-spec send_game_msg(#game_message{}, list(), role()) ->{ok, integer()} |
                                                {error, game_phase_not_ongoing} |
                                                {error, user_not_playing_this_game}|
                                                {error, not_allowed_send_msg} |
                                                {error, any()}.
 send_game_msg(GMsg = #game_message{game_id = GameId,
-                                   from_id = FromId}, ToCountries) ->
+                                   from_id = FromId}, ToCountries, Role) ->
     case get_game(GMsg#game_message.game_id) of
         {ok, #game{press = Press, status = ongoing}} ->
-            case get_target_players({FromId, GameId}, ToCountries) of
-                {ok, {FromCountry, ToGameUserList}} ->
+            case get_target_players({FromId, GameId}, ToCountries, Role) of
+                {ok, {From, ToGameUserList}} ->
                     Date = erlang:universaltime(),
+                    % from_country can be a moderator or operator too
                     NewGMsg = GMsg#game_message{
-                                                from_country = FromCountry,
+                                                from_country = From,
                                                 date_created = Date},
-                    send_msg_to_msgapp(ToGameUserList, NewGMsg, Press);
+                    send_msg_to_msgapp(ToGameUserList, NewGMsg, Press, Role);
                 Other ->
                     Other
             end;
@@ -505,31 +513,36 @@ send_game_msg(GMsg = #game_message{game_id = GameId,
             Error
     end.
 
-
-
-
 %%------------------------------------------------------------------------------
 %% @doc
 %%   send a message to a list of game_user, which is supposed to receive
-%%    the message. The message supposed to send via mesage application.
+%%    the message. The message is sent via the message application.
 %% @end
 %%------------------------------------------------------------------------------
--spec send_msg_to_msgapp([#game_user{}], #game_message{}, atom()) ->
+-spec send_msg_to_msgapp([#game_user{}], #game_message{}, atom(), role()) ->
           ok | {error, not_allowed_send_msg}.
-send_msg_to_msgapp([], #game_message{game_id = GameID}, _) ->
+send_msg_to_msgapp([], #game_message{game_id = GameID}, _, _Role) ->
     {ok, GameID};
 send_msg_to_msgapp([#game_user{id= ID, country = Country}|Rest],
-                   GMsg = #game_message{}, Press) ->
-    case Press of
-        white ->
+                   GMsg = #game_message{}, Press, Role) ->
+    case game_utils:is_power_user(Role) of
+        false ->
+            case Press of
+                white ->
+                    NewGMsg = GMsg#game_message{to_id = ID, to_country = Country},
+                    message:game_msg(NewGMsg),
+                    send_msg_to_msgapp(Rest, GMsg, Press, Role);
+                grey ->
+                    NewGMsg = GMsg#game_message{to_id = ID, to_country = Country,
+                                                from_country = unknown},
+                    message:game_msg(NewGMsg),
+                    send_msg_to_msgapp(Rest, GMsg, Press, Role);
+                none ->
+                    {error, not_allowed_send_msg}
+            end;
+        _PowerUser ->
+            % we don't care about press
             NewGMsg = GMsg#game_message{to_id = ID, to_country = Country},
             message:game_msg(NewGMsg),
-            send_msg_to_msgapp(Rest, GMsg, Press);
-        grey ->
-            NewGMsg = GMsg#game_message{to_id = ID, to_country = Country,
-                                        from_country = unknown},
-            message:game_msg(NewGMsg),
-            send_msg_to_msgapp(Rest, GMsg, Press);
-        none ->
-            {error, not_allowed_send_msg}
+            send_msg_to_msgapp(Rest, GMsg, Press, Role)
     end.

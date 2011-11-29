@@ -136,6 +136,20 @@ wrong_session_user_msg_test_() ->
         ?_assertEqual(Expected, ActualOutput)
     ].
 
+power_user_msg_test_() ->
+    fun()->
+            ?debugMsg("correct power message parsing"),
+            ActualOutput = command_parser:parse(
+                             ?SAMPLE_POWER_MSG(?SESSION_ID, ?GAME_ID_VAL), im),
+            Expected = {power_msg,
+                        {ok,?SESSION_ID,
+                         {frontend_msg,[england],
+                          "\n\n    A sample message to nick player which\n"
+                          "    contain several line\n    have fun\n\n    ",
+                          list_to_integer(?GAME_ID_VAL)}}},
+            ?assertEqual(Expected, ActualOutput)
+    end.
+
 game_msg_test_() ->
     [
      fun() ->

@@ -72,6 +72,9 @@
 %% {get_session_user, {ok, SessionId, no_arg}} |
 %% {get_session_user, {error, {required_fields, list()}}} |
 %% {get_session_user, {error, {invalid_input, list()}}} |
+%% {power_msg, {ok, #frontend_msg{}}} |
+%% {power_msg, {error, {required_fields, list()}}} |
+%% {power_msg, {error, {invalid_input, list()}}} |
 %% unknown_command]
 %% @end
 %%-------------------------------------------------------------------
@@ -89,6 +92,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?SEARCH
                   "|"?MESSAGE
                   "|"?GETPROFILE
+                  "|"?POWERMESSAGE
                   ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -137,7 +141,9 @@ parse(BinString, Client) when is_binary(BinString) ->
                             {game_msg, user_commands:parse_game_msg(Data)};
                         nomatch ->
                             {user_msg, user_commands:parse_user_msg(Data)}
-                    end
+                    end;
+                <<?POWERMESSAGE>> ->
+                    {power_msg, user_commands:parse_game_msg(Data)}
             end;
          nomatch ->
                 unknown_command

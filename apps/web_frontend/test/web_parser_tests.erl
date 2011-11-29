@@ -57,7 +57,8 @@ parser_test_() ->
       fun games_current/0,
       fun get_db_stats/0,
       fun assign_moderator/0,
-      fun game_search/0
+      fun game_search/0,
+      fun power_msg/0
      ]}.
 
 get_db_stats() ->
@@ -119,6 +120,10 @@ game_msg() ->
     ?assertEqual (game_msg_exp_data(),
                   web_parser:parse(game_msg_data())).
 
+power_msg() ->
+    ?assertEqual (power_msg_exp_data(),
+                  web_parser:parse(power_msg_data())).
+
 assign_moderator() ->
     ?assertEqual (assign_moderator_exp_data(),
                   web_parser:parse(assign_moderator_data())).
@@ -148,6 +153,14 @@ user_msg_exp_data() ->
      {ok,
       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
       #frontend_msg{to = "maximus",
+                    content = "hi!"}}}.
+
+power_msg_exp_data() ->
+    {power_msg,
+     {ok,
+      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+      #frontend_msg{game_id = 1234,
+                    to = [england,germany],
                     content = "hi!"}}}.
 
 login_exp_data() ->
@@ -285,6 +298,18 @@ user_msg_data() ->
          [{struct,[{"session_id",
                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
           {struct, [{"to", "maximus"}]},
+          {struct, [{"content", "hi!"}]}]}}]}}.
+
+power_msg_data() ->
+    {ok, {struct,
+      [{"action", "power_msg"},
+       {"data",
+        {array,
+         [{struct,[{"session_id",
+                    "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+          {struct, [{"to", {array,
+                            ["england", "germany"]}}]},
+          {struct, [{"game_id", "1234"}]},
           {struct, [{"content", "hi!"}]}]}}]}}.
 
 login_data() ->

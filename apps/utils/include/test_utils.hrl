@@ -445,6 +445,25 @@ adfadfasdfaldfad">>
 ">>
 ).
 
+-define(SAMPLE_POWER_MSG(Session, GameID),
+<<"
+    asdfasdfasdfasdf
+    POWERMESSAGE
+
+    SESSION: " Session "
+    TO: england
+    GAMEID: " GameID "
+    CONTENT:
+
+    A sample message to nick player which
+    contain several line
+    have fun
+
+    END
+    2563564565asdfa
+">>
+).
+
 -define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).
 -define(SAMPLE_GET_PROFILE(Session),
 <<"

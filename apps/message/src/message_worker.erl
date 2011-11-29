@@ -109,7 +109,7 @@ handle_call(_Request, _From, State) ->
     {noreply, ok, State}.
 
 handle_cast({game_msg, GMsg = #game_message{}}, State) ->
-    {ok, _ID} =log_game_msg(undefined, GMsg),
+    {ok, _ID} = log_game_msg(undefined, GMsg),
     Event = #push_event{type = in_game_msg, data = GMsg},
     controller:push_event(GMsg#game_message.to_id, Event),
     {noreply, State};

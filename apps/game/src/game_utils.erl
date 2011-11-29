@@ -51,7 +51,9 @@
          userlist/1,
          get_db_obj/2,
          translate_game_order/3,
-         get_game_current_key/1]).
+         get_game_current_key/1,
+         is_power_user/1
+        ]).
 
 -define(COUNTRIES, ["england", "germany", "france", "austria", "italy",
                     "russia", "turkey"]).
@@ -363,6 +365,18 @@ translate_game_order(GameId, [H|Rest],Country, Acc, Map) ->
         _->
             translate_game_order(GameId, Rest,Country, [TranslatedOrder|Acc], Map)
     end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Checks if a user role is a power user (moderator or operator)
+%% @spec
+%% is_power_user(Role :: atom()) -> boolean()
+%% @end
+%% ------------------------------------------------------------------
+is_power_user(Role) when Role == moderator ; Role == operator ->
+    true;
+is_power_user(_Role) ->
+    false.
 
 %% ------------------------------------------------------------------
 %% Internal functions

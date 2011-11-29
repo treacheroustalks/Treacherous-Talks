@@ -151,6 +151,10 @@ get_ret ({game_msg, success}, Ret, _Data) ->
     msg_ret (Ret, "send_in_game_msg");
 get_ret ({game_msg, invalid_data}, Ret, _Data) ->
     msg_error(Ret);
+get_ret ({power_msg, success}, Ret, _Data) ->
+    msg_ret (Ret, "send_power_msg");
+get_ret ({power_msg, invalid_data}, Ret, _Data) ->
+    msg_error(Ret);
 get_ret ({in_game_msg, ok}, Ret, Data) ->
     get_ret (in_game_msg, Ret, Data);
 get_ret (in_game_msg, Ret = #ret{}, _Data) ->

@@ -60,7 +60,8 @@
          games_current/2,
          get_db_stats/2,
          game_search/2,
-         assign_moderator/2
+         assign_moderator/2,
+         power_msg/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -225,6 +226,15 @@ user_msg(SessionId, FEMsg = #frontend_msg{}) ->
 %%-------------------------------------------------------------------
 game_msg(SessionId, FEMsg = #frontend_msg{}) ->
     ?SESSION_CALL(SessionId, game_msg, FEMsg).
+
+%%-------------------------------------------------------------------
+%% @doc game_msg/2
+%% API for sending game message
+%%
+%% @end
+%%-------------------------------------------------------------------
+power_msg(SessionId, FEMsg = #frontend_msg{}) ->
+    ?SESSION_CALL(SessionId, power_msg, FEMsg).
 
 %%-------------------------------------------------------------------
 %% @doc push_event/2

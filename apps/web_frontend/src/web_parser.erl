@@ -152,8 +152,14 @@ parse(RawData) ->
             {game_msg, {ok,
                         get_field ("session_id", Data),
                         #frontend_msg{game_id = get_integer ("game_id", Data),
-                               to = parse_countries_str(get_field ("to", Data)),
+                                      to = parse_countries_str(get_field ("to", Data)),
                                       content = get_field ("content", Data)}}};
+        "power_msg" ->
+            {power_msg, {ok,
+                         get_field ("session_id", Data),
+                         #frontend_msg{game_id = get_integer ("game_id", Data),
+                                       to = parse_countries_str(get_field ("to", Data)),
+                                       content = get_field ("content", Data)}}};
         "user_msg" ->
             {user_msg, {ok,
                         get_field ("session_id", Data),
