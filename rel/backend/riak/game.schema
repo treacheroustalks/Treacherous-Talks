@@ -1,0 +1,101 @@
+%% Riak: Game search schema
+
+%% See http://wiki.basho.com/Riak-Search---Schema.html for details
+{
+    schema,
+    [
+        {version, "1.1"},
+        {default_field, "name"},
+        {default_op, "or"},
+        {n_val, 3},
+        {analyzer_factory, {erlang, text_analyzers, whitespace_analyzer_factory}}
+    ],
+    [
+        {field, [
+            {name, "id"},
+            {type, integer},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "creator_id"},
+            {type, integer},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {dynamic_field, [
+            {name, "name"},
+            {analyzer_factory, {erlang, text_analyzers, standard_analyzer_factory}}
+        ]},
+
+        {dynamic_field, [
+            {name, "description"},
+            {analyzer_factory, {erlang, text_analyzers, standard_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "status"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "press"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "order_phase"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "retreat_phase"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "build_phase"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "num_players"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "password"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "result"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "waiting_time"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "date_created"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "date_completed"},
+            {type, integer}
+        ]},
+
+        {field, [
+            {name, "last_session"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {dynamic_field, [
+            {name, "*"}
+        ]}
+    ]
+}.
+
