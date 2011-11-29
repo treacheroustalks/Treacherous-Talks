@@ -32,5 +32,8 @@ deps/
 #releases
 system-release/
 
+#escripts
+apps/cluster_manager/cluster_manager
+
 #integration test artifacts
 chromedriver.log

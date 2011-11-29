@@ -36,12 +36,17 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("exmpp/include/exmpp_client.hrl").
 
+-define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Some macros which define predefined messages and value for running
 %% these tests.
 %%-------------------------------------------------------------------
 -define(SERVICE_BOT, "service@tt.localhost").
+
+%% Password that xmpp client users will use
+-define(XMPP_PASSWORD, "password").
 
 
 %% ------------------------------------------------------------------
@@ -253,8 +258,6 @@ instantiator_two_user_test_() ->
      fun teardown/1,
      fun two_user_instantiator/1}.
 
-offline_message_test_() ->
-    offline_message_tst_().
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -275,8 +278,7 @@ setup_basic() ->
 setup_reg_login_instantiator() ->
     ?debugMsg("Setting up xmpp tests. "),
     Client = reg_login_test_client,
-    Password = "password",
-    xmpp_client:start_link(Client, Password),
+    xmpp_client:start_link(Client, ?XMPP_PASSWORD),
     Nick = random_nick(),
     [[Client],
      {Client,
@@ -306,8 +308,7 @@ setup_reg_login_instantiator() ->
 
 setup_session_instantiator() ->
     Client = session_test_client,
-    Password = "password",
-    xmpp_client:start_link(Client, Password),
+    xmpp_client:start_link(Client, ?XMPP_PASSWORD),
     {Session, _Nick} = login_test_user(Client),
     ?debugVal(Session),
     InvalidSession = "dGVzdA==",
@@ -416,13 +417,12 @@ setup_session_instantiator() ->
 
 
 setup_two_user_instantiator() ->
-    Password = "password",
     Client1 = user1_test_client,
-    xmpp_client:start_link(Client1, Password),
+    xmpp_client:start_link(Client1, ?XMPP_PASSWORD),
     {Session1, Nick1} = login_test_user(Client1),
 
     Client2 = user2_test_client,
-    xmpp_client:start_link(Client2, Password),
+    xmpp_client:start_link(Client2, ?XMPP_PASSWORD),
     {Session2, Nick2} = login_test_user(Client2),
 
     GameID1 = create_game(Client1, Session1, "white", "1M"),
@@ -462,44 +462,52 @@ setup_two_user_instantiator() ->
       "successful game message sending when press type is grey"}
     ].
 
-offline_message_tst_() ->
-    [{"deliver off game message to user when get online",
-      fun() ->
-
-              ?debugMsg ("Testing sending of offline off-game message"),
-              Password = "password",
+offline_user_message_test_() ->
+    {"deliver off game message to user when get online",
+     {setup,
+      fun() -> % setup
+              ?debugFmt("Testing sending of offline off-game message ~p", [?NOW_UNIV]),
               Client1 = user1_test_client,
               Client2 = user2_test_client,
               Nick1 = random_nick(),
               Nick2 = random_nick(),
 
-              Msg = "Hello, this is an offline message!",
-
               %% create user #2 and log him out:
-              xmpp_client:start_link(Client2, Password),
+              xmpp_client:start_link(Client2, ?XMPP_PASSWORD),
               login_test_user (Client2, Nick2),
               xmpp_client:stop (Client2),
+              ?debugFmt("offline_message_tst_ Setup 1 done ~p", [?NOW_UNIV]),
+              {Client1, Nick1, Client2, Nick2}
+      end,
+      fun({Client1, Nick1, Client2, Nick2}) -> %instantiator
+              fun() ->
+                      Msg = "Hello, this is an offline message!",
 
-              %% create user #1, send an offline message to #2 and log out:
-              xmpp_client:start_link(Client1, Password),
-              {Session1, Nick1} = login_test_user (Client1, Nick1),
-              xmpp_client:xmpp_call(Client1,
-                                    ?SERVICE_BOT,
-                                    ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg)),
-              xmpp_client:stop (Client1),
+                      %% create user #1, send an offline message to #2 and log out:
+                      xmpp_client:start_link(Client1, ?XMPP_PASSWORD),
+                      {Session1, Nick1} = login_test_user (Client1, Nick1),
+                      xmpp_client:xmpp_call(Client1,
+                                            ?SERVICE_BOT,
+                                            ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg)),
+                      xmpp_client:stop (Client1),
 
-              %% wait a bit, log user #2 on and check that `Msg' was received:
-              receive after 1000 -> ok end,
-              xmpp_client:start_link (Client2, Password),
-              Response =
-                  xmpp_client:xmpp_call(
-                    Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
-              {match, _} = re:run (Response, Msg)
-      end},
-     {"deliver in game message to user when get online",
-      fun() ->
-              ?debugMsg ("Testing sending of offline in game message start ..."),
-              Password = "password",
+                      %% wait a bit, log user #2 on and check that `Msg' was received:
+                      receive after 1000 -> ok end,
+                      xmpp_client:start_link (Client2, ?XMPP_PASSWORD),
+                      Response =
+                          xmpp_client:xmpp_call(
+                            Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
+                      {match, _} = re:run (Response, Msg),
+                      ?debugFmt("oflline_message_tst_ 1 done ~p", [?NOW_UNIV])
+              end
+      end}}.
+
+offline_game_message_test_() ->
+    {"deliver in game message to user when get online",
+     {setup,
+      fun() -> % setup
+              ?debugFmt("Testing sending of offline in game message start ~p",
+                        [?NOW_UNIV]),
               Client1 = user1_test_client,
               Client2 = user2_test_client,
               Client3 = user3_test_client,
@@ -507,25 +515,22 @@ offline_message_tst_() ->
               Nick2 = random_nick(),
               Nick3 = random_nick(),
 
-              Msg = "Hello, this is an offline message!",
-              GMsg= "Hello, this is a game message for two countries",
+              %%create users and login
+              xmpp_client:start_link(Client1, ?XMPP_PASSWORD),
+              {Session1, Nick1} = login_test_user (Client1, Nick1),
 
-              %createt users and login
-              xmpp_client:start_link(Client1, Password),
-              {Session11, Nick1} = login_test_user (Client1, Nick1),
+              xmpp_client:start_link(Client2, ?XMPP_PASSWORD),
+              {Session2, Nick2}= login_test_user (Client2, Nick2),
 
-              xmpp_client:start_link(Client2, Password),
-              {Session21, Nick2}= login_test_user (Client2, Nick2),
-
-              xmpp_client:start_link(Client3, Password),
-              {Session31, Nick3}= login_test_user (Client3, Nick3),
+              xmpp_client:start_link(Client3, ?XMPP_PASSWORD),
+              {Session3, Nick3}= login_test_user (Client3, Nick3),
 
               %% create a game to send in game messages
-              GameID = create_game(Client1, Session11, "white", "1M"),
+              GameID = create_game(Client1, Session1, "white", "1M"),
 
-              join_game(Client1, Session11, GameID, "england"),
-              join_game(Client2, Session21, GameID, "france"),
-              join_game(Client3, Session31, GameID, "germany"),
+              join_game(Client1, Session1, GameID, "england"),
+              join_game(Client2, Session2, GameID, "france"),
+              join_game(Client3, Session3, GameID, "germany"),
 
               change_game_phase([GameID]),
 
@@ -533,41 +538,56 @@ offline_message_tst_() ->
               xmpp_client:stop (Client2),
               xmpp_client:stop (Client3),
 
-              % one in-game message and one off-game message send to client 2
-              % one in-gmae message to client 3
-              %% send an offline message to #2
-              ToCountries = "france , germany",
-              xmpp_client:xmpp_call(Client1,
-                                    ?SERVICE_BOT,
-                                    ?SEND_OFF_GAME_MSG(Session11, Nick2, Msg)),
-              % send game message to 2 countries (Client2 and client3)
-              xmpp_client:xmpp_call(Client1,
-                                    ?SERVICE_BOT,
-                                    ?SEND_GAME_MSG(Session11, GameID, ToCountries, GMsg)),
-              xmpp_client:stop (Client1),
+              ?debugFmt("offline_message_tst_ 2 setup done ~p", [?NOW_UNIV]),
+              {Client1, Nick1, Session1, Client2, Nick2, Client3, Nick3, GameID}
+      end,
+      fun({Client1, _Nick1, Session1, Client2, Nick2, Client3, Nick3, GameID}) -> %instantiator
+              fun() ->
+                      Msg = "Hello, this is an offline message!",
+                      GMsg= "Hello, this is a game message for two countries",
 
-              %% wait a bit, log user #2 on and check that `Msg' was received:
-              receive after 1000 -> ok end,
-              xmpp_client:start_link (Client2, Password),
+                      %% one in-game message and one off-game message send to client 2
+                      %% one in-gmae message to client 3
+                      %% send an offline message to #2
+                      ToCountries = "france , germany",
+                      xmpp_client:xmpp_call(Client1,
+                                            ?SERVICE_BOT,
+                                            ?SEND_OFF_GAME_MSG(Session1, Nick2, Msg)),
+                      %% send game message to 2 countries (Client2 and client3)
+                      xmpp_client:xmpp_call(Client1,
+                                            ?SERVICE_BOT,
+                                            ?SEND_GAME_MSG(Session1,
+                                                           GameID,
+                                                           ToCountries,
+                                                           GMsg)),
+                      xmpp_client:stop (Client1),
 
-              % client2 must get one off game message and one in game message
-              Response21 =
-                  xmpp_client:xmpp_call(
-                    Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
-              {match, _} = re:run (Response21, Msg),
+                      %% wait a bit, log user #2 on
+                      %% and check that `Msg' was received:
+                      receive after 1000 -> ok end,
+                      xmpp_client:start_link (Client2, ?XMPP_PASSWORD),
 
-              Response22 = xmpp_client:get_next_msg(Client2),
-              {match, _} = re:run (Response22, GMsg),
+                      %% client2 must get one off game message
+                      %% and one in game message
+                      Response21 =
+                          xmpp_client:xmpp_call(
+                            Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick2)),
+                      {match, _} = re:run (Response21, Msg),
 
-              % client3 that will get only one in game message
-              xmpp_client:start_link (Client3, Password),
-              Response3 =
-                  xmpp_client:xmpp_call(
-                    Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick3)),
-              {match, _} = re:run (Response3, GMsg),
-              ?debugMsg ("Testing sending of offline in and off game message DONE")
-      end}
-    ].
+                      Response22 = xmpp_client:get_next_msg(Client2),
+                      {match, _} = re:run (Response22, GMsg),
+
+                      %% client3 that will get only one in game message
+                      xmpp_client:start_link (Client3, ?XMPP_PASSWORD),
+                      Response3 =
+                          xmpp_client:xmpp_call(
+                            Client2, ?SERVICE_BOT, ?LOGIN_COMMAND_CORRECT(Nick3)),
+                      {match, _} = re:run (Response3, GMsg),
+                      ?debugFmt("Testing sending of offline in "
+                                "and off game message DONE ~p",
+                                [?NOW_UNIV])
+              end
+      end}}.
 
 %%-------------------------------------------------------------------
 %% @doc
