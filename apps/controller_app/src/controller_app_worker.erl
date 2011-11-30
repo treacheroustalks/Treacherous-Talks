@@ -143,7 +143,6 @@ handle_call({login, {Login, PushInfo}}, _From, State) ->
             {ok, DbObj} ->
                 % user with nick exists
                 Id = id_from_user_siblings(DbObj),
-
                 {ok, HObj} = session_history:db_get(Id),
                 HistObj = session_history:resolve_history_siblings(HObj),
                 Hist = db_obj:get_value(HistObj),

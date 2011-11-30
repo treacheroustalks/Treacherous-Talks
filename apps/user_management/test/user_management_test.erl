@@ -26,8 +26,6 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
 
--define(TIMEOUT, 10000).
-
 %% startup
 apps() ->
     [datatypes, service, protobuffs, riakc, db, user_management].
@@ -84,7 +82,6 @@ create_user_with_taken_nick_test_() ->
        fun app_stop/1,
        fun create_user_nick_taken_t/1
       }}.
-
 
 update_user_test_() ->
     {"update a user",

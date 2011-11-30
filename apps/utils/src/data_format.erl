@@ -43,7 +43,9 @@
          rec_to_plist/1, rec_to_plist/2, plist_to_rec/2,
          type_of/1,
          search_result_keys/1,
-         bin_to_int/1
+         bin_to_int/1,
+         date_to_str/1,
+         user_to_text/1
          ]).
 
 %%-------------------------------------------------------------------
@@ -135,6 +137,32 @@ textual_form_of([H | T]) ->
     [Games];
 textual_form_of([]) -> [].
 
+%%------------------------------------------------------------------------------
+%% @doc
+%%   extract bacis information from user record and covert it to string
+%% @end
+%%------------------------------------------------------------------------------
+-spec user_to_text(#user{}) -> string().
+user_to_text(User = #user{}) ->
+    Msg = "Your Profile:~n",
+    Msg1  = update_msg(Msg, User#user.nick, ?NICKNAME, undefined),
+    Msg2  = update_msg(Msg1, User#user.name, ?FULLNAME, undefined),
+    Msg3  = update_msg(Msg2, User#user.email, ?EMAIL, undefined),
+    Msg4  = update_msg(Msg3, User#user.role, ?ROLE, undefined),
+    Msg5  = update_msg(Msg4, User#user.channel, ?CHANNEL, undefined),
+    update_msg(Msg5, date_to_str(User#user.date_created), ?DATE_CREATED, undefined).
+
+%%-------------------------------------------------------------------
+%% @doc date_to_str/1
+%%
+%% convert erlang date to string
+%% @end
+%% [@spec get( date ) @end]
+%%-------------------------------------------------------------------
+-spec date_to_str(date() ) -> string().
+date_to_str(Date) ->
+    {{Year, Month, Day}, {H, M, S}} = calendar:universal_time_to_local_time(Date),
+    io_lib:format("<~p/~p/~p ~p:~p:~p> ", [Year, Month, Day, H, M, S]).
 
 %%-------------------------------------------------------------------
 %% @doc

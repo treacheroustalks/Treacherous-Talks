@@ -33,7 +33,7 @@
 -module(controller).
 
 %% Public API
--export([handle_action/2, push_event/2]).
+-export([handle_action/2, push_event/2, register_operator/1]).
 
 
 %% Internal functions, exported for eUnit, do not use!
@@ -206,6 +206,18 @@ push_event(UserId, Event = #push_event{}) ->
 %%-------------------------------------------------------------------
 register(User) ->
     ?CALL_WORKER({register, User}).
+
+%%-------------------------------------------------------------------
+%%  @doc
+%%    this function is used to register an operator
+%%  @end
+%%-------------------------------------------------------------------
+-spec register_operator(#user{}) ->
+          {ok, #user{}} |
+          {error, nick_already_exists} |
+          {{error, any()}}.
+register_operator(User=#user{}) ->
+    ?CALL_WORKER({register, User#user{role = operator}}).
 
 
 %%-------------------------------------------------------------------

@@ -170,6 +170,12 @@ controller_joined_game_test_() ->
      fun joined_game_test_instantiator/1
     }.
 
+register_oprator_test_() ->
+    {setup,
+     fun app_start/0,
+     fun app_stop/1,
+     [register_oprator_tst_()]
+     }.
 
 %%-------------------------------------------------------------------
 %% Test executer
@@ -272,6 +278,16 @@ operator_session_setup() ->
     lists:map(fun(Mod) ->
                       {Mod, Callback, SessId}
               end, Mods).
+%%-------------------------------------------------------------------
+%%  register operator test
+%%-------------------------------------------------------------------
+register_oprator_tst_() ->
+    [{"test register_oprator",
+      fun() ->
+            User = create_user(),
+            {ok, Result}= controller:register_operator(User),
+            ?assertEqual(operator, Result#user.role)
+    end}].
 
 %%-------------------------------------------------------------------
 %% Pre-Game tests

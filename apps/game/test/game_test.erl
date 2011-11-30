@@ -161,8 +161,10 @@ new_get_game_tst_ () ->
              OrigGame = test_game(),
              Key = sync_new(OrigGame),
              % OrigGame is actually updated with an ID
-             OrigGameWithId = OrigGame#game{id = Key},
-             OrigGameWithId = sync_get (Key)
+             Game = sync_get (Key),
+             ?assertEqual(OrigGame#game{id = Key,
+                                        date_created = Game#game.date_created},
+                                       Game)
      end,
      fun () ->
              OrigGame = test_game (),

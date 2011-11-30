@@ -63,12 +63,15 @@
 %% {game_overview, Error} |
 %% {join_game, {ok, SessionId, {GameId, Country}} |
 %% {join_game, Error} |
-%% {user_msg, {ok, #frontend_msg{}}} |
+%% {user_msg, {ok, SessionId, #frontend_msg{}}} |
 %% {user_msg, {error, {required_fields, list()}}} |
 %% {user_msg, {error, {invalid_input, list()}}} |
-%% {game_msg, {ok, #frontend_msg{}}} |
+%% {game_msg, {ok, SessionId, #frontend_msg{}}} |
 %% {game_msg, {error, {required_fields, list()}}} |
 %% {game_msg, {error, {invalid_input, list()}}} |
+%% {get_session_user, {ok, SessionId, no_arg}} |
+%% {get_session_user, {error, {required_fields, list()}}} |
+%% {get_session_user, {error, {invalid_input, list()}}} |
 %% unknown_command]
 %% @end
 %%-------------------------------------------------------------------
@@ -85,6 +88,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?JOIN
                   "|"?SEARCH
                   "|"?MESSAGE
+                  "|"?GETPROFILE
                   ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -123,6 +127,8 @@ parse(BinString, Client) when is_binary(BinString) ->
                     {join_game, user_commands:parse_join(Data)};
                 <<?SEARCH>> ->
                     {game_search, user_commands:parse_game_search(Data)};
+                <<?GETPROFILE>> ->
+                    {get_session_user, user_commands:parse_get_session_user(Data)};
                 <<?MESSAGE>> ->
                     Pattern =  ?GAMEID,
                     {ok, MP1} = re:compile(Pattern, [dotall]),

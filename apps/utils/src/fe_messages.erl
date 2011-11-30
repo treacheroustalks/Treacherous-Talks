@@ -91,8 +91,8 @@ get({get_db_stats, invalid_data}, Error) ->
     end;
 
 % Get session user
-get({get_session_user, success}, _Val) ->
-    resp("");
+get({get_session_user, success}, Val) ->
+    resp(data_format:user_to_text(Val));
 get({get_session_user, invalid_data}, _Val) ->
     resp("");
 
@@ -251,12 +251,12 @@ get({Cmd, parse_error}, Error) ->
 % Push events
 % Off game message
 get(off_game_msg, Msg = #message{}) ->
-    resp(date_to_str(Msg#message.date_created) ++ "~s:~n~s",
+    resp(data_format:date_to_str(Msg#message.date_created) ++ "~s:~n~s",
          [Msg#message.from_nick, Msg#message.content]);
 
 %in game message
 get(in_game_msg, GMsg =#game_message{}) ->
-    MM = resp(date_to_str(GMsg#game_message.date_created) ++
+    MM = resp(data_format:date_to_str(GMsg#game_message.date_created) ++
              "Game:~p~nCountry:~p,~n ~s",
          [GMsg#game_message.game_id,GMsg#game_message.from_country,
           GMsg#game_message.content]),
@@ -278,17 +278,6 @@ get(games_current, Val) ->
 get(game_search, Val) ->
     get_games_in_textual_form(Val).
 
-
-%%-------------------------------------------------------------------
-%% @doc date_to_str/2
-%%
-%% convert erlang date to string
-%% @end
-%% [@spec get( date ) @end]
-%%-------------------------------------------------------------------
-date_to_str(Date) ->
-    {{Year, Month, Day}, {H, M, S}} = calendar:universal_time_to_local_time(Date),
-    io_lib:format("<~p/~p/~p ~p:~p:~p> ", [Year, Month, Day, H, M, S]).
 %%-------------------------------------------------------------------
 %% @doc resp/2
 %%

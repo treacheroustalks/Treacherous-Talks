@@ -446,3 +446,14 @@ adfadfasdfaldfad">>
 ).
 
 -define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).
+-define(SAMPLE_GET_PROFILE(Session),
+<<"
+    asdfasdfasdfasdf
+    GETPROFILE
+
+    SESSION: " Session "
+
+    END
+    2563564565asdfa
+">>
+).
