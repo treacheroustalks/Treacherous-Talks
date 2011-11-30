@@ -53,10 +53,13 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
-%%
-%% @spec start(GameId) -> {ok, Pid} | ignore | {error, Error}
+%% If it called with game_players record it will directly spown the process
+%% otherwise it will get game players from database based on the input game id
+%% @spec start(GameId | #game_player{}) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
+start(GamePlayer = #game_player{}) ->
+    gen_server:start(?MODULE, [GamePlayer], []);
 start(GameId) ->
     gen_server:start(?MODULE, [GameId], []).
 
@@ -111,8 +114,15 @@ is_alive(_) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
+init([GamePlayersRec = #game_player{}]) ->
+    case game_join_proc_map:store_pid(GamePlayersRec#game_player.id, self()) of
+        ok ->
+            {ok, GamePlayersRec};
+        Error ->
+            {stop, Error}
+    end;
 init([GameId]) ->
-%    error_logger:info_msg("Init game joining process for game id ~p~n", [GameId]),
+    %error_logger:info_msg("Init game joining process for game id ~p~n", [GameId]),
     case read_game_players(GameId) of
         {ok, GamePlayersRec} ->
             case game_join_proc_map:store_pid(GameId, self()) of
