@@ -355,12 +355,10 @@ get_distance (Map, A, B) ->
 
 get_distance_test () ->
     Map = map_data:create (standard_game),
-%    ?assertEqual (1,
-%                  get_distance (Map, vienna, bohemia)),
+    ?assertEqual (1,
+                  get_distance (Map, vienna, bohemia)),
     ?assertEqual (2,
                   get_distance (Map, paris, spain)),
-    ?debugMsg ("!"),
-    ?debugVal (get_distance (Map, bohemia, naples)),
     map_data:delete (Map).
 
 %% -----------------------------------------------------------------------------

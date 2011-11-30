@@ -47,7 +47,7 @@
 -spec replicate (Table :: atom ()) ->
                         ok | {error, no_reachable_backend}.
 replicate (Table) ->
-    Backend = get_responding_backend (),
+    Backend = backends:get_responding_backend (),
     case Backend of
         undefined ->
             {error, no_reachable_backend};
@@ -63,42 +63,4 @@ replicate (Table) ->
             mnesia:add_table_copy (Table, node (), ram_copies),
             ?DEBUG ("copying done~n"),
             ok
-    end.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Go through the backend_nodes-list in the app file and return the first one
-%% that is not equal to `node()' AND that is ping-able.
-%% @todo this now reads from the controller_app config because no decision was mode made where this should go
-%% @end
-%%-------------------------------------------------------------------
--spec get_responding_backend() -> Node | undefined when
-      Node :: atom().
-get_responding_backend () ->
-    case application:get_env (controller_app, backend_nodes) of
-        undefined -> undefined;
-        {ok, Backends} -> get_responding_backend (Backends)
-    end.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Go through a list of nodes and return the first one that is not equal to
-%% `node()' AND that is ping-able.
-%% @end
-%%-------------------------------------------------------------------
--spec get_responding_backend([Node]) -> Node | undefined when
-      Node :: atom().
-get_responding_backend ([]) ->
-    undefined;
-get_responding_backend ([Backend | Backends]) ->
-    case node () of
-        Backend ->
-            get_responding_backend (Backends);
-        _ ->
-            case net_adm:ping (Backend) of
-                pang ->
-                    get_responding_backend (Backends);
-                pong ->
-                    Backend
-            end
     end.

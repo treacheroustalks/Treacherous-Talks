@@ -34,9 +34,11 @@
 start(_StartType, _StartArgs) ->
     ?DEBUG("starting [~p]~n", [?MODULE]),
     pg2:start_link (),
-    case net_adm:ping('backend@127.0.0.1') of
+    RespondingBackend = backends:get_responding_backend (),
+    ?DEBUG ("Backend: ~p~n", [RespondingBackend]),
+    case net_adm:ping(RespondingBackend) of
         pang ->
-            erlang:error ({error, could_not_ping_hardcoded_backend});
+            erlang:error ({error, could_not_find_backend});
         pong -> ok
     end,
     web_frontend_sup:start_link().
