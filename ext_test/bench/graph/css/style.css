@@ -1,0 +1,16 @@
+.container-fluid>.content {
+    float: left;
+    margin-left: 0;
+    min-height: 600px;
+    width: 100%;
+}
+
+.clear {
+    clear: both;
+}
+
+.home_graph {
+    float: left;
+    margin: 20px 0;
+    width: 100%;
+}
