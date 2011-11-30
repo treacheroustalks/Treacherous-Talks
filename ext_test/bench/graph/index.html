@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Treacherous Talks - Load testing</title>
+        <meta name="description" content="">
+        <meta name="author" content="">
+        <!-- Le styles -->
+        <link href="css/bootstrap.css" rel="stylesheet">
+        <link href="css/style.css" rel="stylesheet">
+        <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="js/jquery.csv.js"></script>
+        <script type="text/javascript" src="js/highcharts.js"></script>
+        <script type="text/javascript" src="js/exporting.js"></script>
+        <script type="text/javascript" src="js/bootstrap-dropdown.js"></script>
+        <script type="text/javascript" src="js/custom.js"></script>
+        <style type="text/css">
+            body {
+                padding-top: 60px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="topbar">
+            <div class="topbar-inner">
+                <div class="container-fluid">
+                    <p class="brand">
+                        Treacherous Talks
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div class="content">
+                <ul class="tabs" id="tabs"></ul>
+                <!-- Div for general graphs -->
+                <div id="graph"></div>
+                <!-- Custom graphs-->
+                <div id="graph_riak" class="home_graph"></div>
+                <div id="graph_gen_all" class="home_graph"></div>
+                <div id="graph_gen_message" class="home_graph"></div>
+                <div id="graph_gen_controller" class="home_graph"></div>
+                <div id="graph_gen_game" class="home_graph"></div>
+                <div id="graph_gen_db" class="home_graph"></div>
+            </div>
+            <div class="clear"></div>
+            <footer>
+                <p>
+                    &copy; Treacherous Talks 2011
+                </p>
+            </footer>
+        </div>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                init();
+            });
+        </script>
+    </body>
+</html>
