@@ -66,7 +66,6 @@ update_config(OldConfig, ConfigChanges) ->
 %% [{appname, []}]
 update_rel_config(OldAppConfigs, AppConfigChanges) ->
     Fun = fun({AppName, Changes}, OldConfigs) ->
-                  io:format("## App ~p~n", [AppName]),
                   case lists:keyfind(AppName, 1, OldConfigs) of
                       {AppName, OldAppConfig} ->
                           ok;
@@ -82,7 +81,6 @@ update_rel_config(OldAppConfigs, AppConfigChanges) ->
 %% [{appconfkey, conf}]
 update_app_config(OldAppConfig, AppConfigChanges) ->
     Fun = fun({AppConfKey, Change}, Config) ->
-                  io:format("## App conf key ~p~n", [AppConfKey]),
                   lists:keystore(AppConfKey, 1, Config, {AppConfKey, Change})
           end,
     lists:foldl(Fun, OldAppConfig, AppConfigChanges).

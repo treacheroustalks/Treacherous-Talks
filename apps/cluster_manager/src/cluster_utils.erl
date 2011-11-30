@@ -106,11 +106,11 @@ add_backend_nodes(HostConf, {BackendNodes, ClustConf}) ->
     %% repetition because I can't handle another lists:foldl
     {_, NewClustConf1} = add_backend_nodes(backend, [controller_app, game],
                                          HostConf, {BackendNodes, ClustConf}),
-    {_, NewClustConf2} = add_backend_nodes(web_frontend, [web_frontend],
+    {_, NewClustConf2} = add_backend_nodes(web_frontend, [controller_app],
                                          HostConf, {BackendNodes, NewClustConf1}),
-    {_, NewClustConf3} = add_backend_nodes(smtp_frontend, [smtp_frontend],
+    {_, NewClustConf3} = add_backend_nodes(smtp_frontend, [controller_app],
                                          HostConf, {BackendNodes, NewClustConf2}),
-    {_, NewClustConf4} = add_backend_nodes(xmpp_frontend, [xmpp_frontend],
+    {_, NewClustConf4} = add_backend_nodes(xmpp_frontend, [controller_app],
                                          HostConf, {BackendNodes, NewClustConf3}),
     {BackendNodes, NewClustConf4}.
 

@@ -26,7 +26,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 generate_startup_order_test() ->
-    ClustConf = [{host, "stephan.pcs", [{release, web_frontend, [config_mods]},
+    ClustConf = [{host, "stephan.pcs", [{release, web_frontend, []},
                                         {release, xmpp_frontend, []}
                                        ]},
                  {host, "jd.pcs", [{release, backend,
@@ -97,7 +97,7 @@ preprocess_clustconf_one_back_one_front_test() ->
                                     ]
                 },
                 {host, "host2.tld", [{release, smtp_frontend,
-                                      [{smtp_frontend, [{backend_nodes,
+                                      [{controller_app, [{backend_nodes,
                                                          ['backend@host1.tld']
                                                         }
                                                        ]
@@ -135,7 +135,7 @@ preprocess_clustconf_realistic_test() ->
                  },
                  {host, "andre.pcs", [{release, riak, []}]}],
     Expected = [{host, "stephan.pcs", [{release, web_frontend,
-                                        [{web_frontend,
+                                        [{controller_app,
                                           [{backend_nodes, ['backend@jd.pcs',
                                                             'backend@tiina.pcs']
                                            }
@@ -144,7 +144,7 @@ preprocess_clustconf_realistic_test() ->
                                         ]
                                        },
                                        {release, xmpp_frontend,
-                                        [{xmpp_frontend,
+                                        [{controller_app,
                                           [{backend_nodes, ['backend@jd.pcs',
                                                             'backend@tiina.pcs']
                                            }

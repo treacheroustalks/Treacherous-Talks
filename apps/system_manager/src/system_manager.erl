@@ -371,7 +371,7 @@ save_status_of_release(Relname, Status) ->
     % See if we can read the old status
     case manage_config:read_config(Filename) of
         {ok, OldList} ->
-            NewList = manage_config:update_config(OldList, [{Relname, Status}]),
+            NewList = update_rel_status(OldList, [{Relname, Status}]),
             manage_config:write_config(Filename, NewList);
         {error, enoent} ->
             % No old file, nothing to merge. Just write to a new one.
@@ -400,3 +400,17 @@ get_started_releases() ->
         Other ->
             Other
     end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%%  Given a list of tuples [{relname, status}] and a list of changes,
+%%  do a lists:keystore on each change so that existing releases
+%%  are replaced, and new releases are insterted.
+%% @end
+%% ------------------------------------------------------------------
+-spec update_rel_status([{atom(), atom()}], [{atom(), atom()}]) -> [{atom(), atom()}].
+update_rel_status(OldStatuses, StatusChanges) ->
+    Fun = fun({RelName, Change}, Config) ->
+                  lists:keystore(RelName, 1, Config, {RelName, Change})
+          end,
+    lists:foldl(Fun, OldStatuses, StatusChanges).
