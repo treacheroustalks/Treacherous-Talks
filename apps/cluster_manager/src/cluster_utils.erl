@@ -104,7 +104,7 @@ host_releases(Host, [{release, Relname, _RelConf}|Rest]) ->
 % This is intended for use in a lists:foldl over an entire ClustConf.
 add_backend_nodes(HostConf, {BackendNodes, ClustConf}) ->
     %% repetition because I can't handle another lists:foldl
-    {_, NewClustConf1} = add_backend_nodes(backend, [controller, game],
+    {_, NewClustConf1} = add_backend_nodes(backend, [controller_app, game],
                                          HostConf, {BackendNodes, ClustConf}),
     {_, NewClustConf2} = add_backend_nodes(web_frontend, [web_frontend],
                                          HostConf, {BackendNodes, NewClustConf1}),

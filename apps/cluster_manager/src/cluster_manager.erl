@@ -35,11 +35,38 @@
 
 -export([main/1]).
 
-main([]) ->
-    main(["tt.config"]);
+% Define default configuration filename
+-define(DEFAULT_CONFIG_FILE, "tt.config").
 
-main([ConfigPath]) ->
-    case file:consult(ConfigPath) of
+% Define options list for getopt to use
+option_spec_list() ->
+    [
+     %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
+     {help, $h, "help", undefined, "Show the program options"},
+     {setconfig, $c, "setconfig", undefined, "Sets all configurations defined in config file"},
+     {start, $s, "start", undefined, "Starts all releases defined in config file"},
+     {stop, $t, "stop", undefined, "Stops all releases defined in config file"},
+     {configfile, undefined, undefined, string, "Configuration file (defaults to tt.config if none given)"}
+    ].
+
+
+main(Args) ->
+    case getopt:parse(option_spec_list(), Args) of
+        {ok, {[], _NonOptionArg}} ->
+            usage();
+        {ok, {Opts, _NonOptionArg}} ->
+            maybe_help(Opts),
+            run(Opts);
+         {error, _} -> usage()
+    end.
+
+run(Opts) ->
+    case proplists:get_value(configfile, Opts) of
+        undefined -> ConfigFile = ?DEFAULT_CONFIG_FILE;
+        Value -> ConfigFile = Value
+    end,
+    % Get config file
+    case file:consult(ConfigFile) of
         {error, enoent} ->
             usage();
         {ok, [Config]} ->
@@ -47,13 +74,19 @@ main([ConfigPath]) ->
             net_kernel:start([foobar, longnames]),
             erlang:set_cookie(node(), 'treacherous_talks'),
             StartingOrder = cluster_utils:generate_startup_order(Config),
-%            io:format("Config: ~p~n"
-%                      "Starting order:~p~n",
-%                      [Config, StartingOrder]),
             ProcessedConfig = cluster_utils:preprocess_clustconf(Config),
-%            io:format("Processed config ~p~n", [ProcessedConfig]),
-            distribute_config(ProcessedConfig),
-            start_releases(StartingOrder)
+            case proplists:get_bool(setconfig, Opts) of
+                true -> distribute_config(ProcessedConfig);
+                false -> ok
+            end,
+            case proplists:get_bool(start, Opts) of
+                true -> start_releases(StartingOrder);
+                false -> ok
+            end,
+            case proplists:get_bool(stop, Opts) of
+                true -> stop_releases(lists:reverse(StartingOrder));
+                false -> ok
+            end
     end.
 
 distribute_config([]) -> ok;
@@ -70,8 +103,24 @@ start_releases([{Host, Release}|Rest]) ->
     io:format("start_release ~p on ~p was ~p~n", [Release, Node, Res]),
     start_releases(Rest).
 
+stop_releases([]) -> ok;
+stop_releases([{Host, Release}|Rest]) ->
+    Node = list_to_atom("system_manager@" ++ Host),
+    Res = (catch rpc:call(Node, system_manager, stop_release, [Release])),
+    io:format("stop_release ~p on ~p was ~p~n", [Release, Node, Res]),
+    stop_releases(Rest).
 
+
+%% Getopt helpers
 usage() ->
-    io:format("usage: cluster_manager [<system config path>]"
-              " (default tt.config)~n", []),
-    halt(1).
+    usage(option_spec_list()).
+
+usage(OptSpecList) ->
+    getopt:usage(OptSpecList, "cluster_manager"),
+    halt(127).
+
+maybe_help(Opts) ->
+  case proplists:get_bool(help, Opts) of
+      true -> usage();
+      false -> ok
+  end.

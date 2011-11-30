@@ -67,7 +67,7 @@ preprocess_clustconf_no_releases_test() ->
 preprocess_clustconf_one_backend_test() ->
     ClustConf = [{host, "host1.tld", [{release, backend, []}]}],
     Expected = [{host, "host1.tld", [{release, backend,
-                                      [{controller, [{backend_nodes,
+                                      [{controller_app, [{backend_nodes,
                                                 ['backend@host1.tld']}]
                                        },
                                        {game, [{backend_nodes,
@@ -82,7 +82,7 @@ preprocess_clustconf_one_back_one_front_test() ->
     ClustConf = [{host, "host1.tld", [{release, backend, []}]},
                  {host, "host2.tld", [{release, smtp_frontend, []}]}],
     Expected = [{host, "host1.tld", [{release, backend,
-                                      [{controller, [{backend_nodes,
+                                      [{controller_app, [{backend_nodes,
                                                       ['backend@host1.tld']
                                                      }
                                                     ]
@@ -161,7 +161,7 @@ preprocess_clustconf_realistic_test() ->
                                          {db_workers,50}
                                         ]
                                     },
-                                    {controller, [{backend_nodes, ['backend@jd.pcs',
+                                    {controller_app, [{backend_nodes, ['backend@jd.pcs',
                                                                    'backend@tiina.pcs']
                                                   }
                                                  ]
@@ -181,7 +181,7 @@ preprocess_clustconf_realistic_test() ->
                                                   }
                                             },
                                             {db_workers,50}]},
-                                       {controller, [{backend_nodes, ['backend@jd.pcs',
+                                       {controller_app, [{backend_nodes, ['backend@jd.pcs',
                                                                       'backend@tiina.pcs']
                                                      }
                                                     ]

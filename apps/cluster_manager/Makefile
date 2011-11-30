@@ -21,7 +21,7 @@ compile:
 	$(REBAR) compile
 
 escript:
-	$(REBAR) escriptize
+	$(REBAR) skip_deps=true escriptize
 
 test:
 	$(REBAR) skip_deps=true eunit
