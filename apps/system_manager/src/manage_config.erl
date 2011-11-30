@@ -61,14 +61,34 @@ read_config(Path) ->
 %% ------------------------------------------------------------------
 -spec update_config([tuple()], [tuple()]) -> [tuple()].
 update_config(OldConfig, ConfigChanges) ->
-    Fun = fun(Change, Config) ->
-                  Key = element(1, Change),
-                  lists:keystore(Key, 1, Config, Change)
+    update_rel_config(OldConfig, ConfigChanges).
+
+%% [{appname, []}]
+update_rel_config(OldAppConfigs, AppConfigChanges) ->
+    Fun = fun({AppName, Changes}, OldConfigs) ->
+                  io:format("## App ~p~n", [AppName]),
+                  case lists:keyfind(AppName, 1, OldConfigs) of
+                      {AppName, OldAppConfig} ->
+                          ok;
+                      false->
+                          OldAppConfig = []
+                  end,
+                  NewAppConfig = update_app_config(OldAppConfig, Changes),
+                  lists:keystore(AppName, 1, OldConfigs, {AppName, NewAppConfig})
           end,
-    lists:foldl(Fun, OldConfig, ConfigChanges).
+    lists:foldl(Fun, OldAppConfigs, AppConfigChanges).
+
+
+%% [{appconfkey, conf}]
+update_app_config(OldAppConfig, AppConfigChanges) ->
+    Fun = fun({AppConfKey, Change}, Config) ->
+                  io:format("## App conf key ~p~n", [AppConfKey]),
+                  lists:keystore(AppConfKey, 1, Config, {AppConfKey, Change})
+          end,
+    lists:foldl(Fun, OldAppConfig, AppConfigChanges).
 
 %% ------------------------------------------------------------------
-%% @doc Write an app.config term to the given path with a trailing period (.) 
+%% @doc Write an app.config term to the given path with a trailing period (.)
 %% @end
 %% ------------------------------------------------------------------
 -spec write_config(string(), term()) -> ok | {error, term()}.

@@ -66,3 +66,26 @@ get_write_get_tst() ->
     ok = manage_config:write_config(?ORIGINAL_CONFIG_PATH, Get1Val),
     {ok, Get2Val} = manage_config:read_config(?ORIGINAL_CONFIG_PATH),
     ?assertEqual(Get1Val, Get2Val).
+
+riak_config_test() ->
+    OldConfig = [{riak_kv,
+                  [
+                   {storage_backend, riak_kv_bitcask_backend},
+                   {pb_ip,   "127.0.0.1" },
+                   {pb_port, 8087 }
+                  ]}
+                ],
+    ConfigChanges = [{riak_kv,
+                      [
+                       {storage_backend, riak_kv_eleveldb_backend}
+                      ]}
+                    ],
+    ExpectedConfig = [{riak_kv,
+                       [
+                        {storage_backend, riak_kv_eleveldb_backend},
+                        {pb_ip,   "127.0.0.1" },
+                        {pb_port, 8087 }
+                       ]}
+                     ],
+    ActualConfig = manage_config:update_config(OldConfig, ConfigChanges),
+    ?assertEqual(ExpectedConfig, ActualConfig).
