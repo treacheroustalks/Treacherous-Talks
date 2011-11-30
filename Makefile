@@ -6,6 +6,9 @@ REBAR=./rebar
 # Path to system release folder where releases are put
 SYSREL=system-release
 
+# URL to Riak tar.gz download
+RIAK_URL=http://downloads.basho.com/riak/riak-1.0.2/riak-1.0.2.tar.gz
+
 # Internal variables used for naming release tar
 DATE=`date +%Y%m%d-%H%M`
 COMMIT=$(shell git diff-index --quiet HEAD; \
@@ -46,7 +49,8 @@ dia:
 # errors since they only mean that we already have cloned it
 get_deps:
 	$(REBAR) get-deps
-	cd deps; git clone -b websocket_hy10 https://github.com/ahilsend/yaws.git 2>&1 || echo ok
+	cd deps; git clone -b websocket_hy10 \
+	https://github.com/ahilsend/yaws.git 2>&1 || echo ok
 
 # Build Yaws in the old boring way and in parallel with make -j4
 compile:
@@ -136,7 +140,7 @@ fetch_deps_file:
 riak_release:
 	rm -rf riak-build
 	mkdir -p riak-build
-	cd riak-build; wget -nv 'http://downloads.basho.com/riak/riak-1.0.2/riak-1.0.2.tar.gz' 2>&1
+	cd riak-build; wget -nv '$(RIAK_URL)' 2>&1
 	cd riak-build; tar -xf riak-*.tar.gz
 	cd riak-build; rm riak-*.tar.gz
 	cd riak-build/riak-*; make rel

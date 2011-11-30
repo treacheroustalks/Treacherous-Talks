@@ -118,6 +118,16 @@ handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
 handle_call({update_config, HostConfig}, _From, State) ->
     {reply, int_update_config(HostConfig), State};
+handle_call({start_release, riak=Relname}, _From, State) ->
+    ok = save_status_of_release(Relname, started),
+    Reply = case int_start_release(Relname) of
+                ok ->
+                    {ok, Releasepath} = application:get_env(release_path),
+                    add_riak_search_schemas(Releasepath);
+                Error ->
+                    Error
+    end,
+    {reply, Reply, State};
 handle_call({start_release, Relname}, _From, State) ->
     ok = save_status_of_release(Relname, started),
     {reply, int_start_release(Relname), State};
@@ -178,9 +188,16 @@ update_app_config_loop([], _Hostname, _Releasepath) ->
     ok;
 update_app_config_loop([Config | T], Hostname, Releasepath) ->
     case Config of
+        {release, riak=Relname, RelConf} ->
+            NewFileName = "app.config",
+            ok = update_app_config(Releasepath, Relname, RelConf, NewFileName),
+            ok = update_node_name(Releasepath, Hostname, Relname, "vm.args"),
+            % Call ourself again
+            update_app_config_loop(T, Hostname, Releasepath);
         {release, Relname, RelConf} ->
-            ok = update_app_config(Releasepath, Relname, RelConf),
-            ok = update_node_name(Releasepath, Hostname, Relname),
+            NewFileName = "app-override.config",
+            ok = update_app_config(Releasepath, Relname, RelConf, NewFileName),
+            ok = update_node_name(Releasepath, Hostname, Relname, "nodename"),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
         _ ->
@@ -190,31 +207,99 @@ update_app_config_loop([Config | T], Hostname, Releasepath) ->
 %% ------------------------------------------------------------------
 %% @doc
 %% Merges the given configuration with the configuration already present in the
-%% app.config file in a release and writes it to app-override.config.
+%% app.config file in a release and writes it to a file named NewFileName.
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec update_app_config(string(), relname(), relconf()) ->
+-spec update_app_config(string(), relname(), relconf(), string()) ->
     ok | {error, term()}.
-update_app_config(Releasepath, Relname, RelConf) ->
+update_app_config(Releasepath, Relname, RelConf, NewFileName) ->
     Path = filename:join([Releasepath, Relname, "etc"]),
     % Get old app.config, merge with new and write to app-override.config
     {ok, OldConfig} = manage_config:read_config(Path++"/app.config"),
     NewConfig = manage_config:update_config(OldConfig, RelConf),
-    manage_config:write_config(Path++"/app-override.config", NewConfig).
+    manage_config:write_config(filename:join([Path, NewFileName]), NewConfig).
 
 %% ------------------------------------------------------------------
 %% @doc
-%% Updates the nodename file containing the hostname for a given release.
+%% Replaces the -name variable in the given file in etc/ for a given release.
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec update_node_name(string(), hostname(), relname()) ->
+-spec update_node_name(string(), hostname(), relname(), string()) ->
     ok | {error, term()}.
-update_node_name(Releasepath, Hostname, Relname) ->
-    Filename = filename:join([Releasepath, Relname, "etc", "nodename"]),
+update_node_name(Releasepath, Hostname, Relname, Filename) ->
+    Path = filename:join([Releasepath, Relname, "etc", Filename]),
     Namestring = "-name "++atom_to_list(Relname)++"@"++Hostname,
-    file:write_file(Filename, Namestring).
+    case file:read_file(Path) of
+        {ok, Data} ->
+            NewD = re:replace(Data, "-name .*", Namestring, [{return,iodata}]),
+            file:write_file(Path, NewD);
+        Other ->
+            Other
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Adds all search schemas in the RELEASEPATH/backend/riak to the running Riak
+%% instance.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec add_riak_search_schemas(string()) -> ok | {error, term()}.
+add_riak_search_schemas(Releasepath) ->
+    SchemaDir = filename:join([Releasepath, "backend", "riak"]),
+    SchemaFiles = filelib:wildcard("*.schema", SchemaDir),
+    add_riak_search_schemas_loop(SchemaDir, SchemaFiles).
+
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Loops over the given filename list and calls add_riak_search_schema for each
+%% one.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec add_riak_search_schemas_loop(string(), list()) ->
+    ok | {error, term()}.
+add_riak_search_schemas_loop(_SchemaDir, []) ->
+    ok;
+add_riak_search_schemas_loop(SchemaDir, [Filename | T]) ->
+    case add_riak_search_schema(SchemaDir, Filename) of
+        ok ->
+            add_riak_search_schemas_loop(SchemaDir, T);
+        Other ->
+            Other
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Adds one search schema to Riak given the filename of a schema and the schema
+%% directory. The filename of the schema is assumed to be SCHEMA_NAME.schema
+%% where SCHEMA_NAME is used for the install command.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec add_riak_search_schema(string(), string()) ->
+    ok | {error, term()}.
+add_riak_search_schema(SchemaDir, Filename) ->
+    SchemaFile = filename:absname(filename:join([SchemaDir, Filename])),
+    % Remove the .schema extension to get the schema name
+    SchemaName = re:replace(Filename, "\.schema", "", [{return, list}]),
+    SetSchema = ["set-schema ", SchemaName, " ", SchemaFile],
+    case handle_releases:run_riak_search_command(["install ", SchemaName]) of
+        {ok, Text} ->
+            ?DEBUG("Got return from search-cmd: ~p.~n", [Text]),
+            case handle_releases:run_riak_search_command(SetSchema) of
+                {ok, Text2} ->
+                    ?DEBUG("Got return from search-cmd: ~p.~n", [Text2]),
+                    ok;
+                Other ->
+                    Other
+            end;
+        Other ->
+            Other
+    end.
 
 %% ------------------------------------------------------------------
 %% @doc

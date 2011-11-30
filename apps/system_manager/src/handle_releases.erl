@@ -44,7 +44,8 @@
 -export([start_release/1,
          stop_release/1,
          ping_release/1,
-         ping_release_and_wait/2]).
+         ping_release_and_wait/2,
+         run_riak_search_command/1]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -60,7 +61,7 @@
 %%-------------------------------------------------------------------
 -spec start_release(relname()) -> {ok, binary()} | {error, term()}.
 start_release(Relname) ->
-    run_release_script(Relname, "start").
+    run_release_script(Relname, Relname, "start").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -72,7 +73,7 @@ start_release(Relname) ->
 %%-------------------------------------------------------------------
 -spec stop_release(relname()) -> {ok, binary()} | {error, term()}.
 stop_release(Relname) ->
-    run_release_script(Relname, "stop").
+    run_release_script(Relname, Relname, "stop").
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -84,7 +85,7 @@ stop_release(Relname) ->
 %%-------------------------------------------------------------------
 -spec ping_release(relname()) -> up | down | {error, term()}.
 ping_release(Relname) ->
-    case run_release_script(Relname, "ping") of
+    case run_release_script(Relname, Relname, "ping") of
         {ok, _} ->
             up;
         {error, {1, _}} ->
@@ -114,23 +115,64 @@ ping_release_and_wait(Relname, NbrOfTimes) when NbrOfTimes > 1 ->
 ping_release_and_wait(Relname, _NbrOfTimes) ->
     ping_release(Relname).
 
+%%-------------------------------------------------------------------
+%% @doc
+
+%% Runs the Riak search-cmd file with arguments according to Args.
+%%
+%% @end
+%%-------------------------------------------------------------------
+-spec run_riak_search_command(list()) -> {ok, binary()} | {error, term()}.
+run_riak_search_command(Args) ->
+    Res = run_command_with_cmd(riak, "search-cmd", Args),
+    % Yes, it is brittle to regexp on messages from Riaks' search-cmd, but it is
+    % better than nothing.
+    case re:run(Res, "hook on bucket|Updating schema for", []) of
+        {match, _Captured} ->
+            {ok, Res};
+        _Other ->
+            {error, Res}
+    end.
+
+
 %% ------------------------------------------------------------------
 %% Internal Functions
 %% ------------------------------------------------------------------
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Creates a command from the name of a release and the action to perform and
-%% runs that command.
+%% Creates a command from the name of a release, the file to execute, the action
+%% to perform and runs that command. This function uses os:cmd which does not
+%% check the error code and just returnes the STDOUT.
 %%
 %% @end
 %%-------------------------------------------------------------------
-run_release_script(Relname, Action) ->
+-spec run_command_with_cmd(relname(), string(), string()) -> binary().
+run_command_with_cmd(Relname, Binname, Argstring) ->
     {ok, Releasepath} = application:get_env(release_path),
     % It is important to do absname since os:find_executable is of another
     % opinion what a relative path is relative to than the filename lib.
     Filename = filename:absname(
-                 filename:join([Releasepath, Relname, "bin", Relname])),
+                 filename:join([Releasepath, Relname, "bin", Binname])),
+    ?DEBUG("Doing ~p on file ~p~n", [Argstring, Filename]),
+    list_to_binary(os:cmd(Filename++" "++Argstring)).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Creates a command from the name of a release, the file to execute, the action
+%% to perform and runs that command. This function uses cmd() which checks the
+%% return code, but instead behaves like exec() instead of a shell.
+%%
+%% @end
+%%-------------------------------------------------------------------
+-spec run_release_script(relname(), string(), string()) ->
+    {ok, binary()} | {error, term()}.
+run_release_script(Relname, Binname, Action) ->
+    {ok, Releasepath} = application:get_env(release_path),
+    % It is important to do absname since os:find_executable is of another
+    % opinion what a relative path is relative to than the filename lib.
+    Filename = filename:absname(
+                 filename:join([Releasepath, Relname, "bin", Binname])),
     ?DEBUG("Doing ~p on file ~p~n", [Action, Filename]),
     cmd(Filename, [Action]).
 
