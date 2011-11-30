@@ -40,7 +40,7 @@
 -export([
          register/1,
          login/1,
-         system_stats/0
+         system_stats/1
         ]).
 
 -include_lib("datatypes/include/push_receiver.hrl").
@@ -239,8 +239,8 @@ login(Data = {#user{}, #push_receiver{}}) ->
 %%
 %% API for getting system statistics
 %%
-%% @spec system_stats() -> any()
+%% @spec system_stats(OutputType::atom()) -> any() | {ok, string()}
 %% @end
 %%-------------------------------------------------------------------
-system_stats() ->
-    ?CALL_WORKER(system_stats).
+system_stats(OutputType) ->
+    ?CALL_WORKER({system_stats, OutputType}).

@@ -95,8 +95,13 @@ init(no_arg) ->
 
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};
-handle_call(system_stats, _From, State) ->
-    Stats = system_stats:get_system_stats(),
+handle_call({system_stats, OutputType}, _From, State) ->
+    case OutputType of
+        string ->
+            Stats = system_stats:get_system_stats(string);
+        io_format ->
+            Stats = system_stats:get_system_stats(io_format)
+    end,
     {reply, Stats, State};
 %%-------------------------------------------------------------------
 %% @doc

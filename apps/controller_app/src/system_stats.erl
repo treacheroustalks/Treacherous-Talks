@@ -24,7 +24,7 @@
 
 -module(system_stats).
 
--export([get_system_stats/0]).
+-export([get_system_stats/1]).
 -include_lib("utils/include/debug.hrl").
 
 %%---------------------------------------------------------------------
@@ -52,16 +52,20 @@
 %% @doc
 %% Gets some system statistics
 %% @end
-%% @spec get_system_stats() -> {ok, string()}
+%% @spec get_system_stats(OutputType::atom()) -> string | {ok, string()}
 %% @end
 %%-------------------------------------------------------------------
-get_system_stats() ->
+get_system_stats(OutputType) ->
     AppStats = get_all_app_stats(),
     FrontendStats = get_frontend_stats(),
     MachineStats = get_machine_stats(),
-    Stats = lists:flatten(MachineStats ++ FrontendStats ++ AppStats),
-    ?DEBUG("~n~s", [Stats]),
-    {ok, Stats}.
+    AllStats = lists:flatten(MachineStats ++ FrontendStats ++ AppStats),
+    case OutputType of
+        io_format ->
+            io:format("~s", [AllStats]);
+        string ->
+            {ok, AllStats}
+    end.
 
 %% ------------------------------------------------------------------
 %% Machine Statistics - text output
