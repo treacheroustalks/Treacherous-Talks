@@ -37,6 +37,15 @@
 
 start(_StartType, _StartArgs) ->
     ?DEBUG("[~p] starting~n", [?MODULE]),
+    case backends:get_left_neighbour () of
+        undefined ->
+            ?DEBUG ("Didn't find left neighbour. Shouldn't I watch someone?~n");
+        Node ->
+            ?DEBUG ("watching ~p~n", [Node]),
+            ok
+%todo: comment in, once necromancer is merged
+%            necromancer:watch (Node)
+    end,
     ok = session_presence:init(),
     controller_app_sup:start_link().
 
