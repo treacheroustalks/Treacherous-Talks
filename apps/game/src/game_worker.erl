@@ -85,12 +85,12 @@ handle_call({game_msg, Message = #game_message{}, ToCountries}, _From, State) ->
     {reply, Reply, State};
 
 handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
-    Reply = new_game(ID, Game),
-    {ok, NewID} = Reply,
-    {ok, NewGame} = get_game(NewID),
+    Result = new_game(ID, Game),
+    {ok, NewGame} = Result,
+    NewID = NewGame#game.id,
     game_timer_sup:create_timer(NewGame),
     game_timer:event(NewID, start),
-    {reply, Reply, State};
+    {reply, {ok, NewID}, State};
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
     Reply = update_game(ID, Game),
     game_timer:event(ID, {reconfig, Game}),
@@ -157,7 +157,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% ID for the game.
 %% @spec
 %% new_game(ID :: atom() | integer(), Game :: #game{}) ->
-%%     {ok, ID} | Error
+%%     {ok, #game{}} | Error
 %% @end
 %%-------------------------------------------------------------------
 new_game(undefined, #game{} = Game) ->
@@ -166,12 +166,12 @@ new_game(undefined, #game{} = Game) ->
 new_game(ID, #game{} = Game) ->
     BinID = db:int_to_bin(ID),
     % Store Game record as proplist for search
-    GamePropList = data_format:rec_to_plist(Game#game{date_created =
-                                                        erlang:universaltime()}),
+    Game2 = Game#game{date_created = erlang:universaltime()},
+    GamePropList = data_format:rec_to_plist(Game2),
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
     GameObjWithIndex = db_obj:set_indices(DBGameObj,
-                                          game_utils:create_idx_list(Game)),
+                                          game_utils:create_idx_list(Game2)),
     GamePutResult = db:put (GameObjWithIndex),
     case GamePutResult of
         {error, _} = Error ->
@@ -183,7 +183,7 @@ new_game(ID, #game{} = Game) ->
                     Error;
                 _ ->
                     {ok, _Pid} = game_join_proc:start(ID),
-                    {ok, ID}
+                    {ok, Game2}
             end
     end.
 
