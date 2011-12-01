@@ -37,7 +37,31 @@
 
 -define(GAME_COUNT, 1).
 
--record(state, {sessions, orders, node, pids, creator}).
+-record(state, {sessions, orders, node, pids, nicks}).
+
+
+setup(1) ->
+    setup_fun();
+setup(Tries) ->
+    try setup_fun()
+    catch
+        _:_ ->
+            setup(Tries-1)
+    end.
+
+setup_fun() ->
+    Node = basho_bench_config:get(tt_node),
+    load_test:connect(Node, 30),
+
+    Users = load_test:register_user(7),
+    UserData = load_test:login(Users),
+    Nicks = load_test:get_user_nicks(Users),
+    Sessions = load_test:get_user_sessions(UserData),
+    Pids = load_test:get_user_pids(UserData),
+    Orders = load_test:create_orders(),
+    {ok, #state{sessions=Sessions, orders=Orders, node=Node, pids=Pids,
+                nicks = Nicks}}.
+    
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -47,18 +71,7 @@
 %% @end
 %%-------------------------------------------------------------------
 new(_Id) ->
-    Node = basho_bench_config:get(tt_node),
-    load_test:connect(Node, 30),
-
-    Users = load_test:register_user(7),
-    UserData = load_test:login(Users),
-    Sessions = load_test:get_user_sessions(UserData),
-    Pids = load_test:get_user_pids(UserData),
-    Orders = load_test:create_orders(),
-    {Nick, _Password} = hd(Users),
-    {SessionId, Pid} = hd(UserData),
-    {ok, #state{sessions=Sessions, orders=Orders, node=Node, pids=Pids,
-                creator={Nick, SessionId, Pid}}}.
+    setup(10).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -74,9 +87,11 @@ run(test, _KeyGen, _ValueGen, State) ->
     Sessions = State#state.sessions,
     Orders = State#state.orders,
     Node = State#state.node,
-    {Nick, SessionId, Pid} = State#state.creator,
+    Nicks = State#state.nicks,
     Pids = State#state.pids,
-    GameId = load_test:create_game(SessionId),
+    CreatorSess = lists:nth(random:uniform(length(Sessions)), Sessions),
+
+    GameId = load_test:create_game(CreatorSess),
     GameUsers = load_test:join_full_game(Sessions, GameId),
     load_test:start_game(Node, GameId),
 
@@ -85,11 +100,16 @@ run(test, _KeyGen, _ValueGen, State) ->
     PhaseRet = run_phases(Node, Pids, GameId, Orders, Phases, GameUsers),
 
     % Search
-    Games = load_test:search_current(SessionId),
+    Games = load_test:search_current(CreatorSess),
     GamesRet = length(Games),
 
     % Send message
-    load_test:send_msg(SessionId, Nick),
+    Rnd = random:uniform(length(Nicks)),
+    Pid = lists:nth(Rnd, Pids),
+    Nick = lists:nth(Rnd, Nicks),
+    SenderSess = lists:nth(random:uniform(length(Sessions)), Sessions),
+        
+    load_test:send_msg(SenderSess, Nick),
     MsgRet = load_test:user_message_receiver(Pid),
 
     case {PhaseRet, GamesRet, MsgRet} of
