@@ -113,7 +113,7 @@ handle_call({get_game_overview, GameID, UserID}, _From, State) ->
     Reply = get_game_overview(GameID, UserID),
     {reply, Reply, State};
 handle_call({delete_game, Key}, _From, State) ->
-    BinKey = list_to_binary(integer_to_list(Key)),
+    BinKey = db:int_to_bin(Key),
     Reply = db:delete(?B_GAME, BinKey),
     {reply, Reply, State};
 handle_call({get_current_game, ID}, _From, State) ->
@@ -170,7 +170,8 @@ new_game(ID, #game{} = Game) ->
     Game2 = Game#game{date_created = erlang:universaltime()},
     GamePropList = data_format:rec_to_plist(Game2),
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
-    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, #game_player{id=ID}),
+    GamePlayersRec = #game_player{id=ID},
+    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, GamePlayersRec),
     GameObjWithIndex = db_obj:set_indices(DBGameObj,
                                           game_utils:create_idx_list(Game2)),
     GamePutResult = db:put (GameObjWithIndex),
@@ -183,7 +184,7 @@ new_game(ID, #game{} = Game) ->
                 {error, _} = Error ->
                     Error;
                 _ ->
-                    {ok, _Pid} = game_join_proc:start(ID),
+                    {ok, _Pid} = game_join_proc:start(GamePlayersRec),
                     {ok, Game2}
             end
     end.
