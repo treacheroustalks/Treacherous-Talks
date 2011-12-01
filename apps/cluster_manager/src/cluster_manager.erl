@@ -81,15 +81,17 @@ run(Opts) ->
                 false -> ok
             end,
             case proplists:get_bool(start, Opts) of
-                true -> start_releases(StartingOrder);
+                true -> do_action_on_releases(StartingOrder, start_release);
                 false -> ok
             end,
             case proplists:get_bool(stop, Opts) of
-                true -> stop_releases(lists:reverse(StartingOrder));
+                true ->
+                    ShutdownOrder = lists:reverse(StartingOrder),
+                    do_action_on_releases(ShutdownOrder, stop_release);
                 false -> ok
             end,
             case proplists:get_bool(ping, Opts) of
-                true -> ping_releases(StartingOrder);
+                true -> do_action_on_releases(StartingOrder, ping_release);
                 false -> ok
             end
     end.
@@ -97,31 +99,25 @@ run(Opts) ->
 distribute_config([]) -> ok;
 distribute_config([{host, Host, HostConfig}|Rest]) ->
     Node = list_to_atom("system_manager@" ++ Host),
+    % Try to ensure connection but don't care about the return value since
+    % rpc:call will figure that one out anyway...
+    net_adm:ping(Node),
     Res = (catch rpc:call(Node, system_manager, update_config, [{host, Host, HostConfig}])),
     io:format("update_config ~p on ~p was ~p~n", [HostConfig, Node, Res]),
     distribute_config(Rest).
 
-start_releases([]) -> ok;
-start_releases([{Host, Release}|Rest]) ->
+%% Perform an action (start/stop/ping) on all releases in the given list
+-spec do_action_on_releases(list(), atom()) ->
+    ok | {error, term()} | {badrpc, term()}.
+do_action_on_releases([], _Action) -> ok;
+do_action_on_releases([{Host, Release}|Rest], Action) ->
     Node = list_to_atom("system_manager@" ++ Host),
-    Res = (catch rpc:call(Node, system_manager, start_release, [Release])),
-    io:format("start_release ~p on ~p was ~p~n", [Release, Node, Res]),
-    start_releases(Rest).
-
-stop_releases([]) -> ok;
-stop_releases([{Host, Release}|Rest]) ->
-    Node = list_to_atom("system_manager@" ++ Host),
-    Res = (catch rpc:call(Node, system_manager, stop_release, [Release])),
-    io:format("stop_release ~p on ~p was ~p~n", [Release, Node, Res]),
-    stop_releases(Rest).
-
-ping_releases([]) -> ok;
-ping_releases([{Host, Release}|Rest]) ->
-    Node = list_to_atom("system_manager@" ++ Host),
-    Res = (catch rpc:call(Node, system_manager, ping_release, [Release])),
-    io:format("ping_release ~p on ~p was ~p~n", [Release, Node, Res]),
-    ping_releases(Rest).
-
+    % Try to ensure connection but don't care about the return value since
+    % rpc:call will figure that one out anyway...
+    net_adm:ping(Node),
+    Res = (catch rpc:call(Node, system_manager, Action, [Release])),
+    io:format("~p ~p on ~p was ~p~n", [Action, Release, Node, Res]),
+    do_action_on_releases(Rest, Action).
 
 %% Getopt helpers
 usage() ->
