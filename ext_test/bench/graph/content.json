@@ -60,6 +60,10 @@
         {"riak_conf5": "1B 2R 2R"},
         {"riak_conf6": "1B 2R 2R 2R 2R"},
         {"riak_conf7": "1B 2R 2R 3R 3R"},
-        {"riak_conf8": "1B 2R 3R 4R 5R"}
+        {"riak_conf8": "1B 2R 3R 4R 5R"},
+        {"riak_conf9": "1B 2B 3B 1R 2R 3R"},
+        {"riak_conf10": "1B 2B 3B 1R 2R 3R 4R"},
+        {"riak_conf11": "1B 2B 3B 4R 4R 5R 5R 6R 6R"},
+        {"riak_conf12": "1B 2B 3B 1R 2R 3R 4R 5R 6R 7R"}
     ]
 }

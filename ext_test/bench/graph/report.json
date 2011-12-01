@@ -38,5 +38,9 @@
     "riak_conf5": "data/riak_conf5.csv",
     "riak_conf6": "data/riak_conf6.csv",
     "riak_conf7": "data/riak_conf7.csv",
-    "riak_conf8": "data/riak_conf8.csv"
+    "riak_conf8": "data/riak_conf8.csv",
+    "riak_conf9": "data/riak_conf9.csv",
+    "riak_conf10": "data/riak_conf10.csv",
+    "riak_conf11": "data/riak_conf11.csv",
+    "riak_conf12": "data/riak_conf12.csv"
 }
