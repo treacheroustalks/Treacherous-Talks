@@ -35,6 +35,8 @@
 -include_lib("datatypes/include/user.hrl").
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
+-include_lib("datatypes/include/bucket.hrl").
+
 
 -export([create_user/0, create_game/0, get_receiver/0, get_event/0,
         create_operator/0]).
@@ -293,12 +295,20 @@ operator_session_setup() ->
 %%  register operator test
 %%-------------------------------------------------------------------
 register_oprator_tst_() ->
-    [{"test register_oprator",
+    [{"test register_oprator/1 when get user record as input",
       fun() ->
             User = create_user(),
             {ok, Result}= controller:register_operator(User),
             ?assertEqual(operator, Result#user.role)
-    end}].
+    end},
+     {"test register_oprator/2",
+      fun() ->
+            {ok, Result}= controller:register_operator("operatorNick","password"),
+            ok = db:delete(?B_USER, db:int_to_bin(Result#user.id)),
+            ?assertEqual(operator, Result#user.role),
+            ?assertEqual("operatorNick", Result#user.nick)
+    end}
+    ].
 
 %%-------------------------------------------------------------------
 %% Pre-Game tests
