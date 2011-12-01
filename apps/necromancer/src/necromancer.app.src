@@ -1,0 +1,14 @@
+{application, necromancer,
+ [
+  {description, ""},
+  {vsn, "1.0.0"},
+  {registered, [necromancer]},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  utils,
+                  db
+                 ]},
+  {mod, { necromancer_app, []}},
+  {env, []}
+ ]}.

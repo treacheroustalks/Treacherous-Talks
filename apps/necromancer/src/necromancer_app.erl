@@ -21,27 +21,23 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc
-%%% All the bucket names are to be included in this file
-%%% @end
-%%%
-%%% @since : 18 Oct 2011 by Bermuda Triangle
-%%% @end
-%%%
-%%%-------------------------------------------------------------------
+-module(necromancer_app).
+-vsn("1.0.0").
 
--define(B_SESSION, <<"session">>).
--define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_CURRENT, <<"game_current">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
--define(B_SESSION_HISTORY, <<"session_history">>).
--define(B_GAME_STATE, <<"game_state">>).
+-behaviour(application).
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+%% Application callbacks
+-export([start/2, stop/1]).
 
--define(B_GAME_MESSAGE, <<"game_message">>).
--define(B_CORPSES, <<"corpses">>).
+-include_lib("utils/include/debug.hrl").
+
+%% ===================================================================
+%% Application callbacks
+%% ===================================================================
+
+start(_StartType, _StartArgs) ->
+    ?DEBUG("[~p] starting (~p, ~p)~n", [?MODULE, _StartType, _StartArgs]),
+    necromancer_sup:start_link().
+
+stop(_State) ->
+    ok.

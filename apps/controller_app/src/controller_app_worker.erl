@@ -59,10 +59,8 @@
 %% @doc
 %% Starts a new gen_server and links it to its parent
 %% @end
-%% [@spec start_link() -> {ok, #state{}}.
-%% @end]
 %%-------------------------------------------------------------------
--spec start_link() -> {ok, #state{}}.
+-spec start_link() -> {ok, pid ()} | ignore | {error, _}.
 start_link() ->
     gen_server:start_link(?MODULE, no_arg, []).
 
@@ -120,9 +118,7 @@ handle_call({register, User}, _From, State) ->
                  {error, nick_already_exists} ->
                      {error, nick_already_exists};
                  {error, Error} ->
-                     {error, Error};
-                 Other ->
-                     {error, Other}
+                     {error, Error}
              end,
     {reply, Result, State};
 %%-------------------------------------------------------------------

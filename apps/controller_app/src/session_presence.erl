@@ -38,6 +38,7 @@
          init/0,
          add/3,
          remove/1,
+         handle_corpse/1,
          is_online/1,
          get_session_id/1,
          get_all_by_type/1,
@@ -47,14 +48,15 @@
         ]).
 
 -include_lib("utils/include/debug.hrl").
+-include_lib ("datatypes/include/bucket.hrl").
 
 %% ------------------------------------------------------------------
 %% Internal macros and records
 %% ------------------------------------------------------------------
 -define(TABLE, session).
--record(session, {user_id :: integer(),
-                  session_id :: string(),
-                  client_type :: im | mail | web
+-record(session, {user_id :: integer() | '_',
+                  session_id :: string() | '_',
+                  client_type :: im | mail | web | '_'
                  }).
 %% ------------------------------------------------------------------
 %% Interface Function Implementation
@@ -109,6 +111,8 @@ init() ->
 %% @end
 %%-------------------------------------------------------------------
 add(UserId, SessionId, ClientType) ->
+    ?DEBUG ("add"),
+    corpses:save_corpse (?MODULE, UserId, UserId),
     AddFun = fun() ->
                      mnesia:write(#session{user_id = UserId,
                                            session_id = SessionId,
@@ -140,12 +144,20 @@ remove(UserId) ->
              end,
     case mnesia:transaction(DelFun) of
         {atomic, ok} ->
+            db:delete (?B_CORPSES,
+                       list_to_binary (
+                         atom_to_list (?MODULE) ++
+                         io_lib:format ("~p", [UserId]))),
             ok;
         {atomic, not_online} ->
             {error, not_online};
         Error ->
             {error, Error}
     end.
+
+handle_corpse({_Key, UserId}) ->
+    ?DEBUG ("handle_corpse(~p)~n", [UserId]),
+    remove(UserId).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -189,8 +201,8 @@ get_session_id(UserId) ->
 %%-------------------------------------------------------------------
 get_all() ->
     All = mnesia:dirty_match_object(#session{user_id = '_',
-                                       session_id = '_',
-                                       client_type = '_'}),
+                                             session_id = '_',
+                                             client_type = '_'}),
     lists:map(fun(#session{user_id = UserId,
                            session_id = SessionId,
                            client_type = ClientType}) ->

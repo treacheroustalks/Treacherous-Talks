@@ -44,8 +44,8 @@
 %% setup code
 %%-------------------------------------------------------------------
 apps() ->
-    [mnesia, service, datatypes, protobuffs, riakc, db, utils, message,
-     user_management, game, controller_app].
+    [mnesia, service, datatypes, protobuffs, riakc, db, utils, necromancer,
+     message, user_management, game, controller_app].
 
 app_start() ->
     lists:foreach (fun (App) ->

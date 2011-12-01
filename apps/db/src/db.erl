@@ -40,6 +40,7 @@
 %% Public interface
 %% -----------------------------------------------------------------
 -export([empty_bucket/1,
+         empty_db/0,
          ping_riak/0,
          get/2, get/3,
          get_resolve/4, get_resolve/5,
@@ -254,6 +255,16 @@ delete(Bucket, Key, Options) ->
 %%-------------------------------------------------------------------
 empty_bucket(Bucket) ->
     ?CALL_WORKER({empty_bucket, Bucket}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  Deletes all documents in all buckets.
+%% @end
+%%-------------------------------------------------------------------
+-spec empty_db() -> ok | {error, any ()}.
+empty_db() ->
+    {ok, Buckets} = list_buckets(),
+    lists:foreach (fun empty_bucket/1, Buckets).
 
 %%-------------------------------------------------------------------
 %% @doc

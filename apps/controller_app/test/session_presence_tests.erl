@@ -38,10 +38,10 @@
 %% setup code
 %%-------------------------------------------------------------------
 apps() ->
-    [mnesia].
+    [mnesia, protobuffs, riakc, db, datatypes].
 
 app_start() ->
-    [ application:start(App) || App <- apps()],
+    [ ?assertEqual (ok, application:start(App)) || App <- apps()],
     error_logger:tty(false).
 
 app_stop(_) ->

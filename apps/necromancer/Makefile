@@ -26,8 +26,8 @@ test:
 	mkdir doc/coverage
 	cp -r .eunit/*.html doc/coverage
 
-dia: ebin utils.plt test
-	dialyzer -q -I .. --plts ../apps.plt ~/.dialyzer_plt -- ebin
+dia:
+	dialyzer -q -Wno_return -I .. --plts ../apps.plt ~/.dialyzer_plt -- ebin
 
 complete: small_clean deps compile test docs dia
 	@echo ok

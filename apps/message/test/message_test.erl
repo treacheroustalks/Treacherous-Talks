@@ -39,7 +39,8 @@
 
 
 apps () ->
-    [datatypes, service, protobuffs, riakc, db, controller_app, message].
+    [datatypes, service, protobuffs, riakc, db,
+     mnesia, controller_app, message].
 
 app_started_setup () ->
     ?debugMsg ("starting apps:"),
