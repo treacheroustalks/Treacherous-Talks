@@ -47,7 +47,7 @@
 -spec replicate (Table :: atom ()) ->
                         ok | {error, no_reachable_backend}.
 replicate (Table) ->
-    Backend = backends:get_responding_backend (),
+    Backend = backends:get_remote_responding_backend (),
     case Backend of
         undefined ->
             {error, no_reachable_backend};
