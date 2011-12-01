@@ -37,20 +37,35 @@
 
 -export ([get_responding_backend/0,
           get_remote_responding_backend/0,
-          get_left_neighbour/0,
-          get_right_neighbour/0,
-          get_all_backends/0]).
+          get_all_backends/0,
+          watch_neighbour/0,
+          change_state/2]).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%% `necromancer:watch'es the neighbour this node is responsible for.
+%% assumes that `necromancer' is running
+%% @end
+%% -----------------------------------------------------------------------------
+-spec watch_neighbour () -> undefined | node ().
+watch_neighbour () ->
+    case get_left_neighbour () of
+        undefined ->
+            undefined;
+        Node ->
+            necromancer:watch (Node),
+            Node
+    end.
 
 -spec get_left_neighbour () -> node () | undefined.
 get_left_neighbour () ->
     Reverse = lists:reverse (get_all_backends ()),
-    ?DEBUG ("Reverse: ~p~n", [Reverse]),
     get_right_neighbour (node (), Reverse).
 
--spec get_right_neighbour () -> node () | undefined.
-get_right_neighbour () ->
-    Nodes = get_all_backends (),
-    get_right_neighbour (node (), Nodes).
+%-spec get_right_neighbour () -> node () | undefined.
+%get_right_neighbour () ->
+%    Nodes = get_all_backends (),
+%    get_right_neighbour (node (), Nodes).
 
 get_right_neighbour (_, []) ->
     undefined;
@@ -152,6 +167,28 @@ response_loop (Ref, PingProcesses) ->
                 NewPingProcesses -> response_loop (Ref, NewPingProcesses)
             end
     end.
+
+%% @doc
+%% can be called when the backend_nodes value changed.
+%% if the left neighbour is not the same after the change, the watch-connection
+%% will be exchanged to the new one
+%% @end
+-spec change_state (atom (), any ()) -> ok.
+change_state (backend_nodes, NewList) ->
+    OldLeft = get_left_neighbour (),
+    application:set_env (controller_app, backend_nodes, NewList),
+    NewLeft = get_left_neighbour (),
+    if
+        OldLeft =/= NewLeft ->
+            ?DEBUG ("left neighbour changed..~n"),
+            necromancer:unwatch (OldLeft),
+            necromancer:watch (NewLeft);
+        true ->
+            ok
+    end;
+change_state (_OtherKey, _) ->
+    %% don't care..
+    ok.
 
 %% @doc
 %% returns all known backends in the system

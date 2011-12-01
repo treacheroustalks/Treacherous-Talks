@@ -68,8 +68,6 @@
 -spec start_link (GetCorpsesFun) -> {ok, pid ()} when
       GetCorpsesFun :: get_corpses_fun ().
 start_link (GetCorpsesFun) ->
-    ?DEBUG ("necromancer:start_link(~p)~n",
-               [GetCorpsesFun]),
     Pid = spawn_link (fun () ->
                               loop (#state{get_corpses_fun = GetCorpsesFun,
                                            nodes = [node ()]})
