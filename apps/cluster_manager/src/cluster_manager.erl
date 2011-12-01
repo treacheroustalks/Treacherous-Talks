@@ -81,7 +81,9 @@ run(Opts) ->
                 false -> ok
             end,
             case proplists:get_bool(start, Opts) of
-                true -> do_action_on_releases(StartingOrder, start_release);
+                true ->
+                    do_action_on_releases(StartingOrder, start_release),
+                    cluster_utils:notify_backends(Config);
                 false -> ok
             end,
             case proplists:get_bool(stop, Opts) of
@@ -103,6 +105,7 @@ distribute_config([{host, Host, HostConfig}|Rest]) ->
     % rpc:call will figure that one out anyway...
     net_adm:ping(Node),
     Res = (catch rpc:call(Node, system_manager, update_config, [{host, Host, HostConfig}])),
+    io:format ("d_cfg: ~p~n", [{host, Host, HostConfig}]),
     io:format("update_config ~p on ~p was ~p~n", [HostConfig, Node, Res]),
     distribute_config(Rest).
 

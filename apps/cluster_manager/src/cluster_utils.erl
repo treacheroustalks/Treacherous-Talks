@@ -35,7 +35,7 @@
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
--export([generate_startup_order/1, preprocess_clustconf/1]).
+-export([generate_startup_order/1, preprocess_clustconf/1, notify_backends/1]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -69,6 +69,32 @@ preprocess_clustconf(ClustConfig) ->
                                        {BackendNodes, ClustConfig},
                                        ClustConfig),
     ProcessedConfig.
+
+%% @doc
+%%  Contacts all Backends and calls `backends:change_state/2' so that
+%%  the watch-ring stays intact
+%% @end
+notify_backends(ClustConf) ->
+    IsBackend = fun({_, Relname}) ->
+                        Relname =:= backend
+                end,
+    BackendOrders = lists:filter(IsBackend, generate_startup_order (ClustConf)),
+    OrderToNode = fun({Hostname, Relname}) ->
+                             list_to_atom(
+                               atom_to_list(Relname) ++ "@" ++ Hostname)
+                     end,
+    Backends = lists:map (OrderToNode,BackendOrders),
+    InformOfBackends =
+        fun(Backend) ->
+                Res =
+                    (catch
+                         rpc:call(Backend,
+                                  backends,
+                                  change_state,
+                                  [backend_nodes, Backends])),
+                io:format ("informing ~p, result was: ~p~n", [Backend, Res])
+        end,
+    lists:foreach(InformOfBackends, Backends).
 
 %% ------------------------------------------------------------------
 %% Internal Functions
