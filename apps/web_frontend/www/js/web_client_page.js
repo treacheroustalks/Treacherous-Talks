@@ -19,16 +19,11 @@
 function load_page(callback) {
     var page_url = window.document.location + 'page/' + page + '.yaws';
     $("#admin_menu").hide();
-    $("#chat_section").hide();
-    $("#power_msg").hide();
+    $("#power_msg").val('');
     if(page != "home" && page != "register"){
         if(userObj.role == "operator"){
             $("#admin_menu").show();
         }
-        if(userObj.role == "operator" || userObj.role == "moderator"){
-            $("#power_msg").show();
-        }
-        $("#chat_section").show();
     }
     $.get(page_url, function(data) {
         pageDiv.html(data);
@@ -222,6 +217,12 @@ function login_update_elements() {
     $("#login_form").hide();
     $("#logout").show();
     $("#register_menu").hide();
+    $("#user_nick").html("<b>"+userObj.nick+"</b>");
+    drawChatBoxes();
+    if(userObj.role!="user")
+        $("#power_section").show();
+    else
+        $("#power_section").hide();
 }
 
 /**
@@ -232,6 +233,7 @@ function logout_update_elements() {
     $("#logout").hide();
     $("#login_form").show();
     $("#register_menu").show();
+    cleanChatBoxes();
 }
 
 /*------------------------------------------------------------------------------
@@ -265,57 +267,43 @@ function get_game_overview(game_id) {
 }
 
 function send_off_game_message() {
-    var form = get_form_data('#chat_form');
-    if (check_field_empty(form.chat_msg, 'message, cannot send empty message'))
+    var chat_msg = $('#chat_msg').val();
+    var chat_to = $('#chat_to').val();
+    if (check_field_empty(chat_msg, 'message, cannot send empty message'))
         return false;
-    if (check_field_empty(form.chat_to, 'recipient, no recipient specified'))
+    if (check_field_empty(chat_to, 'recipient, no recipient specified'))
         return false;
     var dataObj = {
         "content" : [
             { "session_id" : get_cookie() },
-            { "to" : $('#chat_to').val() },
-            { "content" : $('#chat_msg').val() }
+            { "to" : chat_to },
+            { "content" : chat_msg }
         ]
     };
     call_server('user_msg', dataObj);
 }
 
 function send_in_game_message() {
-    var form = get_form_data('#press_msg_form');
-    if (check_field_empty(form.press_game_id, 'Press Game Id'))
+    var press_game_id = $('#press_game_id').val();
+    var press_msg = $('#press_msg').val();
+    if (check_field_empty(press_game_id, 'Press Game Id'))
         return false;
-    if (check_field_int(form.press_game_id, 'Press Game Id'))
+    if (check_field_int(press_game_id, 'Press Game Id'))
         return false;
-    if (check_field_empty(form.press_msg, 'Cannot send empty message'))
-        return false;
-    var dataObj = {
-        "content" : [
-            { "session_id" : get_cookie() },
-            { "game_id" : $('#press_game_id').val() },
-            { "to" : $('#press_to').val() },
-            { "content" : $('#press_msg').val() }
-        ]
-    };
-    call_server('game_msg', dataObj);
-}
-
-function send_power_message() {
-    var form = get_form_data('#press_msg_form');
-    if (check_field_empty(form.press_game_id, 'Press Game Id'))
-        return false;
-    if (check_field_int(form.press_game_id, 'Press Game Id'))
-        return false;
-    if (check_field_empty(form.press_msg, 'Cannot send empty message'))
+    if (check_field_empty(press_msg, 'Cannot send empty message'))
         return false;
     var dataObj = {
         "content" : [
             { "session_id" : get_cookie() },
-            { "game_id" : $('#press_game_id').val() },
+            { "game_id" : press_game_id },
             { "to" : $('#press_to').val() },
-            { "content" : $('#press_msg').val() }
+            { "content" : press_msg }
         ]
     };
-    call_server('power_msg', dataObj);
+    if($("#power_msg").val()=="enabled")
+        call_server('power_msg', dataObj);
+    else
+        call_server('game_msg', dataObj);
 }
 
 function get_database_status() {
@@ -841,54 +829,6 @@ function set_message(type, message) {
 
     var in_game = false;
     switch (type) {
-    // receive msg success
-    case 'recv_in_game_msg':
-        in_game = true;
-    case 'recv_off_game_msg':
-        var chatArea = in_game ? $('#press_incoming_text') : $('#chat_text');
-        var getKeys = function(obj){
-            var keys = [];
-            for(var key in obj){
-                keys.push(key);
-            }
-            return keys;
-        }
-        print('keys=' + getKeys(chatArea));
-
-        chatArea.val(chatArea.val() + '\n' + message);
-        //I know, I know... but it's the only way I could make this work :-/
-        chatArea.scrollTop(99999);
-        chatArea.slideDown();
-        break;
-    // send msg success
-    case 'send_power_msg':
-        var chatArea = $('#press_incoming_text');
-        var toCountries = $('#press_to').val();
-        chatArea.val(chatArea.val() + '\nPowerUser(You) to ' + $('#press_game_id').val() +
-        '[' + (toCountries ? toCountries : 'all') + ']: ' + $('#press_msg').val());
-        chatArea.scrollTop(99999);
-        chatArea.slideDown();
-        $('#press_msg').val('');
-        break;
-    case 'send_in_game_msg':
-        //in_game = true;
-        var chatArea = $('#press_incoming_text');
-        var toCountries = $('#press_to').val();
-        chatArea.val(chatArea.val() + '\nYou to [' +
-        (toCountries ? toCountries : 'all') + ']: ' + $('#press_msg').val());
-        chatArea.scrollTop(99999);
-        chatArea.slideDown();
-        $('#press_msg').val('');
-        break;
-    case 'send_off_game_msg':
-        var chatArea = $('#chat_text');
-        var receiver = $('#chat_to').val();
-        chatArea.val(chatArea.val() + '\nYou to ' + receiver + ': '
-        + $('#chat_msg').val());
-        chatArea.scrollTop(99999);
-        chatArea.slideDown();
-        $('#chat_msg').val('');
-        break;
     case 'invisible':
         print(message);
         break;

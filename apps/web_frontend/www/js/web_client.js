@@ -212,6 +212,23 @@ function event_action(data) {
     var event_data = data.event_data;
 
     switch (event) {
+    case "in_game_msg_ok":
+        onRecvInGameMsg(event_data.game_id, event_data.from_country, event_data.content);
+        clear_message();
+        break;
+    case "off_game_msg_ok":
+        onRecvOffGameMsg(event_data.from_nick, event_data.content);
+        clear_message();
+        break;
+    case "user_msg_success":
+        onSendMsg(false, "["+userObj.nick+"]");
+        clear_message();
+        break;
+    case "power_msg_success":
+    case "game_msg_success":
+        onSendMsg(true, "["+userObj.nick+"]");
+        clear_message();
+        break;
     case "login_success":
         // User is logged in, set the cookie
         set_cookie(event_data.session_id);

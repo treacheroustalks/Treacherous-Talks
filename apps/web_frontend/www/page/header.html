@@ -9,6 +9,8 @@
     <!-- Le styles -->
     <link href="/css/bootstrap.css" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" media="all" href="css/chat.css" />
+    <link type="text/css" rel="stylesheet" media="all" href="css/chat_screen.css" />
 
     <!-- Le fav and touch icons -->
     <link rel="shortcut icon" href="/image/favicon.ico">
@@ -33,7 +35,7 @@
             <button class="btn" type="submit" onclick="validate_login(); return false;">Sign in</button>
           </form>
           <div id="logout" class="pull-right hide">
-            <a href="javascript:void(0);" onclick="logout();">Logout</a>
+            <a href="javascript:void(0);" onclick="logout();"><font color="#229922"><span id="user_nick"></span></font> Logout</a>
           </div>
         </div>
       </div>

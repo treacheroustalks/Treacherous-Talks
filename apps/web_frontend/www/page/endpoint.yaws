@@ -30,6 +30,7 @@
 
 -include_lib("datatypes/include/push_receiver.hrl").
 -include_lib("datatypes/include/push_event.hrl").
+-include_lib("datatypes/include/message.hrl").
 %%-------------------------------------------------------------------
 %% @doc
 %% Yaws function that gets called when an endpoint is requested.
@@ -141,24 +142,27 @@ msg_invisible (Ret=#ret{}) ->
     Ret#ret{message_type="invisible"}.
 
 get_ret ({user_msg, success}, Ret, _Data) ->
-    msg_ret (Ret, "send_off_game_msg");
-get_ret ({off_game_msg, ok}, Ret, Data) ->
-    get_ret (off_game_msg, Ret, Data);
-get_ret (off_game_msg, Ret = #ret{}, _Data) ->
-    msg_ret (Ret, "recv_off_game_msg");
+    msg_invisible(Ret);
+get_ret ({off_game_msg, ok}, Ret, Msg) ->
+    Proplist = [{"from_nick", Msg#message.from_nick},
+                {"content", Msg#message.content}],
+    EventData = json2:obj_from_list(Proplist),
+    msg_invisible(Ret#ret{event_data = EventData});
 
 get_ret ({game_msg, success}, Ret, _Data) ->
-    msg_ret (Ret, "send_in_game_msg");
+    msg_invisible(Ret);
 get_ret ({game_msg, invalid_data}, Ret, _Data) ->
     msg_error(Ret);
 get_ret ({power_msg, success}, Ret, _Data) ->
-    msg_ret (Ret, "send_power_msg");
+    msg_invisible(Ret);
 get_ret ({power_msg, invalid_data}, Ret, _Data) ->
     msg_error(Ret);
-get_ret ({in_game_msg, ok}, Ret, Data) ->
-    get_ret (in_game_msg, Ret, Data);
-get_ret (in_game_msg, Ret = #ret{}, _Data) ->
-    msg_ret (Ret, "recv_in_game_msg");
+get_ret ({in_game_msg, ok}, Ret, GMsg) ->
+    PropList = [{"from_country", atom_to_list(GMsg#game_message.from_country)},
+               {"content", GMsg#game_message.content},
+               {"game_id", GMsg#game_message.game_id}],
+    EventData = json2:obj_from_list(PropList),
+    msg_invisible(Ret#ret{event_data = EventData});
 
 get_ret({register, success}, Ret=#ret{}, _Data) ->
     msg_success(Ret#ret{page="home"});
