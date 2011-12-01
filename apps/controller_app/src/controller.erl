@@ -124,9 +124,10 @@
 %%                       get_stats_tcp_error,
 %%                       get_stats_start_socket_fail,
 %%                       not_operator]
-%% assign_moderator ->  [user_not_found]
 %% power_msg ->         [game_does_not_exist,
 %%                       game_phase_not_ongoing]
+%% assign_moderator ->     [user_not_found]
+%% get_system_status -> []
 %%
 %% @end
 %%
@@ -149,6 +150,21 @@ handle_action({Command, {ok, Data}}, {CallbackFun, Args})
             CallbackFun(Args, {Command, invalid_data}, Error);
         {ok, Result} ->
             CallbackFun(Args, {Command, success}, Result)
+    end;
+handle_action({Command, {ok, SessionId}}, {CallbackFun, Args})
+  when Command == get_system_status->
+    case session:alive(SessionId) of
+        false ->
+            CallbackFun(Args, {Command, invalid_session}, SessionId);
+        true->
+            {ok, #user{role = Role}} = session:get_session_user(SessionId, user),
+            case tt_acl:has_access(Command, Role) of
+                false ->
+                    CallbackFun(Args, {Command, access_denied}, Role);
+                true ->
+                    {ok, Result} = system_stats(string),
+                    CallbackFun(Args, {Command, success}, Result)
+            end
     end;
 handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
   when Command == update_user;

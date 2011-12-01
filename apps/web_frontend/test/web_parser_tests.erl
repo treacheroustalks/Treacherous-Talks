@@ -57,12 +57,16 @@ parser_test_() ->
       fun games_current/0,
       fun get_db_stats/0,
       fun assign_moderator/0,
-      fun game_search/0,
-      fun power_msg/0
+      fun power_msg/0,
+      fun get_system_status/0,
+      fun game_search/0
      ]}.
 
 get_db_stats() ->
     ?assertEqual(get_db_stats_exp_data(), web_parser:parse(get_db_stats_data())).
+
+get_system_status() ->
+    ?assertEqual(get_system_status_exp_data(), web_parser:parse(get_system_status_data())).
 
 login() ->
     ?assertEqual(login_exp_data(),
@@ -139,6 +143,10 @@ parse_countries_str() ->
 get_db_stats_exp_data() ->
     {get_db_stats,
      {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",[]}}.
+
+get_system_status_exp_data() ->
+    {get_system_status,
+                   {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}}.
 
 game_msg_exp_data() ->
     {game_msg,
@@ -263,6 +271,14 @@ assign_moderator_exp_data() ->
 get_db_stats_data() ->
     {ok,{struct,
      [{"action","get_db_stats"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
+
+get_system_status_data() ->
+    {ok,{struct,
+     [{"action","get_system_status"},
       {"data",
        {array,
            [{struct,[{"session_id",

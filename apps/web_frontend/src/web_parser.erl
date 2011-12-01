@@ -169,7 +169,10 @@ parse(RawData) ->
             {assign_moderator, {ok,
                         get_field ("session_id", Data),
                         {get_field ("nick", Data),
-                         parse_moderator_str(get_field ("is_moderator", Data))}}}
+                         parse_moderator_str(get_field ("is_moderator", Data))}}};
+        "get_system_status" ->
+            {get_system_status, {ok,
+                        get_field ("session_id", Data)}}
     end.
 
 
