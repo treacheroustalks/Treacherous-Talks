@@ -461,6 +461,7 @@ update_rel_status(OldStatuses, StatusChanges) ->
           end,
     lists:foldl(Fun, OldStatuses, StatusChanges).
 
+
 %% ------------------------------------------------------------------
 %% @doc
 %% Returns the path for different release names.

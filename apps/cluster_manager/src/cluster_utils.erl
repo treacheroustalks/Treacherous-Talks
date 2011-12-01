@@ -36,10 +36,36 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 -export([generate_startup_order/1, preprocess_clustconf/1, notify_backends/1]).
+-export([distribute_config/1, do_action_on_releases/2]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
+
+distribute_config([]) -> [];
+distribute_config([{host, Host, SysMgr, HostConfig}|Rest]) ->
+    Node = list_to_atom(SysMgr ++ "@" ++ Host),
+    % Try to ensure connection but don't care about the return value since
+    % rpc:call will figure that one out anyway...
+    net_adm:ping(Node),
+    Res = (catch rpc:call(Node, system_manager, update_config, [{host, Host, HostConfig}])),
+    print_release_action_result({update_config, Host, Res}),
+    [{update_config, Host, Res} | distribute_config(Rest)].
+
+
+%% Perform an action (start/stop/ping/halt) on all releases in the given list
+-spec do_action_on_releases(list(), atom()) ->
+    ok | {error, term()} | {badrpc, term()}.
+do_action_on_releases([], _Action) -> [];
+do_action_on_releases([{Host, SysMgr, Release}|Rest], Action) ->
+    Node = list_to_atom(SysMgr ++ "@" ++ Host),
+    % Try to ensure connection but don't care about the return value since
+    % rpc:call will figure that one out anyway...
+    net_adm:ping(Node),
+    Res = (catch rpc:call(Node, system_manager, Action, [Release])),
+    print_release_action_result({Action, Release, Host, Res}),
+    [{Action, Release, Host, Res} | do_action_on_releases(Rest, Action)].
+
 
 %% @doc
 %%  Generate a startup order from a given clustconf()
@@ -96,9 +122,16 @@ notify_backends(ClustConf) ->
         end,
     lists:foreach(InformOfBackends, Backends).
 
+
 %% ------------------------------------------------------------------
 %% Internal Functions
 %% ------------------------------------------------------------------
+
+print_release_action_result({Action, Release, Host, Res}) ->
+    io:format("~p ~p on ~p was ~p~n", [Action, Release, Host, Res]);
+print_release_action_result({Action, Host, Res}) ->
+    io:format("~p on ~p was ~p~n", [Action, Host, Res]).
+
 
 % Riak comes before anything.
 startup_sort({_, _,riak}, _Anything) ->

@@ -33,12 +33,13 @@
 
 -include_lib("datatypes/include/clusterconf.hrl").
 
+%% for escript
 -export([main/1]).
 
-% Define default configuration filename
+%% Define default configuration filename
 -define(DEFAULT_CONFIG_FILE, "tt.config").
 
-% Define options list for getopt to use
+%% Define options list for getopt to use
 option_spec_list() ->
     [
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
@@ -69,21 +70,25 @@ run(Opts) ->
     end,
     % Get config file
     case file:consult(ConfigFile) of
-        {error, enoent} ->
+        {error, Reason} ->
+            ErrorString = file:format_error(Reason),
+            io:format(standard_error, "~n~s: ~s~n~n", [ErrorString, ConfigFile]),
             usage();
         {ok, [Config]} ->
-            % http://erlang.2086793.n4.nabble.com/Making-rpc-calls-from-escript-tp2108031p2108033.html
-            net_kernel:start([foobar, longnames]),
+            %% net_kernel needed for distributed erlang.
+            net_kernel:start([cluster_manager, longnames]),
             erlang:set_cookie(node(), 'treacherous_talks'),
             StartingOrder = cluster_utils:generate_startup_order(Config),
             ProcessedConfig = cluster_utils:preprocess_clustconf(Config),
+
             case proplists:get_bool(setconfig, Opts) of
-                true -> distribute_config(ProcessedConfig);
+                true -> cluster_utils:distribute_config(ProcessedConfig);
                 false -> ok
             end,
             case proplists:get_bool(start, Opts) of
                 true ->
-                    do_action_on_releases(StartingOrder, start_release),
+                    cluster_utils:do_action_on_releases(StartingOrder,
+                                                        start_release),
                     cluster_utils:notify_backends(Config);
                 false -> ok
             end,
@@ -98,38 +103,17 @@ run(Opts) ->
             case proplists:get_bool(stop, Opts) of
                 true ->
                     ShutdownOrder = lists:reverse(StartingOrder),
-                    do_action_on_releases(ShutdownOrder, stop_release);
+                    cluster_utils:do_action_on_releases(ShutdownOrder,
+                                                        stop_release);
                 false -> ok
             end,
             case proplists:get_bool(ping, Opts) of
-                true -> do_action_on_releases(StartingOrder, ping_release);
+                true -> cluster_utils:do_action_on_releases(StartingOrder,
+                                                            ping_release);
                 false -> ok
             end
     end.
 
-distribute_config([]) -> ok;
-distribute_config([{host, Host, SysMgr, HostConfig}|Rest]) ->
-    Node = list_to_atom(SysMgr ++ "@" ++ Host),
-    % Try to ensure connection but don't care about the return value since
-    % rpc:call will figure that one out anyway...
-    net_adm:ping(Node),
-    Res = (catch rpc:call(Node, system_manager, update_config, [{host, Host, HostConfig}])),
-    io:format ("d_cfg: ~p~n", [{host, Host, HostConfig}]),
-    io:format("update_config ~p on ~p was ~p~n", [HostConfig, Node, Res]),
-    distribute_config(Rest).
-
-%% Perform an action (start/stop/ping) on all releases in the given list
--spec do_action_on_releases(list(), atom()) ->
-    ok | {error, term()} | {badrpc, term()}.
-do_action_on_releases([], _Action) -> ok;
-do_action_on_releases([{Host, SysMgr, Release}|Rest], Action) ->
-    Node = list_to_atom(SysMgr ++ "@" ++ Host),
-    % Try to ensure connection but don't care about the return value since
-    % rpc:call will figure that one out anyway...
-    net_adm:ping(Node),
-    Res = (catch rpc:call(Node, system_manager, Action, [Release])),
-    io:format("~p ~p on ~p was ~p~n", [Action, Release, Node, Res]),
-    do_action_on_releases(Rest, Action).
 
 %% Join all defined riak nodes
 -spec join_riak_nodes(list()) ->
@@ -141,7 +125,7 @@ join_riak_nodes([{Host, _SysMgr}| RiakList]) ->
     % Make a list that we can feed into do_action_on_releases (yes, we're
     % abusing it a bit, but it is better than duplicating code).
     ReleaseList = [ {Node, SysMgr, JoinNode} || {Node, SysMgr} <- RiakList],
-    do_action_on_releases(ReleaseList, join_riak).
+    cluster_utils:do_action_on_releases(ReleaseList, join_riak).
 
 
 %% Getopt helpers
