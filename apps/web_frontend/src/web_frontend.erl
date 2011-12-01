@@ -21,30 +21,33 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%% -*- mode: nitrogen -*-
--module(web_frontend_sup).
--behaviour(supervisor).
--export([
-    start_link/0,
-    init/1
-]).
+-module(web_frontend).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start, []}, permanent, 5000, Type, [I]}).
+-export([start/0, run/0]).
 
-%% ===================================================================
-%% API functions
-%% ===================================================================
+start() ->
+    {ok, spawn(?MODULE, run, [])}.
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-%% ===================================================================
-%% Supervisor callbacks
-%% ===================================================================
-
-init([]) ->
-    {ok, { {one_for_one, 5, 10}, 
-           [
-            ?CHILD(web_frontend, worker)
-           ]} }.
+%% Start an embedded Yaws server under our own supervisor. This is done so that
+%% we can set configuration options directly within Erlang instead of relying on
+%% a yaws.conf file.
+run() ->
+    {ok, Port} = application:get_env(port),
+    {ok, ListenList} = application:get_env(listen),
+    % Convert address list to tuples so that they can be concatenated with the
+    % server config list
+    TupleAddr = lists:map(fun inet_parse:address/1, ListenList),
+    Listen = [ {listen, Address} || {ok, Address} <- TupleAddr ],
+    Id = "embedded",
+    Docroot = "./www",
+    GconfList = [{id, Id},
+                 {logdir, "./log"}],
+    SconfList = Listen++[{port, Port},
+                 {servername, "treacheroustalks"},
+                 {docroot, Docroot},
+                 {appmods, [{"/", web_controller, [["js"], ["css"], ["image"], ["page"], ["favicon.ico"]]}]}],
+    {ok, SCList, GC, ChildSpecs} =
+        yaws_api:embedded_start_conf(Docroot, SconfList, GconfList, Id),
+    [supervisor:start_child(web_frontend_sup, Ch) || Ch <- ChildSpecs],
+    yaws_api:setconf(GC, SCList),
+    {ok, self()}.
