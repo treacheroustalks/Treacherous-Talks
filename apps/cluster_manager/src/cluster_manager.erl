@@ -44,6 +44,7 @@ option_spec_list() ->
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
      {help, $h, "help", undefined, "Show the program options"},
      {setconfig, $c, "setconfig", undefined, "Sets all configurations defined in config file"},
+     {ping, $p, "ping", undefined, "Pings all releases defined in config file"},
      {start, $s, "start", undefined, "Starts all releases defined in config file"},
      {stop, $t, "stop", undefined, "Stops all releases defined in config file"},
      {configfile, undefined, undefined, string, "Configuration file (defaults to tt.config if none given)"}
@@ -86,6 +87,10 @@ run(Opts) ->
             case proplists:get_bool(stop, Opts) of
                 true -> stop_releases(lists:reverse(StartingOrder));
                 false -> ok
+            end,
+            case proplists:get_bool(ping, Opts) of
+                true -> ping_releases(StartingOrder);
+                false -> ok
             end
     end.
 
@@ -109,6 +114,13 @@ stop_releases([{Host, Release}|Rest]) ->
     Res = (catch rpc:call(Node, system_manager, stop_release, [Release])),
     io:format("stop_release ~p on ~p was ~p~n", [Release, Node, Res]),
     stop_releases(Rest).
+
+ping_releases([]) -> ok;
+ping_releases([{Host, Release}|Rest]) ->
+    Node = list_to_atom("system_manager@" ++ Host),
+    Res = (catch rpc:call(Node, system_manager, ping_release, [Release])),
+    io:format("ping_release ~p on ~p was ~p~n", [Release, Node, Res]),
+    ping_releases(Rest).
 
 
 %% Getopt helpers
