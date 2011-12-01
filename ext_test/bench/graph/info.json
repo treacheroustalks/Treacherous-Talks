@@ -1,0 +1,970 @@
+{
+    "game_message-all-100": {
+        "location": "data/game_message-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Game message all 100",
+                "info": "Game message information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Game message all 100",
+                "info": "Game message information"
+            }
+        ]
+    },
+    "message_online-all-100": {
+        "location": "data/message_online-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Message Online all 100",
+                "info": "Message online information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Message Online all 100",
+                "info": "Message online information"
+            }
+        ]
+    },
+    "message_offline-all-100": {
+        "location": "data/message_offline-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Message Offline all 100",
+                "info": "Message offline information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Message Offline all 100",
+                "info": "Message offline information"
+            }
+        ]
+    },
+    "game_play-all-100": {
+        "location": "data/game_play-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Game play all 100",
+                "info": "Game play information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Game play all 100",
+                "info": "Game play information"
+            }
+        ]
+    },
+    "search-all-100": {
+        "location": "data/search-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Search all 100",
+                "info": "Search information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Search all 100",
+                "info": "Search information"
+            }
+        ]
+    },
+    "user-all-100": {
+        "location": "data/user-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "User all 100",
+                "info": "User flow information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 5,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "User all 100",
+                "info": "User flow information"
+            }
+        ]
+    },
+    "general-message-10": {
+        "location": "data/general-message-10",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 10",
+                "info": "General message 10 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 10",
+                "info": "General message 10 information"
+            }
+        ]
+    },
+    "general-message-50": {
+        "location": "data/general-message-50",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 50",
+                "info": "General message 50 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 50",
+                "info": "General message 50 information"
+            }
+        ]
+    },
+    "general-message-100": {
+        "location": "data/general-message-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 100",
+                "info": "General message 100 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 100",
+                "info": "General message 100 information"
+            }
+        ]
+    },
+    "general-message-200": {
+        "location": "data/general-message-200",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 200",
+                "info": "General message 200 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 200",
+                "info": "General message 200 information"
+            }
+        ]
+    },
+    "general-message-500": {
+        "location": "data/general-message-500",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 500",
+                "info": "General message 500 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General message 500",
+                "info": "General message 500 information"
+            }
+        ]
+    },
+    "general-controller-10": {
+        "location": "data/general-controller-10",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 10",
+                "info": "General controller 10 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 10",
+                "info": "General controller 10 information"
+            }
+        ]
+    },
+    "general-controller-50": {
+        "location": "data/general-controller-50",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 50",
+                "info": "General controller 50 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 50",
+                "info": "General controller 50 information"
+            }
+        ]
+    },
+    "general-controller-100": {
+        "location": "data/general-controller-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 100",
+                "info": "General controller 100 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 100",
+                "info": "General controller 100 information"
+            }
+        ]
+    },
+    "general-controller-200": {
+        "location": "data/general-controller-200",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 200",
+                "info": "General controller 200 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 200",
+                "info": "General controller 200 information"
+            }
+        ]
+    },
+    "general-controller-500": {
+        "location": "data/general-controller-500",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 500",
+                "info": "General controller 500 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General controller 500",
+                "info": "General controller 500 information"
+            }
+        ]
+    },
+    "general-db-10": {
+        "location": "data/general-db-10",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 10",
+                "info": "General DB 10 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 10",
+                "info": "General DB 10 information"
+            }
+        ]
+    },
+    "general-db-50": {
+        "location": "data/general-db-50",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 50",
+                "info": "General DB 50 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 50",
+                "info": "General DB 50 information"
+            }
+        ]
+    },
+    "general-db-100": {
+        "location": "data/general-db-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 100",
+                "info": "General DB 100 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 100",
+                "info": "General DB 100 information"
+            }
+        ]
+    },
+    "general-db-200": {
+        "location": "data/general-db-200",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 200",
+                "info": "General DB 200 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 200",
+                "info": "General DB 200 information"
+            }
+        ]
+    },
+    "general-db-500": {
+        "location": "data/general-db-500",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 500",
+                "info": "General DB 500 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General DB 500",
+                "info": "General DB 500 information"
+            }
+        ]
+    },
+    "general-game-10": {
+        "location": "data/general-game-10",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 10",
+                "info": "General game 10 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 10",
+                "info": "General game 10 information"
+            }
+        ]
+    },
+    "general-game-50": {
+        "location": "data/general-game-50",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 50",
+                "info": "General game 50 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 50",
+                "info": "General game 50 information"
+            }
+        ]
+    },
+    "general-game-100": {
+        "location": "data/general-game-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 100",
+                "info": "General game 100 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 100",
+                "info": "General game 100 information"
+            }
+        ]
+    },
+    "general-game-200": {
+        "location": "data/general-game-200",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 200",
+                "info": "General game 200 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 200",
+                "info": "General game 200 information"
+            }
+        ]
+    },
+    "general-game-500": {
+        "location": "data/general-game-500",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 500",
+                "info": "General game 500 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General game 500",
+                "info": "General game 500 information"
+            }
+        ]
+    },
+    "general-all-10": {
+        "location": "data/general-all-10",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 10",
+                "info": "General all 10 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 10",
+                "info": "General all 10 information"
+            }
+        ]
+    },
+    "general-all-50": {
+        "location": "data/general-all-50",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 50",
+                "info": "General all 50 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 50",
+                "info": "General all 50 information"
+            }
+        ]
+    },
+    "general-all-100": {
+        "location": "data/general-all-100",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 100",
+                "info": "General all 100 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 100",
+                "info": "General all 100 information"
+            }
+        ]
+    },
+    "general-all-200": {
+        "location": "data/general-all-200",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 200",
+                "info": "General all 200 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 200",
+                "info": "General all 200 information"
+            }
+        ]
+    },
+    "general-all-500": {
+        "location": "data/general-all-500",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 500",
+                "info": "General all 500 information"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "General all 500",
+                "info": "General all 500 information"
+            }
+        ]
+    },
+    "riak-conf1": {
+        "location": "data/pcs_1-be_1-riak_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R",
+                "info": "1 Backend on M1 1 Riak on M1"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R",
+                "info": "1 Backend on M1 1 Riak on M1"
+            }
+        ]
+    },
+    "riak-conf2": {
+        "location": "data/pcs_1-be_1-riak_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R 1R",
+                "info": "1 Backend on M1 2 Riak on M1"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R 1R",
+                "info": "1 Backend on M1 2 Riak on M1"
+            }
+        ]
+    },
+    "riak-conf3": {
+        "location": "data/pcs_1-be_1-riak_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R 1R 1R 1R",
+                "info": "1 Backend on M1 4 Riak on M1"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R 1R 1R 1R",
+                "info": "1 Backend on M1 4 Riak on M1"
+            }
+        ]
+    },
+    "riak-conf4": {
+        "location": "data/pcs_2-be_1-riak_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R",
+                "info": "1 Backend on M1 1 Riak on M2"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R",
+                "info": "1 Backend on M1 1 Riak on M2"
+            }
+        ]
+    },
+    "riak-conf5": {
+        "location": "data/pcs_2-be_1-riak_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 2R",
+                "info": "1 Backend on M1 2 Riak on M2"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 2R",
+                "info": "1 Backend on M1 2 Riak on M2"
+            }
+        ]
+    },
+    "riak-conf6": {
+        "location": "data/pcs_2-be_1-riak_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 2R 2R 2R",
+                "info": "1 Backend on M1 4 Riak on M2"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 2R 2R 2R",
+                "info": "1 Backend on M1 4 Riak on M2"
+            }
+        ]
+    },
+    "riak-conf7": {
+        "location": "data/pcs_3-be_1-riak_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 2R 3R 3R",
+                "info": "1 Backend on M1 2 Riak on M2 2 Riak on M3"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 2R 3R 3R",
+                "info": "1 Backend on M1 2 Riak on M2 2 Riak on M3"
+            }
+        ]
+    },
+    "riak-conf8": {
+        "location": "data/pcs_5-b3_1-riak_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 3R 4R 5R",
+                "info": "1 Backend on M1 1 Riak on M2 1 Riak on M3 1 Riak on M4 1 Riak on M5"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2R 3R 4R 5R",
+                "info": "1 Backend on M1 1 Riak on M2 1 Riak on M3 1 Riak on M4 1 Riak on M5"
+            }
+        ]
+    },
+    "riak-conf9": {
+        "location": "data/pcs_3-be_3-riak_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 1R 2R 3R",
+                "info": "3 Backend on M1,M2,M3 3 Riak on M1,M2,M3"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 1R 2R 3R",
+                "info": "3 Backend on M1,M2,M3 3 Riak on M1,M2,M3"
+            }
+        ]
+    },
+    "riak-conf10": {
+        "location": "data/pcs_7-be_3-riak_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 4R 5R 6R 7R",
+                "info": "3 Backend on M1,M2,M3 4 Riak on M4,M5,M6.M7"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 4R 5R 6R 7R",
+                "info": "3 Backend on M1,M2,M3 4 Riak on M4,M5,M6.M7"
+            }
+        ]
+    },
+    "riak-conf11": {
+        "location": "data/pcs_6-be_3-riak_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 4R 4R 5R 5R 6R 6R",
+                "info": "3 Backend on M1,M2,M3 6 Riak on M4,M5,M6"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 4R 4R 5R 5R 6R 6R",
+                "info": "3 Backend on M1,M2,M3 6 Riak on M4,M5,M6"
+            }
+        ]
+    },
+    "riak-conf12": {
+        "location": "data/pcs_7-be_3-riak_7",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 1R 2R 3R 4R 5R 6R 7R",
+                "info": "3 Backend on M1,M2,M3 7 Riak on M1,M2,M3,M4,M5,M6,M7"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 2B 3B 1R 2R 3R 4R 5R 6R 7R",
+                "info": "3 Backend on M1,M2,M3 7 Riak on M1,M2,M3,M4,M5,M6,M7"
+            }
+        ]
+    },
+    "riak-conf1-mem": {
+        "location": "data/riak-conf1-mem",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R Less mem",
+                "info": "1 Backend on M1 1 Riak on M1 : Custom less memory version"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Riak 1B 1R Less mem",
+                "info": "1 Backend on M1 1 Riak on M1 : Custom less memory version"
+            }
+        ]
+    }
+}
