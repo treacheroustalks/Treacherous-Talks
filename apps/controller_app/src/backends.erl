@@ -160,7 +160,7 @@ response_loop (Ref, PingProcesses) ->
 get_all_backends () ->
     case application:get_env (controller_app, backend_nodes) of
         {ok, Backends} ->
-            Backends;
+            lists:sort (Backends);
         _ ->
             []
     end.
