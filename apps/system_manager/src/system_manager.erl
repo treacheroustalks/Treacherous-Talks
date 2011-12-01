@@ -189,14 +189,12 @@ update_app_config_loop([], _Hostname, _Releasepath) ->
 update_app_config_loop([Config | T], Hostname, Releasepath) ->
     case Config of
         {release, riak=Relname, RelConf} ->
-            NewFileName = "app.config",
-            ok = update_app_config(Releasepath, Relname, RelConf, NewFileName),
+            ok = update_app_config(Releasepath, Relname, RelConf),
             ok = update_node_name(Releasepath, Hostname, Relname, "vm.args"),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
         {release, Relname, RelConf} ->
-            NewFileName = "app-override.config",
-            ok = update_app_config(Releasepath, Relname, RelConf, NewFileName),
+            ok = update_app_config(Releasepath, Relname, RelConf),
             ok = update_node_name(Releasepath, Hostname, Relname, "nodename"),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
@@ -207,18 +205,29 @@ update_app_config_loop([Config | T], Hostname, Releasepath) ->
 %% ------------------------------------------------------------------
 %% @doc
 %% Merges the given configuration with the configuration already present in the
-%% app.config file in a release and writes it to a file named NewFileName.
+%% app.config.old file in a release and writes it to app.config.
+%%
+%% If the app.config.old file is not present (like on first run), copy
+%% app.config to app.config.old.
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec update_app_config(string(), relname(), relconf(), string()) ->
+-spec update_app_config(string(), relname(), relconf()) ->
     ok | {error, term()}.
-update_app_config(Releasepath, Relname, RelConf, NewFileName) ->
+update_app_config(Releasepath, Relname, RelConf) ->
     Path = filename:join([Releasepath, Relname, "etc"]),
-    % Get old app.config, merge with new and write to app-override.config
-    {ok, OldConfig} = manage_config:read_config(Path++"/app.config"),
+    AppFile = filename:join([Path, "app.config"]),
+    OldAppFile = filename:join([Path, "app.config.old"]),
+    % If there is a "old" app.config file, use that, otherwise copy the regular
+    % app.config to .old to preserve the default options.
+    case filelib:is_regular(OldAppFile) of
+        true -> ok;
+        false -> {ok, _Bytes} = file:copy(AppFile, OldAppFile)
+    end,
+    % Get old app.config, merge with new and write to app.config
+    {ok, OldConfig} = manage_config:read_config(OldAppFile),
     NewConfig = manage_config:update_config(OldConfig, RelConf),
-    manage_config:write_config(filename:join([Path, NewFileName]), NewConfig).
+    manage_config:write_config(AppFile, NewConfig).
 
 %% ------------------------------------------------------------------
 %% @doc
