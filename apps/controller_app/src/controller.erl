@@ -33,7 +33,8 @@
 -module(controller).
 
 %% Public API
--export([handle_action/2, push_event/2, register_operator/1]).
+-export([handle_action/2, push_event/2,
+         register_operator/1, register_operator/2]).
 
 
 %% Internal functions, exported for eUnit, do not use!
@@ -243,6 +244,26 @@ register(User) ->
 register_operator(User=#user{}) ->
     ?CALL_WORKER({register, User#user{role = operator}}).
 
+%%-------------------------------------------------------------------
+%%  @doc
+%%    this function is used to register an operator to make register_operator
+%%    easer in backend. It only gets nick and password and fill the other value
+%%    and register an operator.
+%%  @end
+%%-------------------------------------------------------------------
+-spec register_operator(string(), string()) ->
+          {ok, #user{}} |
+          {error, nick_already_exists} |
+          {{error, any()}}.
+register_operator(Nick, Password) ->
+    User= #user{nick = Nick,
+                email = "oprator@tt.com",
+                password = Password,
+                name = "Operator of the system",
+                channel = web,
+                last_login = never,
+                last_ip = {127, 0, 0, 0}},
+    register_operator(User).
 
 %%-------------------------------------------------------------------
 %% @deprecated only for eunit
