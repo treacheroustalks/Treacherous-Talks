@@ -19,9 +19,9 @@ function copy-backend {
     scp -r $from_dir $remote:$to_dir/ > /dev/null 
     ssh -t $remote "
  sed -i \"s:-name.*:-name $B_NAME@$2:g\" $to_dir/etc/nodename &&
- sed -i \"s:{riak_ip.*}:{riak_ip, \\\"$IP\\\"}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{riak_protobuf_port.*}:{riak_protobuf_port, $riak_port}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{riak_database_port.*}:{riak_database_port, $riak_http}:g\" $to_dir/etc/app.config &&
+ sed -i \"s:{.*riak_ip.*}:{riak_ip, \\\"$IP\\\"}:g\" $to_dir/etc/app.config &&
+ sed -i \"s:{.*riak_protobuf_port.*}:{riak_protobuf_port, $riak_port}:g\" $to_dir/etc/app.config &&
+ sed -i \"s:{.*riak_database_port.*}:{riak_database_port, $riak_http}:g\" $to_dir/etc/app.config &&
  echo \"Changing backend config\" &&
  $cmd
  echo \"Starting backend\" &&
@@ -73,7 +73,7 @@ function copy-mult-riak {
             ssh $1@$2 "$node_dir/bin/riak-admin join $8"
         fi
     done
-    sleep 10
+    sleep 5
     ssh $1@$2 "$4$7/bin/riak-admin member_status"
 }
 

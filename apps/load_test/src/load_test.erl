@@ -50,12 +50,13 @@
          game_message_receiver/1, game_multiple_message_receiver/1,
          user_message_receiver/1,
          get_user_pids/1, get_user_sessions/1,
+         get_user_nicks/1,
          get_phase_years/1,
          connect/2
         ]).
 
 % Number of times we poll message inbox
--define(MESSAGE_COUNT, 100).
+-define(MESSAGE_COUNT, 200).
 % Time we wait before we poll the message inbox (in milliseconds)
 -define(MESSAGE_SLEEP, 10).
 
@@ -342,6 +343,14 @@ game_multiple_message_receiver([Pid|Pids]) ->
           {ok, success} | {error, Error::string()}.
 user_message_receiver(Pid) ->
     message_receiver({0, Pid, user}).
+
+%% ------------------------------------------------------------------
+%% Get only session ids for users from data returned from register_user
+%% ------------------------------------------------------------------
+-spec get_user_nicks(Users::[{Nick::string(), Pw::string()}]) ->
+          [Nicks::string()].
+get_user_nicks(Users) ->
+    [Nick ||{Nick, _Pw} <- Users].
 
 %% ------------------------------------------------------------------
 %% Get only session ids for users from data returned from register_user
