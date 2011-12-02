@@ -52,7 +52,7 @@ read_nth(Username, N) ->
     {ok, Sock} = connect("mail.pcs"),
     login(Sock, Username, "password"),
     select(Sock),
-    case read_one(Sock, N, 5) of
+    case read_one(Sock, N, 9) of
         {ok, FirstMail} ->
             Return = {ok, FirstMail};
         Error ->
