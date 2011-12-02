@@ -61,6 +61,7 @@
                 ?REQUIRED (waiting_time) :: pos_integer (),
                 date_created = {date (), time ()} :: date (),
                 date_completed = undefined :: undefined | date (),
+                start_time = undefined :: undefined | {pos_integer(), pos_integer(), pos_integer()},
                 last_session :: string()
                }).
 

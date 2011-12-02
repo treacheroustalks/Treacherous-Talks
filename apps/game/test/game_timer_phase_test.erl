@@ -122,8 +122,10 @@ game_timer_state_tst_ () ->
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
              game_timer:sync_event(Game#game.id, timeout),
              ?assertEqual(order_phase, game_timer:current_state(Game#game.id)),
-             ?assertEqual(UpdatedGame#game{status = ongoing},
-                          game_timer:get_game_state(Game#game.id)),
+             Result = game_timer:get_game_state(Game#game.id),
+             Expected = UpdatedGame#game{status = ongoing,
+                                         start_time = Result#game.start_time},
+             ?assertEqual(Expected, Result),
              ?debugMsg("game timer reconfig test end")
      end].
 
@@ -199,8 +201,10 @@ game_timer_end_tst_() ->
              ?assert(is_process_alive(TimerPid)),
              ?assertEqual(game_timer:sync_event(ID, timeout), {ok, order_phase}),
              ?assertEqual({ID, finished}, game_timer:stop(ID, finished)),
-
-             ?assertEqual({ok, Game#game{status = finished}}, game:get_game(ID)),
+             {ok, Result} = game:get_game(ID),
+             Expected = Game#game{status = finished,
+                                      start_time = Result#game.start_time},
+             ?assertEqual(Expected, Result),
              %% check that the game timer does not exist
              ?assertNot(is_process_alive(TimerPid)),
              ?assertEqual(undefined, global:whereis_name({game_timer, ID}))

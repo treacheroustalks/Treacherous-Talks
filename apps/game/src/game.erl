@@ -24,6 +24,7 @@
 -module (game).
 
 -export ([new_game/1,
+          restart_game/1,
           get_game/1,
           get_keys_by_idx/2,
           delete_game/1,
@@ -66,6 +67,17 @@
 %% -----------------------------------------------------------------------------
 new_game(Game=#game{}) ->
     ?CALL_WORKER({new_game, Game}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  restarts a game timer
+%% @spec
+%% restart_game(Game :: #game{}) ->
+%%     {ok, ID :: integer} | Error
+%% @end
+%% -----------------------------------------------------------------------------
+restart_game(Game=#game{}) ->
+    ?CALL_WORKER({restart_game, Game}).
 
 %% -----------------------------------------------------------------------------
 %% @doc
