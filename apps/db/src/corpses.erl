@@ -53,6 +53,9 @@ save_corpse (Module, Data) ->
 
 % @doc
 % saves one corpse to the database with the key "`Module++Ref'"
+% `handle_corpse' will be called with `{Key, Data}' where `Key'
+% is the database-key and `Data' is your Data.
+% `Ref' has to be uniqe within the handler-module.
 % @end
 -spec save_corpse (module (), Ref :: any (), Data :: any ()) -> ok.
 save_corpse (Module, Ref, Data) ->

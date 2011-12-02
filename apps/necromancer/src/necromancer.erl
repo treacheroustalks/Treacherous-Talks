@@ -49,7 +49,8 @@
 
 -export ([start_link/1,
           watch/1,
-          unwatch/1]).
+          unwatch/1,
+          get_watched/0]).
 
 -type corpse () :: {node (), module (), Data :: any ()}.
 -type get_corpses_fun () :: fun ((Node :: node ()) -> [corpse ()] | []).
@@ -70,7 +71,7 @@
 start_link (GetCorpsesFun) ->
     Pid = spawn_link (fun () ->
                               loop (#state{get_corpses_fun = GetCorpsesFun,
-                                           nodes = [node ()]})
+                                           nodes = []})
                       end),
     case catch register (necromancer_srv, Pid) of
         true ->
@@ -92,6 +93,17 @@ start_link (GetCorpsesFun) ->
 watch (N) ->
     necromancer_srv ! {watch, N},
     ok.
+
+-spec get_watched () -> [node ()] | [].
+get_watched () ->
+    necromancer_srv ! {get_watched, self ()},
+    receive
+        {watched, Nodes} ->
+            Nodes
+    after
+        10000 ->
+            []
+    end.
 
 %% -----------------------------------------------------------------------------
 %% @doc
@@ -120,7 +132,10 @@ loop (State = #state{nodes = Nodes}) ->
             loop (State);
         {unwatch, Node} ->
             NewState = do_unwatch (Node, State),
-            loop (NewState)
+            loop (NewState);
+        {get_watched, From} ->
+            From ! {watched, State#state.nodes},
+            loop (State)
     end.
 
 -spec do_watch (node (), #state{}) -> #state{}.
@@ -155,7 +170,7 @@ do_unwatch (Node, State = #state{nodes = Nodes}) ->
 -spec handle_death (node (), #state{}) -> ok.
 handle_death (DeadNode, State = #state{get_corpses_fun = GetCorpses}) ->
     ?DEBUG ("Node ~p died. Handling death...~n", [DeadNode]),
-    AliveNodes = lists:delete (DeadNode, State#state.nodes),
+    AliveNodes = [node () | lists:delete (DeadNode, State#state.nodes)],
     Corpses = GetCorpses (DeadNode),
     ?DEBUG ("Corpses: ~p~n", [Corpses]),
     ?DEBUG ("AliveNodes: ~p~n", [AliveNodes]),
@@ -163,7 +178,10 @@ handle_death (DeadNode, State = #state{get_corpses_fun = GetCorpses}) ->
                            ?DEBUG ("handling corpse ~p on node ~p~n",
                                    [Corpse, AliveNode]),
                            {Module, Data} = Corpse,
-                           rpc:call (AliveNode, Module, handle_corpse, [Data])
+                           rpc:call (AliveNode,
+                                     Module,
+                                     handle_corpse,
+                                     [Data])
                    end,
     lists:foreach (fun (Corpse) ->
                            Index = random:uniform (length (AliveNodes)),

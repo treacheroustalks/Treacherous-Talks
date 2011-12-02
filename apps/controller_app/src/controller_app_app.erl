@@ -27,7 +27,7 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/2, stop/1, handle_corpse/1]).
 
 -include_lib("utils/include/debug.hrl").
 
@@ -44,8 +44,21 @@ start(_StartType, _StartArgs) ->
         _Node ->
             ?DEBUG ("watching ~p~n", [_Node])
     end,
+    corpses:save_corpse (?MODULE, node (), {node, node ()}),
     ok = session_presence:init(),
     controller_app_sup:start_link().
 
 stop(_State) ->
     ok.
+
+handle_corpse ({Key, {node, Node}}) ->
+    NewBackendNodes = lists:delete (Node, backends:get_all_backends ()),
+    NotifyOfDeath = fun (RemoteBackend) ->
+                            rpc:call (RemoteBackend,
+                                      backends,
+                                      change_state,
+                                      [backend_nodes, NewBackendNodes])
+                    end,
+    lists:foreach (NotifyOfDeath, NewBackendNodes),
+    db:delete (Key).
+    
