@@ -27,9 +27,7 @@ var info;
 Load functions
 -----------------------------------------------------------------------------*/
 
-/**
- * Initialize
- */
+// Initialize
 function init() {
     menu = $.parseJSON(get(menu_file));
     compare = $.parseJSON(get(compare_file));
@@ -37,12 +35,14 @@ function init() {
     create_tabs();
 }
 
+// Load the graph
 function load_graph(graph_key) {
     // Clear current graph, if any
     $('#graphs').html('');
 
     // Check if the graph is a single graph or a compare graph
-    if(info[graph_key] != undefined) {// Single graphs
+    // Single graphs
+    if(info[graph_key] != undefined) {
         // Print all plots
         $.each(info[graph_key].plots, function(i, plot) {
             // Load the data from the file, if not already loaded
@@ -50,14 +50,15 @@ function load_graph(graph_key) {
             graph_data_load(graph_key, file);
             plot.data = prep_plot_data(info[graph_key][file], plot.values, plot.plot_name);
             plot.div = setup_div();
-            line_chart(plot);
+            chart(plot);
         })
-    } else if(compare[graph_key] != undefined) {// Multiple graphs
+    // Multiple graphs
+    } else if(compare[graph_key] != undefined) {
         $.each(compare[graph_key].plots, function(i, plot) {
             var total_graph_data = new Object();
 
             // Iterate through all the sources and load them
-            $.each(compare[graph_key].sources, function(i, obj){
+            $.each(compare[graph_key].sources, function(i, obj) {
                 var graph_key = Object.keys(obj)[0];
                 var file = plot.file;
                 graph_data_load(graph_key, file);
@@ -66,7 +67,7 @@ function load_graph(graph_key) {
             });
             plot.data = total_graph_data;
             plot.div = setup_div();
-            line_chart(plot);
+            chart(plot);
         });
     } else {
         print("Unknown graph");
@@ -85,8 +86,9 @@ function graph_data_load(graph_key, file) {
 Graph functions
 -----------------------------------------------------------------------------*/
 
-// Print line chart
-function line_chart(plot) {
+// Print chart
+function chart(plot) {
+    // Convert plot data into graph series format
     var series_data = new Array();
     $.each(plot.data, function(key, value) {
         series_data.push({
@@ -94,13 +96,22 @@ function line_chart(plot) {
             data : string_to_float_array(value)
         });
     });
-    var length = get_max_length(series_data);
 
+    // Scale x-axis based on report interval
+    var length = get_max_length(series_data);
     var xaxis = new Array();
     for(var i = 1; i <= length; i++) {
         xaxis.push(i * plot.interval);
     }
 
+    // Run the series though function, if any
+    if(plot.xfunc != undefined)
+        switch(plot.xfunc) {
+            case "summation":
+                series_data = func_summation(series_data);
+        }
+
+    // Create the chart
     var chart = new Highcharts.Chart({
         chart : {
             renderTo : plot.div,
@@ -156,6 +167,29 @@ function line_chart(plot) {
     append_info(plot.div, plot.info);
 }
 
+// Summation function for graph
+function func_summation(series) {
+    var ret = new Array();
+    $.each(series, function(i, obj) {
+        ret.push({
+            name : obj.name,
+            data : sum_array(obj.data)
+        });
+    });
+
+    function sum_array(arr) {
+        var ret_array = new Array();
+        var total = 0;
+        $.each(arr, function(key, value) {
+            total = total + value;
+            ret_array[key] = total;
+        });
+        return ret_array;
+    }
+
+    return ret;
+}
+
 /*------------------------------------------------------------------------------
  Conversion functions
  -----------------------------------------------------------------------------*/
@@ -200,7 +234,6 @@ function prep_plot_data(graph_data, vars, prefix) {
     $.each(filtered_data, function(name, value) {
         ret[prefix + ':' + name] = value;
     });
-
     return ret;
 }
 
@@ -208,9 +241,7 @@ function prep_plot_data(graph_data, vars, prefix) {
 Page functions
 -----------------------------------------------------------------------------*/
 
-/**
- * Read the content and create the dropdown tabs
- */
+// Read the content and create the dropdown tabs
 function create_tabs() {
     var tab_div = document.getElementById('tabs');
 
@@ -223,6 +254,7 @@ function create_tabs() {
 
         tab_div.appendChild(tab);
     });
+
     function get_dropdown(dd_data) {
         var ul = document.createElement('ul');
         ul.setAttribute('class', 'dropdown-menu');
@@ -234,7 +266,7 @@ function create_tabs() {
         return ul;
     }
 
-    function create_element(id, html, type) {
+    function create_element(id, html) {
         var li = document.createElement('li');
         var a = document.createElement('a');
         a.href = 'javascript:void(0);';
