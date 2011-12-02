@@ -1,0 +1,15 @@
+@charset "utf-8";
+/*
+ * CSS Document
+ * Written by Ryan Yonzon
+ * http://ryan.rawswift.com/
+ */
+
+#main_container {
+    width:100%;
+    background-color:#ffffff; /* DO NOT REMOVE THIS; or you'll have issue w/ the scrollbar, when the mouse pointer is on a white space */
+    overflow-x: scroll;
+    overflow-y: scroll;
+    height:100%;    /* this will make sure that the height will extend at the bottom */
+    position:relative; /* container div must be absolute, for our fixed bar to work */
+}
