@@ -1,6 +1,5 @@
 {
     "general-message-compare": {
-        "type": "multiple",
         "sources": [
             {"general-message-10": "10"},
             {"general-message-50": "50"},
@@ -29,7 +28,6 @@
         ]
     },
     "general-controller-compare": {
-        "type": "multiple",
         "sources": [
             {"general-controller-10": "10"},
             {"general-controller-50": "50"},
@@ -58,7 +56,6 @@
         ]
     },
     "general-db-compare": {
-        "type": "multiple",
         "sources": [
             {"general-db-10": "10"},
             {"general-db-50": "50"},
@@ -87,7 +84,6 @@
         ]
     },
     "general-game-compare": {
-        "type": "multiple",
         "sources": [
             {"general-game-10": "10"},
             {"general-game-50": "50"},
@@ -116,7 +112,6 @@
         ]
     },
     "general-all-compare": {
-        "type": "multiple",
         "sources": [
             {"general-all-10": "10"},
             {"general-all-50": "50"},
@@ -144,17 +139,13 @@
             }
         ]
     },
-    "riak-compare": {
-        "type": "multiple",
+    "general-message-summation-compare": {
         "sources": [
-            {"riak-conf1": "1B 1R"},
-            {"riak-conf2": "1B 1R 1R"},
-            {"riak-conf3": "1B 1R 1R 1R 1R"},
-            {"riak-conf4": "1B 2R"},
-            {"riak-conf5": "1B 2R 2R"},
-            {"riak-conf6": "1B 2R 2R 2R 2R"},
-            {"riak-conf7": "1B 2R 2R 3R 3R"},
-            {"riak-conf8": "1B 2R 3R 4R 5R"}
+            {"general-message-10": "10"},
+            {"general-message-50": "50"},
+            {"general-message-100": "100"},
+            {"general-message-200": "200"},
+            {"general-message-500": "500"}
         ],
         "plots": [
             {
@@ -162,22 +153,98 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
+                "xfunc": "summation",
                 "ylabel": "Throughput (Flows/time)",
-                "name": "Riak config tests",
-                "info": "Comparing the performance of various Riak configurations"
-            }, {
-                "file": "test_latencies.csv",
-                "values": ["mean", "99th"],
-                "interval": 60,
-                "xlabel": "Time (seconds)",
-                "ylabel": "Latency (micro seconds)",
-                "name": "Riak config tests",
-                "info": "Comparing the performance of various Riak configurations"
+                "name": "General message summation compare",
+                "info": "Comparing the graphs of sending general messages"
             }
         ]
     },
+    "general-controller-summation-compare": {
+        "sources": [
+            {"general-controller-10": "10"},
+            {"general-controller-50": "50"},
+            {"general-controller-100": "100"},
+            {"general-controller-200": "200"},
+            {"general-controller-500": "500"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "xfunc": "summation",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "General controller summation compare",
+                "info": "Comparing the graphs of general flow controllers"
+            }
+        ]
+    },
+    "general-db-summation-compare": {
+        "sources": [
+            {"general-db-10": "10"},
+            {"general-db-50": "50"},
+            {"general-db-100": "100"},
+            {"general-db-200": "200"},
+            {"general-db-500": "500"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "xfunc": "summation",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "General db summation compare",
+                "info": "Comparing the graphs of general flow dbs"
+            }
+        ]
+    },
+    "general-game-summation-compare": {
+        "sources": [
+            {"general-game-10": "10"},
+            {"general-game-50": "50"},
+            {"general-game-100": "100"},
+            {"general-game-200": "200"},
+            {"general-game-500": "500"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "xfunc": "summation",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "General game summation compare",
+                "info": "Comparing the graphs of general flow games"
+            }
+        ]
+    },
+    "general-all-summation-compare": {
+        "sources": [
+            {"general-all-10": "10"},
+            {"general-all-50": "50"},
+            {"general-all-100": "100"},
+            {"general-all-200": "200"},
+            {"general-all-500": "500"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "xfunc": "summation",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "General all summation compare",
+                "info": "Comparing the graphs of general flow all"
+            }
+        ]
+    },    
     "riak-compare": {
-        "type": "multiple",
         "sources": [
             {"riak-conf1": "1B 1R"},
             {"riak-conf2": "1B 1R 1R"},
@@ -212,34 +279,7 @@
             }
         ]
     },
-    "riak-mem-compare": {
-        "type": "multiple",
-        "sources": [
-            {"riak-conf1": "1B 1R"},
-            {"riak-conf1-mem": "1B 1R Mem"}
-        ],
-        "plots": [
-            {
-                "file": "summary.csv",
-                "values": ["successful", "failed"],
-                "interval": 60,
-                "xlabel": "Time (seconds)",
-                "ylabel": "Throughput (Flows/time)",
-                "name": "Riak config tests",
-                "info": "Comparing the performance of various Riak configurations"
-            }, {
-                "file": "test_latencies.csv",
-                "values": ["mean", "99th"],
-                "interval": 60,
-                "xlabel": "Time (seconds)",
-                "ylabel": "Latency (micro seconds)",
-                "name": "Riak config tests",
-                "info": "Comparing the performance of various Riak configurations"
-            }
-        ]
-    },
     "scaling-compare": {
-        "type": "multiple",
         "sources": [
             {"scaling-1": "1x"},
             {"scaling-2": "2x"},
@@ -267,6 +307,30 @@
                 "info": "Testing how the system scales"
             }
         ]
+    },
+    "riak-mem-compare": {
+        "sources": [
+            {"riak-conf1": "1B 1R"},
+            {"riak-conf1-mem": "1B 1R Mem"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Riak config tests",
+                "info": "Comparing the performance of various Riak configurations"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Riak config tests",
+                "info": "Comparing the performance of various Riak configurations"
+            }
+        ]
     }
-
 }

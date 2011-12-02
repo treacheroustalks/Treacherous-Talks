@@ -7,7 +7,12 @@
         {"general-db-compare": "General DB"},
         {"general-controller-compare": "General Controller"},
         {"general-message-compare": "General Message"},
-        {"general-game-compare": "General Game"}
+        {"general-game-compare": "General Game"},
+        {"general-all-summation-compare": "General All Sum"},
+        {"general-db-summation-compare": "General DB Sum"},
+        {"general-controller-summation-compare": "General Controller Sum"},
+        {"general-message-summation-compare": "General Message Sum"},
+        {"general-game-summation-compare": "General Game Sum"}
     ],
     "Scaling tests": [
         {"scaling-1": "1"},
