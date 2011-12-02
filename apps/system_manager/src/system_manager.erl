@@ -47,7 +47,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 -export([start_link/0, update_config/1, start_release/1, stop_release/1,
-        ping_release/1]).
+        ping_release/1, join_riak/1]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -107,6 +107,17 @@ ping_release(Relname) ->
     gen_server:call(?MODULE, {ping_release, Relname}, ?TIMEOUT).
 
 %% ------------------------------------------------------------------
+%% @doc
+%% Adds the local Riak node to a cluster by sending a join request to the given
+%% Node.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec join_riak(hostname()) -> ok | {error, term()}.
+join_riak(Node) ->
+    gen_server:call(?MODULE, {join_riak, Node}, ?TIMEOUT).
+
+%% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
@@ -135,7 +146,9 @@ handle_call({stop_release, Relname}, _From, State) ->
     ok = save_status_of_release(Relname, stopped),
     {reply, int_stop_release(Relname), State};
 handle_call({ping_release, Relname}, _From, State) ->
-    {reply, handle_releases:ping_release(Relname), State}.
+    {reply, handle_releases:ping_release(Relname), State};
+handle_call({join_riak, Node}, _From, State) ->
+    {reply, int_join_riak(Node), State}.
 
 handle_cast(_Msg, State) ->
     io:format ("received unhandled cast: ~p~n",[{_Msg, State}]),
@@ -360,6 +373,22 @@ int_stop_release(Relname) ->
                     Error
             end;
         down ->
+            ok;
+        Error ->
+            Error
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Joins our local Riak release to a Riak cluster by sending a join request to
+%% Node.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec int_join_riak(hostname()) -> ok | {error, term()}.
+int_join_riak(Node) ->
+    case handle_releases:run_riak_join_command(Node) of
+        {ok, _Text} ->
             ok;
         Error ->
             Error
