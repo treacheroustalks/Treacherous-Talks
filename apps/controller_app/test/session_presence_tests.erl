@@ -66,7 +66,8 @@ controller_test_() ->
        ?_test(session_presence_list_sessions()),
        ?_test(session_presence_list_sessions_by_client_type()),
        ?_test(session_presence_count_sessions()),
-       ?_test(session_presence_count_sessions_by_client_type())
+       ?_test(session_presence_count_sessions_by_client_type()),
+       ?_test(session_presence_overwriting())
       ]
      }}.
 
@@ -85,7 +86,7 @@ session_presence_get_session() ->
     GetResult2 = session_presence:get_session_id(UserId),
     ?assertEqual({ok, SessionId}, GetResult2),
 
-    session_presence:remove(UserId).
+    session_presence:remove(UserId, SessionId).
 
 session_presence_add_remove() ->
     UserId = get_test_id(),
@@ -97,12 +98,12 @@ session_presence_add_remove() ->
     GetResult = session_presence:is_online(UserId),
     ?assertEqual(true, GetResult),
 
-    RmResult = session_presence:remove(UserId),
+    RmResult = session_presence:remove(UserId, SessionId),
     ?assertEqual(ok, RmResult),
     GetResult2 = session_presence:is_online(UserId),
     ?assertEqual(false, GetResult2),
 
-    RmResult2 = session_presence:remove(UserId),
+    RmResult2 = session_presence:remove(UserId, SessionId),
     ?assertEqual({error, not_online}, RmResult2).
 
 
@@ -162,6 +163,23 @@ session_presence_count_sessions_by_client_type() ->
     ?assertEqual(3, CountIm),
     ?assertEqual(3, CountMail),
     ?assertEqual(4, CountWeb).
+
+session_presence_overwriting() ->
+    UserId = get_test_id(),
+    SessionId1 = "abcdefg",
+    SessionId2 = "abcdefg2",
+    ClientType = mail,
+
+    AddResult = session_presence:add(UserId, SessionId1, ClientType),
+    GetResult = session_presence:get_session_id(UserId),
+    ?assertEqual({ok, SessionId1}, GetResult),
+
+    AddResult = session_presence:add(UserId, SessionId2, ClientType),
+    GetResult2 = session_presence:get_session_id(UserId),
+    ?assertEqual({ok, SessionId2}, GetResult2),
+
+    RmResult = session_presence:remove(UserId, SessionId1),
+    ?assertEqual({error, invalid_session}, RmResult).
 
 
 %%-------------------------------------------------------------------
