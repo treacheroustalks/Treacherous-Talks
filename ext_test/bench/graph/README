@@ -15,7 +15,7 @@ Welcome to bench charts
     - Move / Start a HTTP server in the directory with index.html
         - Example: Use python simple HTTP server with the command
         #+BEGIN_EXAMPLE
-        $ python -m SimpleHTTPServer
+           $ python -m SimpleHTTPServer
         #+END_EXAMPLE
         - Access http://localhost:8000
 
