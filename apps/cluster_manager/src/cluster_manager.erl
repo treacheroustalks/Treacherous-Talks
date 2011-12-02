@@ -44,6 +44,7 @@ option_spec_list() ->
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
      {help, $h, "help", undefined, "Show the program options"},
      {setconfig, $c, "setconfig", undefined, "Sets all configurations defined in config file"},
+     {join, $j, "join", undefined, "Joins all Riak nodes defined in config file"},
      {ping, $p, "ping", undefined, "Pings all releases defined in config file"},
      {start, $s, "start", undefined, "Starts all releases defined in config file"},
      {stop, $t, "stop", undefined, "Stops all releases defined in config file"},
@@ -86,6 +87,13 @@ run(Opts) ->
                     cluster_utils:notify_backends(Config);
                 false -> ok
             end,
+            case proplists:get_bool(join, Opts) of
+                true ->
+                    % Filter so that we only get riak releases
+                    RiakList = [ Node || {Node, riak} <- StartingOrder ],
+                    join_riak_nodes(RiakList);
+                false -> ok
+            end,
             case proplists:get_bool(stop, Opts) of
                 true ->
                     ShutdownOrder = lists:reverse(StartingOrder),
@@ -121,6 +129,18 @@ do_action_on_releases([{Host, Release}|Rest], Action) ->
     Res = (catch rpc:call(Node, system_manager, Action, [Release])),
     io:format("~p ~p on ~p was ~p~n", [Action, Release, Node, Res]),
     do_action_on_releases(Rest, Action).
+
+%% Join all defined riak nodes
+-spec join_riak_nodes(list()) ->
+    ok | {error, term()} | {badrpc, term()}.
+join_riak_nodes(RiakList) ->
+    % Use the first node in the list as the node all nodes will join
+    JoinNode = "riak@"++hd(RiakList),
+    % Make a list that we can feed into do_action_on_releases (yes, we're
+    % abusing it a bit, but it is better than duplicating code).
+    ReleaseList = [ {Node, JoinNode} || Node <- RiakList],
+    do_action_on_releases(ReleaseList, join_riak).
+
 
 %% Getopt helpers
 usage() ->

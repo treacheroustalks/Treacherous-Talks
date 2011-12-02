@@ -45,7 +45,8 @@
          stop_release/1,
          ping_release/1,
          ping_release_and_wait/2,
-         run_riak_search_command/1]).
+         run_riak_search_command/1,
+         run_riak_join_command/1]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -117,7 +118,6 @@ ping_release_and_wait(Relname, _NbrOfTimes) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-
 %% Runs the Riak search-cmd file with arguments according to Args.
 %%
 %% @end
@@ -132,6 +132,26 @@ run_riak_search_command(Args) ->
             {ok, Res};
         _Other ->
             {error, Res}
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Joins a Riak node to a Riak cluster by sending a join request to Node.
+%%
+%% @end
+%%-------------------------------------------------------------------
+-spec run_riak_join_command(hostname()) ->
+    {ok, binary()} | {error, term()}.
+run_riak_join_command(Node) ->
+    Args = "join "++Node,
+    OKResponse = "Sent join request to "++Node++"\n",
+    case run_command_with_cmd(riak, "riak-admin", Args) of
+        OKResponse ->
+            {ok, OKResponse};
+        "Failed: This node is already a member of a cluster\n" ->
+            {error, alreadymember};
+        Other ->
+            {error, Other}
     end.
 
 
