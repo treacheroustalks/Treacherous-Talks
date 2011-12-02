@@ -14,7 +14,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General message compare",
                 "info": "Comparing the graphs of sending general messages"
             }, {
@@ -22,7 +22,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General message compare",
                 "info": "Comparing the graphs of sending general messages"
             }
@@ -43,7 +43,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General controller compare",
                 "info": "Comparing the graphs of general flow controllers"
             }, {
@@ -51,7 +51,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General controller compare",
                 "info": "Comparing the graphs of general flow controllers"
             }
@@ -72,7 +72,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General db compare",
                 "info": "Comparing the graphs of general flow dbs"
             }, {
@@ -80,7 +80,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General db compare",
                 "info": "Comparing the graphs of general flow dbs"
             }
@@ -101,7 +101,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General game compare",
                 "info": "Comparing the graphs of general flow games"
             }, {
@@ -109,7 +109,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General game compare",
                 "info": "Comparing the graphs of general flow games"
             }
@@ -130,7 +130,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General all compare",
                 "info": "Comparing the graphs of general flow all"
             }, {
@@ -138,7 +138,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General all compare",
                 "info": "Comparing the graphs of general flow all"
             }
@@ -162,7 +162,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak config tests",
                 "info": "Comparing the performance of various Riak configurations"
             }, {
@@ -170,7 +170,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak config tests",
                 "info": "Comparing the performance of various Riak configurations"
             }
@@ -198,7 +198,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak config tests",
                 "info": "Comparing the performance of various Riak configurations"
             }, {
@@ -206,7 +206,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak config tests",
                 "info": "Comparing the performance of various Riak configurations"
             }
@@ -224,7 +224,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak config tests",
                 "info": "Comparing the performance of various Riak configurations"
             }, {
@@ -232,7 +232,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak config tests",
                 "info": "Comparing the performance of various Riak configurations"
             }
@@ -254,7 +254,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Scaling comparison",
                 "info": "Testing how the system scales"
             }, {
@@ -262,7 +262,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Latency",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Scaling comparison",
                 "info": "Testing how the system scales"
             }

@@ -7,7 +7,7 @@
                 "values": ["successful", "failed"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Game message all 100",
                 "info": "Game message information"
             }, {
@@ -15,7 +15,7 @@
                 "values": ["mean", "99th"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Game message all 100",
                 "info": "Game message information"
             }
@@ -29,7 +29,7 @@
                 "values": ["successful", "failed"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Message Online all 100",
                 "info": "Message online information"
             }, {
@@ -37,7 +37,7 @@
                 "values": ["mean", "99th"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Message Online all 100",
                 "info": "Message online information"
             }
@@ -51,7 +51,7 @@
                 "values": ["successful", "failed"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Message Offline all 100",
                 "info": "Message offline information"
             }, {
@@ -59,7 +59,7 @@
                 "values": ["mean", "99th"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Message Offline all 100",
                 "info": "Message offline information"
             }
@@ -73,7 +73,7 @@
                 "values": ["successful", "failed"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Game play all 100",
                 "info": "Game play information"
             }, {
@@ -81,7 +81,7 @@
                 "values": ["mean", "99th"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Game play all 100",
                 "info": "Game play information"
             }
@@ -95,7 +95,7 @@
                 "values": ["successful", "failed"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Search all 100",
                 "info": "Search information"
             }, {
@@ -103,7 +103,7 @@
                 "values": ["mean", "99th"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Search all 100",
                 "info": "Search information"
             }
@@ -117,7 +117,7 @@
                 "values": ["successful", "failed"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "User all 100",
                 "info": "User flow information"
             }, {
@@ -125,7 +125,7 @@
                 "values": ["mean", "99th"],
                 "interval": 5,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "User all 100",
                 "info": "User flow information"
             }
@@ -139,7 +139,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General message 10",
                 "info": "General message 10 information"
             }, {
@@ -147,7 +147,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General message 10",
                 "info": "General message 10 information"
             }
@@ -161,7 +161,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General message 50",
                 "info": "General message 50 information"
             }, {
@@ -169,7 +169,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General message 50",
                 "info": "General message 50 information"
             }
@@ -183,7 +183,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General message 100",
                 "info": "General message 100 information"
             }, {
@@ -191,7 +191,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General message 100",
                 "info": "General message 100 information"
             }
@@ -205,7 +205,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General message 200",
                 "info": "General message 200 information"
             }, {
@@ -213,7 +213,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General message 200",
                 "info": "General message 200 information"
             }
@@ -227,7 +227,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General message 500",
                 "info": "General message 500 information"
             }, {
@@ -235,7 +235,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General message 500",
                 "info": "General message 500 information"
             }
@@ -249,7 +249,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General controller 10",
                 "info": "General controller 10 information"
             }, {
@@ -257,7 +257,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General controller 10",
                 "info": "General controller 10 information"
             }
@@ -271,7 +271,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General controller 50",
                 "info": "General controller 50 information"
             }, {
@@ -279,7 +279,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General controller 50",
                 "info": "General controller 50 information"
             }
@@ -293,7 +293,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General controller 100",
                 "info": "General controller 100 information"
             }, {
@@ -301,7 +301,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General controller 100",
                 "info": "General controller 100 information"
             }
@@ -315,7 +315,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General controller 200",
                 "info": "General controller 200 information"
             }, {
@@ -323,7 +323,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General controller 200",
                 "info": "General controller 200 information"
             }
@@ -337,7 +337,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General controller 500",
                 "info": "General controller 500 information"
             }, {
@@ -345,7 +345,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General controller 500",
                 "info": "General controller 500 information"
             }
@@ -359,7 +359,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General DB 10",
                 "info": "General DB 10 information"
             }, {
@@ -367,7 +367,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General DB 10",
                 "info": "General DB 10 information"
             }
@@ -381,7 +381,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General DB 50",
                 "info": "General DB 50 information"
             }, {
@@ -389,7 +389,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General DB 50",
                 "info": "General DB 50 information"
             }
@@ -403,7 +403,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General DB 100",
                 "info": "General DB 100 information"
             }, {
@@ -411,7 +411,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General DB 100",
                 "info": "General DB 100 information"
             }
@@ -425,7 +425,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General DB 200",
                 "info": "General DB 200 information"
             }, {
@@ -433,7 +433,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General DB 200",
                 "info": "General DB 200 information"
             }
@@ -447,7 +447,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General DB 500",
                 "info": "General DB 500 information"
             }, {
@@ -455,7 +455,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General DB 500",
                 "info": "General DB 500 information"
             }
@@ -469,7 +469,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General game 10",
                 "info": "General game 10 information"
             }, {
@@ -477,7 +477,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General game 10",
                 "info": "General game 10 information"
             }
@@ -491,7 +491,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General game 50",
                 "info": "General game 50 information"
             }, {
@@ -499,7 +499,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General game 50",
                 "info": "General game 50 information"
             }
@@ -513,7 +513,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General game 100",
                 "info": "General game 100 information"
             }, {
@@ -521,7 +521,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General game 100",
                 "info": "General game 100 information"
             }
@@ -535,7 +535,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General game 200",
                 "info": "General game 200 information"
             }, {
@@ -543,7 +543,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General game 200",
                 "info": "General game 200 information"
             }
@@ -557,7 +557,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General game 500",
                 "info": "General game 500 information"
             }, {
@@ -565,7 +565,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General game 500",
                 "info": "General game 500 information"
             }
@@ -579,7 +579,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General all 10",
                 "info": "General all 10 information"
             }, {
@@ -587,7 +587,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General all 10",
                 "info": "General all 10 information"
             }
@@ -601,7 +601,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General all 50",
                 "info": "General all 50 information"
             }, {
@@ -609,7 +609,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General all 50",
                 "info": "General all 50 information"
             }
@@ -623,7 +623,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General all 100",
                 "info": "General all 100 information"
             }, {
@@ -631,7 +631,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General all 100",
                 "info": "General all 100 information"
             }
@@ -645,7 +645,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General all 200",
                 "info": "General all 200 information"
             }, {
@@ -653,7 +653,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General all 200",
                 "info": "General all 200 information"
             }
@@ -667,7 +667,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "General all 500",
                 "info": "General all 500 information"
             }, {
@@ -675,7 +675,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "General all 500",
                 "info": "General all 500 information"
             }
@@ -689,7 +689,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 1R",
                 "info": "1 Backend on M1 1 Riak on M1"
             }, {
@@ -697,7 +697,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 1R",
                 "info": "1 Backend on M1 1 Riak on M1"
             }
@@ -711,7 +711,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 1R 1R",
                 "info": "1 Backend on M1 2 Riak on M1"
             }, {
@@ -719,7 +719,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 1R 1R",
                 "info": "1 Backend on M1 2 Riak on M1"
             }
@@ -733,7 +733,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 1R 1R 1R 1R",
                 "info": "1 Backend on M1 4 Riak on M1"
             }, {
@@ -741,7 +741,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 1R 1R 1R 1R",
                 "info": "1 Backend on M1 4 Riak on M1"
             }
@@ -755,7 +755,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2R",
                 "info": "1 Backend on M1 1 Riak on M2"
             }, {
@@ -763,7 +763,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2R",
                 "info": "1 Backend on M1 1 Riak on M2"
             }
@@ -777,7 +777,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2R 2R",
                 "info": "1 Backend on M1 2 Riak on M2"
             }, {
@@ -785,7 +785,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2R 2R",
                 "info": "1 Backend on M1 2 Riak on M2"
             }
@@ -799,7 +799,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2R 2R 2R 2R",
                 "info": "1 Backend on M1 4 Riak on M2"
             }, {
@@ -807,7 +807,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2R 2R 2R 2R",
                 "info": "1 Backend on M1 4 Riak on M2"
             }
@@ -821,7 +821,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2R 2R 3R 3R",
                 "info": "1 Backend on M1 2 Riak on M2 2 Riak on M3"
             }, {
@@ -829,7 +829,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2R 2R 3R 3R",
                 "info": "1 Backend on M1 2 Riak on M2 2 Riak on M3"
             }
@@ -843,7 +843,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2R 3R 4R 5R",
                 "info": "1 Backend on M1 1 Riak on M2 1 Riak on M3 1 Riak on M4 1 Riak on M5"
             }, {
@@ -851,7 +851,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2R 3R 4R 5R",
                 "info": "1 Backend on M1 1 Riak on M2 1 Riak on M3 1 Riak on M4 1 Riak on M5"
             }
@@ -865,7 +865,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2B 3B 1R 2R 3R",
                 "info": "3 Backend on M1,M2,M3 3 Riak on M1,M2,M3"
             }, {
@@ -873,7 +873,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2B 3B 1R 2R 3R",
                 "info": "3 Backend on M1,M2,M3 3 Riak on M1,M2,M3"
             }
@@ -887,7 +887,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2B 3B 4R 5R 6R 7R",
                 "info": "3 Backend on M1,M2,M3 4 Riak on M4,M5,M6.M7"
             }, {
@@ -895,7 +895,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2B 3B 4R 5R 6R 7R",
                 "info": "3 Backend on M1,M2,M3 4 Riak on M4,M5,M6.M7"
             }
@@ -909,7 +909,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2B 3B 4R 4R 5R 5R 6R 6R",
                 "info": "3 Backend on M1,M2,M3 6 Riak on M4,M5,M6"
             }, {
@@ -917,7 +917,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2B 3B 4R 4R 5R 5R 6R 6R",
                 "info": "3 Backend on M1,M2,M3 6 Riak on M4,M5,M6"
             }
@@ -931,7 +931,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 2B 3B 1R 2R 3R 4R 5R 6R 7R",
                 "info": "3 Backend on M1,M2,M3 7 Riak on M1,M2,M3,M4,M5,M6,M7"
             }, {
@@ -939,7 +939,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 2B 3B 1R 2R 3R 4R 5R 6R 7R",
                 "info": "3 Backend on M1,M2,M3 7 Riak on M1,M2,M3,M4,M5,M6,M7"
             }
@@ -953,7 +953,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "Riak 1B 1R Less mem",
                 "info": "1 Backend on M1 1 Riak on M1 : Custom less memory version"
             }, {
@@ -961,7 +961,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "Riak 1B 1R Less mem",
                 "info": "1 Backend on M1 1 Riak on M1 : Custom less memory version"
             }
@@ -975,7 +975,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "1 M 1L",
                 "info": "1 machine, 1 load worker"
             }, {
@@ -983,7 +983,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "1 M 1L",
                 "info": "1 machine, 1 load worker"
             }
@@ -997,7 +997,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "2 M 2L",
                 "info": "2C machines, 2 load worker"
             }, {
@@ -1005,7 +1005,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "2 M 2L",
                 "info": "2 machine, 2 load worker"
             }
@@ -1019,7 +1019,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "3 M 3L",
                 "info": "3C machines, 3 load worker"
             }, {
@@ -1027,7 +1027,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "3 M 3L",
                 "info": "3 machine, 3 load worker"
             }
@@ -1041,7 +1041,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "4 M 4L",
                 "info": "4C machines, 4 load worker"
             }, {
@@ -1049,7 +1049,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "4 M 4L",
                 "info": "4 machine, 4 load worker"
             }
@@ -1063,7 +1063,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "5 M 5L",
                 "info": "5C machines, 5 load worker"
             }, {
@@ -1071,7 +1071,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "5 M 5L",
                 "info": "5 machine, 5 load worker"
             }
@@ -1085,7 +1085,7 @@
                 "values": ["successful", "failed"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Throughput (Flows/time)",
                 "name": "6 M 6L",
                 "info": "6C machines, 6 load worker"
             }, {
@@ -1093,7 +1093,7 @@
                 "values": ["mean", "99th"],
                 "interval": 60,
                 "xlabel": "Time (seconds)",
-                "ylabel": "Count",
+                "ylabel": "Latency (micro seconds)",
                 "name": "6 M 6L",
                 "info": "6 machine, 6 load worker"
             }
