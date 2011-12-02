@@ -37,7 +37,7 @@
 -export([
          init/0,
          add/3,
-         remove/1,
+         remove/2,
          handle_corpse/1,
          is_online/1,
          get_session_id/1,
@@ -112,7 +112,7 @@ init() ->
 %%-------------------------------------------------------------------
 add(UserId, SessionId, ClientType) ->
     ?DEBUG ("add"),
-    corpses:save_corpse (?MODULE, UserId, UserId),
+    corpses:save_corpse (?MODULE, UserId, {UserId, SessionId}),
     AddFun = fun() ->
                      mnesia:write(#session{user_id = UserId,
                                            session_id = SessionId,
@@ -129,17 +129,22 @@ add(UserId, SessionId, ClientType) ->
 %% @doc
 %% Removes a user from the session presence.
 %%
-%% @spec remove(UserId::integer()) ->
+%% @spec remove(UserId::integer(), SessionId::string()) ->
 %%           ok | {error, not_online} | {error, Reason}
 %% @end
 %%-------------------------------------------------------------------
-remove(UserId) ->
+remove(UserId, SessionId) ->
     DelFun = fun() ->
                      case mnesia:read({session, UserId}) of
                          [] ->
                              not_online;
-                         [_Session] ->
-                             mnesia:delete({session, UserId})
+                         [Session] ->
+                             case Session#session.session_id of
+                                 SessionId ->
+                                     mnesia:delete({session, UserId});
+                                 _ ->
+                                     invalid_session
+                             end
                      end
              end,
     case mnesia:transaction(DelFun) of
@@ -151,13 +156,15 @@ remove(UserId) ->
             ok;
         {atomic, not_online} ->
             {error, not_online};
+        {atomic, invalid_session} ->
+            {error, invalid_session};
         Error ->
             {error, Error}
     end.
 
-handle_corpse({_Key, UserId}) ->
-    ?DEBUG ("handle_corpse(~p)~n", [UserId]),
-    remove(UserId).
+handle_corpse({_Key, {UserId, SessionId}}) ->
+    ?DEBUG ("handle_corpse(~p, ~p)~n", [UserId, SessionId]),
+    remove(UserId, SessionId).
 
 %%-------------------------------------------------------------------
 %% @doc

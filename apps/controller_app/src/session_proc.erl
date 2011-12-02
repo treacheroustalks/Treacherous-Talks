@@ -379,4 +379,5 @@ code_change(_OldVsn, State, _Extra) ->
 stop(State) ->
     User = State#state.user,
     UserId = User#user.id,
-    session_presence:remove(UserId).
+    SessionId = State#state.session_id,
+    session_presence:remove(UserId, SessionId).
