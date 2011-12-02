@@ -33,6 +33,8 @@ function init() {
     compare = $.parseJSON(get(compare_file));
     info = $.parseJSON(get(info_file));
     create_tabs();
+
+    load_hack_graph();
 }
 
 // Load the graph
@@ -71,6 +73,94 @@ function load_graph(graph_key) {
         });
     } else {
         print("Unknown graph");
+    }
+}
+
+// Hacked graph for one use only!
+// FIXME: Delete or fix this after use!
+function load_hack_graph() {
+    var graph_key = "scaling-compare";
+
+    $.each(compare[graph_key].plots, function(i, plot) {
+        // Only the first graph
+        if(i == 0) {
+            var total_graph_data = new Object();
+
+            // Iterate through all the sources and load them
+            $.each(compare[graph_key].sources, function(i, obj) {
+                var graph_key = Object.keys(obj)[0];
+                var file = plot.file;
+                plot.values = ["successful"];
+                graph_data_load(graph_key, file);
+                var graph_data = prep_plot_data(info[graph_key][file], plot.values, obj[graph_key]);
+                $.extend(total_graph_data, graph_data);
+            });
+            total_graph_data = normalize(total_graph_data);
+
+            // Plot normalized
+            plot.div = setup_div();
+            plot.data = total_graph_data;
+                        plot.name = "Normalized scaling comparision";
+            chart(plot);
+
+            // Plot summation
+            plot.xfunc = "summation";
+            plot.div = setup_div();
+            plot.data = total_graph_data;
+            plot.name = "Normalized summed scaling comparision";
+            chart(plot);
+
+            // Plot averages
+            var averages = get_avg(total_graph_data);
+            plot.xfunc = undefined;
+            plot.div = setup_div();
+            plot.data = {'scale': averages};
+            plot.interval = 1;
+            plot.xlabel = "Machines";
+            plot.ylabel = "Times";
+            plot.name = "Scaling with increase in machines";
+            plot.info =  "Comparing increase in throughput with the increase in machines";
+            chart(plot);
+        }
+    });
+
+    function get_avg(total_graph_data) {
+        var ret = new Array();
+
+        $.each(total_graph_data, function(key, val){
+            ret.push(get_avg_array(val));
+        });
+
+        function get_avg_array(arr) {
+            var total = 0;
+            for(var i = 0; i < arr.length; i++)
+                total = total + arr[i];
+
+            return total/arr.length;
+        }
+
+        return ret;
+    }
+
+    function normalize(graph_data) {
+        var ret = new Object();
+        $.each(graph_data, function(key, val){
+            ret[key] = norm_array(key, val, graph_data);
+        });
+
+        function norm_array(key, val, graph_data) {
+            var ret = new Array();
+            $.each(val, function(i, v){
+                var denom = graph_data['1x:successful'][i];
+
+                if(denom > 0)
+                    ret.push(v/denom);
+            });
+
+            return ret;
+        }
+
+        return ret;
     }
 }
 
