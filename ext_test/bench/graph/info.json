@@ -1098,5 +1098,137 @@
                 "info": "6 machine, 6 load worker"
             }
         ]
+    },
+    "burn1": {
+        "location": "data/burn_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Load: 1",
+                "info": "1 Machine 1 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Load: 1",
+                "info": "1 Machine 1 load worker"
+            }
+        ]
+    },
+    "burn2": {
+        "location": "data/burn_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Load: 2",
+                "info": "1 Machine 2 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Load: 2",
+                "info": "1 Machine 2 load worker"
+            }
+        ]
+    },
+    "burn4": {
+        "location": "data/burn_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Load: 4",
+                "info": "1 Machine 4 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Load: 4",
+                "info": "1 Machine 4 load worker"
+            }
+        ]
+    },
+    "burn8": {
+        "location": "data/burn_8",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Load: 8",
+                "info": "1 Machine 8 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Load: 8",
+                "info": "1 Machine 8 load worker"
+            }
+        ]
+    },
+    "burn16": {
+        "location": "data/burn_16",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Load: 16",
+                "info": "1 Machine 16 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Load: 16",
+                "info": "1 Machine 16 load worker"
+            }
+        ]
+    },
+    "burn32": {
+        "location": "data/burn_32",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Load: 32",
+                "info": "1 Machine 32 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Load: 32",
+                "info": "1 Machine 32 load worker"
+            }
+        ]
     }
 }

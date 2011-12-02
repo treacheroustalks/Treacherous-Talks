@@ -1,6 +1,7 @@
 {
     "Compare tests": [
         {"scaling-compare": "Scaling"},
+        {"burn-compare": "Huge load"},
         {"riak-compare": "Riak"},
         {"riak-mem-compare": "Riak Mem"},
         {"general-all-compare": "General All"},
@@ -21,6 +22,14 @@
         {"scaling-4": "4"},
         {"scaling-5": "5"},
         {"scaling-6": "6"}
+    ],
+    "Load tests": [
+        {"burn1": "1 Load worker"},
+        {"burn2": "2 Load worker"},
+        {"burn4": "4 Load worker"},
+        {"burn8": "8 Load worker"},
+        {"burn16": "16 Load worker"},
+        {"burn32": "32 Load worker"}
     ],
     "Worker tests": [
         {"game_message-all-100": "Game message All 100"},

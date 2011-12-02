@@ -332,5 +332,35 @@
                 "info": "Comparing the performance of various Riak configurations"
             }
         ]
+    },
+    "burn-compare": {
+        "type": "multiple",
+        "sources": [
+            {"burn1": "Load: 1"},
+            {"burn2": "Load: 2"},
+            {"burn4": "Load: 4"},
+            {"burn8": "Load: 8"},
+            {"burn16": "Load: 16"},
+            {"burn32": "Load: 32"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Lots of load",
+                "info": "Compare 1 machine with increasing load"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Lots of load",
+                "info": "Compare 1 machine with increasing load"
+            }
+        ]
     }
 }
