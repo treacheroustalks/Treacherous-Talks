@@ -966,5 +966,137 @@
                 "info": "1 Backend on M1 1 Riak on M1 : Custom less memory version"
             }
         ]
+    },
+    "scaling-1": {
+        "location": "data/scaling_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "1 M 1L",
+                "info": "1 machine, 1 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "1 M 1L",
+                "info": "1 machine, 1 load worker"
+            }
+        ]
+    },
+    "scaling-2": {
+        "location": "data/scaling_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "2 M 2L",
+                "info": "2C machines, 2 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "2 M 2L",
+                "info": "2 machine, 2 load worker"
+            }
+        ]
+    },
+    "scaling-3": {
+        "location": "data/scaling_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "3 M 3L",
+                "info": "3C machines, 3 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "3 M 3L",
+                "info": "3 machine, 3 load worker"
+            }
+        ]
+    },
+    "scaling-4": {
+        "location": "data/scaling_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "4 M 4L",
+                "info": "4C machines, 4 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "4 M 4L",
+                "info": "4 machine, 4 load worker"
+            }
+        ]
+    },
+    "scaling-5": {
+        "location": "data/scaling_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "5 M 5L",
+                "info": "5C machines, 5 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "5 M 5L",
+                "info": "5 machine, 5 load worker"
+            }
+        ]
+    },
+    "scaling-6": {
+        "location": "data/scaling_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "6 M 6L",
+                "info": "6C machines, 6 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "6 M 6L",
+                "info": "6 machine, 6 load worker"
+            }
+        ]
     }
 }

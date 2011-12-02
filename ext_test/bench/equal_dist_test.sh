@@ -5,6 +5,7 @@ source load_test_config
 source test_functions.sh
 
 TT_CONFIG=config/tt_general.config
+CONCURRENT=1
 DURATION=60 # in minutes
 REPORT_INTERVAL=60 # in seconds
 
@@ -68,7 +69,7 @@ if [ $# -ne 1 ] ; then
     exit 0
 fi
 
-sed -i "s:{.*concurrent,.*}:{concurrent, $i}:g" $TT_CONFIG
+sed -i "s:{.*concurrent,.*}:{concurrent, $CONCURRENT}:g" $TT_CONFIG
 sed -i "s:{.*duration,.*}:{duration, $DURATION}:g" $TT_CONFIG
 sed -i "s:{.*report_interval,.*}:{report_interval, $REPORT_INTERVAL}:g" $TT_CONFIG
 

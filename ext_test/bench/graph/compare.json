@@ -237,6 +237,36 @@
                 "info": "Comparing the performance of various Riak configurations"
             }
         ]
+    },
+    "scaling-compare": {
+        "type": "multiple",
+        "sources": [
+            {"scaling-1": "1x"},
+            {"scaling-2": "2x"},
+            {"scaling-3": "3x"},
+            {"scaling-4": "4x"},
+            {"scaling-5": "5x"},
+            {"scaling-6": "6x"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Count",
+                "name": "Scaling comparison",
+                "info": "Testing how the system scales"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency",
+                "name": "Scaling comparison",
+                "info": "Testing how the system scales"
+            }
+        ]
     }
 
 }

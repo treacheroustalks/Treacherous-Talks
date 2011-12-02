@@ -197,7 +197,7 @@ change_state (_OtherKey, _) ->
 get_all_backends () ->
     case application:get_env (controller_app, backend_nodes) of
         {ok, Backends} ->
-            lists:sort (Backends);
+            lists:sort(Backends);
         _ ->
             []
     end.

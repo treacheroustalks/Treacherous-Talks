@@ -12,12 +12,12 @@ RIAK_DIR="riak"
 SCHEMA_DIR="riak_schema"
 
 SERVERS=(
-        "suku.pcs"
-        "lin.pcs"
-        "rahim.pcs"
         "stephan.pcs"
-        "jd.pcs"
-        "tiina.pcs"
-        "dilshod.pcs"
         "erik.pcs"
+        "suku.pcs"
+        "rahim.pcs"
+        "jd.pcs"
+        "dilshod.pcs"
+        "lin.pcs"
+        "tiina.pcs"
 )
