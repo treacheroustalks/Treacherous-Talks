@@ -321,7 +321,7 @@ handle_call({game_search, Query}, _From, State) ->
 %% @end
 %%-------------------------------------------------------------------
 handle_call(get_db_stats, _From, State) ->
-    Reply = db:get_db_stats(),
+    Reply = system_stats:get_db_stats(),
     {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
