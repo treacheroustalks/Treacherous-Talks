@@ -41,10 +41,10 @@
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
--export([start_release/1,
-         stop_release/1,
-         ping_release/1,
-         ping_release_and_wait/2,
+-export([start_release/2,
+         stop_release/2,
+         ping_release/2,
+         ping_release_and_wait/3,
          run_riak_search_command/1,
          run_riak_join_command/1]).
 
@@ -54,39 +54,36 @@
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Starts a release given the name of it. This assumes that the start script for
-%% a release is named like "Relname/bin/Relname". It will also return the stdout
-%% of the command as a binary.
+%% Starts a release given the name of it and the path to the release directory.
+%% It will also return the stdout of the command as a binary.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec start_release(relname()) -> {ok, binary()} | {error, term()}.
-start_release(Relname) ->
-    run_release_script(Relname, Relname, "start").
+-spec start_release(string(), relname()) -> {ok, binary()} | {error, term()}.
+start_release(Path, Relname) ->
+    run_release_script(Path, Relname, "start").
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Stops a release given the name of it. This assumes that the start script for
-%% a release is named like "Relname/bin/Relname". It will also return the stdout
-%% of the command as a binary.
+%% Stops a release given the name of it and the path to the release directory.
+%% It will also return the stdout of the command as a binary.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec stop_release(relname()) -> {ok, binary()} | {error, term()}.
-stop_release(Relname) ->
-    run_release_script(Relname, Relname, "stop").
+-spec stop_release(string(), relname()) -> {ok, binary()} | {error, term()}.
+stop_release(Path, Relname) ->
+    run_release_script(Path, Relname, "stop").
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Pings a release given the name of it and returns if it is up or down. This
-%% assumes that the start script for a release is named like
-%% "Relname/bin/Relname".
+%% Pings a release given the name of it and the path to the release
+%% directory. It returns if it is up or down.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec ping_release(relname()) -> up | down | {error, term()}.
-ping_release(Relname) ->
-    case run_release_script(Relname, Relname, "ping") of
+-spec ping_release(string(), relname()) -> up | down | {error, term()}.
+ping_release(Path, Relname) ->
+    case run_release_script(Path, Relname, "ping") of
         {ok, _} ->
             up;
         {error, {1, _}} ->
@@ -99,22 +96,23 @@ ping_release(Relname) ->
 %% @doc
 %% Pings a given release and checks for an "up" reply. If the reply is "down",
 %% it will sleep one second and ping again. This is repeated either until an
-%% "up" reply is received or when it reaches the NbrOfTimes limit.
+%% "up" reply is received or when it reaches the NbrOfTimes limit. The Path
+%% argument is the path to the release directory.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec ping_release_and_wait(relname(), integer()) ->
+-spec ping_release_and_wait(string(), relname(), integer()) ->
     up | down | {error, term()}.
-ping_release_and_wait(Relname, NbrOfTimes) when NbrOfTimes > 1 ->
-    case ping_release(Relname) of
+ping_release_and_wait(Path, Relname, NbrOfTimes) when NbrOfTimes > 1 ->
+    case ping_release(Path, Relname) of
         down ->
             timer:sleep(1000),
-            ping_release_and_wait(Relname, NbrOfTimes-1);
+            ping_release_and_wait(Path, Relname, NbrOfTimes-1);
         Other ->
             Other
     end;
-ping_release_and_wait(Relname, _NbrOfTimes) ->
-    ping_release(Relname).
+ping_release_and_wait(Path, Relname, _NbrOfTimes) ->
+    ping_release(Path, Relname).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -124,7 +122,7 @@ ping_release_and_wait(Relname, _NbrOfTimes) ->
 %%-------------------------------------------------------------------
 -spec run_riak_search_command(list()) -> {ok, binary()} | {error, term()}.
 run_riak_search_command(Args) ->
-    Res = run_command_with_cmd(riak, "search-cmd", Args),
+    Res = run_command_with_cmd("riak", "search-cmd", Args),
     % Yes, it is brittle to regexp on messages from Riaks' search-cmd, but it is
     % better than nothing.
     case re:run(Res, "hook on bucket|Updating schema for", []) of
@@ -145,7 +143,7 @@ run_riak_search_command(Args) ->
 run_riak_join_command(Node) ->
     Args = "join "++Node,
     OKResponse = "Sent join request to "++Node++"\n",
-    case run_command_with_cmd(riak, "riak-admin", Args) of
+    case run_command_with_cmd("riak", "riak-admin", Args) of
         OKResponse ->
             {ok, OKResponse};
         "Failed: This node is already a member of a cluster\n" ->
@@ -161,38 +159,38 @@ run_riak_join_command(Node) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Creates a command from the name of a release, the file to execute, the action
-%% to perform and runs that command. This function uses os:cmd which does not
-%% check the error code and just returnes the STDOUT.
+%% Creates a command from the path to a release directory, the file to execute,
+%% the action to perform and runs that command. This function uses os:cmd which
+%% does not check the error code and just returnes the STDOUT.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec run_command_with_cmd(relname(), string(), string()) -> binary().
-run_command_with_cmd(Relname, Binname, Argstring) ->
+-spec run_command_with_cmd(string(), string(), string()) -> binary().
+run_command_with_cmd(Path, Binname, Argstring) ->
     {ok, Releasepath} = application:get_env(release_path),
     % It is important to do absname since os:find_executable is of another
     % opinion what a relative path is relative to than the filename lib.
     Filename = filename:absname(
-                 filename:join([Releasepath, Relname, "bin", Binname])),
+                 filename:join([Releasepath, Path, "bin", Binname])),
     ?DEBUG("Doing ~p on file ~p~n", [Argstring, Filename]),
     list_to_binary(os:cmd(Filename++" "++Argstring)).
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Creates a command from the name of a release, the file to execute, the action
-%% to perform and runs that command. This function uses cmd() which checks the
-%% return code, but instead behaves like exec() instead of a shell.
+%% Creates a command from the path to a release directory, the file to execute,
+%% the action to perform and runs that command. This function uses cmd() which
+%% checks the return code, but instead behaves like exec() instead of a shell.
 %%
 %% @end
 %%-------------------------------------------------------------------
--spec run_release_script(relname(), string(), string()) ->
+-spec run_release_script(string(), string(), string()) ->
     {ok, binary()} | {error, term()}.
-run_release_script(Relname, Binname, Action) ->
+run_release_script(Path, Binname, Action) ->
     {ok, Releasepath} = application:get_env(release_path),
     % It is important to do absname since os:find_executable is of another
     % opinion what a relative path is relative to than the filename lib.
     Filename = filename:absname(
-                 filename:join([Releasepath, Relname, "bin", Binname])),
+                 filename:join([Releasepath, Path, "bin", Binname])),
     ?DEBUG("Doing ~p on file ~p~n", [Action, Filename]),
     cmd(Filename, [Action]).
 
