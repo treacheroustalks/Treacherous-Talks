@@ -50,12 +50,26 @@ function load_get_system_status(event_data) {
 }
 
 function load_get_database_status(event_data) {
-    var jsonObj = jQuery.parseJSON(event_data.database_status);
-    var keys = get_keys(jsonObj);
-    var acc = "";
-    for(var i=0;i<keys.length;i++){
-        acc+= keys[i]+":    <b>"+jsonObj[keys[i]]+"</b><br>"
+    var jsonArr = [];
+    var dbCount = parseInt(event_data.db_count);
+    for(var i = 0; i < dbCount; i++){
+        jsonArr.push(jQuery.parseJSON(event_data["db_stats" + i]));
     }
+    var keys = get_keys(jsonArr[0]);
+
+    var acc = '<table cellpadding="1" cellspacing="1"><tr><th></th>';
+    for(var j=0; j<dbCount; j++){
+        acc += "<th><b>Node" + (j+1) + "</b></th>";
+    }
+    acc += "</tr>";
+    for(var i=0; i<keys.length; i++){
+        acc += "<tr><td>" + keys[i] + "</td>";
+        for(var j=0; j<dbCount; j++){
+            acc += '<td height="18"><p id="dbtd"><b>' + jsonArr[j][keys[i]] + "</b></p></td>";
+        }
+        acc += "</tr>";
+    }
+    acc += "</table>"
     $('#database_status_data').html('<p>' + acc + '</p>');
 }
 

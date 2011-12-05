@@ -275,7 +275,7 @@ session_test_instantiator(Mods) ->
 %%-------------------------------------------------------------------
 operator_session_setup() ->
     Mods = [
-            operator_tests
+            get_db_stats_tests
            ],
     Callback = callback(),
     Reply = {fun(_,_,Data) -> Data end, []},

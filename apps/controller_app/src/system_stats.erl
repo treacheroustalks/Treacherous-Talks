@@ -24,7 +24,7 @@
 
 -module(system_stats).
 
--export([get_system_stats/1, max_mem_proc/0]).
+-export([get_system_stats/1, max_mem_proc/0, get_db_stats/0]).
 -include_lib("utils/include/debug.hrl").
 
 %%---------------------------------------------------------------------
@@ -143,6 +143,15 @@ get_frontend_stats() ->
                               "Mail users:\t~p~nWeb users:\t~p~n",
                               [Total, IM, Mail, Web]),
     FrontendHeadline ++ UserStats ++ ?BREAKLINE.
+
+%% ------------------------------------------------------------------
+%% Frontend Statistics - text output
+%% ------------------------------------------------------------------
+get_db_stats() ->
+    AllDbNodeStats = lists:map(fun(Pid) ->
+                 controller_app_config:db_state(Pid)
+              end, controller_app_config:node_pids()),
+    {ok, AllDbNodeStats}.
 
 %% ------------------------------------------------------------------
 %% Cross-Node Application Statistics - text output
@@ -292,7 +301,7 @@ proc_mem_list() ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Sums for every module in ProcMemList up how much memory usage 
+%% Sums for every module in ProcMemList up how much memory usage
 %% originates from that module.
 %% @end
 %%-------------------------------------------------------------------

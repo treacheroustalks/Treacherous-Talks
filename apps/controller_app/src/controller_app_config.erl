@@ -28,7 +28,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 -export ([start_link/0, node_pids/0, node_count/0, worker_count/1,
-          worker_count/2, ping/0, machine_state/1, queue_info/1]).
+          worker_count/2, ping/0, machine_state/1, db_state/1, queue_info/1]).
 
 %% gen_server Function Exports
 %% ------------------------------------------------------------------
@@ -75,6 +75,9 @@ ping() ->
 machine_state(Pid) ->
     gen_server:call(Pid, machine_state).
 
+db_state(Pid) ->
+    gen_server:call(Pid, db_state).
+
 queue_info(Pid) ->
     gen_server:call(Pid, queue_info).
 
@@ -113,6 +116,9 @@ handle_call(worker_count, _From, State) ->
 %%--------------------------------------------------------------------
 handle_call(machine_state, _From, State) ->
     MachineState = get_machine_state(),
+    {reply, MachineState, State};
+handle_call(db_state, _From, State) ->
+    MachineState = db:get_db_stats(),
     {reply, MachineState, State};
 handle_call({worker_count, Count}, _From, State) ->
     Response = controller_app_worker_sup:worker_count(Count),

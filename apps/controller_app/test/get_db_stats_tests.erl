@@ -27,7 +27,7 @@
 %%% @since : 17 Oct 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
--module(operator_tests).
+-module(get_db_stats_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/game.hrl").
@@ -45,7 +45,12 @@ tests(Callback, SessId) ->
 success(Callback, SessId) ->
     Cmd = {get_db_stats, {ok, SessId, []}},
     Result = controller:handle_action(Cmd, Callback),
-    {CmdRes, ResultData} = Result,
+    {CmdRes, List} = Result,
+
+    ?assertEqual(true, is_list(List)),
+    {ok, Json} = hd(List),
+
+    ?assertEqual(true, is_list(Json)),
     ?assertEqual({get_db_stats, success}, CmdRes),
     ?debugMsg("GET DB STATS TEST SUCCESS finished").
 

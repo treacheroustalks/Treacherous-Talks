@@ -81,3 +81,8 @@ img.preloader {
 .debug {
     border: 1px solid red;
 }
+
+#dbtd {
+    width: 70px;
+    word-wrap: break-word;
+}

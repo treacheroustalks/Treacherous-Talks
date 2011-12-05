@@ -72,8 +72,8 @@ get({login, invalid_data}, Error) ->
     end;
 
 % Operator get DB status
-get({get_db_stats, success}, Json) ->
-    Json;
+get({get_db_stats, success}, _JsonList) ->
+    resp("Get DB stats success.~n");
 get({get_db_stats, invalid_data}, Error) ->
     case Error of
         get_stats_body_fail ->

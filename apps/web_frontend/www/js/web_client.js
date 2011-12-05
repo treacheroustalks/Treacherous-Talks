@@ -302,6 +302,7 @@ function event_action(data) {
         load_game_search(event_data);
         break;
     case "get_db_stats_success":
+        print(event_data);
         load_get_database_status(event_data);
         break;
     case "get_system_status_success":
@@ -322,4 +323,13 @@ function is_empty_page(pg) {
 function print(msg) {
     if (debug)
         console.log(msg);
+}
+
+function benchmarkFunc(somefunc) {
+    var start = new Date().getMilliseconds();
+    somefunc();
+    var stop = new Date().getMilliseconds();
+    var executionTime = stop - start;
+    console.log("Execution time " + executionTime +
+        " milliseconds"); // or alert("Execution time " + executionTime + " milliseconds");
 }
