@@ -302,11 +302,13 @@ function event_action(data) {
         load_game_search(event_data);
         break;
     case "get_db_stats_success":
-        print(event_data);
         load_get_database_status(event_data);
         break;
     case "get_system_status_success":
         load_get_system_status(event_data);
+        break;
+    case "get_games_ongoing_success":
+        load_get_games_ongoing(event_data);
         break;
     default:
         break;

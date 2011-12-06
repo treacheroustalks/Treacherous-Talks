@@ -270,7 +270,7 @@ session_setup() ->
 %%-------------------------------------------------------------------
 operator_session_setup() ->
     Mods = [
-            stop_game_tests, get_db_stats_tests
+            stop_game_tests, get_db_stats_tests, get_games_ongoing_tests
            ],
     Callback = callback(),
     Reply = {fun(_,_,Data) -> Data end, []},

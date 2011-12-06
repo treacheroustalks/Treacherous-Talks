@@ -48,16 +48,23 @@
 %%        Data is used to create the message content based in Action
 -spec
 parse(Data::term()) ->
-{register, {ok, #user{}}} |
-{login, {ok, #user{}}} |
-{update, {ok, string(), #user{}}} |
-{create_game, {ok, string(), #game{}}} |
-{reconfig_game, {ok, string(), #game{}}} |
-{join_game, {ok, string(), {integer(), atom()}}} |
-{game_overview, {ok, string(), integer()}} |
-{game_order, {ok, string(), {integer(), term()}}} |
-{games_current, {ok, string(), atom()}} |
-{game_search, {ok, string(), string()}}.
+        {register, {ok, #user{}}} |
+        {login, {ok, #user{}}} |
+        {update, {ok, string(), #user{}}} |
+        {create_game, {ok, string(), #game{}}} |
+        {reconfig_game, {ok, string(), #game{}}} |
+        {join_game, {ok, string(), {integer(), atom()}}} |
+        {game_overview, {ok, string(), integer()}} |
+        {game_order, {ok, string(), {integer(), term()}}} |
+        {games_current, {ok, string(), atom()}} |
+        {game_search, {ok, string(), string()}} |
+        {get_games_ongoing, {ok, string(), term()}} |
+        {get_db_stats, {ok, string(), term()}} |
+        {game_msg, {ok, string(), #frontend_msg{}}} |
+        {power_msg, {ok, string(), #frontend_msg{}}} |
+        {user_msg, {ok, string(), #frontend_msg{}}} |
+        {assign_moderator, {ok, string(), {string(), atom()}}} |
+        {get_system_status, {ok, string()}}.
 
 
 parse(RawData) ->
@@ -146,6 +153,8 @@ parse(RawData) ->
         "game_search" ->
             Query = get_search_query(Data),
             {game_search, {ok, get_field("session_id", Data), Query}};
+        "get_games_ongoing" ->
+            {get_games_ongoing, {ok, get_field("session_id", Data), dummy}};
         "get_db_stats" ->
             {get_db_stats, {ok, get_field("session_id", Data), []}};
         "game_msg" ->

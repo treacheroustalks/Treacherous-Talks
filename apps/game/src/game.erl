@@ -37,7 +37,8 @@
           search/1, get_game_search/1,
           get_games_current/1,
           game_msg/3,
-          stop_game/1
+          stop_game/1,
+          get_games_ongoing/0
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -181,7 +182,7 @@ get_game_overview(GameID, UserID) ->
 
 %% -----------------------------------------------------------------------------
 %% @doc
-%%  get the game_current record for the game with id GameID
+%%  Get the game_current record for the game with id GameID
 %% replies {ok, CurrentGame :: #game_current{}} or Error.
 %% @spec
 %% get_current_game(GameID :: integer()) ->
@@ -218,12 +219,21 @@ get_games_current(UserID) ->
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  Get the games for the given search query
-%% search(Query :: string()) ->
+%% get_game_search(Query :: string()) ->
 %%     {ok, [#game{}]} | {error, Error}
 %% @end
 %% ----------------------------------------------------------------------------
 get_game_search(Query) ->
     ?CALL_WORKER({get_game_search, Query}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  Get the games for the given search query
+%% get_games_ongoing() -> {ok, [integer()]} | {error, Error}
+%% @end
+%% ----------------------------------------------------------------------------
+get_games_ongoing() ->
+    ?CALL_WORKER(get_games_ongoing).
 
 %% -----------------------------------------------------------------------------
 %% @doc

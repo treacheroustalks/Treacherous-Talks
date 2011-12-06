@@ -90,6 +90,10 @@ get({get_db_stats, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
+% Operator get ongoing games
+get({get_games_ongoing, _}, _Data) ->
+    resp("");
+
 % Get session user
 get({get_session_user, success}, Val) ->
     resp(data_format:user_to_text(Val));

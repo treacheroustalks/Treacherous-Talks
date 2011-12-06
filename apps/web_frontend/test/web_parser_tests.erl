@@ -59,7 +59,9 @@ parser_test_() ->
       fun assign_moderator/0,
       fun power_msg/0,
       fun get_system_status/0,
-      fun game_search/0
+      fun game_search/0,
+      fun get_games_ongoing/0
+
      ]}.
 
 get_db_stats() ->
@@ -137,6 +139,11 @@ parse_countries_str() ->
                   web_parser:parse_countries_str({array,["england",
                                                          "germany",
                                                          "france"]})).
+
+get_games_ongoing() ->
+    ?assertEqual (get_games_ongoing_exp_data(),
+                  web_parser:parse(get_games_ongoing_data())).
+
 
 %% Expected data
 
@@ -265,6 +272,11 @@ assign_moderator_exp_data() ->
     {assign_moderator,
                    {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
                        {"nick",remove}}}.
+
+get_games_ongoing_exp_data() ->
+    {get_games_ongoing, {ok,
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
+
 
 %% Input data
 
@@ -462,3 +474,11 @@ game_search_data() ->
             {struct,[{"build_phase","10"}]},
             {struct,[{"waiting_time","10"}]},
             {struct,[{"num_players","7"}]}]}}]}}.
+
+get_games_ongoing_data() ->
+    {ok,{struct,
+     [{"action","get_games_ongoing"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.

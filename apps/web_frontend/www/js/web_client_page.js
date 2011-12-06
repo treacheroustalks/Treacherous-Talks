@@ -45,10 +45,16 @@ function get_system_status() {
     call_server('get_system_status', dataObj);
 }
 
+/**
+ * Load the system status page
+ */
 function load_get_system_status(event_data) {
     $('#system_status_data').html('<p>' + nl2br(event_data.system_status) + '</p>');
 }
 
+/**
+ * Load the database status page
+ */
 function load_get_database_status(event_data) {
     var jsonArr = [];
     var dbCount = parseInt(event_data.db_count);
@@ -71,6 +77,28 @@ function load_get_database_status(event_data) {
     }
     acc += "</table>"
     $('#database_status_data').html('<p>' + acc + '</p>');
+}
+
+/**
+ * Load the get ongoing games page for the operator
+ */
+function load_get_games_ongoing(event_data) {
+    var view_link = function(id) {
+        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">view</a>';
+    }
+
+    var data = new Array();
+    // Add view link to all the games
+    for ( var i = 0; i < event_data.length; i++) {
+        var obj = new Object();
+        obj['id'] = event_data[i];
+        obj['view'] = view_link(event_data[i]);
+        data.push(obj);
+    }
+    // Create html table from JSON and display it
+    var keys = get_keys(data[0]);
+
+    $('#games_ongoing_data').html(JsonToTable(data, keys, 'gnt', 'gnc'));
 }
 
 /**
@@ -321,13 +349,21 @@ function send_in_game_message() {
 }
 
 function get_database_status() {
-    page = 'operator';
     var dataObj = {
         "content" : [
             { "session_id" : get_cookie() }
         ]
     };
     call_server('get_db_stats', dataObj);
+}
+
+function get_games_ongoing() {
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie() }
+        ]
+    };
+    call_server('get_games_ongoing', dataObj);
 }
 
 /*------------------------------------------------------------------------------

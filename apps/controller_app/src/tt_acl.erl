@@ -94,5 +94,3 @@ user_cmd() ->
      game_search ,
      game_msg
     ].
-
-

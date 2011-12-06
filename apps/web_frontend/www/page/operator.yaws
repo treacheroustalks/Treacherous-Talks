@@ -6,8 +6,9 @@
   <div class="span15">
   <div id="message"></div>
     <div class="clear"></div>
-    <a href="javascript:void(0);" onclick="load_add_remove_moderator_page();">Add/Remove moderator</a> <br>
-    <a href="javascript:void(0);" onclick="get_system_status();">Server Management</a> <br>
-    <a href="javascript:void(0);" onclick="get_database_status();">Database Management</a> <br>
+    <a href="javascript:void(0);" class="btn primary" onclick="load_add_remove_moderator_page();">Add/Remove moderator</a>&nbsp;
+    <a href="javascript:void(0);" class="btn primary" onclick="get_system_status();">Server Management</a>&nbsp;
+    <a href="javascript:void(0);" class="btn primary" onclick="get_database_status();">Database Management</a>&nbsp;
+    <a href="javascript:void(0);" class="btn primary" onclick="get_games_ongoing();">Ongoing games</a>&nbsp;
   </div>
 </div>

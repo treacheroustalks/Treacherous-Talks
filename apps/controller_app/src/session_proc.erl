@@ -306,13 +306,26 @@ handle_call(games_current, _From,
 %% @doc
 %% Handles call for searching the game bucket
 %% @end
-%% [@spec handle_call({games_current::atom(), UserId::Integer(),
-%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
+%% [@spec handle_call({game_search::atom(), Query::string()},
+%%                    From::{pid(), Tag}, #state{}) ->
 %%                                                  {reply, ok, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
 handle_call({game_search, Query}, _From, State) ->
     Reply = game:get_game_search(Query),
+    {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for getting all ongoing games
+%% To be used only by the operator
+%% @end
+%% [@spec handle_call(get_games_ongoing::atom(),
+%%                    From::{pid(), Tag}, #state{}) ->
+%%                                                  {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call(get_games_ongoing, _From, State) ->
+    Reply = game:get_games_ongoing(),
     {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc

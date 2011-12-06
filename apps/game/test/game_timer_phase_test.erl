@@ -101,10 +101,10 @@ game_timer_state_tst_ () ->
              ?debugMsg("game timer state test start"),
              GameRecord = test_game3(),
              Game = sync_get(sync_new(GameRecord)),
-             ?debugVal(Id = Game#game.id),
-             ?debugVal(?assertEqual(waiting_phase, game_timer:current_state(Id))),
-             ?debugVal(timer:sleep(100)),
-             ?debugVal(game_timer:sync_event(Id, timeout)),
+             Id = Game#game.id,
+             ?assertEqual(waiting_phase, game_timer:current_state(Id)),
+             timer:sleep(100),
+             game_timer:sync_event(Id, timeout),
              ?assertEqual(order_phase, game_timer:current_state(Id)),
 
              game_timer:sync_event(Id, timeout),
@@ -136,7 +136,7 @@ game_current_tst_() ->
     [fun() ->
              ?debugMsg("Current game update test----------"),
              GameRecord = test_game(),
-             ?debugVal(Game = sync_get(sync_new(GameRecord))),
+             Game = sync_get(sync_new(GameRecord)),
              ID = Game#game.id,
 
              ?assertEqual(waiting_phase, game_timer:current_state(ID)),
@@ -195,9 +195,9 @@ game_timer_end_tst_() ->
     [fun() ->
              ?debugMsg("finish game test----------"),
              GameRecord = test_game(),
-             ?debugVal(Game = sync_get(sync_new(GameRecord))),
+             Game = sync_get(sync_new(GameRecord)),
              ID = Game#game.id,
-             ?debugVal(TimerPid = global:whereis_name({game_timer, ID})),
+             TimerPid = global:whereis_name({game_timer, ID}),
              ?assert(is_process_alive(TimerPid)),
              ?assertEqual(game_timer:sync_event(ID, timeout), {ok, order_phase}),
              ?assertEqual({ok, {ID, finished}}, game_timer:stop(ID, finished)),
@@ -216,7 +216,7 @@ game_timer_end_tst_() ->
 game_timer_game_over_tst_() ->
     [fun() ->
              GameRecord = test_game(),
-             ?debugVal(Game = sync_get(sync_new(GameRecord))),
+             Game = sync_get(sync_new(GameRecord)),
              ID = Game#game.id,
              TimerPid = global:whereis_name({game_timer, ID}),
              %% timeout brings us to "started" / order phase
@@ -288,5 +288,5 @@ update_state(ID, Map) ->
     Key = game_utils:get_keyprefix({id, ID}),
     {ok, StateObj} = db:get(?B_GAME_STATE, Key),
     State = db_obj:get_value(StateObj),
-    ?debugVal(FakedState = State#game_state{map = Map}),
-    ?debugVal(game_utils:update_db_obj(StateObj, FakedState)).
+    FakedState = State#game_state{map = Map},
+    game_utils:update_db_obj(StateObj, FakedState).

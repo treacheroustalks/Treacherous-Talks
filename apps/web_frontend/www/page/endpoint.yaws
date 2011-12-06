@@ -244,8 +244,13 @@ get_ret({get_db_stats, success}, Ret=#ret{}, DbStatsList) ->
     Proplist = all_db_stats_to_proplist(DbStatsList),
     EventData = json2:obj_from_list(Proplist),
     msg_invisible(Ret#ret{event_data = EventData, page = "database_status"});
-
 get_ret({get_db_stats, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({get_games_ongoing, success}, Ret=#ret{}, GameList) ->
+    EventData = GameList,
+    msg_invisible(Ret#ret{event_data = EventData, page = "games_ongoing"});
+get_ret({get_games_ongoing, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({games_current, success}, Ret=#ret{}, Games) ->

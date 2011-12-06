@@ -62,7 +62,8 @@
          game_search/2,
          assign_moderator/2,
          power_msg/2,
-         stop_game/2
+         stop_game/2,
+         get_games_ongoing/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -281,6 +282,17 @@ game_search(SessionId, Query) ->
 %%-------------------------------------------------------------------
 stop_game(SessionId, GameId) ->
     ?SESSION_CALL(SessionId, stop_game, GameId).
+
+%%-------------------------------------------------------------------
+%% @doc get_games_ongoing/2
+%% Get all ongoing games. To be used only by the operator
+%%
+%% @spec get_games_ongoing(string(), term()) ->
+%%         {ok, [integer()]}
+%% @end
+%%-------------------------------------------------------------------
+get_games_ongoing(SessionId, _Data) ->
+    ?SESSION_CALL(SessionId, get_games_ongoing).
 
 %%-------------------------------------------------------------------
 %% @doc get_db_stats/2

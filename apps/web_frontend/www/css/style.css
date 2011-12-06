@@ -86,3 +86,7 @@ img.preloader {
     width: 70px;
     word-wrap: break-word;
 }
+
+#user_nick {
+    color: #229922;
+}

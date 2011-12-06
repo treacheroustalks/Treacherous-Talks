@@ -44,8 +44,7 @@
          code_change/3]).
 
 %% Exports for eunit and game timer
--export([get_game_order_key/2, get_target_players/3,
-         send_game_msg/3]).
+-export([get_game_order_key/2, get_target_players/3, send_game_msg/3]).
 
 %% ------------------------------------------------------------------
 %% External exports
@@ -134,6 +133,9 @@ handle_call({get_games_current, UserID},_From, State) ->
     {reply, Reply, State};
 handle_call({get_game_search, Query},_From, State) ->
     Reply = get_game_search(Query),
+    {reply, Reply, State};
+handle_call(get_games_ongoing,_From, State) ->
+    Reply = get_games_ongoing(),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
@@ -483,6 +485,16 @@ get_games_current(UserID) ->
 -spec get_game_search(string()) -> {ok, [#game{}]}.
 get_game_search(Query) ->
     db_utils:do_search_values(?B_GAME, Query, ?GAME_REC_NAME).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Get all the ongoing games
+%% @end
+%%-------------------------------------------------------------------
+-spec get_games_ongoing() -> {ok, [integer()]}.
+get_games_ongoing() ->
+    Query = "status=ongoing",
+    db_utils:do_search(?B_GAME, Query).
 
 %% ------------------------------------------------------------------
 %% @doc

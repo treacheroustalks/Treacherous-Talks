@@ -70,10 +70,4 @@
     </form>
     </fieldset>
   </div>
-  <div class="span8">
-    <h2>User options</h2>
-    <p>
-        <button class="btn primary" onclick="load_update_user_page();">Change personal information</button>
-    </p>
-  </div>
 </div>

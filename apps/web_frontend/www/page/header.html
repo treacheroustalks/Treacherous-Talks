@@ -25,9 +25,9 @@
           <ul class="nav">
             <li><a href="javascript:void(0);" onclick="load_home_page();">Home</a></li>
             <li><a href="javascript:void(0);" onclick="load_register_page();" id="register_menu">Register</a></li>
-            <div id="admin_menu" class="pull-left hide">
-                <a href="javascript:void(0);class= "hide"; onclick="load_operator_page();">Admin panel</a>
-            </div>
+            <li id="admin_menu" class="pull-left hide">
+                <a href="javascript:void(0);" onclick="load_operator_page();">Admin panel</a>
+            </li>
           </ul>
           <form id="login_form" action="" class="pull-right">
             <input id="login_nick" name="nick" class="input-small" type="text" placeholder="Nick">
@@ -35,7 +35,9 @@
             <button class="btn" type="submit" onclick="validate_login(); return false;">Sign in</button>
           </form>
           <div id="logout" class="pull-right hide">
-            <a href="javascript:void(0);" onclick="logout();"><font color="#229922"><span id="user_nick"></span></font> Logout</a>
+            <span id="user_nick"></span>&nbsp;&nbsp;
+            <a href="javascript:void(0);" onclick="load_update_user_page();">Settings</a>&nbsp;&nbsp;
+            <a href="javascript:void(0);" onclick="logout();">Logout</a>
           </div>
         </div>
       </div>

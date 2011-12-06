@@ -71,7 +71,7 @@ def registerUserTest(driver):
 def loginTest(driver, nick):
     data = {"login_nick": nick,
             "login_password": "1234"}
-    response = nick+" Logout"
+    response = "Logout"
     login(driver, address, data, response)
 
 # Create a new (shared among tests) browser instance

@@ -126,7 +126,7 @@ user_msg_fail_tst_() ->
             % the sender is not a game player!
             GMsg = #game_message{content = "test user game message", from_id= 1357,
                                  game_id = Game#game.id},
-            ?debugVal(Res = game:game_msg(GMsg, [germany, france], user)),
+            Res = game:game_msg(GMsg, [germany, france], user),
             ?assertEqual({error, user_not_playing_this_game}, Res)
     end.
 
@@ -211,7 +211,7 @@ game_msg_send_tst_() ->
              GMsg = #game_message{content = "test send game message", from_id= 1111,
                                   game_id = Game#game.id},
              ?debugMsg("sync_game_msg"),
-             ?debugVal({Result1, Result2} = sync_game_msg(GMsg, [germany, france], user)),
+             {Result1, Result2} = sync_game_msg(GMsg, [germany, france], user),
              ?assertEqual([], UserIDs -- Result1),
              ?assertEqual([], FromCountries -- Result2)
     end].

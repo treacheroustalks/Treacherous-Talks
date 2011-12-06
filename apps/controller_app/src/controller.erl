@@ -131,6 +131,7 @@
 %% assign_moderator ->     [user_not_found]
 %% get_system_status -> []
 %% stop_game ->         []
+%% get_games_ongoing -> []
 %%
 %% @end
 %%
@@ -186,7 +187,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == game_msg;
        Command == assign_moderator;
        Command == power_msg;
-       Command == stop_game ->
+       Command == stop_game;
+       Command == get_games_ongoing ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);
