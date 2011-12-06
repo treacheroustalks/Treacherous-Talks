@@ -200,7 +200,7 @@ game_timer_end_tst_() ->
              ?debugVal(TimerPid = global:whereis_name({game_timer, ID})),
              ?assert(is_process_alive(TimerPid)),
              ?assertEqual(game_timer:sync_event(ID, timeout), {ok, order_phase}),
-             ?assertEqual({ID, finished}, game_timer:stop(ID, finished)),
+             ?assertEqual({ok, {ID, finished}}, game_timer:stop(ID, finished)),
              {ok, Result} = game:get_game(ID),
              Expected = Game#game{status = finished,
                                       start_time = Result#game.start_time},

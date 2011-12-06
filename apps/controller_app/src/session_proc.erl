@@ -323,6 +323,17 @@ handle_call({game_search, Query}, _From, State) ->
 handle_call(get_db_stats, _From, State) ->
     Reply = system_stats:get_db_stats(),
     {reply, Reply, State, ?TIMEOUT};
+%-------------------------------------------------------------------
+%% @doc
+%% Handles call for stopping a game
+%% @spec
+%% handle_call({stop_game::atom(), GameId::Integer()},
+%%             From::{pid(), Tag}, #state{}) -> {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({stop_game, GameId}, _From, State) ->
+    Reply = game:stop_game(GameId),
+    {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for upgrading a user to a moderator. Action

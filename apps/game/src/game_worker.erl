@@ -96,6 +96,9 @@ handle_call({restart_game, Game}, _From, State) ->
     game_timer_sup:create_timer(Game),
     game_timer:event(Game#game.id, restart),
     {reply, {ok, Game#game.id}, State};
+handle_call({stop_game, ID}, _From, State) ->
+    Reply = game_timer:stop(ID, stopped),
+    {reply, Reply, State};
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
     Reply = update_game(ID, Game),
     game_timer:event(ID, {reconfig, Game}),

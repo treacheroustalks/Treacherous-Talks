@@ -211,7 +211,8 @@ parse_error(Callback) ->
     Commands = [
                 login, register, update_user, get_session_user,
                 create_game, get_game, reconfig_game, game_overview,
-                join_game, game_order, assign_moderator, power_msg
+                join_game, game_order, assign_moderator, power_msg,
+                stop_game
                ],
 
     lists:foreach(fun(Cmd) ->
@@ -228,7 +229,7 @@ invalid_session(Callback) ->
     Commands = [
                 update_user, get_session_user, create_game, get_game,
                 reconfig_game, join_game, game_order, assign_moderator,
-                power_msg
+                power_msg, stop_game
                ],
     InvalidId = session_id:from_pid(list_to_pid("<0.1.0>")),
 
@@ -275,7 +276,7 @@ session_test_instantiator(Mods) ->
 %%-------------------------------------------------------------------
 operator_session_setup() ->
     Mods = [
-            get_db_stats_tests
+            stop_game_tests, get_db_stats_tests
            ],
     Callback = callback(),
     Reply = {fun(_,_,Data) -> Data end, []},

@@ -36,7 +36,8 @@
           get_current_game/1,
           search/1, get_game_search/1,
           get_games_current/1,
-          game_msg/3
+          game_msg/3,
+          stop_game/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -242,3 +243,13 @@ get_game_search(Query) ->
                                           {error, any()}.
 game_msg(Message= #game_message{}, ToCountries, Role) ->
     ?CALL_WORKER({game_msg, Message, ToCountries, Role}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  changes the status of a game to stopped and kills its game timer
+%% @spec
+%% stop_game(GameID :: integer()) -> {ok, {GameID, stopped}}
+%% @end
+%% -----------------------------------------------------------------------------
+stop_game(GameID) ->
+    ?CALL_WORKER({stop_game, GameID}).

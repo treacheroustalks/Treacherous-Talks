@@ -61,7 +61,8 @@
          get_db_stats/2,
          game_search/2,
          assign_moderator/2,
-         power_msg/2
+         power_msg/2,
+         stop_game/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -269,6 +270,17 @@ games_current(SessionId, _Data) ->
 %%-------------------------------------------------------------------
 game_search(SessionId, Query) ->
     ?SESSION_CALL(SessionId, game_search, Query).
+
+%%-------------------------------------------------------------------
+%% @doc stop_game/2
+%% Stops a game
+%%
+%% @spec stop_game(SessionID :: string(), GameId :: integer) ->
+%%         {ok, {GameId, stopped}}
+%% @end
+%%-------------------------------------------------------------------
+stop_game(SessionId, GameId) ->
+    ?SESSION_CALL(SessionId, stop_game, GameId).
 
 %%-------------------------------------------------------------------
 %% @doc get_db_stats/2

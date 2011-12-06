@@ -140,7 +140,8 @@ game_test_ () ->
       translate_game_order_tst_(),
       game_search_tst_(),
       get_games_current_tst_(),
-      game_search_ext_tst_()
+      game_search_ext_tst_(),
+      stop_game_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -599,7 +600,18 @@ game_search_ext_tst_ () ->
              end
      end}.
 
-
+%%------------------------------------------------------------------------------
+%% Tests the stop game functionality
+%%------------------------------------------------------------------------------
+stop_game_tst_() ->
+    fun() ->
+            GameID = sync_new(test_game()),
+            ?debugMsg("Stop game test"),
+            Reply = game:stop_game(GameID),
+            ?assertEqual({ok, {GameID, stopped}}, Reply),
+            ?debugMsg("Stop game test finished"),
+            sync_delete(GameID)
+     end.
 %%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
