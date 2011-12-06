@@ -381,7 +381,47 @@ handle_call({get_presence, Nick}, _From, State) ->
 handle_call({assign_moderator, {Username, Action}}, _From, State) ->
     User = user_management:assign_moderator(Username, Action),
     {reply, User, State, ?TIMEOUT};
-
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for reporting an issue
+%% @end
+%% @spec
+%% handle_call({send_report::atom(), #report_message{}},
+%%             From::{pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({send_report, Report = #report_message{}}, _From,
+            State = #state{user = User}) ->
+    Reply = message:report_msg(Report#report_message{
+                                 from_id = User#user.id,
+                                 from_nick = User#user.nick}),
+    {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for getting reported issues
+%% @end
+%% @spec
+%% handle_call(get_reports::atom(), From::{pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call(get_reports, _From, State = #state{user = User}) ->
+    Reports = message:get_reports(User#user.role),
+    {reply, Reports, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for marking an issue as done
+%% @end
+%% @spec
+%% handle_call({mark_report_as_done :: atom(), IssueID :: integer},
+%%             From :: {pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({mark_report_as_done, IssueID}, _From, State) ->
+    Reply = message:mark_report_as_done(IssueID),
+    {reply, Reply, State, ?TIMEOUT};
 %% Unhandled request
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),

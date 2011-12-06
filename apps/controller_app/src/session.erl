@@ -64,7 +64,10 @@
          power_msg/2,
          stop_game/2,
          get_games_ongoing/2,
-         get_presence/2
+         get_presence/2,
+         send_report/2,
+         get_reports/2,
+         mark_report_as_done/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -361,3 +364,30 @@ deliver_offline_messages (NewSessionId, User) ->
 %%-------------------------------------------------------------------
 assign_moderator(SessionId, Data = {_Username, _Action}) ->
     ?SESSION_CALL(SessionId, assign_moderator, Data).
+
+%%-------------------------------------------------------------------
+%% @doc send_report/2
+%% API for sending a report
+%%
+%% @end
+%%-------------------------------------------------------------------
+send_report(SessionId, Report = #report_message{}) ->
+    ?SESSION_CALL(SessionId, send_report, Report).
+
+%%-------------------------------------------------------------------
+%% @doc get_reports/2
+%% API for getting a list of reports
+%%
+%% @end
+%%-------------------------------------------------------------------
+get_reports(SessionId, _Data) ->
+    ?SESSION_CALL(SessionId, get_reports).
+
+%%-------------------------------------------------------------------
+%% @doc mark_report_as_done/2
+%% API for marking a reported issue as done
+%%
+%% @end
+%%-------------------------------------------------------------------
+mark_report_as_done(SessionId, IssueID) ->
+    ?SESSION_CALL(SessionId, mark_report_as_done, IssueID).

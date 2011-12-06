@@ -72,11 +72,19 @@ test_msg2() ->
 test_game_msg(ToUser) ->
     #game_message{from_country = germany,
                   game_id = 123456,
-             from_id = user_id1(),
-             to_country = france,
-             to_id = ToUser,
-             content = "game message"
-            }.
+                  from_id = user_id1(),
+                  to_country = france,
+                  to_id = ToUser,
+                  content = "game message"
+                 }.
+
+test_report_msg() ->
+    #report_message{from_id = user_id1(),
+                    from_nick = "bob",
+                    to = moderator,
+                    type = report_player,
+                    content = "I would like to report a stupid player"
+                   }.
 
 test_key() ->
     1234.
@@ -98,7 +106,7 @@ to_user2() ->
 %%  the top level test
 %% @end
 %%------------------------------------------------------------------------------
-move_get_put_test_ () ->
+message_test_ () ->
     {setup,
      fun app_started_setup/0,
      fun app_started_teardown/1,
@@ -106,7 +114,8 @@ move_get_put_test_ () ->
       message_worker_tst_(),
       message_fail_tst_(),
       message_success_tst_(),
-      unread_tst_()
+      unread_tst_(),
+      report_player_tst_()
      ]}.
 
 ping_tst_ () ->
@@ -345,6 +354,33 @@ unread_tst_() ->
        end}
     ]}.
 
+
+report_player_tst_() ->
+    [fun() ->
+             ?debugMsg("Report messages sent and received test"),
+             TestReport = test_report_msg(),
+             {ok, ID} = message:report_msg(TestReport),
+             timer:sleep(100),
+             {ok, Reports} = message:get_reports(TestReport#report_message.to),
+             IDList = lists:map(fun(IssueRec) ->
+                                        IssueRec#report_message.id end,
+                                Reports),
+             ?assert(lists:member(ID, IDList)),
+             ?debugMsg("Report messages sent and received test SUCCESS")
+     end,
+     fun() ->
+             ?debugMsg("Mark report as done test"),
+             TestReport = test_report_msg(),
+             {ok, MsgID} = message:report_msg(TestReport),
+             timer:sleep(100),
+             {ok, MsgID} = message:mark_report_as_done(MsgID),
+             {ok, DoneMsg} = message_util:get_message(MsgID,
+                                                      ?B_REPORT_MESSAGE,
+                                                      report_message),
+             ?assertEqual(done, DoneMsg#report_message.status),
+             ?debugMsg("Mark report as done test SUCCESS")
+     end
+    ].
 
 get_DB_obj(Bucket, Key) ->
     BinKey = db:int_to_bin(Key),

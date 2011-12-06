@@ -21,28 +21,40 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc
-%%% All the bucket names are to be included in this file
+%%% @doc Unit tests for reporting issues
 %%% @end
 %%%
-%%% @since : 18 Oct 2011 by Bermuda Triangle
+%%% @since : 6 Dec 2011 by Bermuda Triangle
 %%% @end
-%%%
 %%%-------------------------------------------------------------------
+-module(report_problem_tests).
 
--define(B_SESSION, <<"session">>).
--define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_CURRENT, <<"game_current">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
--define(B_SESSION_HISTORY, <<"session_history">>).
--define(B_GAME_STATE, <<"game_state">>).
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/message.hrl").
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
+-export([tests/1, success/2]).
 
--define(B_GAME_MESSAGE, <<"game_message">>).
--define(B_CORPSES, <<"corpses">>).
--define(B_REPORT_MESSAGE, <<"report_message">>).
+tests([Callback, SessId]) ->
+    [
+     ?_test(success(Callback, SessId))
+    ].
+%%-------------------------------------------------------------------
+%% Update user tests
+%%-------------------------------------------------------------------
+success(Callback, SessId) ->
+    ?debugMsg("REPORT PROBLEM TEST SUCCESS"),
+    Data = get_test_data(success),
+    Cmd = {send_report, {ok, SessId, Data}},
+    Result = controller:handle_action(Cmd, Callback),
+    {CmdRes, _Info} = Result,
+
+    ?assertEqual({send_report, success}, CmdRes),
+    ?debugMsg("REPORT PROBLEM TEST SUCCESS finished").
+
+%%-------------------------------------------------------------------
+%% Test data
+%%-------------------------------------------------------------------
+get_test_data(success) ->
+    #report_message{to = moderator,
+                    type = report_player,
+                    content = "Bob is evil"}.

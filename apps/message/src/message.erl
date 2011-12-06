@@ -36,7 +36,10 @@
           unread/1,
           mark_game_msg_as_read/1,
           mark_user_msg_as_read/1,
-          game_msg/1
+          game_msg/1,
+          report_msg/1,
+          mark_report_as_done/1,
+          get_reports/1
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -112,3 +115,32 @@ mark_game_msg_as_read(MessageId) ->
 game_msg(GMsg = #game_message{}) ->
     ?CAST_WORKER({game_msg, GMsg}).
 
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  log a report issue message
+%% @end
+%% -----------------------------------------------------------------------------
+-spec report_msg(#report_message{}) -> ok.
+report_msg(ReportMsg = #report_message{}) ->
+    ?CALL_WORKER({report_msg, ReportMsg}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  mark a report as done
+%% @end
+%% -----------------------------------------------------------------------------
+-spec mark_report_as_done(ReportId :: integer()) ->
+                                 {ok, ReportId :: integer()} |
+                                 {error, notfound}.
+mark_report_as_done(ReportId) ->
+    ?CALL_WORKER({mark_as_done, ReportId}).
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  gets all reports for a role not marked as done
+%% @end
+%% -----------------------------------------------------------------------------
+-spec get_reports(Role :: atom()) -> {ok, [#report_message{}]}.
+get_reports(Role) ->
+    ?CALL_WORKER({get_reports, Role}).
