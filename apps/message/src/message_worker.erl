@@ -84,12 +84,11 @@ handle_call({mark_as_read, MessageId, Bucket}, _From, State) ->
     {reply, Result, State};
 
 handle_call({user_msg, Msg=#message{}}, _From, State) ->
-    Result = case user_management:get_by_idx(#user.nick, Msg#message.to_nick) of
+    Result = case user_management:get(#user.nick, Msg#message.to_nick) of
                  {ok, {index_list, _IdxList}} ->
                      % Multiple nicks in the db, not allowed ...
                      {error, nick_not_unique};
-                 {ok, DbObj} ->
-                     User = db_obj:get_value(DbObj),
+                 {ok, User} ->
                      ToID = User#user.id,
                      NewMsg = Msg#message{to_id = ToID,
                                           date_created = erlang:universaltime()},

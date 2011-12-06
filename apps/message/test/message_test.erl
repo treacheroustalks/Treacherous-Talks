@@ -133,7 +133,8 @@ message_worker_tst_() ->
 message_fail_tst_() ->
     [fun() ->
              Msg = test_msg(),
-             Reply = message:user_msg(Msg#message{to_nick = "invalid nick"}),
+             Reply = message:user_msg(Msg#message{to_nick = "invalid nick" ++
+                                            integer_to_list(db_c:get_unique_id())}),
              ?assertEqual({error,invalid_nick}, Reply)
      end].
 
@@ -297,7 +298,9 @@ unread_tst_() ->
 
                %check for game_message bucket
                ok = message:game_msg(test_game_msg(to_user_id())),
-               {ok, {[], [UnreadGameMsg]}} = message:unread((to_user())#user.id),
+               Result= message:unread((to_user())#user.id),
+               ?debugFmt("it should return unread game messages ~p~n", [Result]),
+               {ok, {[], [UnreadGameMsg]}} =Result,
                GameMsgKey = UnreadGameMsg#game_message.id,
                {ok, GMsg} = message_util:get_message(GameMsgKey,
                                                         ?B_GAME_MESSAGE,

@@ -41,7 +41,9 @@
          assign_moderator/2,
          create/1,
          get/1,
-         get_by_idx/2,
+         get_id/2,
+         get_db_obj/1,
+         get/2,
          update/1
         ]).
 
@@ -57,7 +59,7 @@
 %% @end
 %%-------------------------------------------------------------------
 create(#user{id = IdIn} = UserIn) ->
-    case get_by_idx(#user.nick, UserIn#user.nick) of
+    case get(#user.nick, UserIn#user.nick) of
         {ok, _CurUser} ->
             {error, nick_already_exists};
         {error, does_not_exist} ->
@@ -70,9 +72,10 @@ create(#user{id = IdIn} = UserIn) ->
             User = UserIn#user{id = Id, date_created = erlang:universaltime()},
 
             BinId = db:int_to_bin(Id),
-            DbObj = db_obj:create(?B_USER, BinId, User),
-            DbObj2 = db_obj:set_indices(DbObj, create_idx_list(User)),
-            db:put(DbObj2),
+            %store as proplist for search
+            UserPropList = data_format:rec_to_plist(User),
+            DbObj = db_obj:create(?B_USER, BinId, UserPropList),
+            db:put(DbObj),
             {ok, User};
         Other ->
             {error, Other}
@@ -87,7 +90,8 @@ create(#user{id = IdIn} = UserIn) ->
 %% @end
 %%-------------------------------------------------------------------
 update(#user{id = Id} = NewUser) when is_integer(Id) ->
-    case db:get(?B_USER, db:int_to_bin(Id)) of
+    BinId = db:int_to_bin(Id),
+    case db:get(?B_USER, BinId) of
         {ok, Obj} ->
             Obj2 = case db_obj:has_siblings(Obj) of
                        false ->
@@ -98,9 +102,9 @@ update(#user{id = Id} = NewUser) when is_integer(Id) ->
                            [H|_] = db_obj:get_siblings(Obj),
                            H
                    end,
-            NewObj = db_obj:set_value(Obj2, NewUser),
-            NewObj2 = db_obj:set_indices(NewObj, create_idx_list(NewUser)),
-            db:put(NewObj2),
+            NewUserPropList = data_format:rec_to_plist(NewUser),
+            NewObj = db_obj:set_value(Obj2, NewUserPropList),
+            db:put(NewObj),
             {ok, NewUser};
         {error, notfound} ->
             {error, does_not_exist};
@@ -112,25 +116,50 @@ update(_User) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Queries a user by index.
+%%  Search for a user if success return user record
 %% @end
 %%-------------------------------------------------------------------
-get_by_idx(Field, Val) ->
-    case create_idx(Field, Val) of
-        {error, field_not_indexed} ->
-            {error, field_not_indexed};
-        Idx ->
-            case db:get_index(?B_USER, Idx) of
-                {ok, [[?B_USER, Key]]} ->
-                    {ok, DbObj} = db:get(?B_USER, Key),
-                    {ok, DbObj};
-                {ok, []} ->
-                    {error, does_not_exist};
-                {ok, List} ->
-                    {ok, {index_list, List}};
-                Other ->
-                    {error, Other}
-            end
+-spec get(integer(), any()) ->
+          {ok, #user{}} |
+          {ok, {index_list, [#user{}]}} |
+          {error, does_not_exist} |
+          {error, term()}.
+get(Field, Val) ->
+    {ok, Query} = db_utils:get_search_term(Field, Val, ?USER_REC_NAME),
+
+    case db_utils:do_search_values(?B_USER, Query, ?USER_REC_NAME) of
+        {ok, [User = #user{}]} ->
+            {ok, User};
+        {ok, []} ->
+            {error, does_not_exist};
+        {ok, List} ->
+            {ok, {index_list, List}};
+        Other ->
+            {error, Other}
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  Search for a user if success return user id
+%% @end
+%%-------------------------------------------------------------------
+-spec get_id(integer(), any()) ->
+          {ok, integer()} |
+          {ok, {index_list, [integer()]}} |
+          {error, does_not_exist} |
+          {error, term()}.
+get_id(Field, Val) ->
+    {ok, Query} = db_utils:get_search_term(Field, Val, ?USER_REC_NAME),
+
+    case db_utils:do_search(?B_USER, Query) of
+        {ok, [Id]} ->
+            {ok, Id};
+        {ok, []} ->
+            {error, does_not_exist};
+        {ok, List} ->
+            {ok, {index_list, List}};
+        Other ->
+            {error, Other}
     end.
 
 %%-------------------------------------------------------------------
@@ -138,17 +167,39 @@ get_by_idx(Field, Val) ->
 %% Gets user from the database.
 %% @end
 %%-------------------------------------------------------------------
+-spec get(integer()) ->
+          #user{} | {error, any()}.
 get(Id) ->
     BinId = db:int_to_bin(Id),
     case db:get(?B_USER, BinId) of
         {ok, RiakObj} ->
-            db_obj:get_value(RiakObj);
+            UserPropList = db_obj:get_value(RiakObj),
+            data_format:plist_to_rec(?USER_REC_NAME, UserPropList);
         {error, Error} ->
             {error, Error};
         Other ->
             erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
     end.
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Gets user from the database and reuturn DB object.
+%%
+%% @spec get_db_obj(integer()) ->
+%%     {ok, #db_obj{}} | {error, any()}
+%%
+%% @end
+%%-------------------------------------------------------------------
+get_db_obj(Id) ->
+    BinId = db:int_to_bin(Id),
+    case db:get(?B_USER, BinId) of
+        {ok, RiakObj} ->
+            {ok, RiakObj};
+        {error, Error} ->
+            {error, Error};
+        Other ->
+            erlang:error({error, {unhandled_case, Other, {?MODULE, ?LINE}}})
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -160,11 +211,10 @@ get(Id) ->
 %% @end
 %%-------------------------------------------------------------------
 assign_moderator(Username, Action) ->
-    case get_by_idx(#user.nick, Username) of
+    case get(#user.nick, Username) of
         {ok, {index_list, _UserList}} ->
             {error, user_not_found};
-        {ok, UserObj} ->
-            User = db_obj:get_value(UserObj),
+        {ok, User} ->
             case Action of
                 add ->
                     ModUser = User#user{role = moderator};
@@ -179,31 +229,3 @@ assign_moderator(Username, Action) ->
 %% ------------------------------------------------------------------
 %% Internal Functions
 %% ------------------------------------------------------------------
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Creates the index list for the database
-%% @end
-%%-------------------------------------------------------------------
-create_idx_list(#user{nick=Nick, role=Role, score=Score, email=Mail}) ->
-    [
-     create_idx(#user.nick, Nick),
-     create_idx(#user.role, Role),
-     create_idx(#user.score, Score),
-     create_idx(#user.email, Mail)
-    ].
-%%-------------------------------------------------------------------
-%% @doc
-%% Creates an index tuple for the database.
-%% @end
-%%-------------------------------------------------------------------
-create_idx(#user.nick, Nick) ->
-    {<<"nick_bin">>, list_to_binary(Nick)};
-create_idx(#user.role, Role) ->
-    {<<"role_bin">>, term_to_binary(Role)};
-create_idx(#user.score, Score) ->
-    {<<"score_int">>, Score};
-create_idx(#user.email, Mail) ->
-    {<<"email_bin">>, list_to_binary(Mail)};
-create_idx(_, _) ->
-    {error, field_not_indexed}.

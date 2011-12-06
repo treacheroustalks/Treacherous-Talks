@@ -57,7 +57,7 @@
 "REGISTER
 NICKNAME: " ++ Nick ++ "
 PASSWORD: pass
-FULLNAME: Full Name
+FULLNAME: Full Name im user
 EMAIL: sth@sth
 END").
 -define(LOGIN_COMMAND_CORRECT(Nick),
@@ -399,7 +399,7 @@ setup_session_instantiator() ->
       ?GAME_ORDER_RESPONSE_SUCCESS,
       "game order successfully sent"},
      {Client,
-      ?SEND_OFF_GAME_MSG(Session, "not_exisiting_user", "a message"),
+      ?SEND_OFF_GAME_MSG(Session, "notExisiting", "a message"),
       ?SEND_OFF_GAME_MSG_RESPONSE_FAILED,
       "game order successfully sent"},
 

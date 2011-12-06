@@ -105,15 +105,18 @@ get_user_test_() ->
       fun app_start/0,
       fun app_stop/1,
       [get_user_t(),
-       get_user_fail_t()]
+       get_user_fail_t(),
+       get_dbobj_user_t()]
      }}.
 
-get_user_by_idx_test_() ->
-    {"get a user by index",
+get_user_by_search_test_() ->
+    {"get a user by search",
      {setup,
       fun() ->
+              ?debugMsg("set up get by search"),
               app_start(),
-              {ok, User} = user_management:create(create_user()),
+              Result = user_management:create(create_user()),
+              {ok, User} = Result,
               [
                {User, #user.nick},
                {User, #user.role},
@@ -122,10 +125,27 @@ get_user_by_idx_test_() ->
               ]
       end,
       fun app_stop/1,
-      fun get_user_by_idx_instantiator/1
+      fun get_user_by_search_instantiator/1
       }}.
 
-
+get_user_id_by_search_test_() ->
+    {"get a user id by search",
+     {setup,
+      fun() ->
+              ?debugMsg("set up get id by search"),
+              app_start(),
+              Result = user_management:create(create_user()),
+              {ok, User} = Result,
+              [
+               {User, #user.nick},
+               {User, #user.role},
+               {User, #user.score},
+               {User, #user.email}
+              ]
+      end,
+      fun app_stop/1,
+      fun get_user_id_by_search_instantiator/1
+      }}.
 
 get_user_t() ->
     fun() ->
@@ -140,7 +160,20 @@ get_user_fail_t() ->
             ?assertEqual({error, notfound}, Result)
     end.
 
-
+get_dbobj_user_t() ->
+    [{"Test get db object of user",
+     fun() ->
+            {ok, User} = user_management:create(create_user()),
+            {ok, DbObj} = user_management:get_db_obj(User#user.id),
+            UserPropList = db_obj:get_value(DbObj),
+            ResultUser = data_format:plist_to_rec(?USER_REC_NAME, UserPropList),
+            ?assertEqual(User, ResultUser)
+    end},
+     {"Test get db object of user when user not exist",
+     fun() ->
+            Result= user_management:get_db_obj(db_c:get_unique_id()),
+            ?assertEqual({error, notfound}, Result)
+    end}].
 
 %% tests generators
 create_user_t(#user{} = User) ->
@@ -173,21 +206,36 @@ update_non_existing_user() ->
             ?assertEqual({error, does_not_exist}, Result)
     end.
 
-get_user_by_idx_instantiator(List) ->
-    % List = [{#user{}, #user.field1}, {#user{}, #user.field2}, ...]
-    % for every field that is indexed we return a test function
+get_user_by_search_instantiator(List) ->
     lists:map(fun({#user{} = User, Field}) ->
-                      ?_test(get_user_by_idx(User, Field))
+                      ?_test(get_user_by_search(User, Field))
               end, List).
 
-get_user_by_idx(#user{} = User, Field) ->
+get_user_by_search(#user{} = User, Field) ->
     Value = element(Field, User),
-    Result = user_management:get_by_idx(Field, Value),
+    Result = user_management:get(Field, Value),
     case Result of
         {ok, {index_list, IdxList}} ->
             ?assert(is_list(IdxList));
-        {ok, DbObj} ->
-            ?assertEqual(User, db_obj:get_value(DbObj));
+        {ok, ResultUser} ->
+            ?assertEqual(User, ResultUser);
+        Other ->
+            erlang:error(error, Other)
+    end.
+
+get_user_id_by_search_instantiator(List) ->
+    lists:map(fun({#user{} = User, Field}) ->
+                      ?_test(get_user_id_by_search(User, Field))
+              end, List).
+
+get_user_id_by_search(#user{} = User, Field) ->
+    Value = element(Field, User),
+    Result = user_management:get_id(Field, Value),
+    case Result of
+        {ok, {index_list, IdxList}} ->
+            ?assert(is_list(IdxList));
+        {ok, ResultUserId} ->
+            ?assertEqual(User#user.id, ResultUserId);
         Other ->
             erlang:error(error, Other)
     end.

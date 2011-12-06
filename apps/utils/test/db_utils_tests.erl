@@ -21,30 +21,15 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
--module(ejabberd_echo_sup).
+-module(db_utils_tests).
 
--behaviour(supervisor).
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("datatypes/include/user.hrl").
 
-%% API
--export([start_link/0]).
-
-%% Supervisor callbacks
--export([init/1]).
-
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
-
-%% ===================================================================
-%% API functions
-%% ===================================================================
-
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-%% ===================================================================
-%% Supervisor callbacks
-%% ===================================================================
-
-init([]) ->
-    XMPPClient = ?CHILD(xmpp_client,worker),
-    {ok, { {one_for_one, 5, 10}, [XMPPClient]} }.
+get_search_term_test() ->
+    ?debugMsg("test get search term"),
+    Field = #user.nick,
+    Val= "TestNick",
+    Term = db_utils:get_search_term(Field, Val, ?USER_REC_NAME),
+    Expected = {ok, "nick="++Val},
+    ?assertEqual(Expected, Term).

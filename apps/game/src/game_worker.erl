@@ -106,8 +106,8 @@ handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
 handle_call({get_game, ID}, _From, State) ->
     Reply = get_game(ID),
     {reply, Reply, State};
-handle_call({get_keys_by_idx, Field, Value}, _From, State) ->
-    Reply = game_utils:get_keys_by_idx(Field, Value),
+handle_call({get_keys, Field, Value}, _From, State) ->
+    Reply = game_utils:get_keys(Field, Value),
     {reply, Reply, State};
 
 handle_call({join_game, GameID, UserID, Country}, _From, State) ->
@@ -127,7 +127,7 @@ handle_call({get_current_game, ID}, _From, State) ->
     Reply = game_utils:get_current_game(ID),
     {reply, Reply, State};
 handle_call({search, Query},_From, State) ->
-    Reply = game_search:search(Query),
+    Reply = db_utils:do_search(?B_GAME, Query),
     {reply, Reply, State};
 handle_call({get_games_current, UserID},_From, State) ->
     Reply = get_games_current(UserID),
@@ -179,9 +179,7 @@ new_game(ID, #game{} = Game) ->
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     GamePlayersRec = #game_player{id=ID},
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, GamePlayersRec),
-    GameObjWithIndex = db_obj:set_indices(DBGameObj,
-                                          game_utils:create_idx_list(Game2)),
-    GamePutResult = db:put (GameObjWithIndex),
+    GamePutResult = db:put (DBGameObj),
     case GamePutResult of
         {error, _} = Error ->
             Error;
@@ -209,9 +207,7 @@ update_game(ID, #game{} = Game) ->
     % Store Game record as proplist for search
     GamePropList = data_format:rec_to_plist(Game),
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
-    GameObjWithIndex = db_obj:set_indices(DBGameObj,
-                                          game_utils:create_idx_list(Game)),
-    GamePutResult = db:put (GameObjWithIndex),
+    GamePutResult = db:put (DBGameObj),
     case GamePutResult of
         {error, _} = Error ->
             Error;
@@ -477,7 +473,7 @@ get_game_player(GameID)->
 get_games_current(UserID) ->
     Query = "id=" ++ integer_to_list(UserID) ++ " AND "
             "(status=waiting OR status=ongoing)",
-    game_search:search_values(Query).
+    db_utils:do_search_values(?B_GAME, Query, ?GAME_REC_NAME).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -486,7 +482,7 @@ get_games_current(UserID) ->
 %%-------------------------------------------------------------------
 -spec get_game_search(string()) -> {ok, [#game{}]}.
 get_game_search(Query) ->
-    game_search:search_values(Query).
+    db_utils:do_search_values(?B_GAME, Query, ?GAME_REC_NAME).
 
 %% ------------------------------------------------------------------
 %% @doc
