@@ -63,7 +63,7 @@ function main {
     TT_CONFIG=config/$DRIVER.config
     echonormal "Updating tt_node in $TT_CONFIG"
     # change local config
-    sed -i "s:{.*tt_node,.*}:{tt_node, 'backend@$TEST_SERVER'}:g" $TT_CONFIG
+    sed -i "s:{.*tt_node,.*}:{tt_node, '$B_NAME@$TEST_SERVER'}:g" $TT_CONFIG
 
     CONFIG="etc/app.config"
     TIMESTAMP=`date +"%y.%m.%d_%H-%M"`
@@ -95,11 +95,11 @@ function main {
         ./basho_bench $TT_CONFIG
 
         # move the results
-        echonormal "Moving results to $W_DIR/$c/" &&
-        mkdir -p $W_DIR/$c &&
-        cp tests/current/* $W_DIR/$c/ &&
-        priv/summary.r -i $W_DIR/$c/ &&
-        xdg-open $W_DIR/$c/summary.png
+        echonormal "Moving results to $W_DIR/$c/" 
+        mkdir -p $W_DIR/$c 
+        cp tests/current/* $W_DIR/$c/ 
+        priv/summary.r -i $W_DIR/$c/ 
+#        xdg-open $W_DIR/$c/summary.png
     done
 }
 

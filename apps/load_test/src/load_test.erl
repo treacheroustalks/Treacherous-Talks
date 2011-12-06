@@ -405,11 +405,11 @@ create_game() ->
     #game{name="game name" ++ integer_to_list(random()),
           description="lorem ipsum dolor sit amet",
           press = white,
-          order_phase = 1,
-          retreat_phase = 1,
-          build_phase = 1,
+          waiting_time = 10,
+          order_phase = 10,
+          retreat_phase = 10,
+          build_phase = 10,
           password="",
-          waiting_time = 60,
           num_players = 7
          }.
 
