@@ -15,7 +15,7 @@ source common_functions.sh
 # Second argument: name of release to start
 # Side effect: will set $errors to one if non-zero exit code
 function start_release () {
-    command=$1/$2/bin/$2
+    command=$1/tt/bin/$2
     local_error=0
     # Start the release given in $1
     echonormal "Starting $2"
@@ -54,7 +54,7 @@ function start_release () {
 # Second argument: name of release to stop
 # Side effect: will set $errors to one if non-zero exit code
 function stop_release () {
-    command=$1/$2/bin/$2
+    command=$1/tt/bin/$2
     local_error=0
     # Stop the release given in $1
     echonormal "Stopping $2"

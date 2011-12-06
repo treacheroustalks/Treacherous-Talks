@@ -39,14 +39,12 @@ fi
 # Use releases/VSN/sys.config if it exists otherwise use etc/app.config
 if [ -e "$RUNNER_BASE_DIR/releases/$APP_VSN/sys.config" ]; then
     CONFIG_PATH="$RUNNER_BASE_DIR/releases/$APP_VSN/sys.config"
-elif [ -e "$RUNNER_ETC_DIR/app-override.config" ]; then
-    CONFIG_PATH="$RUNNER_ETC_DIR/app-override.config"
 else
-    CONFIG_PATH="$RUNNER_ETC_DIR/app.config"
+    CONFIG_PATH="$RUNNER_ETC_DIR/app.$SCRIPT.config"
 fi
 
 # Extract the target node name from node.args
-NAME_ARG=`egrep '^-s?name' $RUNNER_ETC_DIR/nodename`
+NAME_ARG=`egrep '^-s?name' $RUNNER_ETC_DIR/nodename.$SCRIPT`
 if [ -z "$NAME_ARG" ]; then
     echo "nodename needs to have either -name or -sname parameter."
     exit 1

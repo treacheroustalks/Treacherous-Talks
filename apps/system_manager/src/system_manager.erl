@@ -146,7 +146,7 @@ handle_call({stop_release, Relname}, _From, State) ->
     ok = save_status_of_release(Relname, stopped),
     {reply, int_stop_release(Relname), State};
 handle_call({ping_release, Relname}, _From, State) ->
-    {reply, handle_releases:ping_release(Relname), State};
+    {reply, handle_releases:ping_release(get_path(Relname), Relname), State};
 handle_call({join_riak, Node}, _From, State) ->
     {reply, int_join_riak(Node), State}.
 
@@ -202,13 +202,18 @@ update_app_config_loop([], _Hostname, _Releasepath) ->
 update_app_config_loop([Config | T], Hostname, Releasepath) ->
     case Config of
         {release, riak=Relname, RelConf} ->
-            ok = update_app_config(Releasepath, Relname, RelConf),
-            ok = update_node_name(Releasepath, Hostname, Relname, "vm.args"),
+            ok = update_app_config(Releasepath, Relname, "app.config", RelConf),
+            ok = update_node_name(Releasepath, atom_to_list(Relname),
+                                  Hostname, Relname, "vm.args"),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
         {release, Relname, RelConf} ->
-            ok = update_app_config(Releasepath, Relname, RelConf),
-            ok = update_node_name(Releasepath, Hostname, Relname, "nodename"),
+            Path = get_path(Relname),
+            AppCfgFile = lists:concat(["app.", Relname, ".config"]),
+            ok = update_app_config(Releasepath, Path, AppCfgFile, RelConf),
+            NodenameFile = lists:concat(["nodename.", Relname]),
+            ok = update_node_name(Releasepath, Path, Hostname,
+                                  Relname, NodenameFile),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
         _ ->
@@ -225,12 +230,12 @@ update_app_config_loop([Config | T], Hostname, Releasepath) ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec update_app_config(string(), relname(), relconf()) ->
+-spec update_app_config(string(), relname(), string(), relconf()) ->
     ok | {error, term()}.
-update_app_config(Releasepath, Relname, RelConf) ->
+update_app_config(Releasepath, Relname, Filename, RelConf) ->
     Path = filename:join([Releasepath, Relname, "etc"]),
-    AppFile = filename:join([Path, "app.config"]),
-    OldAppFile = filename:join([Path, "app.config.old"]),
+    AppFile = filename:join([Path, Filename]),
+    OldAppFile = lists:concat([AppFile, ".old"]),
     % If there is a "old" app.config file, use that, otherwise copy the regular
     % app.config to .old to preserve the default options.
     case filelib:is_regular(OldAppFile) of
@@ -248,29 +253,29 @@ update_app_config(Releasepath, Relname, RelConf) ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec update_node_name(string(), hostname(), relname(), string()) ->
+-spec update_node_name(string(), string(), hostname(), relname(), string()) ->
     ok | {error, term()}.
-update_node_name(Releasepath, Hostname, Relname, Filename) ->
-    Path = filename:join([Releasepath, Relname, "etc", Filename]),
+update_node_name(Releasepath, Path, Hostname, Relname, Filename) ->
+    File = filename:join([Releasepath, Path, "etc", Filename]),
     Namestring = "-name "++atom_to_list(Relname)++"@"++Hostname,
-    case file:read_file(Path) of
+    case file:read_file(File) of
         {ok, Data} ->
             NewD = re:replace(Data, "-name .*", Namestring, [{return,iodata}]),
-            file:write_file(Path, NewD);
+            file:write_file(File, NewD);
         Other ->
             Other
     end.
 
 %% ------------------------------------------------------------------
 %% @doc
-%% Adds all search schemas in the RELEASEPATH/backend/riak to the running Riak
+%% Adds all search schemas in the RELEASEPATH/tt/riak to the running Riak
 %% instance.
 %%
 %% @end
 %% ------------------------------------------------------------------
 -spec add_riak_search_schemas(string()) -> ok | {error, term()}.
 add_riak_search_schemas(Releasepath) ->
-    SchemaDir = filename:join([Releasepath, "backend", "riak"]),
+    SchemaDir = filename:join([Releasepath, "tt", "riak"]),
     SchemaFiles = filelib:wildcard("*.schema", SchemaDir),
     add_riak_search_schemas_loop(SchemaDir, SchemaFiles).
 
@@ -332,15 +337,16 @@ add_riak_search_schema(SchemaDir, Filename) ->
 %% ------------------------------------------------------------------
 -spec int_start_release(relname()) -> ok | {error, term()}.
 int_start_release(Relname) ->
-    case handle_releases:ping_release(Relname) of
+    Path = get_path(Relname),
+    case handle_releases:ping_release(Path, Relname) of
         up ->
             % Crap, it is already started.
             {error, release_is_already_started};
         down ->
             % Ok, do regular start and try to ping it up to 15 times
-            case handle_releases:start_release(Relname) of
+            case handle_releases:start_release(Path, Relname) of
                 {ok, _Text} ->
-                    case handle_releases:ping_release_and_wait(Relname, 15) of
+                    case handle_releases:ping_release_and_wait(Path, Relname, 15) of
                         up ->
                             ok;
                         down ->
@@ -364,9 +370,10 @@ int_start_release(Relname) ->
 %% ------------------------------------------------------------------
 -spec int_stop_release(relname()) -> ok | {error, term()}.
 int_stop_release(Relname) ->
-    case handle_releases:ping_release(Relname) of
+    Path = get_path(Relname),
+    case handle_releases:ping_release(Path, Relname) of
         up ->
-            case handle_releases:stop_release(Relname) of
+            case handle_releases:stop_release(Path, Relname) of
                 {ok, _Text} ->
                     ok;
                 Error ->
@@ -444,6 +451,7 @@ get_started_releases() ->
 %%  Given a list of tuples [{relname, status}] and a list of changes,
 %%  do a lists:keystore on each change so that existing releases
 %%  are replaced, and new releases are insterted.
+%%
 %% @end
 %% ------------------------------------------------------------------
 -spec update_rel_status([{atom(), atom()}], [{atom(), atom()}]) -> [{atom(), atom()}].
@@ -452,3 +460,15 @@ update_rel_status(OldStatuses, StatusChanges) ->
                   lists:keystore(RelName, 1, Config, {RelName, Change})
           end,
     lists:foldl(Fun, OldStatuses, StatusChanges).
+
+%% ------------------------------------------------------------------
+%% @doc
+%% Returns the path for different release names.
+%%
+%% @end
+%% ------------------------------------------------------------------
+-spec get_path(relname()) -> string().
+get_path(riak) ->
+    "riak";
+get_path(_Other) ->
+    "tt".
