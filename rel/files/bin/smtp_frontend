@@ -19,10 +19,12 @@ fi
 # Make sure CWD is set to runner base dir
 cd $RUNNER_BASE_DIR
 
-# Make sure log directory exists
-mkdir -p $RUNNER_LOG_DIR
 # Identify the script name
 SCRIPT=`basename $0`
+# Use a directory with the name of the script
+RUNNER_LOG_DIR=$RUNNER_LOG_DIR/$SCRIPT
+# Make sure log directory exists
+mkdir -p $RUNNER_LOG_DIR
 
 # Parse out release and erts info
 START_ERL=`cat $RUNNER_BASE_DIR/releases/start_erl.data`
