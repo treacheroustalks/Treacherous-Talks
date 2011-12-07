@@ -35,15 +35,13 @@
 -spec get_corpses (DeadBackend :: node ()) -> [necromancer:corpse ()] | [].
 get_corpses (DeadBackend) when is_atom (DeadBackend) ->
     ?DEBUG ("get_corpses(~p)~n", [DeadBackend]),
-    {ok, CorpsesBucketKeys} =
-        db:get_index (?B_CORPSES,
-                      {<<"node_bin">>, atom_to_binary (DeadBackend, latin1)}),
-    CorpsesKeys = lists:map (fun ([?B_CORPSES, Key]) ->
-                                 Key
-                         end, CorpsesBucketKeys),
-    case db:get_values (?B_CORPSES, CorpsesKeys) of
+    Query = "node=" ++ atom_to_list(node()),
+    case db:search_values(?B_CORPSES, Query) of
         {ok, Corpses} ->
-            Corpses;
+            lists:map(fun(Corpse) ->
+                              {data, Data} = lists:keyfind(data, 1, Corpse),
+                              Data
+                      end, Corpses);
         _ ->
             []
     end.
@@ -60,11 +58,10 @@ save_corpse (Module, Data) ->
 -spec save_corpse (module (), Ref :: any (), Data :: any ()) -> ok.
 save_corpse (Module, Ref, Data) ->
     ?DEBUG ("save_corpse(~p, ~p)~n", [Module, Data]),
-    Key = list_to_binary (atom_to_list (Module) ++
-                          io_lib:format ("~p", [Ref])),
-    DBO = db_obj:create (?B_CORPSES, Key, {Module, {Key, Data}}),
-    DBOI = db_obj:set_indices (DBO,
-                               [{<<"node_bin">>,
-                                 atom_to_binary (node (), latin1)}]),
-    db:put (DBOI),
+    Key = lists:flatten(io_lib:format ("~p~p", [Module, Ref])),
+    BinKey = list_to_binary(Key),
+    Node = atom_to_list(node()),
+    DbData = {Module, {Key, Data}},
+    DBO = db_obj:create(?B_CORPSES, BinKey, [{node, Node}, {data, DbData}]),
+    db:put (DBO),
     ok.
