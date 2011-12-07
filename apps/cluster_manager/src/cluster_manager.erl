@@ -96,8 +96,9 @@ run(Opts) ->
             case proplists:get_bool(join, Opts) of
                 true ->
                     % Filter so that we only get riak releases
-                    RiakList = [ {Node, SysMgr} || {Node, SysMgr, riak}
-                                                       <- StartingOrder ],
+                    RiakList = [ {Host, SysMgrPrefix, RelPrefix} ||
+                                   {Host, SysMgrPrefix, riak, RelPrefix}
+                                       <- StartingOrder],
                     join_riak_nodes(RiakList);
                 false -> ok
             end,
@@ -115,19 +116,18 @@ run(Opts) ->
             end
     end.
 
-
 %% Join all defined riak nodes
 -spec join_riak_nodes(list()) ->
     ok | {error, term()} | {badrpc, term()}.
 join_riak_nodes([]) -> ok;
-join_riak_nodes([{Host, _SysMgr}| RiakList]) ->
+join_riak_nodes([{Host, _SysMgrPrefix, RelPrefix}| RiakList]) ->
     % Use the first node in the list as the node all nodes will join
-    JoinNode = "riak@"++hd(Host),
+    JoinNode = atom_to_list(RelPrefix) ++ "@"++Host,
     % Make a list that we can feed into do_action_on_releases (yes, we're
     % abusing it a bit, but it is better than duplicating code).
-    ReleaseList = [ {Node, SysMgr, JoinNode} || {Node, SysMgr} <- RiakList],
+    ReleaseList = [ {Node, SysMgrPre, JoinNode, RelPre} ||
+                      {Node, SysMgrPre, RelPre} <- RiakList],
     cluster_utils:do_action_on_releases(ReleaseList, join_riak).
-
 
 %% Getopt helpers
 usage() ->

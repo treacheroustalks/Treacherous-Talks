@@ -57,7 +57,7 @@ distribute_config([{host, Host, SysMgr, HostConfig}|Rest]) ->
 -spec do_action_on_releases(list(), atom()) ->
     ok | {error, term()} | {badrpc, term()}.
 do_action_on_releases([], _Action) -> [];
-do_action_on_releases([{Host, SysMgr, Release}|Rest], Action) ->
+do_action_on_releases([{Host, SysMgr, Release, _RelPrefix}|Rest], Action) ->
     Node = list_to_atom(SysMgr ++ "@" ++ Host),
     % Try to ensure connection but don't care about the return value since
     % rpc:call will figure that one out anyway...
@@ -98,16 +98,18 @@ preprocess_clustconf(ClustConfig) ->
 
 %% @doc
 %%  Contacts all Backends and calls `backends:change_state/2' so that
-%%  the watch-ring stays intact
+%%  the watch-ring stays intact.
+%%
+%%  Assumes one backend per host.
 %% @end
 notify_backends(ClustConf) ->
-    IsBackend = fun({_, _, Relname}) ->
+    IsBackend = fun({_, _, Relname, _}) ->
                         Relname =:= backend
                 end,
     BackendOrders = lists:filter(IsBackend, generate_startup_order (ClustConf)),
-    OrderToNode = fun({Hostname, _SysMgr, Relname}) ->
-                             list_to_atom(
-                               atom_to_list(Relname) ++ "@" ++ Hostname)
+    OrderToNode = fun({Hostname, _SysMgr, _Relname, RelPrefix}) ->
+                          list_to_atom(
+                            atom_to_list(RelPrefix) ++ "@" ++ Hostname)
                      end,
     Backends = lists:map (OrderToNode,BackendOrders),
     InformOfBackends =
@@ -134,28 +136,29 @@ print_release_action_result({Action, Host, Res}) ->
 
 
 % Riak comes before anything.
-startup_sort({_, _,riak}, _Anything) ->
+startup_sort({_, _,riak,_}, _Anything) ->
     true;
 % Riak comes after nothing.
-startup_sort(_Anything, {_, _, riak}) ->
+startup_sort(_Anything, {_, _, riak,_}) ->
     false;
 % Backend comes before anything but riak.
-startup_sort({_, _, backend}, _Anything) ->
+startup_sort({_, _, backend,_}, _Anything) ->
     true;
 % Backend comes after nothing but riak.
-startup_sort(_Anything, {_, _,backend}) ->
+startup_sort(_Anything, {_, _,backend,_}) ->
     false;
 % Anything else is equal.
 startup_sort(_, _) ->
     true.
 
 get_releases([]) -> [];
-get_releases([{host, Host, SysMgr, RelConfs}|Rest]) ->
-    host_releases(Host, SysMgr, RelConfs) ++ get_releases(Rest).
+get_releases([{host, Host, SysMgrPrefix, RelConfs}|Rest]) ->
+    host_releases(Host, SysMgrPrefix, RelConfs) ++ get_releases(Rest).
 
-host_releases(_Host, _SysMgr, []) -> [];
-host_releases(Host, SysMgr, [{release, Relname, _RelConf}|Rest]) ->
-    [{Host, SysMgr, Relname}|host_releases(Host, SysMgr, Rest)].
+host_releases(_Host, _SysMgrPrefix, []) -> [];
+host_releases(Host, SysMgrPrefix, [{release, Relname, RelPrefix, _RelConf}|Rest]) ->
+    [{Host, SysMgrPrefix, Relname, RelPrefix} |
+     host_releases(Host, SysMgrPrefix, Rest)].
 
 % replace hostconf with a hostconf where the game and controller apps in the
 % backend release have been given a backend node list.
@@ -186,10 +189,10 @@ add_backend_nodes(ToRelease,
     case lists:keyfind(ToRelease, 2, RelConfs) of
         false ->
             {BackendNodes, ClustConf};
-        {release, ToRelease, AppConfs} ->
+        {release, ToRelease, RelPrefix, AppConfs} ->
             ConfigMods = backend_nodes_conf_changes(ToApps, BackendNodes),
             NewAppConfs = manage_config:update_config(AppConfs, ConfigMods),
-            NewRelConf = {release, ToRelease, NewAppConfs},
+            NewRelConf = {release, ToRelease, RelPrefix, NewAppConfs},
             NewRelConfs = lists:keyreplace(ToRelease, 2, RelConfs, NewRelConf),
             NewClustConf = lists:keyreplace(Host, 2, ClustConf,
                                             {host, Host, SysMgr, NewRelConfs}),
@@ -211,6 +214,6 @@ host_conf_backend_node({host, Host, _SysMgr, Rels}) ->
     case lists:keyfind(backend, 2, Rels) of
         false ->
             [];
-        _ ->
-            list_to_atom("backend@" ++ Host)
+        {release, backend, RelPrefix, _} ->
+            list_to_atom(atom_to_list(RelPrefix) ++ "@" ++ Host)
     end.

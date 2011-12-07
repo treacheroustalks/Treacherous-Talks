@@ -27,31 +27,33 @@
 
 generate_startup_order_test() ->
     ClustConf = [{host, "stephan.pcs", "system_manager",
-                  [{release, web_frontend, []},
-                   {release, xmpp_frontend, []}
+                  [{release, web_frontend, web_frontend, []},
+                   {release, xmpp_frontend, xmpp_frontend, []}
                   ]},
                  {host, "jd.pcs", "system_manager",
-                  [{release, backend,
+                  [{release, backend, backend,
                     [{db,[{riak,{pb,{"dilshod.pcs",8081}}},
                           {db_workers,50}]}
                     ]}]},
-                 {host, "dilshod.pcs", "system_manager", [{release, riak, []}]},
+                 {host, "dilshod.pcs", "system_manager",
+                  [{release, riak, riak, []}]},
                  {host, "tiina.pcs", "system_manager",
-                  [{release, backend,
+                  [{release, backend, backend,
                     [{db,[{riak,{pb,{"andre.pcs",8081}}},
                           {db_workers,50}]}
                     ]}]},
-                 {host, "andre.pcs", "system_manager", [{release, riak, []}]}
+                 {host, "andre.pcs", "system_manager",
+                  [{release, riak, riak, []}]}
                 ],
     % actually we don't care whether dilshod's or andre's riak comes first,
     % but sort is stable so they should come in the order in the ClustConf.
     % same goes for any other release type.
-    Expected = [{"dilshod.pcs", "system_manager",riak},
-                {"andre.pcs", "system_manager",riak},
-                {"jd.pcs", "system_manager",backend},
-                {"tiina.pcs", "system_manager",backend},
-                {"stephan.pcs", "system_manager",web_frontend},
-                {"stephan.pcs", "system_manager",xmpp_frontend}],
+    Expected = [{"dilshod.pcs", "system_manager",riak, riak},
+                {"andre.pcs", "system_manager",riak, riak},
+                {"jd.pcs", "system_manager",backend, backend},
+                {"tiina.pcs", "system_manager",backend, backend},
+                {"stephan.pcs", "system_manager",web_frontend, web_frontend},
+                {"stephan.pcs", "system_manager",xmpp_frontend, xmpp_frontend}],
     Actual = cluster_utils:generate_startup_order(ClustConf),
     ?assertEqual(Expected, Actual).
 
@@ -69,9 +71,9 @@ preprocess_clustconf_no_releases_test() ->
 
 preprocess_clustconf_one_backend_test() ->
     ClustConf = [{host, "host1.tld", "system_manager",
-                  [{release, backend, []}]}],
+                  [{release, backend, backend, []}]}],
     Expected = [{host, "host1.tld", "system_manager",
-                 [{release, backend,
+                 [{release, backend, backend,
                    [{controller_app, [{backend_nodes,
                                        ['backend@host1.tld']}]
                     },
@@ -83,13 +85,39 @@ preprocess_clustconf_one_backend_test() ->
     Actual = cluster_utils:preprocess_clustconf(ClustConf),
     ?assertEqual(Expected, Actual).
 
+preprocess_clustconf_node_prefix_test() ->
+    ClustConf = [{host, "host1.tld", "sys_mgr",
+                  [
+                   {release, backend, backend1, []},
+                   {release, riak, bob, []}
+                  ]
+                 }
+                ],
+    Expected = [{host, "host1.tld", "sys_mgr",
+                 [
+                  {release, backend, backend1,
+                   [{controller_app, [{backend_nodes,
+                                       ['backend1@host1.tld']}
+                                     ]
+                    },
+                    {game, [{backend_nodes,
+                             ['backend1@host1.tld']}
+                           ]
+                    }]
+                  },
+                  {release, riak, bob, []}
+                 ]
+                }],
+    Actual = cluster_utils:preprocess_clustconf(ClustConf),
+    ?assertEqual(Expected, Actual).
+
 preprocess_clustconf_one_back_one_front_test() ->
     ClustConf = [{host, "host1.tld", "system_manager",
-                  [{release, backend, []}]},
+                  [{release, backend, backend, []}]},
                  {host, "host2.tld", "system_manager",
-                  [{release, smtp_frontend, []}]}],
+                  [{release, smtp_frontend, smtp_frontend, []}]}],
     Expected = [{host, "host1.tld", "system_manager",
-                 [{release, backend,
+                 [{release, backend, backend,
                    [{controller_app, [{backend_nodes,
                                        ['backend@host1.tld']
                                       }
@@ -105,7 +133,7 @@ preprocess_clustconf_one_back_one_front_test() ->
                  ]
                 },
                 {host, "host2.tld", "system_manager",
-                 [{release, smtp_frontend,
+                 [{release, smtp_frontend, smtp_frontend,
                    [{controller_app, [{backend_nodes,
                                        ['backend@host1.tld']
                                       }
@@ -120,12 +148,12 @@ preprocess_clustconf_one_back_one_front_test() ->
 
 preprocess_clustconf_realistic_test() ->
     ClustConf = [{host, "stephan.pcs", "system_manager",
-                  [{release, web_frontend, []},
-                   {release, xmpp_frontend, []}
+                  [{release, web_frontend, web_frontend, []},
+                   {release, xmpp_frontend, xmpp_frontend, []}
                   ]
                  },
                  {host, "jd.pcs", "system_manager",
-                  [{release, backend,
+                  [{release, backend, backend,
                     [{db,[{riak,{pb,{"dilshod.pcs",8081}}},
                           {db_workers,50}
                          ]
@@ -135,9 +163,9 @@ preprocess_clustconf_realistic_test() ->
                   ]
                  },
                  {host, "dilshod.pcs", "system_manager",
-                  [{release, riak, []}]},
+                  [{release, riak, riak, []}]},
                  {host, "tiina.pcs", "system_manager",
-                  [{release, backend,
+                  [{release, backend, backend,
                     [{db,[{riak,{pb,{"andre.pcs",8081}}},
                           {db_workers,50}
                          ]
@@ -147,9 +175,9 @@ preprocess_clustconf_realistic_test() ->
                   ]
                  },
                  {host, "andre.pcs", "system_manager",
-                  [{release, riak, []}]}],
+                  [{release, riak, riak, []}]}],
     Expected = [{host, "stephan.pcs", "system_manager",
-                 [{release, web_frontend,
+                 [{release, web_frontend, web_frontend,
                    [{controller_app,
                      [{backend_nodes, ['backend@jd.pcs',
                                        'backend@tiina.pcs']
@@ -158,7 +186,7 @@ preprocess_clustconf_realistic_test() ->
                     }
                    ]
                   },
-                  {release, xmpp_frontend,
+                  {release, xmpp_frontend, xmpp_frontend,
                    [{controller_app,
                      [{backend_nodes, ['backend@jd.pcs',
                                        'backend@tiina.pcs']
@@ -170,7 +198,7 @@ preprocess_clustconf_realistic_test() ->
                  ]
                 },
                 {host, "jd.pcs", "system_manager",
-                 [{release, backend,
+                 [{release, backend, backend,
                    [{db,[{riak,{pb,{"dilshod.pcs",8081}
                                }
                          },
@@ -192,9 +220,9 @@ preprocess_clustconf_realistic_test() ->
                  ]
                 },
                 {host, "dilshod.pcs", "system_manager",
-                 [{release, riak, []}]},
+                 [{release, riak, riak, []}]},
                 {host, "tiina.pcs", "system_manager",
-                 [{release, backend,
+                 [{release, backend, backend,
                    [{db,[{riak,{pb,{"andre.pcs",8081}
                                }
                          },
@@ -214,7 +242,7 @@ preprocess_clustconf_realistic_test() ->
                  ]
                 },
                 {host, "andre.pcs", "system_manager",
-                 [{release, riak, []}]}
+                 [{release, riak, riak, []}]}
                ],
     Actual = cluster_utils:preprocess_clustconf(ClustConf),
     %% I'm leaving this here for debugging.

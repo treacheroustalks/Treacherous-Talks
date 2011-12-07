@@ -201,19 +201,19 @@ update_app_config_loop([], _Hostname, _Releasepath) ->
     ok;
 update_app_config_loop([Config | T], Hostname, Releasepath) ->
     case Config of
-        {release, riak=Relname, RelConf} ->
+        {release, riak=Relname, NodePrefix, RelConf} ->
             ok = update_app_config(Releasepath, Relname, "app.config", RelConf),
             ok = update_node_name(Releasepath, atom_to_list(Relname),
-                                  Hostname, Relname, "vm.args"),
+                                  NodePrefix, Hostname, "vm.args"),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
-        {release, Relname, RelConf} ->
+        {release, Relname, NodePrefix, RelConf} ->
             Path = get_path(Relname),
             AppCfgFile = lists:concat(["app.", Relname, ".config"]),
             ok = update_app_config(Releasepath, Path, AppCfgFile, RelConf),
             NodenameFile = lists:concat(["nodename.", Relname]),
-            ok = update_node_name(Releasepath, Path, Hostname,
-                                  Relname, NodenameFile),
+            ok = update_node_name(Releasepath, Path, NodePrefix,
+                                  Hostname, NodenameFile),
             % Call ourself again
             update_app_config_loop(T, Hostname, Releasepath);
         _ ->
@@ -253,11 +253,11 @@ update_app_config(Releasepath, Relname, Filename, RelConf) ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec update_node_name(string(), string(), hostname(), relname(), string()) ->
+-spec update_node_name(string(), string(), node_prefix(), hostname(), string()) ->
     ok | {error, term()}.
-update_node_name(Releasepath, Path, Hostname, Relname, Filename) ->
+update_node_name(Releasepath, Path, NodePrefix, Hostname, Filename) ->
     File = filename:join([Releasepath, Path, "etc", Filename]),
-    Namestring = "-name "++atom_to_list(Relname)++"@"++Hostname,
+    Namestring = "-name "++atom_to_list(NodePrefix)++"@"++Hostname,
     case file:read_file(File) of
         {ok, Data} ->
             NewD = re:replace(Data, "-name .*", Namestring, [{return,iodata}]),

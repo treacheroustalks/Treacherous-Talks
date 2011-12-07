@@ -142,7 +142,7 @@ run_riak_search_command(Args) ->
     {ok, binary()} | {error, term()}.
 run_riak_join_command(Node) ->
     Args = "join "++Node,
-    OKResponse = "Sent join request to "++Node++"\n",
+    OKResponse = list_to_binary("Sent join request to "++Node++"\n"),
     case run_command_with_cmd("riak", "riak-admin", Args) of
         OKResponse ->
             {ok, OKResponse};
