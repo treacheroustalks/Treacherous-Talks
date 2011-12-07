@@ -1,23 +1,32 @@
-TEST_USER="load_test"
-TEST_SERVER="andre.pcs"
+LOCAL_RELEASE="../../system-release"
+REMOTE_RELEASE="system-release"
+CLUSTER_CONFIG=load_test.config
 
+START_SLEEP=5
+
+SYS_MGR_NAME="load_system_manager"
+RIAK_NAME="load_riak"
 B_NAME="load_backend"
 
-LOCAL_B_DIR="../../system-release/backend"
-LOCAL_RIAK_DIR="../../../riak/dev/dev2/"
-LOCAL_SCHEMA_DIR="../../../tools/configfiles/riak/"
+DB_WORKER=100
+CONTROLLER_WORKER=100
+GAME_WORKER=100
+MESSAGE_WORKER=100
 
-B_DIR="backend"
-RIAK_DIR="riak"
-SCHEMA_DIR="riak_schema"
+RIAK_BACKEND=riak_kv_bitcask_backend
+RIAK_PB_PORT=9001
+RIAK_HTTP_PORT=9101
+RIAK_HANDSHAKE_PORT=9201
 
+TEST_USER="load_test"
 SERVERS=(
-        "stephan.pcs"
-        "erik.pcs"
-        "suku.pcs"
-        "rahim.pcs"
         "jd.pcs"
+        "rahim.pcs"
+        "suku.pcs"
+        "stephan.pcs"
         "dilshod.pcs"
+        "erik.pcs"
         "lin.pcs"
+        "andre.pcs"
         "tiina.pcs"
 )

@@ -19,6 +19,7 @@ sudo chgrp load_test /tmp/home/load_test
 
 # this path is hardcoded in riak...
 # if a user EVER started riak this dir belongs to him
+sudo sed -i "s:exit 0:mkdir -p /tmp/riak/slide-data/ \nchmod -R 777 /tmp/riak\nexit 0:g" /etc/rc.local
 sudo chmod -R 777 /tmp/riak
 
 

@@ -44,7 +44,7 @@ start(_StartType, _StartArgs) ->
         _Node ->
             ?DEBUG ("watching ~p~n", [_Node])
     end,
-    corpses:save_corpse (?MODULE, node (), {node, node ()}),
+    corpses:save_corpse(?MODULE, node(), {node, node()}),
     ok = session_presence:init(),
     controller_app_sup:start_link().
 

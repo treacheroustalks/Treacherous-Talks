@@ -3,80 +3,6 @@
 source ../common_functions.sh
 source load_test_config
 
-function copy-backend {
-    remote=$1@$2
-    from_dir=$3
-    to_dir=$4
-    riak_ip=$5
-    riak_port=900$6
-    riak_http=910$6
-    cmd=$7
-    ssh -t $remote "
- echo \"Stopping backend on $2\" ;
- $to_dir/bin/backend stop ;
- rm -rf $to_dir"
-    echo "Copying backend to $2:$to_dir"
-    scp -r $from_dir $remote:$to_dir/ > /dev/null 
-    ssh -t $remote "
- sed -i \"s:-name.*:-name $B_NAME@$2:g\" $to_dir/etc/nodename &&
- sed -i \"s:{.*riak_ip.*}:{riak_ip, \\\"$IP\\\"}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{.*riak_protobuf_port.*}:{riak_protobuf_port, $riak_port}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{.*riak_database_port.*}:{riak_database_port, $riak_http}:g\" $to_dir/etc/app.config &&
- echo \"Changing backend config\" &&
- $cmd
- echo \"Starting backend\" &&
- $to_dir/bin/backend start &&
- sleep 5 &&
- $to_dir/bin/backend ping;
- echo \"\""
-}
-
-function copy-riak {
-    remote=$1@$2
-    from_dir=$3
-    to_dir=$4
-    from_schema=$5
-    to_schema=$6
-    pb_port=900$7
-    http_port=910$7
-    hand_port=920$7
-    IP=`host $2 | sed "s:.* ::"`
-    ssh -t $remote "
- echo \"Stopping riak\" ;
- $to_dir/bin/riak stop ;
- rm -rf $to_dir"
-    echo "Copying riak to $2:$to_dir"
-    scp -r $from_dir $remote:$to_dir/ > /dev/null 
-    scp -r $from_schema $remote:$to_schema/ > /dev/null 
-    ssh -t $remote "
- sed -i \"s:-name.*:-name $to_dir@$IP:g\" $to_dir/etc/vm.args &&
- sed -i \"s:{pb_ip.*}:{pb_ip, \\\"$IP\\\"}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{pb_port,.*}:{pb_port, $pb_port}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{http,.*}:{http, [{\\\"$IP\\\", $http_port}]}:g\" $to_dir/etc/app.config &&
- sed -i \"s:{handoff_port,.*}:{handoff_port, $hand_port}:g\" $to_dir/etc/app.config &&
- echo \"Starting riak\" &&
- $to_dir/bin/riak start &&
- $to_dir/bin/riak ping &&
- echo \"Waiting for riak\" &&
- sleep 5 &&
- $to_schema/install_schema.sh $to_dir"
-}
-
-
-function copy-mult-riak {
-    IP=`host $2 | sed "s:.* ::"`
-    for i in `seq 1 $7`; do
-        node_dir=$4$i
-        echonormal "Setting up riak node $i/$7"
-        copy-riak $1 $2 $3 $node_dir $5 $6 $i
-        if [ "$4$i@$IP" != "$8" ] ; then
-            ssh $1@$2 "$node_dir/bin/riak-admin join $8"
-        fi
-    done
-    sleep 5
-    ssh $1@$2 "$4$7/bin/riak-admin member_status"
-}
-
 function run-basho {
     # run the test
     echonormal "Running basho bench"
@@ -91,11 +17,130 @@ function run-basho {
 
 
 function stop {
-    ssh $1 "killall -9 beam.smp" 2> /dev/null
+    ssh $TEST_USER@$1 "killall -9 beam.smp" 2> /dev/null
 }
 
 function stop-all {
-    for pc in ${@:2}; do
-        stop $1@$pc
+    for pc in $@; do
+        stop $pc
     done
+}
+
+function start-local-sys-manager {
+    SYS_DIR=$LOCAL_RELEASE/tt
+    nodename=$SYS_DIR/etc/nodename.system_manager
+    BIN=$SYS_DIR/bin/system_manager
+    HOST=`hostname`
+
+    $BIN stop > /dev/null
+    sed -i "s:-name.*:-name system_manager@$HOST:g" $nodename &&
+    $BIN start &&
+    sleep $START_SLEEP &&
+    $BIN ping
+}
+
+function copy-release {
+    remote=$TEST_USER@$1
+    SYS_DIR=$REMOTE_RELEASE/tt
+    nodename=$SYS_DIR/etc/nodename.system_manager
+    BIN=$SYS_DIR/bin/system_manager
+
+    ssh -t $remote "
+ echo \"Stopping system manager on $1\" ;
+ $BIN stop > /dev/null;
+ rm -rf $REMOTE_RELEASE"
+    echo "Copying release to $1:$REMOTE_RELEASE"
+    scp -r $LOCAL_RELEASE $remote:$REMOTE_RELEASE/ > /dev/null 
+    ssh -t $remote "
+ sed -i \"s:-name.*:-name $SYS_MGR_NAME@$1:g\" $nodename &&
+ sed -i \"s:PIPE_DIR=.*:PIPE_DIR=/tmp/\\\$USER/\\\$RUNNER_BASE_DIR/:g\" $REMOTE_RELEASE/riak/bin/riak &&
+ echo \"Starting system manager\" &&
+ $BIN start &&
+ sleep $START_SLEEP &&
+ $BIN ping"
+}
+
+
+function start-remote-sys-managers {
+    for server in $@; do
+        run_script "Starting system manager on $server" "copy-release $server"
+    done
+}
+
+
+function create-cluster-config {
+    rm -f $CLUSTER_CONFIG > /dev/null
+    echo "%% -*- erlang -*-" > $CLUSTER_CONFIG
+    echo "[" >> $CLUSTER_CONFIG
+    for server in $@; do
+        ip=`echo $(host $server) | sed "s:.*address ::g"`
+        echo " {host, \"$server\", \"$SYS_MGR_NAME\"," >> $CLUSTER_CONFIG
+        echo "  [" >> $CLUSTER_CONFIG
+        echo "   {release, riak, $RIAK_NAME," >> $CLUSTER_CONFIG
+        echo "    [" >> $CLUSTER_CONFIG
+        echo "     {riak_core," >> $CLUSTER_CONFIG
+        echo "      [" >> $CLUSTER_CONFIG
+        echo "       {http,[{\"$ip\", $RIAK_HTTP_PORT}]}," >> $CLUSTER_CONFIG
+        echo "       {handoff_port, $RIAK_HANDSHAKE_PORT}" >> $CLUSTER_CONFIG
+        echo "      ]" >> $CLUSTER_CONFIG
+        echo "     }," >> $CLUSTER_CONFIG
+        echo "     {riak_search,[{enabled,true}]}," >> $CLUSTER_CONFIG
+        echo "     {riak_kv," >> $CLUSTER_CONFIG
+        echo "      [" >> $CLUSTER_CONFIG
+        echo "       {storage_backend, $RIAK_BACKEND}," >> $CLUSTER_CONFIG
+        echo "       {pb_ip,\"$ip\"}," >> $CLUSTER_CONFIG
+        echo "       {pb_port, $RIAK_PB_PORT}" >> $CLUSTER_CONFIG
+        echo "      ]" >> $CLUSTER_CONFIG
+        echo "     }" >> $CLUSTER_CONFIG
+        echo "    ]" >> $CLUSTER_CONFIG
+        echo "   }," >> $CLUSTER_CONFIG
+        echo "   {release, backend, $B_NAME," >> $CLUSTER_CONFIG
+        echo "    [" >> $CLUSTER_CONFIG
+        echo "     {db," >> $CLUSTER_CONFIG
+        echo "      [" >> $CLUSTER_CONFIG
+        echo "       {riak_ip,\"$ip\"}," >> $CLUSTER_CONFIG
+        echo "       {riak_database_port, $RIAK_HTTP_PORT}," >> $CLUSTER_CONFIG
+        echo "       {riak_protobuf_port, $RIAK_PB_PORT}," >> $CLUSTER_CONFIG
+        echo "       {db_workers, $DB_WORKER}" >> $CLUSTER_CONFIG
+        echo "      ]" >> $CLUSTER_CONFIG
+        echo "     }," >> $CLUSTER_CONFIG
+        echo "     {controller_app," >> $CLUSTER_CONFIG
+        echo "      [{controller_app_workers, $CONTROLLER_WORKER}]" >> $CLUSTER_CONFIG
+        echo "     }," >> $CLUSTER_CONFIG
+        echo "     {game," >> $CLUSTER_CONFIG
+        echo "       [{game_workers, $GAME_WORKER}]" >> $CLUSTER_CONFIG
+        echo "     }," >> $CLUSTER_CONFIG
+        echo "     {message," >> $CLUSTER_CONFIG
+        echo "       [{message_workers, $MESSAGE_WORKER}]" >> $CLUSTER_CONFIG
+        echo "     }" >> $CLUSTER_CONFIG
+        echo "    ]" >> $CLUSTER_CONFIG
+        echo "   }" >> $CLUSTER_CONFIG
+        echo "  ]" >> $CLUSTER_CONFIG
+        if [ $server == ${@:$#} ] ; then
+            echo " }" >> $CLUSTER_CONFIG
+        else
+            echo " }," >> $CLUSTER_CONFIG
+        fi
+    done
+    echo "]." >> $CLUSTER_CONFIG
+}
+
+function start-cluster {
+    BIN=$LOCAL_RELEASE/tt/bin/cluster_manager
+    $BIN -c -s -j $CLUSTER_CONFIG &&
+    sleep $START_SLEEP &&
+    $BIN -p $CLUSTER_CONFIG
+}
+
+
+function setup-and-start-cluster {
+    run_script "Starting local system manager" "start-local-sys-manager"
+
+    echonormal "Starting remote system managers"
+    start-remote-sys-managers "$@"
+
+    create-cluster-config "$@"
+    run_script "Starting up the cluster" "start-cluster"
+
+    sleep $START_SLEEP
 }
