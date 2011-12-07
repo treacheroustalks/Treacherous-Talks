@@ -65,6 +65,9 @@ get_search_term(Field, Val, Fields) when Field < length(Fields) ->
 %% @doc
 %%   this function get a query, bucket and record name and return the list of
 %%   record which match the query.
+%%
+%%   Note: whenever we have sibling in search result, it will return
+%%   empty list.
 %% @end
 %%-----------------------------------------------------------------
 -spec do_search_values(binary(), string(), atom()) ->
