@@ -75,11 +75,11 @@ preprocess_clustconf(ClustConfig) ->
 %%  the watch-ring stays intact
 %% @end
 notify_backends(ClustConf) ->
-    IsBackend = fun({_, Relname}) ->
+    IsBackend = fun({_, _, Relname}) ->
                         Relname =:= backend
                 end,
     BackendOrders = lists:filter(IsBackend, generate_startup_order (ClustConf)),
-    OrderToNode = fun({Hostname, Relname}) ->
+    OrderToNode = fun({Hostname, _SysMgr, Relname}) ->
                              list_to_atom(
                                atom_to_list(Relname) ++ "@" ++ Hostname)
                      end,
@@ -101,28 +101,28 @@ notify_backends(ClustConf) ->
 %% ------------------------------------------------------------------
 
 % Riak comes before anything.
-startup_sort({_,riak}, _Anything) ->
+startup_sort({_, _,riak}, _Anything) ->
     true;
 % Riak comes after nothing.
-startup_sort(_Anything, {_, riak}) ->
+startup_sort(_Anything, {_, _, riak}) ->
     false;
 % Backend comes before anything but riak.
-startup_sort({_, backend}, _Anything) ->
+startup_sort({_, _, backend}, _Anything) ->
     true;
 % Backend comes after nothing but riak.
-startup_sort(_Anything, {_,backend}) ->
+startup_sort(_Anything, {_, _,backend}) ->
     false;
 % Anything else is equal.
 startup_sort(_, _) ->
     true.
 
 get_releases([]) -> [];
-get_releases([{host, Host, RelConfs}|Rest]) ->
-    host_releases(Host, RelConfs) ++ get_releases(Rest).
+get_releases([{host, Host, SysMgr, RelConfs}|Rest]) ->
+    host_releases(Host, SysMgr, RelConfs) ++ get_releases(Rest).
 
-host_releases(_Host, []) -> [];
-host_releases(Host, [{release, Relname, _RelConf}|Rest]) ->
-    [{Host, Relname}|host_releases(Host, Rest)].
+host_releases(_Host, _SysMgr, []) -> [];
+host_releases(Host, SysMgr, [{release, Relname, _RelConf}|Rest]) ->
+    [{Host, SysMgr, Relname}|host_releases(Host, SysMgr, Rest)].
 
 % replace hostconf with a hostconf where the game and controller apps in the
 % backend release have been given a backend node list.
@@ -144,12 +144,12 @@ add_backend_nodes(HostConf, {BackendNodes, ClustConf}) ->
                         {[atom()], clustconf()}) -> {[atom()], clustconf()}.
 add_backend_nodes(ToRelease,
                   ToApps,
-                  {host, Host, _DontUseThisHostConf},
+                  {host, Host, SysMgr, _DontUseThisHostConf},
                   {BackendNodes, ClustConf}) ->
     % Use HostConf from the accumulator, NOT the one given.
     % Just use the Host from the given HostConf to track
     % where we are in the loop.
-    {host, Host, RelConfs} = lists:keyfind(Host, 2, ClustConf),
+    {host, Host, SysMgr, RelConfs} = lists:keyfind(Host, 2, ClustConf),
     case lists:keyfind(ToRelease, 2, RelConfs) of
         false ->
             {BackendNodes, ClustConf};
@@ -158,7 +158,8 @@ add_backend_nodes(ToRelease,
             NewAppConfs = manage_config:update_config(AppConfs, ConfigMods),
             NewRelConf = {release, ToRelease, NewAppConfs},
             NewRelConfs = lists:keyreplace(ToRelease, 2, RelConfs, NewRelConf),
-            NewClustConf = lists:keyreplace(Host, 2, ClustConf, {host, Host, NewRelConfs}),
+            NewClustConf = lists:keyreplace(Host, 2, ClustConf,
+                                            {host, Host, SysMgr, NewRelConfs}),
             {BackendNodes, NewClustConf}
     end.
 
@@ -173,7 +174,7 @@ config_backend_nodes(Config) ->
     lists:flatten(lists:map(fun host_conf_backend_node/1, Config)).
 
 -spec host_conf_backend_node(hostconf()) -> [] | atom().
-host_conf_backend_node({host, Host, Rels}) ->
+host_conf_backend_node({host, Host, _SysMgr, Rels}) ->
     case lists:keyfind(backend, 2, Rels) of
         false ->
             [];

@@ -90,7 +90,8 @@ run(Opts) ->
             case proplists:get_bool(join, Opts) of
                 true ->
                     % Filter so that we only get riak releases
-                    RiakList = [ Node || {Node, riak} <- StartingOrder ],
+                    RiakList = [ {Node, SysMgr} || {Node, SysMgr, riak}
+                                                       <- StartingOrder ],
                     join_riak_nodes(RiakList);
                 false -> ok
             end,
@@ -107,8 +108,8 @@ run(Opts) ->
     end.
 
 distribute_config([]) -> ok;
-distribute_config([{host, Host, HostConfig}|Rest]) ->
-    Node = list_to_atom("system_manager@" ++ Host),
+distribute_config([{host, Host, SysMgr, HostConfig}|Rest]) ->
+    Node = list_to_atom(SysMgr ++ "@" ++ Host),
     % Try to ensure connection but don't care about the return value since
     % rpc:call will figure that one out anyway...
     net_adm:ping(Node),
@@ -121,8 +122,8 @@ distribute_config([{host, Host, HostConfig}|Rest]) ->
 -spec do_action_on_releases(list(), atom()) ->
     ok | {error, term()} | {badrpc, term()}.
 do_action_on_releases([], _Action) -> ok;
-do_action_on_releases([{Host, Release}|Rest], Action) ->
-    Node = list_to_atom("system_manager@" ++ Host),
+do_action_on_releases([{Host, SysMgr, Release}|Rest], Action) ->
+    Node = list_to_atom(SysMgr ++ "@" ++ Host),
     % Try to ensure connection but don't care about the return value since
     % rpc:call will figure that one out anyway...
     net_adm:ping(Node),
@@ -133,12 +134,13 @@ do_action_on_releases([{Host, Release}|Rest], Action) ->
 %% Join all defined riak nodes
 -spec join_riak_nodes(list()) ->
     ok | {error, term()} | {badrpc, term()}.
-join_riak_nodes(RiakList) ->
+join_riak_nodes([]) -> ok;
+join_riak_nodes([{Host, _SysMgr}| RiakList]) ->
     % Use the first node in the list as the node all nodes will join
-    JoinNode = "riak@"++hd(RiakList),
+    JoinNode = "riak@"++hd(Host),
     % Make a list that we can feed into do_action_on_releases (yes, we're
     % abusing it a bit, but it is better than duplicating code).
-    ReleaseList = [ {Node, JoinNode} || Node <- RiakList],
+    ReleaseList = [ {Node, SysMgr, JoinNode} || {Node, SysMgr} <- RiakList],
     do_action_on_releases(ReleaseList, join_riak).
 
 
