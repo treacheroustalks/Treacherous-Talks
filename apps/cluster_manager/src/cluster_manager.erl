@@ -53,6 +53,7 @@ option_spec_list() ->
 
 
 main(Args) ->
+    io:format("~p~n",[Args]),
     case getopt:parse(option_spec_list(), Args) of
         {ok, {[], _NonOptionArg}} ->
             usage();

@@ -149,7 +149,7 @@ controller_operator_session_test_() ->
              operator_session_setup()
      end,
      fun app_stop/1,
-     fun session_test_instantiator/1
+     fun operator_test_instantiator/1
     }.
 
 controller_moderator_session_game_test_() ->
@@ -269,11 +269,21 @@ session_test_instantiator(Mods) ->
                         fun() ->
                                 Mod:tests(Callback, SessId)
                         end
-                end, Mods)).
+                end,
+                Mods
+               )
+     ).
 
 %%-------------------------------------------------------------------
 %% Operator tests
 %%-------------------------------------------------------------------
+operator_test_instantiator(Mods) ->
+    lists:flatten(
+      lists:map(fun({Mod, Callback, SessId}) ->
+                        Mod:tests(Callback, SessId)
+                end,
+                Mods)).
+
 operator_session_setup() ->
     Mods = [
             stop_game_tests, get_db_stats_tests

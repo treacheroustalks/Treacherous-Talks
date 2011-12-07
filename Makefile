@@ -86,8 +86,10 @@ inttest: release
 
 ### Release rules
 
-release: clean_release copy_docs copy_escript
+# Do a release and also copy the cluster_manager escript
+release: clean_release copy_docs
 	$(REBAR) generate
+	cp apps/cluster_manager/cluster_manager $(SYSREL)/tt/lib
 
 # Remove all things in system-release except for Riak (if it's there) since we
 # don't build it with our tools. To make rmdir work even when $SYSREL doesn't
@@ -105,10 +107,6 @@ copy_docs:
 	for dir in apps/*/doc/edoc-info; \
 	do path=$$(dirname $$dir); name=$$(basename $$(dirname $$path)); \
 	cp -r $$path $(SYSREL)/docs/$$name; done;
-
-# This rule copies all escripts that should be in $SYSREL
-copy_escript:
-	cp apps/cluster_manager/cluster_manager $(SYSREL)
 
 # Create a tar.gz file of all releases in SYSREL
 tar_release:
@@ -151,5 +149,5 @@ riak_release:
 
 
 .PHONY: standard complete get_deps compile docs small_clean clean test \
-	unittest inttest release clean_release copy_docs copy_escript tar_release \
+	unittest inttest release clean_release copy_docs tar_release \
 	deb_release create_deps_file fetch_deps_file plt dia riak_release
