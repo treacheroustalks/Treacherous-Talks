@@ -120,7 +120,7 @@ kill_old_session(Callback) ->
     ?assertEqual(true, AliveResult),
 
     ?assertEqual({login, success}, CmdRes),
-    
+
     MonitorRef = monitor(process, session_id:to_pid(Session)),
     receive {'DOWN', MonitorRef, _Type, _Object, _Info} -> ok end,
     SessResult = session:alive(Session),
@@ -145,19 +145,17 @@ get_test_data(mult_nicks) ->
     Id1 = db:get_unique_id(),
     User1 = User#user{id = Id1},
     BinId1 = db:int_to_bin(Id1),
-    DbObj1 = db_obj:add_index(
-               db_obj:create(?B_USER, BinId1, User1),
-               {<<"nick_bin">>, list_to_binary(User#user.nick)}),
+    UserPropList1 = data_format:rec_to_plist(User1),
+    DbObj1 = db_obj:create(?B_USER, BinId1, UserPropList1),
     db:put(DbObj1),
 
     Id2 = db:get_unique_id(),
     User2 = User#user{id = Id2},
     BinId2 = db:int_to_bin(Id2),
-    DbObj2 = db_obj:add_index(
-               db_obj:create(?B_USER, BinId2, User2),
-               {<<"nick_bin">>, list_to_binary(User#user.nick)}),
+    UserPropList2 = data_format:rec_to_plist(User2),
+    DbObj2 = db_obj:create(?B_USER, BinId2, UserPropList2),
     db:put(DbObj2),
-    
+
     User;
 get_test_data(user_not_existing) ->
     #user{nick = "u9hvawebf802bv82 ",
@@ -171,4 +169,4 @@ get_test_data(kill_old_session) ->
     Session = controller:handle_action(
                 Cmd,{fun(_,_,Data) -> Data end, []}),
     {User, Session}.
-    
+

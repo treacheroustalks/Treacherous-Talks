@@ -1,0 +1,51 @@
+%% Riak: User search schema
+
+%% See http://wiki.basho.com/Riak-Search---Schema.html for details
+{
+    schema,
+    [
+        {version, "1.1"},
+        {default_field, "name"},
+        {default_op, "or"},
+        {n_val, 3},
+        {analyzer_factory, {erlang, text_analyzers, whitespace_analyzer_factory}}
+    ],
+    [
+        {field, [
+            {name, "id"},
+            {type, integer},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {dynamic_name, "nick"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {dynamic_field, [
+            {name, "email"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "name"},
+            {analyzer_factory, {erlang, text_analyzers, standard_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "role"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "channel"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {dynamic_field, [
+            {name, "*"},
+            {skip, true}
+        ]}
+    ]
+}.
+

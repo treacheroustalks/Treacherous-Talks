@@ -45,8 +45,7 @@
          delete_map/1,
          to_mapterm/1,
          to_rule_map/1,
-         get_keys_by_idx/2,
-         create_idx_list/1,
+         get_keys/2,
          update_db_obj/2,
          userlist/1,
          get_db_obj/2,
@@ -216,39 +215,22 @@ to_rule_map(MapTerm) ->
 
 %% ------------------------------------------------------------------
 %% @doc
-%% Gets keys by index, Field is a field in a record and Val its value.
+%% Gets keys, Field is a field in a record and Val its value.
 %% @spec
-%% get_keys_by_idx(Field :: any(), Val :: any()) ->
-%%    {ok, Keys :: list()} | {error, field_not_indexed} | {error, Error}
+%% get_keys(Field :: any(), Val :: any()) ->
+%%    {ok, Keys :: list()} | {error, Error}
 %% @end
 %% ------------------------------------------------------------------
-get_keys_by_idx(Field, Val) ->
-    case create_idx(Field, Val) of
-        {error, field_not_indexed} ->
-            {error, field_not_indexed};
-        Idx ->
-            case db:get_index(?B_GAME, Idx) of
-                {ok, Matches} ->
-                    Keys = data_format:search_result_keys(Matches),
-                    {ok, Keys};
-                Other ->
-                    {error, Other}
-            end
+get_keys(Field, Val) ->
+    {ok, Query} = db_utils:get_search_term(Field, Val, ?GAME_REC_NAME),
+    case db_utils:do_search(?B_GAME, Query) of
+        {ok, []} ->
+            {error, does_not_exist};
+        {ok, List} ->
+            {ok, List};
+        Other ->
+            {error, Other}
     end.
-
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Creates the index list for the database
-%% @end
-%%-------------------------------------------------------------------
-create_idx_list(#game{status=Status, press=Press, num_players=NumPlayers}) ->
-    [
-     create_idx(#game.status, Status),
-     create_idx(#game.press, Press),
-     create_idx(#game.num_players, NumPlayers)
-    ].
-
 
 %% ------------------------------------------------------------------
 %% @doc Gets and object from the database, according to the given
@@ -399,18 +381,3 @@ get_game_map(GameID) ->
         Error ->
             Error
     end.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Helper function for create_idx_list
-%% Creates an index tuple for the database.
-%% @end
-%%-------------------------------------------------------------------
-create_idx(#game.status, Status) ->
-    {<<"status_bin">>, term_to_binary(Status)};
-create_idx(#game.press, Press) ->
-    {<<"press_bin">>, term_to_binary(Press)};
-create_idx(#game.num_players, NumPlayers) ->
-    {<<"num_players_int">>, NumPlayers};
-create_idx(_, _) ->
-    {error, field_not_indexed}.

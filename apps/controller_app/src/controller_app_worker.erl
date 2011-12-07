@@ -137,12 +137,13 @@ handle_call({register, User}, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({login, {Login, PushInfo}}, _From, State) ->
     Result =
-        case user_management:get_by_idx(#user.nick, Login#user.nick) of
+        case user_management:get_id(#user.nick, Login#user.nick) of
             {ok, {index_list, _IdxList}} ->
                 % Multiple nicks in the db, not allowed ...
                 {error, nick_not_unique};
-            {ok, DbObj} ->
+            {ok, UserId} ->
                 % user with nick exists
+                {ok, DbObj} = user_management:get_db_obj(UserId),
                 Id = id_from_user_siblings(DbObj),
                 {ok, HObj} = session_history:db_get(Id),
                 HistObj = session_history:resolve_history_siblings(HObj),
@@ -157,7 +158,7 @@ handle_call({login, {Login, PushInfo}}, _From, State) ->
 
                 UserObj = session_history:resolve_conflict(
                             Hist, DbObj, #user.last_session),
-                User = db_obj:get_value(UserObj),
+                User = data_format:db_obj_to_rec(UserObj, ?USER_REC_NAME),
 
                 case User#user.password == Login#user.password of
                     false ->
@@ -174,7 +175,8 @@ handle_call({login, {Login, PushInfo}}, _From, State) ->
                                 {error, simultaneous_login};
                             false ->
                                 NewUser = User#user{last_session = SessId},
-                                NewUserObj = db_obj:set_value(UserObj, NewUser),
+                                NewUserPropList = data_format:rec_to_plist(NewUser),
+                                NewUserObj = db_obj:set_value(UserObj, NewUserPropList),
                                 db:put(NewUserObj),
                                 {ok, SessId}
                         end
@@ -225,7 +227,7 @@ id_from_user_siblings(DbObj) ->
                   [H|_] = db_obj:get_siblings(DbObj),
                   H
           end,
-    (db_obj:get_value(Obj))#user.id.
+    (data_format:db_obj_to_rec(Obj, ?USER_REC_NAME))#user.id.
 
 %%-------------------------------------------------------------------
 %% @doc

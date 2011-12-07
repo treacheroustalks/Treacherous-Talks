@@ -26,7 +26,7 @@
 -export ([new_game/1,
           restart_game/1,
           get_game/1,
-          get_keys_by_idx/2,
+          get_keys/2,
           delete_game/1,
           reconfig_game/1,
           join_game/3,
@@ -111,12 +111,12 @@ get_game(Key) ->
 %% Field is #record.field,
 %% Value is the value to search for.
 %% @spec
-%% get_keys_by_idx(Field :: any(), Value :: any()) ->
+%% get_keys(Field :: any(), Value :: any()) ->
 %%     {ok, Keys :: list()} | {error, Error}
 %% @end
 %% -----------------------------------------------------------------------------
-get_keys_by_idx(Field, Value) ->
-    ?CALL_WORKER({get_keys_by_idx, Field, Value}).
+get_keys(Field, Value) ->
+    ?CALL_WORKER({get_keys, Field, Value}).
 
 %% -----------------------------------------------------------------------------
 %% @doc

@@ -45,8 +45,20 @@
          search_result_keys/1,
          bin_to_int/1,
          date_to_str/1,
-         user_to_text/1
+         user_to_text/1,
+         db_obj_to_rec/2
          ]).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Convert db object to record
+%% @spec  db_obj_to_rec(#db_obj{}, string()) ->
+%%    #user{}| #game{}
+%% @end
+%%-------------------------------------------------------------------
+db_obj_to_rec(DbObj, RecordName) ->
+    PropList = db_obj:get_value(DbObj),
+    data_format:plist_to_rec(RecordName, PropList).
 
 %%-------------------------------------------------------------------
 %% @doc

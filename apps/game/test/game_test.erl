@@ -171,7 +171,7 @@ new_get_game_tst_ () ->
              OrigGame = test_game (),
              Key = sync_new(OrigGame),
              Game = sync_get(Key),
-             {ok, Keys} = game:get_keys_by_idx(#game.status, Game#game.status),
+             {ok, Keys} = game:get_keys(#game.status, Game#game.status),
              ?assertEqual(true, lists:member(Key, Keys))
      end].
 
@@ -194,14 +194,14 @@ delete_game_tst_ () ->
              Game = sync_get(Key),
 
              % prove that we can find it
-             {ok, Keys} = game:get_keys_by_idx(#game.status, Game#game.status),
+             {ok, Keys} = game:get_keys(#game.status, Game#game.status),
              ?assertEqual(true, lists:member(Key, Keys)),
 
              % delete it
              sync_delete(Key),
 
              % prove that we don't find it
-             {ok, Keys2} = game:get_keys_by_idx(#game.status, Game#game.status),
+             {ok, Keys2} = game:get_keys(#game.status, Game#game.status),
              ?assertEqual(false, lists:member(Key, Keys2))
      end].
 
@@ -232,7 +232,7 @@ game_update_tst_() ->
              Game = sync_get(Key),
 
              % prove that we can find it
-             {ok, Keys} = game:get_keys_by_idx(#game.press, Game#game.press),
+             {ok, Keys} = game:get_keys(#game.press, Game#game.press),
              ?assertEqual(true, lists:member(Key, Keys)),
 
              % update it
@@ -240,11 +240,11 @@ game_update_tst_() ->
              game:reconfig_game(ModifiedGame),
 
              % prove that we find it
-             {ok, Keys2} = game:get_keys_by_idx(#game.press, white_press),
+             {ok, Keys2} = game:get_keys(#game.press, white_press),
              ?assertEqual(true, lists:member(Key, Keys2)),
 
              % prove that we don't find it
-             {ok, Keys3} = game:get_keys_by_idx(#game.press, black_press),
+             {ok, Keys3} = game:get_keys(#game.press, black_press),
              ?assertEqual(false, lists:member(Key, Keys3))
       end,
       fun () ->
@@ -254,18 +254,18 @@ game_update_tst_() ->
              Game = sync_get(Key),
 
              % prove that we can find it
-             {ok, Keys} = game:get_keys_by_idx(#game.status, waiting),
+             {ok, Keys} = game:get_keys(#game.status, waiting),
              ?assertEqual(true, lists:member(Key, Keys)),
 
              % game changes status
              game_timer:sync_event(Game#game.id, timeout),
 
              % prove that we find it
-             {ok, Keys2} = game:get_keys_by_idx(#game.status, ongoing),
+             {ok, Keys2} = game:get_keys(#game.status, ongoing),
              ?assertEqual(true, lists:member(Key, Keys2)),
 
              % prove that we don't find it
-             {ok, Keys3} = game:get_keys_by_idx(#game.status, waiting),
+             {ok, Keys3} = game:get_keys(#game.status, waiting),
              ?assertEqual(false, lists:member(Key, Keys3))
       end,
       fun() ->

@@ -28,6 +28,8 @@
 
 -type role() :: user | moderator | operator.
 
+-define(USER_REC_NAME, user).
+
 -record (user, {id :: integer(),
                 nick :: nonempty_string (),
                 email :: nonempty_string (),

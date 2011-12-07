@@ -70,7 +70,7 @@ invalid(Callback, SessId) ->
 %% Test data
 %%-------------------------------------------------------------------
 create_invalid_message() ->
-      #frontend_msg{to = "no_such_user",
+      #frontend_msg{to = "user_withunderscore",
                     content = "\n\n    A sample message to nick player which
                               contain several line\n    have fun\n\n    "
                    }.
