@@ -512,7 +512,8 @@ get_games_current_tst_ () ->
              {ok, Results} = game:search("creator_id=1337"),
              lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
      end,
-     fun() ->
+     {setup,
+      fun() -> % setup
              ?debugMsg("Testing get_games_current"),
              % Setup games
              GameRecord = test_game(),
@@ -521,11 +522,17 @@ get_games_current_tst_ () ->
                                                        status=waiting})),
              Game2 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
                                                        status=ongoing})),
-             {ok, Results} = game:get_games_current(CreatorId),
-             ?assert(length(Results) =:= 2),
-             ?assert(lists:member(Game1, Results)),
-             ?assert(lists:member(Game2, Results))
-    end].
+              {CreatorId, Game1, Game2}
+      end,
+      fun({CreatorId, Game1, Game2}) -> % instantiator
+              fun() ->
+                      {ok, Results} = game:get_games_current(CreatorId),
+                      ?assert(length(Results) =:= 2),
+                      ?assert(lists:member(Game1, Results)),
+                      ?assert(lists:member(Game2, Results))
+              end
+      end
+     }].
 
 %%------------------------------------------------------------------------------
 %% Tests the game search functionality for the exported function
@@ -604,14 +611,23 @@ game_search_ext_tst_ () ->
 %% Tests the stop game functionality
 %%------------------------------------------------------------------------------
 stop_game_tst_() ->
-    fun() ->
-            GameID = sync_new(test_game()),
-            ?debugMsg("Stop game test"),
-            Reply = game:stop_game(GameID),
-            ?assertEqual({ok, {GameID, stopped}}, Reply),
-            ?debugMsg("Stop game test finished"),
-            sync_delete(GameID)
-     end.
+    {setup,
+     fun() -> %setup
+             GameID = sync_new(test_game()),
+             GameID
+     end,
+     fun(GameID) -> % teardown
+             sync_delete(GameID)
+     end,
+     fun(GameID) -> % instantiator
+             fun() ->
+                     ?debugMsg("Stop game test"),
+                     Reply = game:stop_game(GameID),
+                     ?assertEqual({ok, {GameID, stopped}}, Reply),
+                     ?debugMsg("Stop game test finished")
+             end
+     end
+    }.
 %%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
