@@ -24,6 +24,10 @@
 -define(SESSION_ID, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==").
 -define(GAME_ID_VAL, "11112222").
 
+%%--------------------------------------------------------------------
+%% sample XMPP messages
+%%--------------------------------------------------------------------
+
 -define(SAMPLE_REGISTER,
 <<"sddfaadfaff\r
 REGISTER\r
@@ -464,7 +468,6 @@ adfadfasdfaldfad">>
 ">>
 ).
 
--define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).
 -define(SAMPLE_GET_PROFILE(Session),
 <<"
     asdfasdfasdfasdf
@@ -476,3 +479,10 @@ adfadfasdfaldfad">>
     2563564565asdfa
 ">>
 ).
+
+
+%%--------------------------------------------------------------------
+%% test utilities
+%%--------------------------------------------------------------------
+
+-define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).

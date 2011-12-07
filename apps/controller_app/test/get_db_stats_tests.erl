@@ -36,8 +36,8 @@
 
 tests(Callback, SessId) ->
     [
-     success(Callback, SessId),
-     invalid(Callback, SessId)
+     ?_test(success(Callback, SessId)),
+     ?_test(invalid(Callback, SessId))
     ].
 %%-------------------------------------------------------------------
 %% Operator get db status test

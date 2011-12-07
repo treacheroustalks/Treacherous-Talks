@@ -31,6 +31,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("utils/include/test_utils.hrl").
 
 -export([tests/2, success/2, access_denied/1]).
 
@@ -43,24 +44,45 @@ tests(Callback, SessId) ->
 %% Update user tests
 %%-------------------------------------------------------------------
 success(Callback, SessId) ->
-    ?debugMsg("STOP GAME TEST SUCCESS"),
-    GameID = create_game(SessId),
-    Cmd = {stop_game, {ok, SessId, GameID}},
-    Result = controller:handle_action(Cmd, Callback),
-    {CmdRes, _Info} = Result,
-    ?assertEqual({stop_game, success}, CmdRes),
-    ?debugMsg("STOP GAME TEST SUCCESS finished").
+    {setup,
+     fun() -> %setup
+             ?debugMsg("STOP GAME TEST EXPECT SUCCESS"),
+             GameID = create_game(SessId),
+             GameID
+     end,
+     fun(GameID) -> %instatiator
+             fun() ->
+                     Cmd = {stop_game, {ok, SessId, GameID}},
+                     ?debugFmt("Before stop_game ~p~n", [?NOW_UNIV]),
+                     Result = controller:handle_action(Cmd, Callback),
+                     ?debugFmt("After stop_game ~p~n", [?NOW_UNIV]),
+                     {CmdRes, _Info} = Result,
+                     ?assertEqual({stop_game, success}, CmdRes),
+                     ?debugMsg("STOP GAME TEST EXPECT SUCCESS finished")
+             end
+     end}.
 
 
 access_denied(Callback) ->
-    ?debugMsg("STOP GAME ACCESS DENIED TEST"),
-    FakeOperator = get_test_operator(invalid),
-    SessId = register_and_login(FakeOperator),
-    Cmd = {stop_game, {ok, SessId, 12345}},
-    Result = controller:handle_action(Cmd, Callback),
-    {CmdRes, _Info} = Result,
-    ?assertEqual({stop_game, access_denied}, CmdRes),
-    ?debugMsg("STOP GAME ACCESS DENIED TEST finished").
+    {setup,
+     fun() -> % setup
+             ?debugFmt("STOP GAME ACCESS DENIED TEST ~p~n", [?NOW_UNIV]),
+             FakeOperator = get_test_operator(invalid),
+             SessId = register_and_login(FakeOperator),
+             SessId
+     end,
+     fun(SessId) -> %instantiator
+             fun() ->
+                     Cmd = {stop_game, {ok, SessId, 12345}},
+                     ?debugFmt("Before stop_game ~p~n", [?NOW_UNIV]),
+                     Result = controller:handle_action(Cmd, Callback),
+                     ?debugFmt("After stop_game ~p~n", [?NOW_UNIV]),
+                     {CmdRes, _Info} = Result,
+                     ?assertEqual({stop_game, access_denied}, CmdRes),
+                     ?debugMsg("STOP GAME ACCESS DENIED TEST finished")
+             end
+     end}.
+
 
 %%-------------------------------------------------------------------
 %% Test data
