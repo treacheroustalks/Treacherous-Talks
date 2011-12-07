@@ -92,5 +92,6 @@ user_cmd() ->
      user_msg,
      games_current,
      game_search ,
-     game_msg
+     game_msg,
+     get_presence
     ].

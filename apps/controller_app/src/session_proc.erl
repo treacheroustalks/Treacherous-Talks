@@ -109,7 +109,6 @@ handle_call({game_order, {GameId, GameOrderList}}, _From,
                                                  State = #state{user=User}) ->
     Reply = game:put_game_order(GameId, User#user.id, GameOrderList),
     {reply, Reply, State, ?TIMEOUT};
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for off game user messages
@@ -132,7 +131,6 @@ handle_call({user_msg, FEMsg = #frontend_msg{}}, _From,
                        content = FEMsg#frontend_msg.content},
     Reply = message:user_msg(Message),
     {reply, Reply, State};
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for game messages to be sent as a user
@@ -346,6 +344,27 @@ handle_call(get_db_stats, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({stop_game, GameId}, _From, State) ->
     Reply = game:stop_game(GameId),
+    {reply, Reply, State, ?TIMEOUT};
+%-------------------------------------------------------------------
+%% @doc
+%% Handles call getting presence of a user
+%% @spec
+%% handle_call({get_presence::atom(), Nick::string()},
+%%             From::{pid(), Tag}, #state{}) -> {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({get_presence, Nick}, _From, State) ->
+    case user_management:get_id(#user.nick, Nick) of
+        {ok, UserId} ->
+            case session_presence:is_online(UserId) of
+                true->
+                    Reply = {ok, user_online};
+                false ->
+                    Reply = {ok, user_offline}
+            end;
+        _Error ->
+            Reply = {error, user_not_found}
+    end,
     {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc

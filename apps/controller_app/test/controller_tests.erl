@@ -142,6 +142,16 @@ controller_session_test_() ->
      fun instantiator/1
     }.
 
+controller_multiple_session_test_() ->
+    {setup,
+     fun() ->
+             app_start(),
+             multiple_session_setup()
+     end,
+     fun app_stop/1,
+     fun instantiator/1
+    }.
+
 controller_operator_session_test_() ->
     {setup,
      fun() ->
@@ -196,8 +206,12 @@ instantiator({Mods, Args}) ->
     lists:flatten(
       lists:map(fun(Mod) ->
                         Mod:tests(Args)
-                end, Mods)).
-
+                end, Mods));
+instantiator(ModArgs) when is_list(ModArgs) ->
+    lists:flatten(
+      lists:map(fun({Mod, Args}) ->
+                        Mod:tests(Args)
+                end, ModArgs)).
 
 %%-------------------------------------------------------------------
 %% Unknown command tests
@@ -266,6 +280,49 @@ session_setup() ->
     {Mods, [Callback, SessId]}.
 
 %%-------------------------------------------------------------------
+%% Multiple sessions tests
+%% Creates multiple users (online and offline) available for tests
+%%-------------------------------------------------------------------
+multiple_session_setup() ->
+    %% Config = [{test_module_name, OnlineUserCount, OfflineUserCount}]
+    Configs = [
+               {get_presence_tests, 2, 1}
+              ],
+    Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
+
+    CreateUser= fun() ->
+                        User = create_user(),
+                        Register = {register, {ok, User}},
+                        controller:handle_action(Register, Reply)
+                end,
+    LoginUser = fun(NewUser) ->
+                        Login = {login, {ok, {NewUser, get_receiver()}}},
+                        controller:handle_action(Login, Reply)
+                end,
+
+    ModUsers = lists:map(
+                 fun({Mod, OnlineCount, OfflineCount}) ->
+                         OnlineUsers =
+                             lists:map(
+                               fun(_) ->
+                                       NewUser = CreateUser(),
+                                       LoginUser(NewUser),
+                                       NewUser#user.id
+                               end, lists:seq(1, OnlineCount)),
+                         OfflineUsers =
+                             lists:map(
+                               fun(_) ->
+                                       NewUser = CreateUser(),
+                                       NewUser#user.id
+                               end, lists:seq(1, OfflineCount)),
+                         {Mod, OnlineUsers, OfflineUsers} end,
+                 Configs),
+    lists:map(fun({Mod, OnlineUsers, OfflineUsers}) ->
+                      {Mod, [Callback, OnlineUsers, OfflineUsers]}
+              end, ModUsers).
+
+%%-------------------------------------------------------------------
 %% Operator tests
 %%-------------------------------------------------------------------
 operator_session_setup() ->
@@ -288,7 +345,7 @@ operator_session_setup() ->
               end, Mods),
     {Mods, [Callback, SessId]}.
 %%-------------------------------------------------------------------
-%%  register operator test
+%%  Register operator test
 %%-------------------------------------------------------------------
 register_oprator_tst_() ->
     [{"test register_oprator/1 when get user record as input",

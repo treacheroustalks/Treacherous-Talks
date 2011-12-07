@@ -63,7 +63,8 @@
          assign_moderator/2,
          power_msg/2,
          stop_game/2,
-         get_games_ongoing/2
+         get_games_ongoing/2,
+         get_presence/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -304,6 +305,17 @@ get_games_ongoing(SessionId, _Data) ->
 %%-------------------------------------------------------------------
 get_db_stats(SessionId, _Data) ->
     ?SESSION_CALL(SessionId, get_db_stats).
+
+%%-------------------------------------------------------------------
+%% @doc get_presence/2
+%% Get presence of the given nick name
+%%
+%% @spec get_presence(string(), string()) ->
+%%       {ok, user_online} | {ok, user_offline} | {error, user_not_found}
+%% @end
+%%-------------------------------------------------------------------
+get_presence(SessionId, Nick) ->
+    ?SESSION_CALL(SessionId, get_presence, Nick).
 
 %% --------------------------------------------------------------------
 %% @doc

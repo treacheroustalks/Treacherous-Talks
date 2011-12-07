@@ -90,6 +90,7 @@
 %%              assign_moderator |
 %%              power_msg |
 %%              stop_game |
+%%              get_presence |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data | invalid_session
@@ -128,10 +129,11 @@
 %%                       not_operator]
 %% power_msg ->         [game_does_not_exist,
 %%                       game_phase_not_ongoing]
-%% assign_moderator ->     [user_not_found]
+%% assign_moderator ->  [user_not_found]
 %% get_system_status -> []
 %% stop_game ->         []
 %% get_games_ongoing -> []
+%% get_presence ->      [user_not_found]
 %%
 %% @end
 %%
@@ -188,7 +190,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == assign_moderator;
        Command == power_msg;
        Command == stop_game;
-       Command == get_games_ongoing ->
+       Command == get_games_ongoing;
+       Command == get_presence ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);
