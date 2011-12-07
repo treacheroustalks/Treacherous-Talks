@@ -60,8 +60,8 @@ parser_test_() ->
       fun power_msg/0,
       fun get_system_status/0,
       fun game_search/0,
-      fun get_games_ongoing/0
-
+      fun get_games_ongoing/0,
+      fun stop_game/0
      ]}.
 
 get_db_stats() ->
@@ -125,6 +125,10 @@ user_msg() ->
 game_msg() ->
     ?assertEqual (game_msg_exp_data(),
                   web_parser:parse(game_msg_data())).
+
+stop_game() ->
+    ?assertEqual(stop_game_exp_data(),
+                 web_parser:parse(stop_game_data())).
 
 power_msg() ->
     ?assertEqual (power_msg_exp_data(),
@@ -277,6 +281,9 @@ get_games_ongoing_exp_data() ->
     {get_games_ongoing, {ok,
                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
 
+stop_game_exp_data() ->
+    {stop_game, {ok,
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
 
 %% Input data
 
@@ -482,3 +489,12 @@ get_games_ongoing_data() ->
        {array,
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
+
+stop_game_data() ->
+    {ok,{struct,
+     [{"action","stop_game"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"game_id","654321"}]}]}}]}}.

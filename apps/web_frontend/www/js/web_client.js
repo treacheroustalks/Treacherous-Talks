@@ -310,6 +310,9 @@ function event_action(data) {
     case "get_games_ongoing_success":
         load_get_games_ongoing(event_data);
         break;
+    case "stop_game_success":
+        clear_message();
+        break;
     default:
         break;
     }

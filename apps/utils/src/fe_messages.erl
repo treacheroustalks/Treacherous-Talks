@@ -165,6 +165,12 @@ get({game_overview, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
+% Stop game
+get({stop_game, success}, _Val) ->
+    resp("Game was stopped successfully~n");
+get({stop_game, invalid_data}, Error) ->
+    resp_unhandled_error(Error);
+
 % Game order
 get({game_order, success}, _Val) ->
     resp("Game order sent successfully:~n~n");

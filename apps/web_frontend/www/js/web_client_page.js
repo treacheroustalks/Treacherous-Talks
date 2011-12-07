@@ -84,15 +84,20 @@ function load_get_database_status(event_data) {
  */
 function load_get_games_ongoing(event_data) {
     var view_link = function(id) {
-        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">view</a>';
+        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">View</a>';
+    }
+
+    var stop_link = function(id) {
+        return '<a href="javascript:void(0);" class="btn danger" ' + 'onclick="stop_game(' + id + ')">Stop</a>';
     }
 
     var data = new Array();
     // Add view link to all the games
     for ( var i = 0; i < event_data.length; i++) {
         var obj = new Object();
-        obj['id'] = event_data[i];
-        obj['view'] = view_link(event_data[i]);
+        obj['Game Id'] = event_data[i];
+        obj['View'] = view_link(event_data[i]);
+        obj['Stop'] = stop_link(event_data[i]);
         data.push(obj);
     }
     // Create html table from JSON and display it
@@ -308,6 +313,23 @@ function get_game_overview(game_id) {
     call_server('game_overview', dataObj);
 }
 
+/**
+ * Call server to stop given game
+ */
+function stop_game(game_id) {
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "game_id" : game_id
+        } ]
+    };
+    call_server('stop_game', dataObj);
+}
+
+/**
+ * Call server to send off game
+ */
 function send_off_game_message() {
     var chat_msg = $('#chat_msg').val();
     var chat_to = $('#chat_to').val();
@@ -325,6 +347,9 @@ function send_off_game_message() {
     call_server('user_msg', dataObj);
 }
 
+/**
+ * Call server to send in game message
+ */
 function send_in_game_message() {
     var press_game_id = $('#press_game_id').val();
     var press_msg = $('#press_msg').val();
@@ -884,6 +909,7 @@ function set_message(type, message) {
         break;
     case 'success':
     case 'error':
+    case 'warning':
         var msgDiv = $('#message');
         var msg = '<div class="alert-message ' + type + '">'
             + '<a class="close" href="javscript:void(0);" '

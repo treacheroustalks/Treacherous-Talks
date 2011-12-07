@@ -61,11 +61,11 @@ parse(Data::term()) ->
         {get_games_ongoing, {ok, string(), term()}} |
         {get_db_stats, {ok, string(), term()}} |
         {game_msg, {ok, string(), #frontend_msg{}}} |
+        {stop_game, {ok, string(), integer()}} |
         {power_msg, {ok, string(), #frontend_msg{}}} |
         {user_msg, {ok, string(), #frontend_msg{}}} |
         {assign_moderator, {ok, string(), {string(), atom()}}} |
         {get_system_status, {ok, string()}}.
-
 
 parse(RawData) ->
     {Action, Data} = decode(RawData),
@@ -163,6 +163,9 @@ parse(RawData) ->
                         #frontend_msg{game_id = get_integer ("game_id", Data),
                                       to = parse_countries_str(get_field ("to", Data)),
                                       content = get_field ("content", Data)}}};
+        "stop_game" ->
+            GameId = get_integer("game_id", Data),
+            {stop_game, {ok, get_field("session_id", Data), GameId}};
         "power_msg" ->
             {power_msg, {ok,
                          get_field ("session_id", Data),

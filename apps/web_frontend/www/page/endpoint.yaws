@@ -31,6 +31,7 @@
 -include_lib("datatypes/include/push_receiver.hrl").
 -include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/message.hrl").
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Yaws function that gets called when an endpoint is requested.
@@ -134,6 +135,10 @@ msg_success(Ret=#ret{}) ->
 %% Update message type to error
 msg_error(Ret=#ret{}) ->
     Ret#ret{message_type="error"}.
+
+%% Update message type to warning
+msg_warning(Ret=#ret{}) ->
+    Ret#ret{message_type="warning"}.
 
 msg_ret (Ret=#ret{}, MsgType) ->
     Ret#ret{message_type = MsgType}.
@@ -271,6 +276,11 @@ get_ret({assign_moderator, success}, Ret=#ret{}, _Data) ->
 get_ret({assign_moderator, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret({stop_game, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({stop_game, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
 get_ret({get_system_status, success}, Ret=#ret{}, Data) ->
     PropList = [{"system_status", Data}],
     EventData = json2:obj_from_list(PropList),
@@ -287,8 +297,14 @@ get_ret({game_search, success}, Ret=#ret{}, Games) ->
         end, Games),
     msg_success(Ret#ret{event_data = EventData});
 get_ret({game_search, invalid_data}, Ret=#ret{}, _Data) ->
-    msg_error(Ret).
+    msg_error(Ret);
 
+% General unhandled case
+get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
+    Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."
+                                      "Message: ~p,",
+                        [Cmd, Status, Ret#ret.message_value])),
+    msg_warning(Ret#ret{message_value=Msg}).
 
 %% Convert data from websocket (JSON) to erlang terms
 json_decode(Data) ->
