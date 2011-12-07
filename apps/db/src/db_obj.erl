@@ -31,10 +31,6 @@
          set_links/2,
          remove_links/3,
          add_link/2,
-         get_indices/1,
-         set_indices/2,
-         remove_index/2,
-         add_index/2,
          get_content_type/1,
          set_content_type/2,
          get_siblings/1,
@@ -55,7 +51,6 @@
                key,
                value,
                links=[],
-               indices=[],
                ctype=?CTYPE_ERLANG_TERM,
                vclock}).
 -record(wsib, {bucket,
@@ -125,24 +120,6 @@ add_link(Obj, Link={{_,_},_}) ->
         false -> set_links(Obj, [Link|Links])
     end.
 
-remove_index(Obj, IndexTup = {_Index, _Key}) ->
-    db_obj:set_indices(Obj,
-                       lists:delete(IndexTup,
-                                    db_obj:get_indices(Obj))).
-
-get_indices(#db_obj{indices=Indices}) ->
-    Indices.
-
-set_indices(Obj, Indices) when is_list(Indices) ->
-    Obj#db_obj{indices=Indices}.
-
-add_index(Obj, IndexTup={_Index, _IndexKey}) ->
-    Indices = get_indices(Obj),
-    case lists:member(IndexTup, Indices) of
-        true -> Obj;
-        false -> set_indices(Obj, [IndexTup|Indices])
-    end.
-
 get_content_type(#db_obj{ctype=ContentType}) ->
     ContentType.
 
@@ -150,16 +127,14 @@ set_content_type(Obj, ContentType) ->
     Obj#db_obj{ctype=ContentType}.
 
 get_siblings(#wsib{bucket=Bucket, key=Key, vclock=Vclock, sibs=Siblings}) ->
-    [set_indices(
-       set_links(
-         set_content_type(
-           set_vclock(
-             create(Bucket, Key, Value),
-             Vclock),
-           ContentType),
-         Links),
-       Indices)
-     || {ContentType, Indices, Links, Value} <- Siblings].
+    [set_links(
+       set_content_type(
+         set_vclock(
+           create(Bucket, Key, Value),
+           Vclock),
+         ContentType),
+       Links)
+     || {ContentType, Links, Value} <- Siblings].
 
 has_siblings(#wsib{}) -> true;
 has_siblings(#db_obj{}) -> false.
@@ -175,12 +150,6 @@ set_json_field(RecObj, Field, Value) ->
                 | [ {F, V} || {F, V} <- Props, F =/= Field ]],
     db_obj:set_value(RecObj, {struct, NewProps}).
 
-index_list_to_binary(List) when is_list(List) ->
-    lists:map(fun({Index, Key}) ->
-                      {list_to_binary(Index),
-                       list_to_binary(Key)}
-              end, List).
-
 from_riakc_obj(RCObj) ->
     case riakc_obj:get_contents(RCObj) of
         [{MD, V}] -> % lone value
@@ -191,20 +160,12 @@ from_riakc_obj(RCObj) ->
                                encode_vclock(riakc_obj:vclock(RCObj))),
             CVWObj = set_content_type(
                        VWObj, riakc_obj:get_content_type(RCObj)),
-            LinkObj = case dict:find(?MD_LINKS, MD) of
+            _LinkObj = case dict:find(?MD_LINKS, MD) of
                 {ok, Links} -> set_links(CVWObj, Links);
                 error       -> CVWObj
-            end,
-            case dict:find(?MD_INDEX, MD) of
-                {ok, Indices} -> set_indices(LinkObj, index_list_to_binary(Indices));
-                error       -> LinkObj
             end;
         RCSibs -> % siblings
             WSibs = [{dict:fetch(?MD_CTYPE, RCMD),
-                      case dict:find(?MD_INDEX, RCMD) of
-                          {ok, Indices} -> index_list_to_binary(Indices);
-                          error       -> []
-                      end,
                       case dict:find(?MD_LINKS, RCMD) of
                           {ok, Links} -> Links;
                           error       -> []
@@ -224,7 +185,6 @@ to_riakc_obj(WObj) ->
                           decode_vclock(get_vclock(WObj)),
                           []),
     MD = dict:from_list([{?MD_LINKS, get_links(WObj)},
-                         {?MD_INDEX, get_indices(WObj)},
                          {?MD_CTYPE, get_content_type(WObj)}]),
     MDO = riakc_obj:update_metadata(O, MD),
     riakc_obj:update_value(MDO, encode_value(get_content_type(WObj),
