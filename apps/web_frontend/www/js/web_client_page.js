@@ -314,7 +314,7 @@ function send_in_game_message() {
             { "content" : press_msg }
         ]
     };
-    if($("#power_msg").val()=="enabled")
+    if($("#power_msg").prop('checked'))
         call_server('power_msg', dataObj);
     else
         call_server('game_msg', dataObj);
@@ -380,7 +380,7 @@ function handle_enter() {
 
 function  validate_add_remove_moderator() {
     var form = get_form_data('#add_remove_moderator_form');
-    var moderator = form.is_moderator == "add"?"add":"remove";
+    var moderator = $('#is_moderator').prop('checked')?"add":"remove";
     if (check_field_empty(form.nick, 'nick'))
         return false;
 
