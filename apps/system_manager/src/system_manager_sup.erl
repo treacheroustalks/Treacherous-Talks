@@ -49,5 +49,6 @@ start_link() ->
 init([]) ->
     {ok, { {one_for_one, 5, 10},
            [
-            ?CHILD(system_manager, worker)
+            ?CHILD(system_manager_worker_sup, supervisor),
+            ?CHILD(system_manager_config, worker)
            ]} }.
