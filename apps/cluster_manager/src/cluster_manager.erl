@@ -77,6 +77,7 @@ run(Opts) ->
             io:format(standard_error, "~n~s: ~s~n~n", [ErrorString, ConfigFile]),
             usage();
         {ok, [Config]} ->
+            os:cmd("epmd -daemon"), % net_kernel needs epmd.
             %% net_kernel needed for distributed erlang.
             net_kernel:start([cluster_manager, longnames]),
             erlang:set_cookie(node(), 'treacherous_talks'),

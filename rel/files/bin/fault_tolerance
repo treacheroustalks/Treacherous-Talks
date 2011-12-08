@@ -1,0 +1,24 @@
+#!/bin/sh
+# -*- tab-width:4;indent-tabs-mode:nil -*-
+# ex: ts=4 sw=4 et
+
+RUNNER_SCRIPT_DIR=$(cd ${0%/*} && pwd)
+
+RUNNER_BASE_DIR=${RUNNER_SCRIPT_DIR%/*}
+
+# Identify the script name
+SCRIPT=`basename $0`
+
+# Parse out release and erts info
+START_ERL=`cat $RUNNER_BASE_DIR/releases/start_erl.data`
+ERTS_VSN=${START_ERL% *}
+APP_VSN=${START_ERL#* }
+
+# Add ERTS bin dir to our path
+ERTS_PATH=$RUNNER_BASE_DIR/erts-$ERTS_VSN/bin
+
+# Setup command
+CMD="$ERTS_PATH/escript $RUNNER_BASE_DIR/lib/fault_tolerance"
+
+# Run command with the same arguments we got
+$CMD "$@"

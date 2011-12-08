@@ -68,7 +68,7 @@ close() ->
 %% handle_message({Type, Data}) -> HandlerResult
 %%------------------------------------------------------------------------------
 handle_message(Message) ->
-%    io:format(standard_error, "server said ~p~n", [Data]),
+%    io:format(standard_error, "server said ~p~n", [Message]),
     gen_server:cast(?MODULE, {deliver, Message}),
     {noreply}.
 
@@ -147,7 +147,7 @@ handle_cast({send, Message}, State = #state{ws_pid = WSPid}) ->
 handle_cast(stop, State) ->
     {stop, normal, State};
 handle_cast(Msg, State) ->
-    io:format("unhandled cast ~p~n", [Msg]),
+    io:format(standard_error, "unhandled cast ~p~n", [Msg]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -161,7 +161,7 @@ handle_cast(Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(Info, State) ->
-    io:format("unhandled message ~p~n", [Info]),
+    io:format(standard_error, "unhandled message ~p~n", [Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -192,24 +192,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-
-%connect(wsorg) ->
-%    Host = "echo.websocket.org",
-%    Port = 80,
-%    Path = "/",
-%    Origin = "http://websocket.org",
-%    websocket_client:connect(Host, Port, Path, Origin, ?MODULE);
-%connect(jbothma) ->
-%    Host = "jbothma.co.uk",
-%    Port = 8000,
-%    Path = "/websockets_example_endpoint.yaws",
-%    Origin = "http://jbothma.co.uk",
-%    websocket_client:connect(Host, Port, Path, Origin, ?MODULE);
-%connect(localtt) ->
-%    Host = "127.0.0.1",
-%    Port = 8000,
-%    Path = "/endpoint",
-%    Origin = "",
-%    websocket_client:connect(Host, Port, Path, Origin, ?MODULE);
-
