@@ -1230,5 +1230,137 @@
                 "info": "1 Machine 32 load worker"
             }
         ]
+    },
+    "scaling-eleveldb-1": {
+        "location": "data/scaling_eleveldb_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 M 1L",
+                "info": "1 machine, 1 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "1 M 1L",
+                "info": "1 machine, 1 load worker"
+            }
+        ]
+    },
+    "scaling-eleveldb-2": {
+        "location": "data/scaling_eleveldb_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 M 2L",
+                "info": "2C machines, 2 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "2 M 2L",
+                "info": "2 machine, 2 load worker"
+            }
+        ]
+    },
+    "scaling-eleveldb-3": {
+        "location": "data/scaling_eleveldb_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 M 3L",
+                "info": "3C machines, 3 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "3 M 3L",
+                "info": "3 machine, 3 load worker"
+            }
+        ]
+    },
+    "scaling-eleveldb-4": {
+        "location": "data/scaling_eleveldb_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 M 4L",
+                "info": "4C machines, 4 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "4 M 4L",
+                "info": "4 machine, 4 load worker"
+            }
+        ]
+    },
+    "scaling-eleveldb-5": {
+        "location": "data/scaling_eleveldb_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 M 5L",
+                "info": "5C machines, 5 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "5 M 5L",
+                "info": "5 machine, 5 load worker"
+            }
+        ]
+    },
+    "scaling-eleveldb-6": {
+        "location": "data/scaling_eleveldb_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 M 6L",
+                "info": "6C machines, 6 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "6 M 6L",
+                "info": "6 machine, 6 load worker"
+            }
+        ]
     }
 }

@@ -362,5 +362,34 @@
                 "info": "Compare 1 machine with increasing load"
             }
         ]
+    },
+    "scaling-eleveldb-compare": {
+        "sources": [
+            {"scaling-eleveldb-1": "1x"},
+            {"scaling-eleveldb-2": "2x"},
+            {"scaling-eleveldb-3": "3x"},
+            {"scaling-eleveldb-4": "4x"},
+            {"scaling-eleveldb-5": "5x"},
+            {"scaling-eleveldb-6": "6x"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Scaling benchmarks - eleveldb",
+                "info": "Comparing the performance of various Riak configurations"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Scaling benchmarks - eleveldb",
+                "info": "Comparing the performance of various Riak configurations"
+            }
+        ]
     }
 }

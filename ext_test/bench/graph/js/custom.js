@@ -79,7 +79,9 @@ function load_graph(graph_key) {
 // Hacked graph for one use only!
 // FIXME: Delete or fix this after use!
 function load_hack_graph() {
-    var graph_key = "scaling-compare";
+    var graph_key_orig = "scaling-compare";
+    var graph_key = "scaling-compare-hack";
+    compare[graph_key] = compare[graph_key_orig];
 
     $.each(compare[graph_key].plots, function(i, plot) {
         // Only the first graph
@@ -100,14 +102,12 @@ function load_hack_graph() {
             // Plot normalized
             plot.div = setup_div();
             plot.data = total_graph_data;
-                        plot.name = "Normalized scaling comparision";
             chart(plot);
 
             // Plot summation
             plot.xfunc = "summation";
             plot.div = setup_div();
             plot.data = total_graph_data;
-            plot.name = "Normalized summed scaling comparision";
             chart(plot);
 
             // Plot averages
@@ -116,10 +116,6 @@ function load_hack_graph() {
             plot.div = setup_div();
             plot.data = {'scale': averages};
             plot.interval = 1;
-            plot.xlabel = "Machines";
-            plot.ylabel = "Times";
-            plot.name = "Scaling with increase in machines";
-            plot.info =  "Comparing increase in throughput with the increase in machines";
             chart(plot);
         }
     });

@@ -1,6 +1,7 @@
 {
     "Compare tests": [
         {"scaling-compare": "Scaling"},
+        {"scaling-eleveldb-compare": "eleveldb Scaling"},
         {"burn-compare": "Huge load"},
         {"riak-compare": "Riak"},
         {"riak-mem-compare": "Riak Mem"},
@@ -22,6 +23,14 @@
         {"scaling-4": "4"},
         {"scaling-5": "5"},
         {"scaling-6": "6"}
+    ],
+    "Eleveldb scaling tests": [
+        {"scaling-eleveldb-1": "1"},
+        {"scaling-eleveldb-2": "2"},
+        {"scaling-eleveldb-3": "3"},
+        {"scaling-eleveldb-4": "4"},
+        {"scaling-eleveldb-5": "5"},
+        {"scaling-eleveldb-6": "6"}
     ],
     "Load tests": [
         {"burn1": "1 Load worker"},
