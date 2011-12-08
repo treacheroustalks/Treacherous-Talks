@@ -507,32 +507,33 @@ game_search_tst_ () ->
 %% Tests the get_games_current functionality
 %%------------------------------------------------------------------------------
 get_games_current_tst_ () ->
-    [fun() ->
+    {setup,
+     fun() ->
              ?debugMsg("Get games current cleanup"),
+             {ok, Results} = game:search("creator_id=1337"),
+             lists:map(fun(GameId) -> sync_delete(GameId) end, Results),
+
+             GameRecord = test_game(),
+             CreatorId = 1337,
+             Game1 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId})),
+             Game2 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId})),
+             game_timer:sync_event(Game2#game.id, timeout),
+             {CreatorId, Game1, Game2}
+     end,
+     fun({_CreatorId, _Game1, _Game2}) ->
              {ok, Results} = game:search("creator_id=1337"),
              lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
      end,
-     {setup,
-      fun() -> % setup
-             ?debugMsg("Testing get_games_current"),
-             % Setup games
-             GameRecord = test_game(),
-             CreatorId = 1337,
-             Game1 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
-                                                       status=waiting})),
-             Game2 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId,
-                                                       status=ongoing})),
-              {CreatorId, Game1, Game2}
-      end,
       fun({CreatorId, Game1, Game2}) -> % instantiator
               fun() ->
                       {ok, Results} = game:get_games_current(CreatorId),
+                      ResultIds = lists:map(fun(Game) -> Game#game.id end,
+                                            Results),
                       ?assert(length(Results) =:= 2),
-                      ?assert(lists:member(Game1, Results)),
-                      ?assert(lists:member(Game2, Results))
+                      ?assert(lists:member(Game1#game.id, ResultIds)),
+                      ?assert(lists:member(Game2#game.id, ResultIds))
               end
-      end
-     }].
+      end}.
 
 %%------------------------------------------------------------------------------
 %% Tests the game search functionality for the exported function
@@ -614,6 +615,7 @@ stop_game_tst_() ->
     {setup,
      fun() -> %setup
              GameID = sync_new(test_game()),
+             game_timer:sync_event(GameID, timeout),
              GameID
      end,
      fun(GameID) -> % teardown

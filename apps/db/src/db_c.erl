@@ -140,6 +140,8 @@ get_values_helper(Bucket, Keys, MapRed) ->
                        end, Keys),
     case MapRed(Inputs)
     of
+        {ok, []} ->
+            {ok, []};
         {ok, [{_, List}]} ->
             {ok, lists:map(fun db_obj:binary_to_erlang/1, List)};
         Other ->
