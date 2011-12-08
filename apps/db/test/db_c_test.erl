@@ -101,52 +101,52 @@ write_undefined_tst_ (Client) ->
 %% -------------------------------------------------------------------
 %% Secondary indices tests
 %% -------------------------------------------------------------------
-secondary_indices_test_ () ->
-    {setup,
-     fun connected_startup/0,
-     fun connected_teardown/1,
-     fun write_index/1}.
-
-
--record(index_test, {id,
-                     nick = "bob",
-                     other_stuff = "Blaaaaaaaaaaaaa"}).
-
-get_index_test_record() ->
-    #index_test{id = list_to_binary(integer_to_list(db_c:get_unique_id()))}.
-
-write_index(Client) ->
-    [fun() ->
-             Bucket = <<"index_test">>,
-             db_c:set_bucket (Client, Bucket, [{allow_mult, true}]),
-             {ok, Keys} = db_c:list_keys(Client, Bucket),
-             lists:foreach(fun(K) ->
-                               db_c:delete(Client, Bucket, K)
-                       end, Keys),
-
-             Val = get_index_test_record(),
-             Key = Val#index_test.id,
-             Obj1 = db_obj:create (Bucket, Key, Val),
-             ?debugVal (Obj1),
-
-             Index = <<"nick_bin">>,
-             IndexKey = list_to_binary(Val#index_test.nick),
-             Obj2 = db_obj:add_index(Obj1, {Index, IndexKey}),
-             ?debugVal(Obj2),
-             db_c:put(Client, Obj2),
-
-             {ok, GetObj} = db_c:get (Client, Bucket, Key),
-             ?debugVal(GetObj),
-             ?assertEqual(Val, db_obj:get_value(GetObj)),
-             ?assertEqual([{Index, IndexKey}], db_obj:get_indices(GetObj)),
-
-             IdxResult = db_c:get_index(Client, Bucket, {Index, IndexKey}),
-             ?debugVal(IdxResult),
-             {ok, GetIdx} = IdxResult,
-             ?debugVal(GetIdx),
-             ?assertEqual([ [Bucket, Key] ], GetIdx),
-             db_c:delete(Client, Bucket, Key)
-     end].
+%% secondary_indices_test_ () ->
+%%     {setup,
+%%      fun connected_startup/0,
+%%      fun connected_teardown/1,
+%%      fun write_index/1}.
+%%
+%%
+%% -record(index_test, {id,
+%%                      nick = "bob",
+%%                      other_stuff = "Blaaaaaaaaaaaaa"}).
+%%
+%% get_index_test_record() ->
+%%     #index_test{id = list_to_binary(integer_to_list(db_c:get_unique_id()))}.
+%%
+%% write_index(Client) ->
+%%     [fun() ->
+%%              Bucket = <<"index_test">>,
+%%              db_c:set_bucket (Client, Bucket, [{allow_mult, true}]),
+%%              {ok, Keys} = db_c:list_keys(Client, Bucket),
+%%              lists:foreach(fun(K) ->
+%%                                db_c:delete(Client, Bucket, K)
+%%                        end, Keys),
+%%
+%%              Val = get_index_test_record(),
+%%              Key = Val#index_test.id,
+%%              Obj1 = db_obj:create (Bucket, Key, Val),
+%%              ?debugVal (Obj1),
+%%
+%%              Index = <<"nick_bin">>,
+%%              IndexKey = list_to_binary(Val#index_test.nick),
+%%              Obj2 = db_obj:add_index(Obj1, {Index, IndexKey}),
+%%              ?debugVal(Obj2),
+%%              db_c:put(Client, Obj2),
+%%
+%%              {ok, GetObj} = db_c:get (Client, Bucket, Key),
+%%              ?debugVal(GetObj),
+%%              ?assertEqual(Val, db_obj:get_value(GetObj)),
+%% %%              ?assertEqual([{Index, IndexKey}], db_obj:get_indices(GetObj)),
+%%
+%%              IdxResult = db_c:get_index(Client, Bucket, {Index, IndexKey}),
+%%              ?debugVal(IdxResult),
+%%              {ok, GetIdx} = IdxResult,
+%%              ?debugVal(GetIdx),
+%%              ?assertEqual([ [Bucket, Key] ], GetIdx),
+%%              db_c:delete(Client, Bucket, Key)
+%%      end].
 
 
 %% -------------------------------------------------------------------
