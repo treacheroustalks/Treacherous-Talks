@@ -79,9 +79,7 @@ function load_graph(graph_key) {
 // Hacked graph for one use only!
 // FIXME: Delete or fix this after use!
 function load_hack_graph() {
-    var graph_key_orig = "scaling-compare";
-    var graph_key = "scaling-compare-hack";
-    compare[graph_key] = compare[graph_key_orig];
+    var graph_key = "scaling-compare";
 
     $.each(compare[graph_key].plots, function(i, plot) {
         // Only the first graph
@@ -99,24 +97,27 @@ function load_hack_graph() {
             });
             total_graph_data = normalize(total_graph_data);
 
+            // Create a copy of the object to avoid updating the original
+            var plot_hack = jQuery.extend({},plot);
+
             // Plot normalized
-            plot.div = setup_div();
-            plot.data = total_graph_data;
-            chart(plot);
+            plot_hack.div = setup_div();
+            plot_hack.data = total_graph_data;
+            chart(plot_hack);
 
             // Plot summation
-            plot.xfunc = "summation";
-            plot.div = setup_div();
-            plot.data = total_graph_data;
-            chart(plot);
+            plot_hack.xfunc = "summation";
+            plot_hack.div = setup_div();
+            plot_hack.data = total_graph_data;
+            chart(plot_hack);
 
             // Plot averages
             var averages = get_avg(total_graph_data);
-            plot.xfunc = undefined;
-            plot.div = setup_div();
-            plot.data = {'scale': averages};
-            plot.interval = 1;
-            chart(plot);
+            plot_hack.xfunc = undefined;
+            plot_hack.div = setup_div();
+            plot_hack.data = {'scale': averages};
+            plot_hack.interval = 1;
+            chart(plot_hack);
         }
     });
 
