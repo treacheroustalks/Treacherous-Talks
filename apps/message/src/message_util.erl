@@ -30,7 +30,7 @@
 -export([get_message/3]).
 
 get_message(MessageId, Bucket, RecordName) ->
-    case db:get(Bucket, db:int_to_bin(MessageId)) of
+    case db:get(Bucket, db:int_to_bin(MessageId), [{r,1}]) of
         {ok, DBObj} ->
             MessagePropList = db_obj:get_value(DBObj),
             Message = data_format:plist_to_rec(RecordName, MessagePropList),

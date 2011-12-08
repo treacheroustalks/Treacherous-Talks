@@ -181,12 +181,12 @@ new_game(ID, #game{} = Game) ->
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     GamePlayersRec = #game_player{id=ID},
     DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, GamePlayersRec),
-    GamePutResult = db:put (DBGameObj),
+    GamePutResult = db:put (DBGameObj, [{w,1}]),
     case GamePutResult of
         {error, _} = Error ->
             Error;
         _ ->
-            PlayersPutResult = db:put (DBGamePlayerObj),
+            PlayersPutResult = db:put (DBGamePlayerObj, [{w, 1}]),
             case PlayersPutResult of
                 {error, _} = Error ->
                     Error;
@@ -209,7 +209,7 @@ update_game(ID, #game{} = Game) ->
     % Store Game record as proplist for search
     GamePropList = data_format:rec_to_plist(Game),
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
-    GamePutResult = db:put (DBGameObj),
+    GamePutResult = db:put (DBGameObj, [{w,1}]),
     case GamePutResult of
         {error, _} = Error ->
             Error;
@@ -315,7 +315,7 @@ put_game_order(Key, GameOrderList) ->
     DBGameOrderObj = db_obj:create (?B_GAME_ORDER,
                                     BinID,
                                     #game_order{order_list=GameOrderList}),
-    db:put (DBGameOrderObj),
+    spawn (fun() -> db:put (DBGameOrderObj) end),
     {ok, Key}.
 
 %% ------------------------------------------------------------------
@@ -327,9 +327,11 @@ put_game_order(Key, GameOrderList) ->
 %% @end
 %% ------------------------------------------------------------------
 update_game_order(ID, NewOrder) ->
-    case db:get(?B_GAME_ORDER, list_to_binary(ID)) of
+    case db:get(?B_GAME_ORDER, list_to_binary(ID), [{r,1}]) of
         {ok, Obj} ->
-            game_utils:update_db_obj(Obj, #game_order{order_list = NewOrder}),
+            game_utils:update_db_obj(Obj,
+                                     #game_order{order_list = NewOrder},
+                                     [{w, 1}]),
             {ok, ID};
         Error ->
             {error, Error}
@@ -447,7 +449,7 @@ get_game_order_key(Id, Country) ->
 %% @end
 %% ------------------------------------------------------------------
 get_game(ID)->
-    case game_utils:get_db_obj(?B_GAME, db:int_to_bin(ID)) of
+    case game_utils:get_db_obj(?B_GAME, db:int_to_bin(ID), [{r,1}]) of
         {ok, GamePropList} ->
             Game = data_format:plist_to_rec(?GAME_REC_NAME, GamePropList),
             {ok, Game};
@@ -463,7 +465,7 @@ get_game(ID)->
 %% @end
 %% ------------------------------------------------------------------
 get_game_player(GameID)->
-    game_utils:get_db_obj(?B_GAME_PLAYER, GameID).
+    game_utils:get_db_obj(?B_GAME_PLAYER, GameID, [{r,1}]).
 
 
 %%-------------------------------------------------------------------
