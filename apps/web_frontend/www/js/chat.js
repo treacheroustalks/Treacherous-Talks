@@ -94,7 +94,7 @@ function drawChatBoxes() {
                         <option value="turkey">Turkey</option>\
         </select>\
         <div id="power_section">\
-            <b>Admin privilege:</b><input type="checkbox" id="power_msg" value="enabled"/>\
+            <b>Admin privilege:</b><input type="checkbox" id="power_msg"/>\
         </div>\
         <textarea id="press_msg" class="chatboxtextarea" onkeydown="javascript:return checkChatBoxInputKey(event,this,\''+inGameBoxTitle+'\');"></textarea>\
     </div>';

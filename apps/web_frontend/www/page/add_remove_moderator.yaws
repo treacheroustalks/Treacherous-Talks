@@ -20,7 +20,7 @@
         <div class="clearfix">
             <label for="is_moderator">Set as moderator</label>
             <div class="input">
-                <input id="is_moderator" name="is_moderator" type="checkbox" value="add" />
+                <input id="is_moderator" name="is_moderator" type="checkbox" />
             </div>
         </div>
         <div class="actions">
