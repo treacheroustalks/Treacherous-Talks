@@ -416,7 +416,7 @@ setup_game(ID) ->
 %% @end
 %%-------------------------------------------------------------------
 end_game(GameID, NewStatus) ->
-    {ok, Game} = game:get_game(GameID),
+    {ok, Game} = game_worker:get_game(GameID),
     db:delete (?B_CORPSES, list_to_binary (atom_to_list (?MODULE) ++
                                            integer_to_list (GameID))),
     FinishedGame = Game#game{status = NewStatus},
