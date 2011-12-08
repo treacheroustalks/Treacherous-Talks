@@ -34,10 +34,10 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/game.hrl").
 
--export([tests/3, success/3]).
+-export([tests/1, success/3]).
 
-tests(Callback, SessId, GameId) ->
-    [success(Callback, SessId, GameId)].
+tests([Callback, SessId, GameId]) ->
+    [?_test(success(Callback, SessId, GameId))].
 %%-------------------------------------------------------------------
 %% Get current games tests
 %%-------------------------------------------------------------------

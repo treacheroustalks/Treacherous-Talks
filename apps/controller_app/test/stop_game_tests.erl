@@ -33,12 +33,12 @@
 -include_lib("datatypes/include/user.hrl").
 -include_lib("utils/include/test_utils.hrl").
 
--export([tests/2, success/2, access_denied/1]).
+-export([tests/1, success/2, access_denied/1]).
 
-tests(Callback, SessId) ->
+tests([Callback, SessId]) ->
     [
-     success(Callback, SessId),
-     access_denied(Callback)
+     ?_test(success(Callback, SessId)),
+     ?_test(access_denied(Callback))
     ].
 %%-------------------------------------------------------------------
 %% Update user tests

@@ -12,10 +12,10 @@
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
 
--export([tests/4, success/4]).
+-export([tests/1, success/4]).
 
-tests(Callback, SessId, GameId, Country) ->
-    [success(Callback, SessId, GameId, Country)].
+tests([Callback, SessId, GameId, Country]) ->
+    [?_test(success(Callback, SessId, GameId, Country))].
 %%-------------------------------------------------------------------
 %% Get current games tests
 %%-------------------------------------------------------------------

@@ -139,7 +139,7 @@ controller_session_test_() ->
              session_setup()
      end,
      fun app_stop/1,
-     fun session_test_instantiator/1
+     fun instantiator/1
     }.
 
 controller_operator_session_test_() ->
@@ -149,7 +149,7 @@ controller_operator_session_test_() ->
              operator_session_setup()
      end,
      fun app_stop/1,
-     fun operator_test_instantiator/1
+     fun instantiator/1
     }.
 
 controller_moderator_session_game_test_() ->
@@ -159,7 +159,7 @@ controller_moderator_session_game_test_() ->
              moderator_session_joined_game_setup()
      end,
      fun app_stop/1,
-     fun moderator_session_joined_game_test_instantiator/1
+     fun instantiator/1
     }.
 
 controller_pre_game_test_() ->
@@ -169,7 +169,7 @@ controller_pre_game_test_() ->
              pre_game_setup()
      end,
      fun app_stop/1,
-     fun pre_game_test_instantiator/1
+     fun instantiator/1
     }.
 
 controller_joined_game_test_() ->
@@ -179,7 +179,7 @@ controller_joined_game_test_() ->
              joined_game_setup()
      end,
      fun app_stop/1,
-     fun joined_game_test_instantiator/1
+     fun instantiator/1
     }.
 
 register_oprator_test_() ->
@@ -190,10 +190,14 @@ register_oprator_test_() ->
      }.
 
 %%-------------------------------------------------------------------
-%% Test executer
+%% Test instantiator
 %%-------------------------------------------------------------------
-execute_tests(Tests) ->
-    lists:foreach(fun(Test) -> Test() end, Tests).
+instantiator({Mods, Args}) ->
+    lists:flatten(
+      lists:map(fun(Mod) ->
+                        Mod:tests(Args)
+                end, Mods)).
+
 
 %%-------------------------------------------------------------------
 %% Unknown command tests
@@ -259,31 +263,11 @@ session_setup() ->
     Login = {login, {ok, {NewUser, get_receiver()}}},
     SessId = controller:handle_action(Login, Reply),
 
-    lists:map(fun(Mod) ->
-                      {Mod, Callback, SessId}
-              end, Mods).
-
-session_test_instantiator(Mods) ->
-    lists:flatten(
-      lists:map(fun({Mod, Callback, SessId}) ->
-                        fun() ->
-                                Mod:tests(Callback, SessId)
-                        end
-                end,
-                Mods
-               )
-     ).
+    {Mods, [Callback, SessId]}.
 
 %%-------------------------------------------------------------------
 %% Operator tests
 %%-------------------------------------------------------------------
-operator_test_instantiator(Mods) ->
-    lists:flatten(
-      lists:map(fun({Mod, Callback, SessId}) ->
-                        Mod:tests(Callback, SessId)
-                end,
-                Mods)).
-
 operator_session_setup() ->
     Mods = [
             stop_game_tests, get_db_stats_tests
@@ -301,7 +285,8 @@ operator_session_setup() ->
 
     lists:map(fun(Mod) ->
                       {Mod, Callback, SessId}
-              end, Mods).
+              end, Mods),
+    {Mods, [Callback, SessId]}.
 %%-------------------------------------------------------------------
 %%  register operator test
 %%-------------------------------------------------------------------
@@ -343,17 +328,7 @@ pre_game_setup() ->
     GameCreate = {create_game, {ok, SessId, NewGame}},
     GameId = controller:handle_action(GameCreate, Reply),
 
-    lists:map(fun(Mod) ->
-                      {Mod, Callback, SessId, GameId}
-              end, Mods).
-
-pre_game_test_instantiator(Mods) ->
-    lists:flatten(
-      lists:map(fun({Mod, Callback, SessId, GameId}) ->
-                        fun() ->
-                                Mod:tests(Callback, SessId, GameId)
-                        end
-                end, Mods)).
+    {Mods, [Callback, SessId, GameId]}.
 
 %%-------------------------------------------------------------------
 %% Joined game tests
@@ -379,17 +354,7 @@ joined_game_setup() ->
     JoinGame = {join_game, {ok, SessId, {GameId, germany}}},
     controller:handle_action(JoinGame, Reply),
 
-    lists:map(fun(Mod) ->
-                      {Mod, Callback, SessId, GameId}
-              end, Mods).
-
-joined_game_test_instantiator(Mods) ->
-    lists:flatten(
-      lists:map(fun({Mod, Callback, SessId, GameId}) ->
-                        fun() ->
-                                Mod:tests(Callback, SessId, GameId)
-                        end
-                end, Mods)).
+    {Mods, [Callback, SessId, GameId]}.
 
 %%-------------------------------------------------------------------
 %% Moderator with game tests
@@ -425,17 +390,8 @@ moderator_session_joined_game_setup() ->
     JoinGame = {join_game, {ok, SessId, {GameId, germany}}},
     controller:handle_action(JoinGame, Reply),
 
-    lists:map(fun(Module) ->
-                      {Module, Callback, SessIdMod, GameId, germany}
-              end, Mods).
+    {Mods, [Callback, SessIdMod, GameId, germany]}.
 
-moderator_session_joined_game_test_instantiator(Mods) ->
-    lists:flatten(
-      lists:map(fun({Mod, Callback, SessId, GameId, Country}) ->
-                        fun() ->
-                                Mod:tests(Callback, SessId, GameId, Country)
-                        end
-                end, Mods)).
 %%-------------------------------------------------------------------
 %% Test data
 %%-------------------------------------------------------------------

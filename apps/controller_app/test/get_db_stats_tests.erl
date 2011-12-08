@@ -32,9 +32,9 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("datatypes/include/game.hrl").
 
--export([tests/2, success/2, invalid/2]).
+-export([tests/1, success/2, invalid/2]).
 
-tests(Callback, SessId) ->
+tests([Callback, SessId]) ->
     [
      ?_test(success(Callback, SessId)),
      ?_test(invalid(Callback, SessId))
