@@ -38,6 +38,11 @@
 
 -define(NOW_UNIV, calendar:now_to_universal_time(os:timestamp())).
 
+% Since we need to do a RPC call to the backend, define the cookie and node name
+% here
+-define(COOKIE, 'treacherous_talks').
+-define(BACKEND_NODE, 'backend@127.0.0.1').
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Some macros which define predefined messages and value for running
@@ -749,11 +754,13 @@ create_game(Client, Session, Press, Waittime) ->
 %%------------------------------------------------------------------------------
 change_game_phase(GameIDs) ->
     net_kernel:start([test]),
-    erlang:set_cookie(node(), 'treacherous_talks'),
-    ?debugVal(net_adm:ping('backend@127.0.0.1')),
-    lists:foreach(fun(GameID) ->
-                          ?debugVal(rpc:call('backend@127.0.0.1',game_timer,
-                                             sync_event,
-                                             [list_to_integer(GameID), timeout]))
-                  end,
-                  GameIDs).
+    erlang:set_cookie(node(), ?COOKIE),
+    ?debugVal(net_adm:ping(?BACKEND_NODE)),
+    lists:foreach(
+      fun(GameID) ->
+              ?debugVal(rpc:call(?BACKEND_NODE,
+                                 game_timer,
+                                 sync_event,
+                                 [list_to_integer(GameID), timeout]))
+      end,
+      GameIDs).

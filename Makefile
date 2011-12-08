@@ -74,14 +74,14 @@ clean:
 
 ### Test rules
 
-test: unittest inttest
+test: release
+	cd ext_test; bash test -i -u
 
-unittest:
-	$(REBAR) eunit skip_deps=true
+unittest: release
+	cd ext_test; bash test -u
 
-# This rule runs a bash script that actually perform the integration tests
 inttest: release
-	cd ext_test; bash test
+	cd ext_test; bash test -i
 
 
 ### Release rules

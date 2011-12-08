@@ -1,108 +1,129 @@
 #!/bin/bash
-# This script will setup an environment for running integration tests
+# This script will run different integration tests
 
 ###### Define internal functions and variables
+
+# Default settings (can be changed with command line options)
+
+dounit=0
+dointegration=0
+startriak=1
 
 # Internal variables
 cwd="$( cd -P "$( dirname "$0" )" && pwd )"
 sysrel=$cwd/../system-release
+cm=$sysrel/tt/bin/cluster_manager
+sm=$sysrel/tt/bin/system_manager
 errors=0
 
-source common_functions.sh
+source $cwd/common_functions.sh
 
-# Description: Starts a release and pings it to make sure that it is running
-# First argument: path to system-release directory
-# Second argument: name of release to start
+# Description: Runs a command by calling run_script if no errors from previous
+#              runs
+# First argument: printed name
+# Second argument: command to run
 # Side effect: will set $errors to one if non-zero exit code
-function start_release () {
-    command=$1/tt/bin/$2
-    local_error=0
-    # Start the release given in $1
-    echonormal "Starting $2"
-    $command start || local_error=1
-    # Wait before pinging
-    sleep 1
-    # Do five ping attempts and fail if all is unsuccessful
-    running=0
-    for i in {1..10}
-    do
-        echonormal "Ping attempt number $i for $2"
-        # Run command and pipe output to find regexp
-        $command ping 2>&1 | perl -pe 'END { print; exit $status }
-                                       $status=100 if
-                                       /.*not responding to pings/;'
-        case "$?" in
-            0) running=1
-               break ;;
-        esac
-        # Sleep before next attempt
-        sleep 1
-    done
-    # Check if ping was unsuccessful and set errors accordingly
-    if [ $running -eq 0 ]; then
-        local_error=1
-    fi
-    case "$local_error" in
-        0) echonormal "$2 is up and running\n" ;;
-        *) echoerr "ERROR: Could not start $2\n"
-           errors=1 ;;
+function run_test () {
+    case "$errors" in
+        0)  run_script "$1" "$2";;
+        *)  echonormal "Skipping '$1' due to previous error\n";;
     esac
 }
 
-# Description: Stops a release in a proper way
-# First argument: path to system-release directory
-# Second argument: name of release to stop
-# Side effect: will set $errors to one if non-zero exit code
-function stop_release () {
-    command=$1/tt/bin/$2
-    local_error=0
-    # Stop the release given in $1
-    echonormal "Stopping $2"
-    $command stop || local_error=1
-    case "$local_error" in
-        0) echonormal "$2 is stopped\n" ;;
-        *) echoerr "ERROR: Could not stop $2\n"
-           errors=1 ;;
+# Description: Shows usage of script
+# Side effect: will exit script with return code 1
+function show_usage () {
+    echo >&2 "usage: $0 [-i] [-u] [-nr]"
+    echo >&2 "       -i      run integration tests"
+    echo >&2 "       -u      run unit tests"
+    echo >&2 "       -nr     run tests without starting riak"
+    exit 1
+}
+
+# Get command-line arguments and bail out if none or bad args
+if [ $# -eq 0 ]; then
+    show_usage
+fi
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -i)  dointegration=1;;
+        -u)  dounit=1;;
+        -nr) startriak=0;;
+        *)   show_usage;;
     esac
+    shift
+done
+
+# Description: Starts a system using system_manager and cluster_manager
+# Argument: the config file to use
+start_system () {
+    cd $cwd
+    $sm start
+    $cm -f -c -s "$1"
+}
+
+# Description: Stops a system using system_manager and cluster_manager
+# Argument: the config file to use
+stop_system () {
+    cd $cwd
+    $cm -f -t "$1"
+    $sm stop
 }
 
 
 ###### Script starts here
 
-echonormal "Running integration test script\n"
-
-# Start releases
-start_release $sysrel backend
-sleep 2
-start_release $sysrel xmpp_frontend
-start_release $sysrel web_frontend
-start_release $sysrel smtp_frontend
-sleep 5
-
-# Run XMPP tests
-cd $cwd/ejabberd_echo || errors=1
-run_script "Running XMPP tests" "$cwd/../rebar eunit skip_deps=true"
-
-# Run SMTP tests
-cd $cwd/smtp_integration_test || errors=1
-run_script "Running SMTP tests" "$cwd/../rebar eunit skip_deps=true"
-
-# Run Selenium test script
-cd $cwd
-run_script "Running Selenium tests" "python $cwd/web_interface_test.py"
-
-# Stop releases
-stop_release $sysrel smtp_frontend
-stop_release $sysrel web_frontend
-stop_release $sysrel xmpp_frontend
-stop_release $sysrel backend
-
-
-###### Exit
-
-if (( $errors )); then
-    echoerr "Integration test run was NOT successful."
+# Start system
+if [[ $dointegration -eq 1 && startriak -eq 1 ]]; then
+    echonormal "Start full stack"
+    start_system "configs/fullstack.config"
+elif [[ $dointegration -eq 1 && startriak -eq 0 ]]; then
+    echonormal "Start TT stack (no riak)"
+    start_system "configs/ttstack.config"
+elif [[ startriak -eq 0 ]]; then
+    echonormal "Skip riak start"
 else
-    echonormal "Integration test run was successful."
+    echonormal "Start riak"
+    start_system "configs/riakonly.config"
 fi
+
+echo
+
+# Run unit tests if needed
+if [ $dounit -eq 1 ]; then
+    cd $cwd/..
+    run_test "Run unit tests" "$cwd/../rebar eunit skip_deps=true"
+fi
+
+# Run integration tests if needed
+if [ $dointegration -eq 1 ]; then
+    # Run XMPP tests
+    cd $cwd/ejabberd_echo
+    run_test "Run XMPP tests" "$cwd/../rebar eunit skip_deps=true"
+
+    # Run SMTP tests
+    cd $cwd/smtp_integration_test
+    run_test "Run SMTP tests" "$cwd/../rebar eunit skip_deps=true"
+
+    # Run Selenium test script
+    cd $cwd
+    run_test "Run Selenium tests" "python $cwd/web_interface_test.py"
+fi
+
+# Stop system
+if [[ $dointegration -eq 1 && startriak -eq 1 ]]; then
+    echonormal "Stop full stack"
+    stop_system "configs/fullstack.config"
+elif [[ $dointegration -eq 1 && startriak -eq 0 ]]; then
+    echonormal "Stop TT stack (no riak)"
+    stop_system "configs/ttstack.config"
+elif [[ startriak -eq 0 ]]; then
+    echonormal "Skip riak stop"
+else
+    echonormal "Stop riak"
+    stop_system "configs/riakonly.config"
+fi
+
+
 exit $errors

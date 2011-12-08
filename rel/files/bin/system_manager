@@ -83,6 +83,29 @@ case "$1" in
         mkdir -p $PIPE_DIR
         shift # remove $1
         $ERTS_PATH/run_erl -daemon $PIPE_DIR $RUNNER_LOG_DIR "exec $RUNNER_BASE_DIR/bin/$SCRIPT console $@" 2>&1
+
+        # Wait for the node to come up. We can't just ping it because
+        # we really want to ensure that our applications has started.
+        # Once the node comes up we check for our appliaction. If that's
+        # running then we assume things are good enough.
+        WAIT=${WAIT_FOR_ERLANG:-10}
+        while [ $WAIT -gt 0 ]; do
+            WAIT=`expr $WAIT - 1`
+            sleep 1
+            $NODETOOL ping > /dev/null
+            ES=$?
+            if [ $ES -ne 0 ]; then
+                continue
+            fi
+            GETAPP=`$NODETOOL rpcterms application get_application "'$APP_NAME'."`
+            if [ "$GETAPP" != "undefined" ]; then
+                exit 0
+            fi
+        done
+        echo "Failed to start within ${WAIT_FOR_ERLANG:-10} seconds."
+        echo "If you want to wait longer, set the environment variable"
+        echo "WAIT_FOR_ERLANG to the number of seconds to wait."
+        exit 1
         ;;
 
     stop)
