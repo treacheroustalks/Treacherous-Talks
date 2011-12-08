@@ -22,3 +22,7 @@
 %% Cluster Configuration.
 %% A clustconf consists of 0 or more hostconf terms.
 -type clustconf() :: [hostconf()].
+
+
+%% startup order
+-type start_order() :: [{hostname(), sys_mgr_name(), relname()}].

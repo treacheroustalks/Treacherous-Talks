@@ -25,6 +25,62 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+parallel_startup_order_test() ->
+    ClustConf = [{host, "stephan.pcs", "system_manager",
+                  [{release, web_frontend, web_frontend, []},
+                   {release, xmpp_frontend, xmpp_frontend, []}
+                  ]},
+                 {host, "jd.pcs", "system_manager",
+                  [{release, backend, backend,
+                    [{db,[{riak,{pb,{"dilshod.pcs",8081}}},
+                          {db_workers,50}]}
+                    ]}]},
+                 {host, "dilshod.pcs", "system_manager",
+                  [{release, riak, riak, []}]},
+                 {host, "tiina.pcs", "system_manager",
+                  [{release, backend, backend,
+                    [{db,[{riak,{pb,{"andre.pcs",8081}}},
+                          {db_workers,50}]}
+                    ]}]},
+                 {host, "andre.pcs", "system_manager",
+                  [{release, riak, riak, []}]}
+                ],
+    Expected = [
+                [{"andre.pcs", "system_manager",riak, riak},
+                 {"dilshod.pcs", "system_manager",riak, riak}],
+                [{"tiina.pcs", "system_manager",backend, backend}],
+                [{"jd.pcs", "system_manager",backend, backend}],
+                [{"stephan.pcs", "system_manager",xmpp_frontend, xmpp_frontend},
+                 {"stephan.pcs", "system_manager",web_frontend, web_frontend}]
+               ],
+    Actual = cluster_utils:parallel_startup_order(ClustConf),
+    ?assertEqual(Expected, Actual),
+
+    Conf2 = [
+             {host, "jd.pcs", "system_manager",
+              [{release, backend, backend,
+                [{db,[{riak,{pb,{"dilshod.pcs",8081}}},
+                      {db_workers,50}]}
+                ]}]},
+             {host, "tiina.pcs", "system_manager",
+              [{release, backend, backend,
+                [{db,[{riak,{pb,{"andre.pcs",8081}}},
+                      {db_workers,50}]}
+                ]}]},
+             {host, "andre.pcs", "system_manager",
+              [{release, backend, backend,
+                [{db,[{riak,{pb,{"andre.pcs",8081}}},
+                      {db_workers,50}]}
+                ]}]}
+            ],
+    Expected2 = [
+                 [{"andre.pcs", "system_manager",backend, backend}],
+                 [{"tiina.pcs", "system_manager",backend, backend},
+                  {"jd.pcs", "system_manager",backend, backend}]
+                ],
+    Actual2 = cluster_utils:parallel_startup_order(Conf2),
+    ?assertEqual(Expected2, Actual2).
+
 generate_startup_order_test() ->
     ClustConf = [{host, "stephan.pcs", "system_manager",
                   [{release, web_frontend, web_frontend, []},
@@ -48,12 +104,14 @@ generate_startup_order_test() ->
     % actually we don't care whether dilshod's or andre's riak comes first,
     % but sort is stable so they should come in the order in the ClustConf.
     % same goes for any other release type.
-    Expected = [{"dilshod.pcs", "system_manager",riak, riak},
+    Expected = [
                 {"andre.pcs", "system_manager",riak, riak},
-                {"jd.pcs", "system_manager",backend, backend},
+                {"dilshod.pcs", "system_manager",riak, riak},
                 {"tiina.pcs", "system_manager",backend, backend},
-                {"stephan.pcs", "system_manager",web_frontend, web_frontend},
-                {"stephan.pcs", "system_manager",xmpp_frontend, xmpp_frontend}],
+                {"jd.pcs", "system_manager",backend, backend},
+                {"stephan.pcs", "system_manager",xmpp_frontend, xmpp_frontend},
+                {"stephan.pcs", "system_manager",web_frontend, web_frontend}
+               ],
     Actual = cluster_utils:generate_startup_order(ClustConf),
     ?assertEqual(Expected, Actual).
 
@@ -179,8 +237,8 @@ preprocess_clustconf_realistic_test() ->
     Expected = [{host, "stephan.pcs", "system_manager",
                  [{release, web_frontend, web_frontend,
                    [{controller_app,
-                     [{backend_nodes, ['backend@jd.pcs',
-                                       'backend@tiina.pcs']
+                     [{backend_nodes, ['backend@tiina.pcs',
+                                       'backend@jd.pcs']
                       }
                      ]
                     }
@@ -188,8 +246,8 @@ preprocess_clustconf_realistic_test() ->
                   },
                   {release, xmpp_frontend, xmpp_frontend,
                    [{controller_app,
-                     [{backend_nodes, ['backend@jd.pcs',
-                                       'backend@tiina.pcs']
+                     [{backend_nodes, ['backend@tiina.pcs',
+                                       'backend@jd.pcs']
                       }
                      ]
                     }
@@ -205,13 +263,13 @@ preprocess_clustconf_realistic_test() ->
                          {db_workers,50}
                         ]
                     },
-                    {controller_app, [{backend_nodes, ['backend@jd.pcs',
-                                                       'backend@tiina.pcs']
+                    {controller_app, [{backend_nodes, ['backend@tiina.pcs',
+                                                       'backend@jd.pcs']
                                       }
                                      ]
                     },
-                    {game, [{backend_nodes, ['backend@jd.pcs',
-                                             'backend@tiina.pcs']
+                    {game, [{backend_nodes, ['backend@tiina.pcs',
+                                             'backend@jd.pcs']
                             }
                            ]
                     }
@@ -227,13 +285,13 @@ preprocess_clustconf_realistic_test() ->
                                }
                          },
                          {db_workers,50}]},
-                    {controller_app, [{backend_nodes, ['backend@jd.pcs',
-                                                       'backend@tiina.pcs']
+                    {controller_app, [{backend_nodes, ['backend@tiina.pcs',
+                                                       'backend@jd.pcs']
                                       }
                                      ]
                     },
-                    {game, [{backend_nodes, ['backend@jd.pcs',
-                                             'backend@tiina.pcs']
+                    {game, [{backend_nodes, ['backend@tiina.pcs',
+                                             'backend@jd.pcs']
                             }
                            ]
                     }

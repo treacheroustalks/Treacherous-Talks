@@ -49,7 +49,8 @@ option_spec_list() ->
      {ping, $p, "ping", undefined, "Pings all releases defined in config file"},
      {start, $s, "start", undefined, "Starts all releases defined in config file"},
      {stop, $t, "stop", undefined, "Stops all releases defined in config file"},
-     {configfile, undefined, undefined, string, "Configuration file (defaults to tt.config if none given)"}
+     {configfile, undefined, undefined, string, "Configuration file (defaults to tt.config if none given)"},
+     {parallel, $f, "parallel", undefined, "Parallelizes if possible"}
     ].
 
 
@@ -79,8 +80,10 @@ run(Opts) ->
             %% net_kernel needed for distributed erlang.
             net_kernel:start([cluster_manager, longnames]),
             erlang:set_cookie(node(), 'treacherous_talks'),
-            StartingOrder = cluster_utils:generate_startup_order(Config),
+            ParallelOrder = cluster_utils:parallel_startup_order(Config),
+            StartingOrder = cluster_utils:parallel_order_to_serial(ParallelOrder),
             ProcessedConfig = cluster_utils:preprocess_clustconf(Config),
+            Parallel = proplists:get_bool(parallel, Opts),
 
             case proplists:get_bool(setconfig, Opts) of
                 true -> cluster_utils:distribute_config(ProcessedConfig);
@@ -88,8 +91,14 @@ run(Opts) ->
             end,
             case proplists:get_bool(start, Opts) of
                 true ->
-                    cluster_utils:do_action_on_releases(StartingOrder,
-                                                        start_release),
+                    case Parallel of
+                        false ->
+                            cluster_utils:do_action_on_releases(StartingOrder,
+                                                                start_release);
+                        true ->
+                            cluster_utils:do_parallel_action_on_releases(
+                              ParallelOrder, start_release)
+                    end,
                     cluster_utils:notify_backends(Config);
                 false -> ok
             end,
@@ -104,14 +113,28 @@ run(Opts) ->
             end,
             case proplists:get_bool(stop, Opts) of
                 true ->
-                    ShutdownOrder = lists:reverse(StartingOrder),
-                    cluster_utils:do_action_on_releases(ShutdownOrder,
-                                                        stop_release);
+                    case Parallel of
+                        false ->
+                            ShutdownOrder = lists:reverse(StartingOrder),
+                            cluster_utils:do_action_on_releases(ShutdownOrder,
+                                                                stop_release);
+                        true ->
+                            ShutdownOrder = [lists:reverse(StartingOrder)],
+                            cluster_utils:do_parallel_action_on_releases(
+                              ShutdownOrder, stop_release)
+                    end;
                 false -> ok
             end,
             case proplists:get_bool(ping, Opts) of
-                true -> cluster_utils:do_action_on_releases(StartingOrder,
-                                                            ping_release);
+                true ->
+                    case Parallel of
+                        false ->
+                            cluster_utils:do_action_on_releases(
+                              StartingOrder, ping_release);
+                        true ->
+                            cluster_utils:do_parallel_action_on_releases(
+                              [StartingOrder], ping_release)
+                    end;
                 false -> ok
             end
     end.

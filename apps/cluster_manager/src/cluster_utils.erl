@@ -35,8 +35,11 @@
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
--export([generate_startup_order/1, preprocess_clustconf/1, notify_backends/1]).
--export([distribute_config/1, do_action_on_releases/2]).
+-export([parallel_startup_order/1, generate_startup_order/1,
+         parallel_order_to_serial/1, preprocess_clustconf/1,
+         notify_backends/1]).
+-export([distribute_config/1, do_parallel_action_on_releases/2,
+         do_action_on_releases/2]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -51,6 +54,25 @@ distribute_config([{host, Host, SysMgr, HostConfig}|Rest]) ->
     Res = (catch rpc:call(Node, system_manager, update_config, [{host, Host, HostConfig}])),
     print_release_action_result({update_config, Host, Res}),
     [{update_config, Host, Res} | distribute_config(Rest)].
+
+
+do_parallel_action_on_releases(ParallelReleases, Action) ->
+    DoAction = fun(Release, Pid) ->
+                       Res = do_action_on_releases([Release], Action),
+                       Pid ! {action, Res}
+               end,
+    Self = self(),
+    lists:map(
+      fun(Releases) ->
+              lists:foreach(
+                fun(Rel) ->
+                        spawn(fun() -> DoAction(Rel, Self) end)
+                end, Releases),
+              lists:map(
+                fun(_Rel) ->
+                        receive {action, Res} -> Res end
+                end, Releases)
+      end, ParallelReleases).
 
 
 %% Perform an action (start/stop/ping/halt) on all releases in the given list
@@ -68,6 +90,50 @@ do_action_on_releases([{Host, SysMgr, Release, _RelPrefix}|Rest], Action) ->
 
 
 %% @doc
+%%  Generate a parallel startup order from a given clustconf()
+%%  which simply puts any riak release before any backend, and any
+%%  backend before anything else. Releases that can be executed in
+%%  parallel will be in a list
+%%
+%%  For now, two or more of the same release types will be returned in
+%%  the order they occurred in the clustconf() but this should not
+%%  be relied upon.
+%% @end
+-spec parallel_startup_order(clustconf()) -> [start_order()].
+parallel_startup_order(ClustConf) ->
+    Releases = get_releases(ClustConf),
+    Order =
+        lists:foldl(fun(Rel, [Riaks, Backends, Others]) ->
+                            case Rel of
+                                {_,_,riak,_} ->
+                                    [[Rel|Riaks], Backends, Others];
+                                {_,_,backend,_} ->
+                                    [Riaks, [Rel|Backends], Others];
+                                _ ->
+                                    [Riaks, Backends, [Rel|Others]]
+                            end
+                    end, [[], [], []], Releases),
+    Result = case Order of
+                 [_, [], _] ->
+                     Order;
+                 [Riaks, [B], Others] ->
+                     [Riaks, [B], Others];
+                 [Riaks, [B|Backends], Others] ->
+                     [Riaks, [B], Backends, Others]
+             end,
+    lists:filter(fun([]) -> false;
+                    (_) -> true
+                 end, Result).
+
+
+%% @doc
+%% Converts a parallel startup order to a serial
+%% @end
+-spec parallel_order_to_serial([start_order()]) -> start_order().
+parallel_order_to_serial(Orders) ->
+    lists:flatten(Orders).
+
+%% @doc
 %%  Generate a startup order from a given clustconf()
 %%  which simply puts any riak release before any backend, and any
 %%  backend before anything else.
@@ -76,9 +142,9 @@ do_action_on_releases([{Host, SysMgr, Release, _RelPrefix}|Rest], Action) ->
 %%  the order they occurred in the clustconf() but this should not
 %%  be relied upon.
 %% @end
--spec generate_startup_order(clustconf()) -> [{hostname(), relname()}].
+-spec generate_startup_order(clustconf()) -> start_order().
 generate_startup_order(ClustConf) ->
-    lists:sort(fun startup_sort/2, get_releases(ClustConf)).
+    parallel_order_to_serial(parallel_startup_order(ClustConf)).
 
 %% @doc
 %%  Adds an variable backend_nodes with a list of node names
@@ -134,22 +200,6 @@ print_release_action_result({Action, Release, Host, Res}) ->
 print_release_action_result({Action, Host, Res}) ->
     io:format("~p on ~p was ~p~n", [Action, Host, Res]).
 
-
-% Riak comes before anything.
-startup_sort({_, _,riak,_}, _Anything) ->
-    true;
-% Riak comes after nothing.
-startup_sort(_Anything, {_, _, riak,_}) ->
-    false;
-% Backend comes before anything but riak.
-startup_sort({_, _, backend,_}, _Anything) ->
-    true;
-% Backend comes after nothing but riak.
-startup_sort(_Anything, {_, _,backend,_}) ->
-    false;
-% Anything else is equal.
-startup_sort(_, _) ->
-    true.
 
 get_releases([]) -> [];
 get_releases([{host, Host, SysMgrPrefix, RelConfs}|Rest]) ->
@@ -207,7 +257,8 @@ backend_nodes_conf_changes([App|Rest], BackendNodes) ->
 % Given a clustconf(), it returns a list of node atoms for expected backend nodes
 -spec config_backend_nodes(clustconf()) -> [atom()].
 config_backend_nodes(Config) ->
-    lists:flatten(lists:map(fun host_conf_backend_node/1, Config)).
+    lists:reverse(lists:flatten(
+                    lists:map(fun host_conf_backend_node/1, Config))).
 
 -spec host_conf_backend_node(hostconf()) -> [] | atom().
 host_conf_backend_node({host, Host, _SysMgr, Rels}) ->
