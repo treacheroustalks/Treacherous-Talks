@@ -1,17 +1,78 @@
 Load testing with basho bench:
 
-Howto:
-1. run ./get_basho_bench
-  * downloads basho_bench
-  * updates the rebar.config
+There a few helper script to do the load testing as well as
+scripts running the actual load tests. This README explains
+them all.
 
-2. build it:
-  * make
+1. Getting basho bench:
 
-3. run ./worker_tests.sh
-  * runs a test with different worker settings
-  * changes the worker config of the remote backend server and restarts it
-  * runs basho_bencho
-  * copies results
-  * and so on, for all supplied worker settings
+$ ./get_basho_bench
+$ make
 
+This gets basho becnh from github, adds our sources to it,
+adapts the rebar.config and then compiles everything.
+
+
+2. Creating load users
+
+A load_test user is required on all machines that participate
+in the load tests. Therefore run the following on all machines:
+$ ./create_load_user.sh
+
+
+3. Load test config
+
+The file load_test_config contains all settings for the load tests.
+You can change the number of workers, riak settings, etc there.
+It also contains all the machines that are being sued for the load
+tests. The order of the SERVERS array is important. The machines
+are used in the order they are defined there.
+
+
+4. Passwordless load testing:
+$ ./add_ssh_key.sh
+
+This will generate a public ssh key, in case you didn't have one,
+and add it to the load_test accounts on all machines.
+
+
+5. Load testing (finally)
+
+All the load testing scripts requrire you to have a system-release
+ready. If you don't do it!
+
+5.1. equal_dist_test.sh
+
+This script gets one argument, the amount of machines to use.
+"Equal distribution" means one riak and on backend per machine.
+
+Example:
+$ equal_dist_test.sh 4
+Will start a load test on 4 machines.
+
+This will copy your system-release to all used machines, start
+their system_managers, and then startup. Once that is done it
+starts ./basho_bench with the in the load_test_config provided
+config file.
+
+5.2. scaling_test.sh
+
+This script is very similar to 5.1.
+Instead of one argument it gets a list of numbers.
+Also the CONCURRENT value in the config is ignored, it's set to
+the amount of machines used.
+
+Example:
+$ scaling_test.sh 1 2 3 4 5 6
+Will run 6 load tests from 1 to 6 machines, where the 3. test
+has 3 times the load of the 1. one.
+
+
+6. Kill ALL! argh!
+
+Last but not least:
+$ ./kill_all.sh
+
+This terminates all erlang processes of every load_test user
+in you load_test_config. This is very handy on case you
+stopped a test and the whole cluster is still running.
