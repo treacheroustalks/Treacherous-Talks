@@ -96,7 +96,17 @@ handle_call({restart_game, Game}, _From, State) ->
     game_timer:event(Game#game.id, restart),
     {reply, {ok, Game#game.id}, State};
 handle_call({stop_game, ID}, _From, State) ->
-    Reply = game_timer:stop(ID, stopped),
+    Reply = try game_timer:stop(ID, stopped)
+            catch
+                % If no process found, restart the timer and then stop the game.
+                % We should not reach here ideally since all games must have
+                % timers.
+                exit:_Error ->
+                    {ok, Game} = get_game(ID),
+                    game_timer_sup:create_timer(Game),
+                    game_timer:event(ID, restart),
+                    game_timer:stop(ID, stopped)
+            end,
     {reply, Reply, State};
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
     Reply = update_game(ID, Game),
