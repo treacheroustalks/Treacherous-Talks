@@ -4,14 +4,6 @@ source ../common_functions.sh
 source load_test_config
 source test_functions.sh
 
-TT_CONFIG=config/tt_general.config
-CONCURRENT=1
-#MODE="{rate, 7}"
-MODE="max"
-DURATION=60        # in minutes
-REPORT_INTERVAL=60 # in seconds
-
-TIMESTAMP=`date +"%y.%m.%d_%H-%M"`
 LOG=log/equal_dist-$TIMESTAMP.log
 RESULTS=equal_dist/$TIMESTAMP
 
@@ -34,8 +26,6 @@ function test_equal_dist {
         set-bucket-n_vals ${SERVERS[$i]} $Count
     done
 
-    #update basho driver
-    sed -i "s:{.*tt_node,.*}:{tt_node, '$B_NAME@${SERVERS[0]}'}:g" $TT_CONFIG
     # run the test
     RES_DIR=$RESULTS/equal_dist_$Count/
     run-basho $TT_CONFIG $RES_DIR
@@ -49,13 +39,9 @@ if [ $# -ne 1 ] ; then
     exit 0
 fi
 
-sed -i "s:{.*mode,.*}:{mode, $MODE}:g" $TT_CONFIG
-sed -i "s:{.*duration,.*}:{duration, $DURATION}:g" $TT_CONFIG
-sed -i "s:{.*report_interval,.*}:{report_interval, $REPORT_INTERVAL}:g" $TT_CONFIG
-sed -i "s:{.*concurrent,.*}:{concurrent, $CONCURRENT}:g" $TT_CONFIG
-
 mkdir -p log/
 
+update-basho-config ${SERVERS[0]}
 test_equal_dist $1 | tee $LOG
 
 cp $LOG $RESULTS/log

@@ -26,47 +26,33 @@ function stop-all {
     done
 }
 
-function start-local-sys-manager {
-    SYS_DIR=$LOCAL_RELEASE/tt
-    nodename=$SYS_DIR/etc/nodename.system_manager
-    BIN=$SYS_DIR/bin/system_manager
-    HOST=`hostname`
-
-    $BIN stop > /dev/null
-    sed -i "s:-name.*:-name system_manager@$HOST:g" $nodename
-    $BIN stop > /dev/null
-    $BIN start &&
-    sleep $START_SLEEP &&
-    $BIN ping
-    rm -rf $LOCAL_RELEASE/riak/data/ring/ 2> /dev/null
-}
-
 function copy-release {
     remote=$TEST_USER@$1
     SYS_DIR=$REMOTE_RELEASE/tt
     nodename=$SYS_DIR/etc/nodename.system_manager
     BIN=$SYS_DIR/bin/system_manager
 
-    ssh -t $remote "
- echo \"Stopping system manager on $1\" ;
+    ssh $remote "
+ echo \"[$1] Stopping system manager\" ;
  $BIN stop > /dev/null;
- rm -rf $REMOTE_RELEASE"
-    echo "Copying release to $1:$REMOTE_RELEASE"
+ rm -rf $REMOTE_RELEASE > /dev/null"
+    echo "[$1] Copying release $REMOTE_RELEASE/"
     scp -r $LOCAL_RELEASE $remote:$REMOTE_RELEASE/ > /dev/null 
-    ssh -t $remote "
+    ssh $remote "
  sed -i \"s:-name.*:-name $SYS_MGR_NAME@$1:g\" $nodename &&
  sed -i \"s:PIPE_DIR=.*:PIPE_DIR=/tmp/\\\$USER/\\\$RUNNER_BASE_DIR/:g\" $REMOTE_RELEASE/riak/bin/riak &&
- echo \"Starting system manager\" &&
+ echo \"[$1] Starting system manager\" &&
  $BIN start &&
  sleep $START_SLEEP &&
- $BIN ping"
+ echo \"[$1] Pinging system manager: \`$BIN ping\`\""
 }
 
 
 function start-remote-sys-managers {
     for server in $@; do
-        run_script "Starting system manager on $server" "copy-release $server"
+        copy-release $server &
     done
+    wait
 }
 
 
@@ -129,15 +115,13 @@ function create-cluster-config {
 
 function start-cluster {
     BIN=$LOCAL_RELEASE/tt/bin/cluster_manager
-    $BIN -c -s -j $CLUSTER_CONFIG &&
+    $BIN -f -c -s -j $CLUSTER_CONFIG &&
     sleep $START_SLEEP &&
-    $BIN -p $CLUSTER_CONFIG
+    $BIN -f -p $CLUSTER_CONFIG
 }
 
 
 function setup-and-start-cluster {
-    run_script "Starting local system manager" "start-local-sys-manager"
-
     echonormal "Starting remote system managers"
     start-remote-sys-managers "$@"
 
@@ -177,4 +161,13 @@ function set-bucket-n_vals {
     set-bucket-n_val $RIAK "game_message" "$LOW"
     set-bucket-n_val $RIAK "game_player" "$NUM_OF_NODES"
     set-bucket-n_val $RIAK "game_state" "$NUM_OF_NODES"
+}
+
+function update-basho-config {
+    sed -i "s:{.*mode,.*}:{mode, $MODE}:g" $TT_CONFIG
+    sed -i "s:{.*concurrent,.*}:{concurrent, $CONCURRENT}:g" $TT_CONFIG
+    sed -i "s:{.*duration,.*}:{duration, $DURATION}:g" $TT_CONFIG
+    sed -i "s:{.*report_interval,.*}:{report_interval, $REPORT_INTERVAL}:g" $TT_CONFIG
+    sed -i "s:{.*tt_node,.*}:{tt_node, '$B_NAME@$1'}:g" $TT_CONFIG
+
 }
