@@ -33,15 +33,15 @@
 
 start(_StartType, _StartArgs) ->
     ?DEBUG("starting [~p]~n", [?MODULE]),
-    pg2:start_link (),
-    RespondingBackend = backends:get_responding_backend (),
+    RespondingBackend = backends:get_responding_backend(),
     ?DEBUG ("Backend: ~p~n", [RespondingBackend]),
     case net_adm:ping(RespondingBackend) of
+        pong ->
+            pg2:start_link(),
+            web_frontend_sup:start_link();
         pang ->
-            erlang:error ({error, could_not_find_backend});
-        pong -> ok
-    end,
-    web_frontend_sup:start_link().
+            erlang:error({error, could_not_find_backend})
+    end.
 
 stop(_State) ->
     ok.

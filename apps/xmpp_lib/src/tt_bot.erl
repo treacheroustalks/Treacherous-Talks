@@ -80,14 +80,20 @@ start_link(Host, Opts) ->
 %%-------------------------------------------------------------------
 start(Host, Opts) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
-    pong = net_adm:ping('backend@127.0.0.1'),
     ChildSpec = {Proc,
                  {?MODULE, start_link, [Host, Opts]},
                  temporary,
                  1000,
                  worker,
                  [?MODULE]},
-    supervisor:start_child(ejabberd_sup, ChildSpec).
+    RespondingBackend = backends:get_responding_backend(),
+    case net_adm:ping(RespondingBackend) of
+        pong ->
+            pg2:start_link(),
+            supervisor:start_child(ejabberd_sup, ChildSpec);
+        pang ->
+            erlang:error({error, could_not_find_backend})
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc
