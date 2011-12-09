@@ -7,8 +7,13 @@ RUNNER_SCRIPT_DIR=$(cd ${0%/*} && pwd)
 RUNNER_BASE_DIR=${RUNNER_SCRIPT_DIR%/*}
 RUNNER_ETC_DIR=$RUNNER_BASE_DIR/etc
 RUNNER_LOG_DIR=$RUNNER_BASE_DIR/log
+
+# Make sure CWD is set to runner base dir
+cd $RUNNER_BASE_DIR
+# Identify the script name
+SCRIPT=`basename $0`
 # Note the trailing slash on $PIPE_DIR/
-PIPE_DIR=/tmp/$USER/$RUNNER_BASE_DIR/
+PIPE_DIR=/tmp/$USER/tt/$SCRIPT/
 RUNNER_USER=
 
 # Make sure this script is running as the appropriate user
@@ -16,11 +21,6 @@ if [ ! -z "$RUNNER_USER" ] && [ `whoami` != "$RUNNER_USER" ]; then
     exec sudo -u $RUNNER_USER -i $0 $@
 fi
 
-# Make sure CWD is set to runner base dir
-cd $RUNNER_BASE_DIR
-
-# Identify the script name
-SCRIPT=`basename $0`
 # Use a directory with the name of the script
 RUNNER_LOG_DIR=$RUNNER_LOG_DIR/$SCRIPT
 # Make sure log directory exists
