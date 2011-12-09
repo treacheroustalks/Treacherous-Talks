@@ -146,3 +146,35 @@ function setup-and-start-cluster {
 
     sleep $START_SLEEP
 }
+
+function set-bucket-n_val {
+    RIAK=$1
+    BUCKET=$2
+    N_VAL=$3
+    
+    echo -e "$RIAK:9101/riak/$BUCKET:\tn_val -> $N_VAL"
+    curl -X PUT -H "Content-Type: application/json" -d "{\"props\":{\"n_val\":$N_VAL}}" $RIAK:9101/riak/$BUCKET
+}
+
+function set-bucket-n_vals {
+    echo "setting bucket n_vals"
+    RIAK=$1
+    NUM_OF_NODES=$2
+
+    LOW=2
+
+    echo "LOW=$LOW, NUM_OF_NODES=$NUM_OF_NODES"
+
+    if [ $LOW -gt $NUM_OF_NODES ]; then
+        LOW=$NUM_OF_NODES
+    fi
+
+    set-bucket-n_val $RIAK "corpses" "$LOW"
+    set-bucket-n_val $RIAK "game" "$NUM_OF_NODES"
+    set-bucket-n_val $RIAK "game_current" "$NUM_OF_NODES"
+    set-bucket-n_val $RIAK "game_order" "$LOW"
+    set-bucket-n_val $RIAK "message" "$LOW"
+    set-bucket-n_val $RIAK "game_message" "$LOW"
+    set-bucket-n_val $RIAK "game_player" "$NUM_OF_NODES"
+    set-bucket-n_val $RIAK "game_state" "$NUM_OF_NODES"
+}

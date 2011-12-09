@@ -29,6 +29,10 @@ function test_scaling {
     servers="${SERVERS[@]:0:$Count}"
     stop-all $TEST_USER ${SERVERS[@]:0:$Count}
     setup-and-start-cluster $servers
+    LST=$(echo "$Count-1" | bc)
+    for i in $(seq 0 $LST); do
+        set-bucket-n_vals ${SERVERS[$i]} $Count
+    done
 
     #update basho driver
     sed -i "s:{.*tt_node,.*}:{tt_node, '$B_NAME@${SERVERS[0]}'}:g" $TT_CONFIG
