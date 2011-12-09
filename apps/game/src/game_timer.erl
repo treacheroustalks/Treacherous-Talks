@@ -137,12 +137,15 @@ init(#game{status = waiting} = Game) ->
     {ok, waiting_phase, #state{game = Game, phase = waiting_phase}, Timeout};
 init(#game{status = ongoing} = Game) ->
     {ok, CurrentGame} = game:get_current_game(Game#game.id),
-    NewState = currentphase_to_state(CurrentGame),
-    ?DEBUG("Restarting game timer in STATE: ~p, GAME PHASE: ~p",
-           [NewState, CurrentGame#game_current.current_phase]),
-    % no timout - we need a "restart" event for this to get to the right state
-    {ok, NewState, #state{game = Game,
-                          phase = CurrentGame#game_current.current_phase}}.
+    GamePhase = CurrentGame#game_current.current_phase,
+    ?DEBUG("Restarting game timer in GAME PHASE: ~p~n", [GamePhase]),
+    NewState = #state{game = Game,
+                      phase = GamePhase},
+    save_corpse(NewState),
+    Timeout = get_timeout(GamePhase, Game),
+    {ok, GamePhase, NewState, Timeout}.
+
+
 
 waiting_phase({reconfig, UpdatedGame}, State) ->
     Timeout = timer:minutes(UpdatedGame#game.waiting_time),
@@ -154,55 +157,31 @@ waiting_phase(timeout, State) ->
                                                        start_time = now()}},
     phase_change(NewState#state.game, started),
     save_corpse(NewState),
-    Timeout = timer:minutes((State#state.game)#game.order_phase),
-    {next_state, order_phase, NewState, Timeout};
-waiting_phase(restart, State) ->
-    save_corpse(State),
-    % the game has already been updated to be in order_phase and ongoing
-    Timeout = timer:minutes((State#state.game)#game.order_phase),
-    {next_state, order_phase, State, Timeout};
-waiting_phase(start, State) ->
-    %% any other event than timeout or reconfig
-    Timeout = timer:minutes((State#state.game)#game.waiting_time),
-    {next_state, waiting_phase, State, Timeout}.
+    Timeout = get_timeout(order_phase, State#state.game),
+    {next_state, order_phase, NewState, Timeout}.
 waiting_phase(_Event, From, State) ->
     syncevent(waiting_phase, From, State).
 
 
-order_phase(restart, State) ->
-    save_corpse(State),
-    % the game has already changed to retreat phase
-    Timeout = timer:minutes((State#state.game)#game.retreat_phase),
-    {next_state, retreat_phase, State, Timeout};
 order_phase(_Event, State) ->
     process_phase(?ID(State), order_phase),
     phase_change(?ID(State), retreat_phase),
-    Timeout = timer:minutes((State#state.game)#game.retreat_phase),
+    Timeout = get_timeout(retreat_phase, State#state.game),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}.
 order_phase(_Event, From, State) ->
     syncevent(order_phase, From, State).
 
 
-retreat_phase(restart, State) ->
-    save_corpse(State),
-    case State#state.phase of
-        build_phase ->
-            Timeout = timer:minutes((State#state.game)#game.build_phase),
-            {next_state, build_phase, State, Timeout};
-        order_phase ->
-            Timeout = timer:minutes((State#state.game)#game.order_phase),
-            {next_state, order_phase, State, Timeout}
-    end;
 retreat_phase(_Event, State) ->
     process_phase(?ID(State), retreat_phase),
     %% retreat is handled and we enter count phase
     case phase_change(?ID(State), build_phase) of
         {ok, true} ->
-            Timeout = timer:minutes((State#state.game)#game.build_phase),
+            Timeout = get_timeout(build_phase, State#state.game),
             {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {ok, skip} ->
             phase_change(?ID(State), order_phase),
-            Timeout = timer:minutes((State#state.game)#game.order_phase),
+            Timeout = get_timeout(order_phase, State#state.game),
             {next_state, order_phase, State#state{phase = order_phase}, Timeout};
         {stop, Reason, game_over} ->
             {stop, Reason, State}
@@ -210,14 +189,11 @@ retreat_phase(_Event, State) ->
 retreat_phase(_Event, From, State) ->
     syncevent(retreat_phase, From, State).
 
-build_phase(restart, State) ->
-    save_corpse(State),
-    Timeout = timer:minutes((State#state.game)#game.order_phase),
-    {next_state, order_phase, State, Timeout};
+
 build_phase(_Event, State) ->
     process_phase(?ID(State), build_phase),
     phase_change(?ID(State), order_phase),
-    Timeout = timer:minutes((State#state.game)#game.order_phase),
+    Timeout = get_timeout(order_phase, State#state.game),
     {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
 build_phase(_Event, From, State) ->
     syncevent(build_phase, From, State).
@@ -451,29 +427,23 @@ handle_corpse ({_Key, GameRec}) when is_record (GameRec, game)->
     ?DEBUG ("restart_game -> ~p~n", [game:restart_game(GameRec)]).
 
 save_corpse(State = #state{}) ->
+    ?DEBUG("saving game -> ~p~n", [State#state.game#game.id]),
     corpses:save_corpse (game_timer, State#state.game#game.id,
                          State#state.game).
 
 %%-------------------------------------------------------------------
 %% @doc
-%% This is used for getting to the right state when a game timer
-%% has been restarted.
+%% This is used to get the correct timeout for the given phase
 %% @end
 %%-------------------------------------------------------------------
-currentphase_to_state(CurrentGame) ->
-    {Year, Season} = CurrentGame#game_current.year_season,
-    Phase = CurrentGame#game_current.current_phase,
+get_timeout(Phase, Game) ->
     case Phase of
         order_phase ->
-            case {Year, Season} of
-                {?START_YEAR, spring} -> waiting_phase;
-                {_Year, fall} -> retreat_phase;
-                _ -> build_phase
-            end;
+            timer:minutes(Game#game.order_phase);
         retreat_phase ->
-            order_phase;
+            timer:minutes(Game#game.retreat_phase);
         build_phase ->
-            retreat_phase
+            timer:minutes(Game#game.build_phase)
     end.
 
 %%-------------------------------------------------------------------

@@ -89,11 +89,9 @@ handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
     {ok, NewGame} = Result,
     NewID = NewGame#game.id,
     game_timer_sup:create_timer(NewGame),
-    game_timer:event(NewID, start),
     {reply, {ok, NewID}, State};
 handle_call({restart_game, Game}, _From, State) ->
     game_timer_sup:create_timer(Game),
-    game_timer:event(Game#game.id, restart),
     {reply, {ok, Game#game.id}, State};
 handle_call({stop_game, ID}, _From, State) ->
     Reply = try game_timer:stop(ID, stopped)
