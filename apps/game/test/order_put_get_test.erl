@@ -144,7 +144,9 @@ put_game_order_tst_ () ->
              %%timer:sleep(50),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
+             timer:sleep(100),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
+             timer:sleep(100),
              Move = sync_get_order(Key),
              ?assertEqual(expected_updated_order_list(), Move)
      end].
@@ -171,8 +173,11 @@ get_all_orders_tst_ () ->
              game_timer:sync_event(Game#game.id, timeout),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
+             timer:sleep(100),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
+             timer:sleep(100),
              sync_put_order (Game#game.id, UserID1, input_updated_order_list()),
+             timer:sleep(100),
              Move = sync_get_order(Key),
              ?debugMsg("GETALL------------------->>"),
              ?debugVal(game_utils:get_all_orders(Game#game.id)),
@@ -188,13 +193,14 @@ get_game_order_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
-             timer:sleep(50),
+             timer:sleep(100),
              % start the game
              %game_worker:phase_change(Game#game{status=ongoing}, started),
              %timer:sleep(50),
              game_timer:sync_event(Game#game.id, timeout),
              Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
+             timer:sleep(100),
              Move = sync_get_order(Key),
              ?assertEqual(expected_test_order_list(), Move)
      end].

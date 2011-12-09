@@ -63,5 +63,5 @@ save_corpse (Module, Ref, Data) ->
     Node = atom_to_list(node()),
     DbData = {Module, {Key, Data}},
     DBO = db_obj:create(?B_CORPSES, BinKey, [{node, Node}, {data, DbData}]),
-    spawn (fun () -> db:put (DBO, [{w, 1}]) end),
+    db:put(DBO, [{w, 0}]),
     ok.

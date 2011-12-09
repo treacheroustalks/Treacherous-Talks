@@ -124,7 +124,7 @@ message_worker_tst_() ->
      {"write a game message in db",
       fun() ->
         message_worker:log_message(test_key(), test_game_msg(1122), ?B_GAME_MESSAGE),
-        timer:sleep(100),
+        timer:sleep(200),
         ActualValue = message_util:get_message(test_key(), ?B_GAME_MESSAGE,
                                                game_message),
         ?assertEqual({ok, test_game_msg(1122)},ActualValue),

@@ -173,7 +173,7 @@ do_mark_as_read(MessageId, Bucket)
                         data_format:rec_to_plist(ReadGameMessage)
                 end,
             ReadDBObj = db_obj:set_value(DBObj, UpdatedPropList),
-            spawn (fun () -> db:put(ReadDBObj, [{w, 1}]) end),
+            db:put(ReadDBObj, [{w, 0}]),
             ok;
         {error, notfound} ->
             {error, notfound}
