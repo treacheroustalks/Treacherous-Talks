@@ -1,6 +1,9 @@
 {
     "Compare tests": [
         {"scaling-compare": "Scaling"},
+        {"scaling-compare-opt-vs-old": "Scaling opt vs un-opt"},
+        {"scaling-compare-opt": "Scaling (optimized)"},
+        {"scaling-compare-opt-old": "Scaling (optimized) (old flow)"},
         {"scaling-eleveldb-compare": "eleveldb Scaling"},
         {"burn-compare": "Huge load"},
         {"riak-compare": "Riak"},
@@ -23,6 +26,14 @@
         {"scaling-4": "4"},
         {"scaling-5": "5"},
         {"scaling-6": "6"}
+    ],
+    "Scaling-optimized tests": [
+        {"scaling-1-opt": "1"},
+        {"scaling-2-opt": "2"},
+        {"scaling-3-opt": "3"},
+        {"scaling-4-opt": "4"},
+        {"scaling-5-opt": "5"},
+        {"scaling-6-opt": "6"}
     ],
     "Eleveldb scaling tests": [
         {"scaling-eleveldb-1": "1"},

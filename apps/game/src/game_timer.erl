@@ -332,7 +332,7 @@ process_phase(ID, Phase) ->
 %%-------------------------------------------------------------------
 update_current_game(ID, NewPhase) ->
     BinKey = game_utils:get_game_current_key(ID),
-    DBReply = db:get(?B_GAME_CURRENT, BinKey),
+    DBReply = db:get(?B_GAME_CURRENT, BinKey, [{r,1}]),
     case DBReply of
         {ok, CurrentGameObj} ->
             OldGame = db_obj:get_value(CurrentGameObj),
@@ -349,7 +349,7 @@ update_current_game(ID, NewPhase) ->
                               OldGame#game_current{
                                 current_phase = NewPhase}
                       end,
-            game_utils:update_db_obj(CurrentGameObj, NewGame);
+            game_utils:update_db_obj(CurrentGameObj, NewGame, [{w, 1}]);
         Other ->
             Other
     end.
@@ -365,8 +365,8 @@ update_current_game(ID, NewPhase) ->
 %%-------------------------------------------------------------------
 update_state(#game_state{id = ID} = NewState) ->
     Key = game_utils:get_keyprefix({id, ID}),
-    {ok, OldStateObj} = db:get(?B_GAME_STATE, Key),
-    game_utils:update_db_obj(OldStateObj, NewState).
+    {ok, OldStateObj} = db:get(?B_GAME_STATE, Key, [{r,1}]),
+    game_utils:update_db_obj(OldStateObj, NewState, [{w,1}]).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -392,7 +392,7 @@ setup_game(ID) ->
                                        {{?B_GAME,
                                          db:int_to_bin(ID)},
                                         ?GAME_STATE_LINK_GAME}),
-    db:put(GameStateLinkObj),
+    db:put(GameStateLinkObj, [{w,1}]),
     %% create first current game
     CurrentGame = #game_current{id = ID,
                                 year_season = {?START_YEAR, spring},
@@ -403,7 +403,7 @@ setup_game(ID) ->
     CurrentGameLinkObj = db_obj:add_link(DBCurrentGame,
                                          {{?B_GAME_STATE, StateKey},
                                           ?CURRENT_GAME_LINK_STATE}),
-    db:put(CurrentGameLinkObj),
+    db:put(CurrentGameLinkObj, [{w,1}]),
     game_utils:delete_map(Map).
 
 
@@ -443,7 +443,7 @@ new_state(CurrentGame, Map) ->
                                        {{?B_GAME,
                                          db:int_to_bin(CurrentGame#game_current.id)},
                                         ?GAME_STATE_LINK_GAME}),
-    db:put(GameStateLinkObj).
+    db:put(GameStateLinkObj, [{w,1}]).
 
 handle_corpse ({_Key, GameRec}) when is_record (GameRec, game)->
     % the entry in the corpse bucket is not deleted, it will only be

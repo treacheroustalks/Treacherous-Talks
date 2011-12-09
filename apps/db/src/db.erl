@@ -35,6 +35,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(db).
+-compile({no_auto_import,[put/2]}).
 
 %% -----------------------------------------------------------------
 %% Public interface
@@ -208,15 +209,20 @@ put(Obj) ->
 %%      [return_head] returns the updated metadata with the values set as binary
 %%      [if_not_modified] the put fails unless riakc_obj and database vclocks match
 %%      [if_none_match] the put fails if the key already exist
-%%
+%% There is a special case for the options: we extended the options to
+%% also understand `{w,0}', this works only if `{w,0}' is the FIRST item
+%% in the option-list (for performance reasons). `{w,0}' means that a process
+%% will be spawned that does the write, `put/2' will return immediately.
 %% @spec
 %%  put(Obj::db_obj(), Options::list()) ->
 %%     ok | {ok, key()} | {error, term()}
 %% @end
 %%-------------------------------------------------------------------
+put(Obj, [{w,0} | Rest]) ->
+    spawn (fun() -> put(Obj, Rest) end),
+    ok;
 put(Obj, Options) ->
     ?CALL_WORKER({put, Obj, Options}).
-
 
 %%-------------------------------------------------------------------
 %% @doc

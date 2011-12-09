@@ -116,6 +116,7 @@ message_worker_tst_() ->
     [{"write a user message in db",
       fun() ->
         message_worker:log_message(test_key(), test_msg(), ?B_MESSAGE),
+        timer:sleep(100),
         ActualValue = message_util:get_message(test_key(), ?B_MESSAGE, message),
         ?assertEqual({ok, test_msg()},ActualValue),
         db:delete(?B_MESSAGE, db:int_to_bin(test_key()))
@@ -123,6 +124,7 @@ message_worker_tst_() ->
      {"write a game message in db",
       fun() ->
         message_worker:log_message(test_key(), test_game_msg(1122), ?B_GAME_MESSAGE),
+        timer:sleep(100),
         ActualValue = message_util:get_message(test_key(), ?B_GAME_MESSAGE,
                                                game_message),
         ?assertEqual({ok, test_game_msg(1122)},ActualValue),
@@ -146,6 +148,7 @@ message_success_tst_() ->
              % send msg to "to_user"
              {ok, Key} = message:user_msg(test_msg()),
 
+             timer:sleep(100),
              % check if the msg has been correctly stored in db
              {ok, ActualMessage} = message_util:get_message(Key, ?B_MESSAGE, message),
              Expected = (test_msg())#message{id = Key,
@@ -187,6 +190,7 @@ unread_tst_() ->
                OtherMessage = ( test_msg2() )#message{ to_id = (to_user2())#user.id,
                                                        to_nick = (to_user2())#user.nick },
                {ok, _Key3} = message:user_msg(OtherMessage),
+               timer:sleep(100),
 
                % check if the msg has been correctly stored in db
                Result = message:unread((to_user())#user.id),
@@ -289,15 +293,17 @@ unread_tst_() ->
        fun() ->
                %check for message bucket
                {ok, Key1} = message:user_msg(test_msg()),
+               timer:sleep(100),
                {ok, Message} = message_util:get_message(Key1, ?B_MESSAGE, message),
                ?assertEqual(unread, Message#message.status),
-
                ok = message:mark_user_msg_as_read(Key1),
+               timer:sleep(100),
                {ok, ReadMessage} = message_util:get_message(Key1, ?B_MESSAGE, message),
                ?assertEqual(read, ReadMessage#message.status),
 
                %check for game_message bucket
                ok = message:game_msg(test_game_msg(to_user_id())),
+               timer:sleep(100),
                Result= message:unread((to_user())#user.id),
                ?debugFmt("it should return unread game messages ~p~n", [Result]),
                {ok, {[], [UnreadGameMsg]}} =Result,
@@ -308,6 +314,7 @@ unread_tst_() ->
                ?assertEqual(unread, GMsg#game_message.status),
 
                ok = message:mark_game_msg_as_read(GameMsgKey),
+               timer:sleep(100),
                {ok, ReadGMsg} = message_util:get_message(GameMsgKey,
                                                         ?B_GAME_MESSAGE,
                                                         game_message),
@@ -351,4 +358,6 @@ make_game_msg_as_read(ToUserId, FromUserId) ->
     {ok, {_, UnreadGameMsges}} = message:unread(ToUserId),
     GMsg = lists:keyfind(FromUserId, #game_message.from_id, UnreadGameMsges),
     ?debugVal(GMsg),
-    message:mark_game_msg_as_read(GMsg#game_message.id).
+    R = message:mark_game_msg_as_read(GMsg#game_message.id),
+    timer:sleep(100),
+    R.

@@ -391,5 +391,82 @@
                 "info": "Comparing the performance of various Riak configurations"
             }
         ]
+    },
+    "scaling-compare-opt": {
+        "sources": [
+            {"scaling-1-opt": "1x"},
+            {"scaling-2-opt": "2x"},
+            {"scaling-3-opt": "3x"},
+            {"scaling-4-opt": "4x"},
+            {"scaling-5-opt": "5x"},
+            {"scaling-6-opt": "6x"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Scaling benchmarks - optimized CAP controls (no n_val)",
+                "info": "Comparing the performance of various Riak configurations"
+            }, {
+                "file": "send_order_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Scaling benchmarks - optimized CAP controls (no n_val)",
+                "info": "Comparing the performance of various Riak configurations"
+            }
+        ]
+    },
+    "scaling-compare-opt-old": {
+        "sources": [
+            {"scaling-1-opt-old": "1x"},
+            {"scaling-2-opt-old": "2x"},
+            {"scaling-3-opt-old": "3x"},
+            {"scaling-4-opt-old": "4x"},
+            {"scaling-5-opt-old": "5x"},
+            {"scaling-6-opt-old": "6x"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Scaling benchmarks - optimized CAP controls (no n_val) (old flow)",
+                "info": "Comparing the performance of various Riak configurations"
+            }, {
+                "file": "send_order_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "Scaling benchmarks - optimized CAP controls (no n_val) (old flow)",
+                "info": "Comparing the performance of various Riak configurations"
+            }
+        ]
+    },
+    "scaling-compare-opt-vs-old": {
+        "sources": [
+            {"scaling-1-opt-old": "1x optimized"},
+            {"scaling-1": "1x"},
+            {"scaling-6-opt-old": "6x optimized"},
+            {"scaling-6": "6x"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Scaling benchmarks - optimized CAP controls (no n_val)  compared to unoptimized",
+                "info": "Comparing the performance of various Riak configurations"
+            }
+        ]
     }
 }

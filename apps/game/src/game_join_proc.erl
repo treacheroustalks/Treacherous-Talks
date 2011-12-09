@@ -234,7 +234,7 @@ do_join_game(GamePlayersRec=#game_player{ players=Players }, UserId, Country) ->
                     NewPlayers = [NewPlayer|Players],
                     NewGamePlayersRec =
                         GamePlayersRec#game_player{players=NewPlayers},
-                    store_game_players_link_new(NewGamePlayersRec, UserId),
+                    store_game_players_new(NewGamePlayersRec),
                     {ok, NewGamePlayersRec};
                 false ->
                     {error, country_not_available}
@@ -263,23 +263,19 @@ user_already_joined(GameUsers, UserId) ->
 
 %% Store the Game Players record with a link added to the new
 %% newly added user.
-store_game_players_link_new(GamePlayersRec, UserId) ->
+store_game_players_new(GamePlayersRec) ->
     BinGameId = db:int_to_bin(GamePlayersRec#game_player.id),
 
     % Get the last known vclock
-    {ok, DBGamePlayersObj} = db:get (?B_GAME_PLAYER, BinGameId),
+    {ok, DBGamePlayersObj} = db:get (?B_GAME_PLAYER, BinGameId, [{r,1}]),
 
     % Update the db object.
     % Keep vclock from the GET we just did.
-    TmpGamePlayersObj = db_obj:set_value(DBGamePlayersObj,
-                                         GamePlayersRec),
-    % Add a link to the user
-    GamePlayersObjLinked = db_obj:add_link(TmpGamePlayersObj,
-                                   {{?B_USER, db:int_to_bin(UserId)},
-                                    ?GAME_PLAYER_LINK_USER}),
+    GamePlayersObj = db_obj:set_value(DBGamePlayersObj,
+                                      GamePlayersRec),
 
     % Finally write it to the DB and return
-    db:put(GamePlayersObjLinked).
+    db:put(GamePlayersObj, [{w,0}]).
 %    error_logger:info_msg("put result: ~p~n",[Result]).
 
 

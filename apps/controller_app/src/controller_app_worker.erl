@@ -175,9 +175,11 @@ handle_call({login, {Login, PushInfo}}, _From, State) ->
                                 {error, simultaneous_login};
                             false ->
                                 NewUser = User#user{last_session = SessId},
-                                NewUserPropList = data_format:rec_to_plist(NewUser),
-                                NewUserObj = db_obj:set_value(UserObj, NewUserPropList),
-                                db:put(NewUserObj),
+                                NewUserPropList =
+                                    data_format:rec_to_plist(NewUser),
+                                NewUserObj =
+                                    db_obj:set_value(UserObj, NewUserPropList),
+                                db:put(NewUserObj, [{w, all}]),
                                 {ok, SessId}
                         end
                 end;

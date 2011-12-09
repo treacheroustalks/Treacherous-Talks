@@ -157,7 +157,7 @@ get_unread_msges(UserId, Bucket, RecordName) ->
 do_mark_as_read(MessageId, Bucket)
   when Bucket == ?B_MESSAGE;
        Bucket == ?B_GAME_MESSAGE ->
-    case db:get(Bucket, db:int_to_bin(MessageId)) of
+    case db:get(Bucket, db:int_to_bin(MessageId), [{r,1}]) of
         {ok, DBObj} ->
             PropList = db_obj:get_value(DBObj),
             % modify via the record format to maintain the property order easily
@@ -173,7 +173,7 @@ do_mark_as_read(MessageId, Bucket)
                         data_format:rec_to_plist(ReadGameMessage)
                 end,
             ReadDBObj = db_obj:set_value(DBObj, UpdatedPropList),
-            db:put(ReadDBObj),
+            spawn (fun () -> db:put(ReadDBObj, [{w, 1}]) end),
             ok;
         {error, notfound} ->
             {error, notfound}
@@ -182,7 +182,7 @@ do_mark_as_read(MessageId, Bucket)
 %%------------------------------------------------------------------------------
 %%  @doc
 %%    this function gets id, record and bucket name and convert the record
-%%    to proplist and stor.
+%%    to proplist and stores it in the db.
 %%  @end
 %%------------------------------------------------------------------------------
 log_message(ID, Msg, Bucket) ->
@@ -190,5 +190,5 @@ log_message(ID, Msg, Bucket) ->
     % convert record to proplist to be able to do search
     MsgPropList = data_format:rec_to_plist(Msg),
     DbObj = db_obj:create(Bucket, BinID, MsgPropList),
-    db:put(DbObj),
+    db:put(DbObj, [{w,0}]),
     {ok, ID}.

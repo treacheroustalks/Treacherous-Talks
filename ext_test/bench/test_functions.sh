@@ -33,10 +33,12 @@ function start-local-sys-manager {
     HOST=`hostname`
 
     $BIN stop > /dev/null
-    sed -i "s:-name.*:-name system_manager@$HOST:g" $nodename &&
+    sed -i "s:-name.*:-name system_manager@$HOST:g" $nodename
+    $BIN stop > /dev/null
     $BIN start &&
     sleep $START_SLEEP &&
     $BIN ping
+    rm -rf $LOCAL_RELEASE/riak/data/ring/ 2> /dev/null
 }
 
 function copy-release {

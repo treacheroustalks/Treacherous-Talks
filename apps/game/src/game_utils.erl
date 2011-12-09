@@ -46,9 +46,9 @@
          to_mapterm/1,
          to_rule_map/1,
          get_keys/2,
-         update_db_obj/2,
+         update_db_obj/3,
          userlist/1,
-         get_db_obj/2,
+         get_db_obj/3,
          translate_game_order/3,
          get_game_current_key/1,
          is_power_user/1
@@ -91,7 +91,7 @@ get_keyprefix({game_current, Current}) ->
 %% @end
 %% ------------------------------------------------------------------
 get_current_game(ID) ->
-    get_db_obj(?B_GAME_CURRENT, get_game_current_key(ID)).
+    get_db_obj(?B_GAME_CURRENT, get_game_current_key(ID), [{r,1}]).
 
 
 %% ------------------------------------------------------------------
@@ -113,7 +113,7 @@ get_game_current_key(ID) ->
 %% ------------------------------------------------------------------
 get_game_state(ID)->
     Key = get_keyprefix({id, ID}),
-    get_db_obj(?B_GAME_STATE, Key).
+    get_db_obj(?B_GAME_STATE, Key, [{r,1}]).
 
 
 
@@ -147,7 +147,7 @@ get_all_orders(ID) ->
 %% @end
 %% ------------------------------------------------------------------
 get_game_order(ID)->
-    case game_utils:get_db_obj(?B_GAME_ORDER, ID) of
+    case game_utils:get_db_obj(?B_GAME_ORDER, ID, [{r,1}]) of
         {ok, Orders} ->
             Orders#game_order.order_list;
         _Error -> []
@@ -162,10 +162,10 @@ get_game_order(ID)->
 %% @end
 %% ------------------------------------------------------------------
 userlist(GameID) ->
-    {ok, GamePlayerObj} = get_db_obj(?B_GAME_PLAYER, GameID),
+    {ok, GamePlayerObj} = get_db_obj(?B_GAME_PLAYER, GameID, [{r,1}]),
     CreatePairs =
         fun(Player, Acc) ->
-                case get_db_obj(?B_USER, Player#game_user.id) of
+                case get_db_obj(?B_USER, Player#game_user.id, [{r,1}]) of
                     {ok, User} ->
                         [{Player#game_user.country,
                           User#user.nick}] ++ Acc;
@@ -236,11 +236,13 @@ get_keys(Field, Val) ->
 %% @doc Gets and object from the database, according to the given
 %% bucket and key.
 %% @spec
-%%        get_db_obj(Bucket :: binary(), Key :: any()) ->
+%%        get_db_obj(Bucket :: binary(),
+%%                   Key :: any(),
+%%                   Options :: [any()]) ->
 %%               {ok, DBObj :: any()} | Other
 %% @end
 %% ------------------------------------------------------------------
-get_db_obj(Bucket, Key) ->
+get_db_obj(Bucket, Key, Options) ->
     if
         is_binary(Key) -> BinKey = Key;
         is_integer(Key) -> BinKey = db:int_to_bin(Key);
@@ -248,7 +250,7 @@ get_db_obj(Bucket, Key) ->
         is_atom(Key) -> BinKey = list_to_binary(atom_to_list(Key));
         true -> BinKey = Key % don't know what else it could be!
     end,
-    DBReply = db:get(Bucket, BinKey),
+    DBReply = db:get(Bucket, BinKey, Options),
     case DBReply of
         {ok, DBObj} ->
             {ok, db_obj:get_value(DBObj)};
@@ -260,13 +262,15 @@ get_db_obj(Bucket, Key) ->
 %% ------------------------------------------------------------------
 %% @doc Updates a database object with a new value
 %% @spec
-%%        update_db_obj(OldObject :: any(), NewValue :: any()) ->
+%%        update_db_obj(OldObject :: any(),
+%%                      NewValue :: any(),
+%%                      Options :: [any()]) ->
 %%               {ok, NewValue}
 %% @end
 %% ------------------------------------------------------------------
-update_db_obj(OldObj, NewVal) ->
+update_db_obj(OldObj, NewVal, Options) ->
     DBObj = db_obj:set_value(OldObj, NewVal),
-    db:put(DBObj),
+    db:put(DBObj, Options),
     NewVal.
 
 
@@ -375,7 +379,7 @@ is_power_user(_Role) ->
 %% @end
 %% ------------------------------------------------------------------
 get_game_map(GameID) ->
-    case  get_db_obj(?B_GAME_STATE, get_keyprefix({id, GameID})) of
+    case  get_db_obj(?B_GAME_STATE, get_keyprefix({id, GameID}), [{r,1}]) of
         {ok, State} ->
             {ok, State#game_state.map};
         Error ->

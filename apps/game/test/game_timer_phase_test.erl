@@ -289,4 +289,4 @@ update_state(ID, Map) ->
     {ok, StateObj} = db:get(?B_GAME_STATE, Key),
     State = db_obj:get_value(StateObj),
     FakedState = State#game_state{map = Map},
-    game_utils:update_db_obj(StateObj, FakedState).
+    game_utils:update_db_obj(StateObj, FakedState, []).

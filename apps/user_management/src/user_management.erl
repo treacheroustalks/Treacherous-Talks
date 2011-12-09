@@ -75,7 +75,7 @@ create(#user{id = IdIn} = UserIn) ->
             %store as proplist for search
             UserPropList = data_format:rec_to_plist(User),
             DbObj = db_obj:create(?B_USER, BinId, UserPropList),
-            db:put(DbObj),
+            db:put(DbObj, [{w, 1}]),
             {ok, User};
         Other ->
             {error, Other}
@@ -91,7 +91,7 @@ create(#user{id = IdIn} = UserIn) ->
 %%-------------------------------------------------------------------
 update(#user{id = Id} = NewUser) when is_integer(Id) ->
     BinId = db:int_to_bin(Id),
-    case db:get(?B_USER, BinId) of
+    case db:get(?B_USER, BinId, [{r,1}]) of
         {ok, Obj} ->
             Obj2 = case db_obj:has_siblings(Obj) of
                        false ->
@@ -104,7 +104,7 @@ update(#user{id = Id} = NewUser) when is_integer(Id) ->
                    end,
             NewUserPropList = data_format:rec_to_plist(NewUser),
             NewObj = db_obj:set_value(Obj2, NewUserPropList),
-            db:put(NewObj),
+            db:put(NewObj, [{w, 1}]),
             {ok, NewUser};
         {error, notfound} ->
             {error, does_not_exist};
@@ -171,7 +171,7 @@ get_id(Field, Val) ->
           #user{} | {error, any()}.
 get(Id) ->
     BinId = db:int_to_bin(Id),
-    case db:get(?B_USER, BinId) of
+    case db:get(?B_USER, BinId, [{r,1}]) of
         {ok, RiakObj} ->
             UserPropList = db_obj:get_value(RiakObj),
             data_format:plist_to_rec(?USER_REC_NAME, UserPropList);
@@ -183,7 +183,7 @@ get(Id) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Gets user from the database and reuturn DB object.
+%% Gets user from the database and returns DB object.
 %%
 %% @spec get_db_obj(integer()) ->
 %%     {ok, #db_obj{}} | {error, any()}
@@ -192,7 +192,7 @@ get(Id) ->
 %%-------------------------------------------------------------------
 get_db_obj(Id) ->
     BinId = db:int_to_bin(Id),
-    case db:get(?B_USER, BinId) of
+    case db:get(?B_USER, BinId, [{r, all}]) of
         {ok, RiakObj} ->
             {ok, RiakObj};
         {error, Error} ->

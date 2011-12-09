@@ -79,7 +79,7 @@ function load_graph(graph_key) {
 // Hacked graph for one use only!
 // FIXME: Delete or fix this after use!
 function load_hack_graph() {
-    var graph_key = "scaling-compare";
+    var graph_key = "scaling-compare-opt";
 
     $.each(compare[graph_key].plots, function(i, plot) {
         // Only the first graph

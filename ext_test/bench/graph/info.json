@@ -1351,7 +1351,278 @@
                 "xlabel": "Time (seconds)",
                 "ylabel": "Throughput (Flows/time)",
                 "name": "6 M 6L",
-                "info": "6C machines, 6 load worker"
+                "info": "6 machines, 6 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "6 M 6L",
+                "info": "6 machine, 6 load worker"
+            }
+        ]
+    },
+
+    "scaling-1-opt": {
+        "location": "data/scaling_1_opt",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 M 1L",
+                "info": "1 machines, 1 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "1 M 1L",
+                "info": "1 machine, 1 load worker"
+            }
+        ]
+    },
+
+    "scaling-2-opt": {
+        "location": "data/scaling_2_opt",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 M 2L",
+                "info": "2 machines, 2 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "2 M 2L",
+                "info": "2 machine, 2 load worker"
+            }
+        ]
+    },
+
+    "scaling-3-opt": {
+        "location": "data/scaling_3_opt",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 M 3L",
+                "info": "3 machines, 3 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "3 M 3L",
+                "info": "3 machine, 3 load worker"
+            }
+        ]
+    },
+
+    "scaling-4-opt": {
+        "location": "data/scaling_4_opt",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 M 4L",
+                "info": "4 machines, 4 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "4 M 4L",
+                "info": "4 machine, 4 load worker"
+            }
+        ]
+    },
+
+    "scaling-5-opt": {
+        "location": "data/scaling_5_opt",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 M 5L",
+                "info": "5 machines, 5 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "5 M 5L",
+                "info": "5 machine, 5 load worker"
+            }
+        ]
+    },
+
+    "scaling-6-opt": {
+        "location": "data/scaling_6_opt",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 M 6L",
+                "info": "6 machines, 6 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "6 M 6L",
+                "info": "6 machine, 6 load worker"
+            }
+        ]
+    },
+
+    "scaling-1-opt-old": {
+        "location": "data/scaling_1_opt_old",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 M 1L",
+                "info": "1 machines, 1 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "1 M 1L",
+                "info": "1 machine, 1 load worker"
+            }
+        ]
+    },
+    "scaling-2-opt-old": {
+        "location": "data/scaling_2_opt_old",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 M 2L",
+                "info": "2 machines, 2 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "2 M 2L",
+                "info": "2 machine, 2 load worker"
+            }
+        ]
+    },
+    "scaling-3-opt-old": {
+        "location": "data/scaling_3_opt_old",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 M 3L",
+                "info": "3 machines, 3 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "3 M 3L",
+                "info": "3 machine, 3 load worker"
+            }
+        ]
+    },
+    "scaling-4-opt-old": {
+        "location": "data/scaling_4_opt_old",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 M 4L",
+                "info": "4 machines, 4 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "4 M 4L",
+                "info": "4 machine, 4 load worker"
+            }
+        ]
+    },
+    "scaling-5-opt-old": {
+        "location": "data/scaling_5_opt_old",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 M 5L",
+                "info": "5 machines, 5 load worker"
+            }, {
+                "file": "test_latencies.csv",
+                "values": ["mean", "99th"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Latency (micro seconds)",
+                "name": "5 M 5L",
+                "info": "5 machine, 5 load worker"
+            }
+        ]
+    },
+    "scaling-6-opt-old": {
+        "location": "data/scaling_6_opt_old",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 M 6L",
+                "info": "6 machines, 6 load worker"
             }, {
                 "file": "test_latencies.csv",
                 "values": ["mean", "99th"],
