@@ -21,11 +21,39 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Utility functions for management of one host in a TT cluster.
-%%% @end
-%%%
-%%% @since : 24 Nov 2011 by Bermuda Triangle
-%%% @end
-%%%-------------------------------------------------------------------
+-module(system_manager_worker_sup).
+-behaviour(supervisor).
 
--module(system_utils).
+%% API
+-export([start_link/0, worker_count/0, worker_count/1]).
+
+%% Supervisor callbacks
+-export([init/1]).
+
+-include_lib("utils/include/debug.hrl").
+
+%% ===================================================================
+%% API functions
+%% ===================================================================
+
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, no_arg).
+
+worker_count() ->
+    service_worker_sup:worker_count(?MODULE).
+
+worker_count(Count) ->
+    service_worker_sup:worker_count(?MODULE,
+                  system_manager,
+                  system_manager_worker,
+                  Count).
+
+%% ===================================================================
+%% Supervisor callbacks
+%% ===================================================================
+init(no_arg) ->
+    ?DEBUG("[~p] starting ~p~n", [?MODULE, self()]),
+    Workers = service_worker_sup:create_childspec(
+                system_manager, system_manager_workers, system_manager_worker),
+    {ok, { {one_for_one, 5, 10}, Workers } }.
+
