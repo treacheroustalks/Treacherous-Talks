@@ -468,9 +468,11 @@ operator_game_setup() ->
 
     JoinGame2 = {join_game, {ok, SessId2, {GameId, england}}},
     controller:handle_action(JoinGame2, Reply),
+    timer:sleep(100),
 
     JoinGame3 = {join_game, {ok, SessId3, {GameId, germany}}},
     controller:handle_action(JoinGame3, Reply),
+    timer:sleep(100),
 
     {Mods, [Callback, SessId, GameId]}.
 

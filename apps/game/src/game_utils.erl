@@ -52,11 +52,59 @@
          get_game_current_key/1,
          get_game_msg_tree/1,
          search_game_msg/1,
-         is_power_user/1
+         is_power_user/1,
+         get_game_player/1,
+         update_game/2
         ]).
 
 -define(COUNTRIES, ["england", "germany", "france", "austria", "italy",
                     "russia", "turkey"]).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Updates a game with the given ID with the given game record in the database.
+%% Only if game in not waiting, use this function. Otherwise use reconfig_game
+%%  to update game record.
+%% @spec
+%% update_game(ID :: integer(), Game :: #game{}) ->
+%%     {ok, ID} | Error
+%% @end
+%%-------------------------------------------------------------------
+update_game(ID, #game{} = Game) ->
+    BinID = db:int_to_bin(ID),
+    % Store Game record as proplist for search
+    GamePropList = data_format:rec_to_plist(Game),
+    DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
+    GamePutResult = db:put(DBGameObj, [{w,1}]),
+    case GamePutResult of
+        {error, _} = Error ->
+            Error;
+        _ ->
+            {ok, ID}
+    end.
+
+%% ------------------------------------------------------------------
+%% @doc creates a game_players record from the given game record
+%% @spec
+%%        get_game_player(#game{}) ->
+%%               {ok, GamePlayer :: #game_player{}} | Error
+%% @end
+%% ------------------------------------------------------------------
+get_game_player(Game= #game{})->
+    Countries =[#game.england, #game.germany, #game.france, #game.austria,
+                 #game.italy, #game.russia, #game.turkey],
+    Fields = record_info(fields, game),
+    PlayersInfo =fun(Country, ACC) ->
+                         case element(Country, Game) of
+                             undefined ->
+                                 ACC;
+                             UserId ->
+                                 [#game_user{id = UserId,
+                                             country = lists:nth(Country-1, Fields)}|ACC]
+                         end
+                 end,
+    Players= lists:foldl(PlayersInfo, [], Countries),
+    {ok, #game_player{id=Game#game.id, players=Players}}.
 
 %% ------------------------------------------------------------------
 %% @doc Builds a keyprefix, based on the current game
@@ -116,7 +164,6 @@ get_game_state(ID)->
     get_db_obj(?B_GAME_STATE, Key, [{r,1}]).
 
 
-
 %% ------------------------------------------------------------------
 %% @doc
 %% Gets all orders in the current season for a given game ID.
@@ -157,16 +204,16 @@ get_game_order(ID)->
 %% @doc
 %% Creates pairs of users and their usernames
 %% @spec
-%% userlist(GamePlayerRec :: #game_player{}) ->
+%% userlist(#game{}) ->
 %%     CountryUserList :: list(tuple())
 %% @end
 %% ------------------------------------------------------------------
-userlist(GameID) ->
-    {ok, GamePlayerObj} = get_db_obj(?B_GAME_PLAYER, GameID, [{r,1}]),
+userlist(Game) ->
+    {ok, GamePlayer} = get_game_player(Game),
     CreatePairs =
         fun(Player, Acc) ->
-                case get_db_obj(?B_USER, Player#game_user.id, [{r,1}]) of
-                    {ok, User} ->
+                case user_management:get(Player#game_user.id) of
+                    User = #user{} ->
                         [{Player#game_user.country,
                           User#user.nick}] ++ Acc;
                     _Other ->
@@ -174,7 +221,7 @@ userlist(GameID) ->
                           integer_to_list(Player#game_user.id)}] ++ Acc
                 end
         end,
-    lists:foldl(CreatePairs, [], GamePlayerObj#game_player.players).
+    lists:foldl(CreatePairs, [], GamePlayer#game_player.players).
 
 %% ------------------------------------------------------------------
 %% @doc

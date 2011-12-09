@@ -49,7 +49,7 @@
 %% ------------------------------------------------------------------
 %% External exports
 %% ------------------------------------------------------------------
--export([get_game/1, update_game/2]).
+-export([get_game/1, get_game_player/1]).
 
 %% server state
 -record(state, {}).
@@ -114,7 +114,7 @@ handle_call({stop_game, ID}, _From, State) ->
             end,
     {reply, Reply, State};
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
-    Reply = update_game(ID, Game),
+    Reply = game_join_proc:reconfig_game(ID, Game),
     game_timer:event(ID, {reconfig, Game}),
     {reply, Reply, State};
 handle_call({get_game, ID}, _From, State) ->
@@ -127,6 +127,7 @@ handle_call({get_keys, Field, Value}, _From, State) ->
 handle_call({join_game, GameID, UserID, Country}, _From, State) ->
     Reply = game_join_proc:join_game(GameID, UserID, Country),
     {reply, Reply, State};
+
 handle_call({get_game_player, GameID}, _From, State) ->
     Reply = get_game_player(GameID),
     {reply, Reply, State};
@@ -201,41 +202,13 @@ new_game(ID, #game{} = Game) ->
     GamePropList = data_format:rec_to_plist(Game2),
     DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
     GamePlayersRec = #game_player{id=ID},
-    DBGamePlayerObj=db_obj:create (?B_GAME_PLAYER, BinID, GamePlayersRec),
     GamePutResult = db:put (DBGameObj, [{w,1}]),
     case GamePutResult of
         {error, _} = Error ->
             Error;
         _ ->
-            PlayersPutResult = db:put (DBGamePlayerObj, [{w, 1}]),
-            case PlayersPutResult of
-                {error, _} = Error ->
-                    Error;
-                _ ->
-                    {ok, _Pid} = game_join_proc:start(GamePlayersRec),
-                    {ok, Game2}
-            end
-    end.
-
-%%-------------------------------------------------------------------
-%% @doc
-%% Updates a game with the given ID with the given game record in the database.
-%% @spec
-%% update_game(ID :: integer(), Game :: #game{}) ->
-%%     {ok, ID} | Error
-%% @end
-%%-------------------------------------------------------------------
-update_game(ID, #game{} = Game) ->
-    BinID = db:int_to_bin(ID),
-    % Store Game record as proplist for search
-    GamePropList = data_format:rec_to_plist(Game),
-    DBGameObj=db_obj:create(?B_GAME, BinID, GamePropList),
-    GamePutResult = db:put (DBGameObj, [{w,1}]),
-    case GamePutResult of
-        {error, _} = Error ->
-            Error;
-        _ ->
-            {ok, ID}
+            {ok, _Pid} = game_join_proc:start(GamePlayersRec),
+            {ok, Game2}
     end.
 
 %%-------------------------------------------------------------------
@@ -265,7 +238,7 @@ get_game_overview(GameID, UserID) ->
             % user that is not in the game can view a finished game
             OV = basic_game_overview(GameID, Game),
             {ok, OV#game_overview{players =
-                                  game_utils:userlist(GameID)}
+                                  game_utils:userlist(Game)}
             };
         {ok, _Country, #game{status = waiting}} ->
             % game not started yet, or stopped.
@@ -305,7 +278,7 @@ basic_game_overview(GameID, Game) ->
 operator_game_overview(GameID) ->
     Result = (catch begin
             {ok, Game} = get_game(GameID),
-            {ok, Players} = game_utils:get_db_obj(?B_GAME_PLAYER, GameID, [{r,1}]),
+            {ok, Players} = game_utils:get_game_player(Game),
             case game_utils:get_game_state(GameID) of
                    {ok, GameState} -> % game ongoing
                        {ok, GameMsgTree} = game_utils:get_game_msg_tree(GameID),
@@ -428,7 +401,7 @@ update_game_order(ID, NewOrder) ->
 get_playercountry_game(GameId, UserId) ->
     case get_game(GameId) of
         {ok, Game} ->
-            case get_player_country(GameId, UserId) of
+            case get_player_country(Game, UserId) of
                 {ok, Country} ->
                     {ok, Country, Game};
                 Error ->
@@ -441,12 +414,12 @@ get_playercountry_game(GameId, UserId) ->
 %% ------------------------------------------------------------------
 %% @doc Returns the country atom which a user is playing in a game
 %% @spec
-%%        get_player_country(GameID :: integer(), UserID :: integer()) ->
+%%        get_player_country(Game :: #game{}, UserID :: integer()) ->
 %%               {ok, Country :: atom()} | {error, user_not_playing_this_game}
 %% @end
 %% ------------------------------------------------------------------
-get_player_country (GameID, UserID) ->
-    case get_game_player(GameID) of
+get_player_country (Game, UserID) ->
+    case get_game_player(Game) of
         {ok, GPRec = #game_player{}} ->
             case lists:keyfind(UserID, #game_user.id,
                                GPRec#game_player.players) of
@@ -465,10 +438,10 @@ get_player_country (GameID, UserID) ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec get_target_players({integer(), integer()}, [atom()], role()) ->
+-spec get_target_players({integer(), #game{}}, [atom()], role()) ->
           {ok, {atom(), [#game_user{}]}} | {error, any()}.
-get_target_players({FromID, GameID}, CountryList, Role) ->
-    case get_game_player(GameID) of
+get_target_players({FromID, Game}, CountryList, Role) ->
+    case get_game_player(Game) of
         {ok, GPRec = #game_player{}} ->
             Players = GPRec#game_player.players,
             case game_utils:is_power_user(Role) of
@@ -538,13 +511,19 @@ get_game(ID)->
 %% ------------------------------------------------------------------
 %% @doc Returns the game_player record of a game
 %% @spec
-%%        get_game_player(GameID :: integer()) ->
+%%        get_game_player(integer() | #game{}) ->
 %%               {ok, GamePlayer :: #game_player{}} | Error
 %% @end
 %% ------------------------------------------------------------------
-get_game_player(GameID)->
-    game_utils:get_db_obj(?B_GAME_PLAYER, GameID, [{r,1}]).
-
+get_game_player(Game = #game{})->
+    game_utils:get_game_player(Game);
+get_game_player(GameID) when is_integer(GameID)->
+    case get_game(GameID) of
+        {ok, Game} ->
+            game_utils:get_game_player(Game);
+        {error, Error} ->
+            {error, Error}
+    end.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -553,8 +532,16 @@ get_game_player(GameID)->
 %%-------------------------------------------------------------------
 -spec get_games_current(integer()) -> {ok, [#game{}]}.
 get_games_current(UserID) ->
-    Query = "id=" ++ integer_to_list(UserID) ++ " AND "
-            "(status=waiting OR status=ongoing)",
+    StrId = integer_to_list(UserID),
+    Country = " (england=" ++ StrId ++ " OR " ++
+                  "germany=" ++ StrId ++ " OR " ++
+                  " france=" ++ StrId ++ " OR " ++
+                  " austria=" ++ StrId ++ " OR " ++
+                  " italy=" ++ StrId ++ " OR " ++
+                  " russia=" ++ StrId ++ " OR " ++
+                  " turkey=" ++ StrId ++ ") AND ",
+
+    Query = Country ++ "(status=waiting OR status=ongoing)",
     db_utils:do_search_values(?B_GAME, Query, ?GAME_REC_NAME).
 
 %%-------------------------------------------------------------------
@@ -591,9 +578,9 @@ get_games_ongoing() ->
           {error, any()}.
 send_game_msg(GMsg = #game_message{game_id = GameId,
                                    from_id = FromId}, ToCountries, Role) ->
-    case get_game(GMsg#game_message.game_id) of
-        {ok, #game{press = Press, status = ongoing}} ->
-            case get_target_players({FromId, GameId}, ToCountries, Role) of
+    case get_game(GameId) of
+        {ok, Game = #game{press = Press, status = ongoing}} ->
+            case get_target_players({FromId, Game}, ToCountries, Role) of
                 {ok, {From, ToGameUserList}} ->
                     case game_utils:get_current_game(GameId) of
                         {ok, GameCurrent} ->

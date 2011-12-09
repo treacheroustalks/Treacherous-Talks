@@ -29,6 +29,7 @@
 -include_lib ("datatypes/include/push_event.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
 
+
 -export([receive_push_event/2, receive_init/0]).
 -define (TEST_TIMEOUT, 3000).
 
@@ -93,10 +94,19 @@ mod_msg_success_tst_() ->
             % join players and countries
             JoinResult = game:join_game(Game#game.id, 1111, england),
             ?assertEqual({ok, Game#game.id}, JoinResult),
+
+            GetGame= fun() -> sync_get(Game#game.id) end,
+            UpdatedGame1= test_utils:wait_for_change(GetGame, Game, 100),
+
             JoinResult2 = game:join_game(Game#game.id, 2222, germany),
             ?assertEqual({ok, Game#game.id}, JoinResult2),
+            UpdatedGame2= test_utils:wait_for_change(GetGame, UpdatedGame1, 100),
+
             JoinResult3 = game:join_game(Game#game.id, 3333, france),
             ?assertEqual({ok, Game#game.id}, JoinResult3),
+            test_utils:wait_for_change(GetGame, UpdatedGame2, 100),
+
+
             game_timer:sync_event(Game#game.id, timeout),
 
             GMsg = #game_message{content = "test moderator game message",
@@ -157,10 +167,17 @@ game_msg_send_tst_() ->
              % join new player with id=1122 and country=england
              JoinResult = game:join_game(Game#game.id, 1111, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             UpdatedGame1= test_utils:wait_for_change(GetGame, Game, 100),
+
              JoinResult2 = game:join_game(Game#game.id, 2222, germany),
              ?assertEqual({ok, Game#game.id}, JoinResult2),
+             UpdatedGame2= test_utils:wait_for_change(GetGame, UpdatedGame1, 100),
+
              JoinResult3 = game:join_game(Game#game.id, 3333, france),
              ?assertEqual({ok, Game#game.id}, JoinResult3),
+             test_utils:wait_for_change(GetGame, UpdatedGame2, 100),
+
              UserIDs = [2222,3333],
              FromCountries = [england, england],
 
@@ -182,12 +199,17 @@ game_msg_send_tst_() ->
              % join new player with id=1122 and country=england
              JoinResult = game:join_game(Game#game.id, 1111, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
+
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             UpdatedGame1= test_utils:wait_for_change(GetGame, Game, 100),
+
              JoinResult2 = game:join_game(Game#game.id, 2222, germany),
              ?assertEqual({ok, Game#game.id}, JoinResult2),
+             UpdatedGame2= test_utils:wait_for_change(GetGame, UpdatedGame1, 100),
              JoinResult3 = game:join_game(Game#game.id, 3333, france),
              ?assertEqual({ok, Game#game.id}, JoinResult3),
+             test_utils:wait_for_change(GetGame, UpdatedGame2, 100),
 
-             timer:sleep(50),
              GMsg = #game_message{content = "test send game message", from_id= 1111,
                                   game_id = Game#game.id},
              Result = game:game_msg(GMsg, [germany, france], user),
@@ -203,10 +225,15 @@ game_msg_send_tst_() ->
              % join new player with id=1122 and country=england
              JoinResult = game:join_game(Game#game.id, 1111, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             UpdatedGame1= test_utils:wait_for_change(GetGame, Game, 100),
              JoinResult2 = game:join_game(Game#game.id, 2222, germany),
              ?assertEqual({ok, Game#game.id}, JoinResult2),
+             UpdatedGame2= test_utils:wait_for_change(GetGame, UpdatedGame1, 100),
              JoinResult3 = game:join_game(Game#game.id, 3333, france),
              ?assertEqual({ok, Game#game.id}, JoinResult3),
+             test_utils:wait_for_change(GetGame, UpdatedGame2, 100),
+
              UserIDs = [2222,3333],
              FromCountries =[unknown, unknown],
 

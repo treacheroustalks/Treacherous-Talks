@@ -72,7 +72,8 @@ game_test_ () ->
       game_search_ext_tst_(),
       stop_game_tst_(),
       get_games_current_tst_(),
-      get_games_ongoing_tst_()
+      get_games_ongoing_tst_(),
+      get_game_player_tst_()
      ]}.
 
 %%------------------------------------------------------------------------------
@@ -143,7 +144,8 @@ delete_game_tst_ () ->
 %% Tests the game update functionality
 %%------------------------------------------------------------------------------
 game_update_tst_() ->
-    [fun() ->
+    [{"Update game test positive",
+      fun() ->
              ?debugMsg("Update game test"),
              GameRecord = test_game(),
              % Create a new Game
@@ -151,14 +153,18 @@ game_update_tst_() ->
              % Create a copy of Game with a new description
              UpdatedGame = Game#game{description = "Updated game"},
              % Update the game with the same id as Game to UpdatedGame
-             game:reconfig_game(UpdatedGame),
+             {ok, Id} = game:reconfig_game(UpdatedGame),
              %% Now the game should have changed in the DB to have
              %% status = ongoing, change that before assert
-             ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
+             GetGame= fun() -> sync_get(Id) end,
+             ResultGame = test_utils:wait_for_change(GetGame, Game, 100),
+
+             ?assertEqual(UpdatedGame, ResultGame),
              ?debugMsg("Update game test end"),
              sync_delete(Game#game.id)
-     end,
-     fun () ->
+     end},
+     {"Update game positive when find game by search",
+      fun () ->
               % create a game
               OrigGame = test_game (),
               Key = sync_new(OrigGame),
@@ -171,6 +177,10 @@ game_update_tst_() ->
               % update it
               ModifiedGame = Game#game{press = white_press},
               game:reconfig_game(ModifiedGame),
+              GetGame= fun() -> sync_get(Game#game.id) end,
+              ?assertEqual(ModifiedGame,
+                           test_utils:wait_for_change(GetGame, Game, 100)),
+
 
               % prove that we find it
               {ok, Keys2} = game:get_keys(#game.press, white_press),
@@ -180,8 +190,9 @@ game_update_tst_() ->
               {ok, Keys3} = game:get_keys(#game.press, black_press),
               ?assertEqual(false, lists:member(Key, Keys3)),
               sync_delete(Game#game.id)
-     end,
-     fun () ->
+     end},
+     {"update game status from waiting to ongoing test",
+      fun () ->
               % create a game
               OrigGame = test_game (),
               Key = sync_new(OrigGame),
@@ -202,22 +213,32 @@ game_update_tst_() ->
               {ok, Keys3} = game:get_keys(#game.status, waiting),
               ?assertEqual(false, lists:member(Key, Keys3)),
               sync_delete(Game#game.id)
-     end,
-     fun() ->
-             ?debugMsg("Update game test"),
-             GameRecord = test_game(),
-             % Create a new Game
-             Game = sync_get(sync_new(GameRecord)),
-             % Create a copy of Game with a new description
-             UpdatedGame = Game#game{description = "Updated game"},
-             % Update the game with the same id as Game to UpdatedGame
-             game:reconfig_game(UpdatedGame),
-             %% Now the game should have changed in the DB to have
-             %% status = ongoing, change that before assert
-             ?assertEqual(UpdatedGame, sync_get(Game#game.id)),
-             ?debugMsg("Update game test end"),
-             sync_delete(Game#game.id)
-     end].
+     end},
+     {"update game When player has joined game",
+      fun () ->
+               % create a game
+               OrigGame = test_game (),
+               Key = sync_new(OrigGame),
+               Game = sync_get(Key),
+
+               % prove that we can find it
+               {ok, Keys} = game:get_keys(#game.press, Game#game.press),
+               ?assertEqual(true, lists:member(Key, Keys)),
+
+               GamePlayeInit = sync_get_game_player (Game#game.id),
+               JoinResult = game:join_game(Game#game.id, 1122, england),
+               ?assertEqual({ok, Game#game.id}, JoinResult),
+
+               GetGamePlayer= fun() -> sync_get_game_player (Game#game.id) end,
+               test_utils:wait_for_change(GetGamePlayer, GamePlayeInit, 100),
+
+               % update it
+               ModifiedGame = Game#game{press = white_press},
+               Result = game:reconfig_game(ModifiedGame),
+
+               ?assertEqual({error,player_joined_this_game_already}, Result),
+               sync_delete(Game#game.id)
+      end}].
 
 %%------------------------------------------------------------------------------
 %% test translate game order functionality
@@ -243,6 +264,42 @@ translate_game_order_tst_() ->
              sync_delete(Game#game.id)
      end].
 
+get_game_player_tst_() ->
+    [{"Test get game player by game id",
+     fun() ->
+             ?debugMsg("Get game player test"),
+             GameRecord = test_game(),
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             GamePlayeInit = sync_get_game_player (Game#game.id),
+
+             %check the game has no player
+             ?assertEqual(#game_player{id = Game#game.id, players = []},
+                          GamePlayeInit),
+             JoinResult = game:join_game(Game#game.id, 1122, england),
+             ?assertEqual({ok, Game#game.id}, JoinResult),
+
+             GetGamePlayer= fun() -> sync_get_game_player (Game#game.id) end,
+             GamePlayers = test_utils:wait_for_change(GetGamePlayer,
+                                                       GamePlayeInit, 100),
+             Expected = #game_player{id = Game#game.id,
+                                       players = [#game_user{id = 1122,
+                                                             country= england}]},
+             ?assertEqual(Expected,GamePlayers),
+
+              % test get game player when we give the game record to extract players
+             GameWithPlayer = sync_get(Game#game.id),
+             GamePlayers2 = game_worker:get_game_player(GameWithPlayer),
+
+             ?assertEqual({ok, Expected}, GamePlayers2),
+
+             ?debugMsg("Get game player test DONE"),
+             sync_delete(Game#game.id)
+
+    end}
+
+     ].
 %%------------------------------------------------------------------------------
 %% Tests the join game functionality
 %%------------------------------------------------------------------------------
@@ -253,10 +310,15 @@ join_game_tst_() ->
              % Create a new Game
              Game = sync_get(sync_new(GameRecord)),
              % join new player with id=1122 and country=england
+             GamePlayeInit = sync_get_game_player (Game#game.id),
              JoinResult = game:join_game(Game#game.id, 1122, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
-             timer:sleep(100),
-             GamePlayers = sync_get_game_player (Game#game.id),
+
+             GetGamePlayer= fun() -> sync_get_game_player (Game#game.id) end,
+             GamePlayers = test_utils:wait_for_change(GetGamePlayer,
+                                                       GamePlayeInit, 100),
+
+             ?debugVal(GamePlayers),
              ?assertEqual(1, length(GamePlayers#game_player.players)),
              ?debugMsg("join game test end"),
              sync_delete(Game#game.id)
@@ -309,7 +371,8 @@ join_game_tst_() ->
 %% Tests the get game overview functionality
 %%------------------------------------------------------------------------------
 get_game_overview_tst_ () ->
-    [fun() ->
+    [{"Get game overview test. Case: VALID",
+      fun() ->
              ?debugMsg("Get game overview test. Case: VALID"),
              GameRecord = test_game(),
              % Create a new Game
@@ -318,14 +381,19 @@ get_game_overview_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
+
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             test_utils:wait_for_change(GetGame, Game, 100),
+
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
              GOV = sync_get_game_overview (Game#game.id, UserID),
              ?assertEqual(Country, GOV#game_overview.country),
              ?debugMsg("game state retrieved"),
              sync_delete(Game#game.id)
-     end,
-     fun() ->
+     end},
+     {"Get game overview test. Case: INVALID USER",
+      fun() ->
              ?debugMsg("Get game overview test. Case: INVALID USER"),
              GameRecord = test_game(),
              % Create a new Game
@@ -337,8 +405,9 @@ get_game_overview_tst_ () ->
              ?assertEqual(user_not_playing_this_game, Reply),
              ?debugMsg("User does not play this game"),
              sync_delete(Game#game.id)
-     end,
-     fun() ->
+     end},
+     {"Game phase changed, and map is the same",
+      fun() ->
              GameRecord = test_game(),
              % Create a new Game
              Game = sync_get(sync_new(GameRecord)),
@@ -346,6 +415,10 @@ get_game_overview_tst_ () ->
              UserID = 1122,
              Country = england,
              game:join_game(Game#game.id, UserID, Country),
+
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             test_utils:wait_for_change(GetGame, Game, 100),
+
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
              Reply = sync_get_game_overview (Game#game.id, UserID),
@@ -357,32 +430,47 @@ get_game_overview_tst_ () ->
              ?debugMsg("Game phase changed, and map is the same"),
              ?debugMsg("get game state test end"),
              sync_delete(Game#game.id)
-     end,
-     fun() ->
+     end},
+     {"Testing game overview for a finished game",
+      fun() ->
              ?debugMsg("Testing game overview for a finished game"),
-             UserId = 14,
-             create_mock_user(create_user(UserId)),
+             UserId = db:get_unique_id(),
+             Nick = "Player" ++ integer_to_list(UserId),
+             create_mock_user((create_user(UserId))#user{nick = Nick}),
              GameRecord = test_game(),
              Game = sync_get(sync_new(GameRecord)),
              GID = Game#game.id,
-             game_timer:sync_event(GID, timeout),
              % join all players
-             lists:foreach(fun({UID, C}) -> game:join_game(GID, UID, C) end,
-                           user_list()),
-             game:reconfig_game(Game#game{status = finished}),
+             lists:foldl(fun({UID, C}, NewGame)
+                              -> game:join_game(GID, UID, C),
+                                 GetGame= fun() -> sync_get(NewGame#game.id) end,
+                                 test_utils:wait_for_change(GetGame, NewGame, 100)
+                           end,Game,
+                           [{UserId, turkey} | user_list()]),
+
+             game_timer:sync_event(GID, timeout),
+             {ok , NewGame} = game_worker:get_game(GID),
+             game_utils:update_game(GID, NewGame#game{status = finished}),
+
+             GetGame= fun() -> sync_get(NewGame#game.id) end,
+             test_utils:wait_for_change(GetGame, NewGame, 100),
              % 1112222 is a "random user", anyone can view finished games
+
              OV = sync_get_game_overview(GID, 1112222),
-             ?assertEqual(OV#game_overview.players, finished_ov()),
+
+             ResultPlayers = OV#game_overview.players,
              delete_mock_user(create_user(UserId)),
+             ?assertEqual([], finished_ov(Nick) -- ResultPlayers),
              ?debugMsg("Finished game overview: END TEST"),
              sync_delete(Game#game.id)
-     end,
-     fun() ->
+     end},
+     {"Test joining a game which doesn't exist",
+      fun() ->
              ?debugMsg("Test joining a game which doesn't exist"),
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},
                           game:join_game(1234, 1122, england))
-     end].
+     end}].
 
 operator_game_overview_tst_ () ->
     [fun() ->
@@ -393,7 +481,9 @@ operator_game_overview_tst_ () ->
              % join new player with id=1122 and country=england
              JoinResult = game:join_game(Game#game.id, 1122, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
-             timer:sleep(100),
+
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             ResultGame = test_utils:wait_for_change(GetGame, Game, 100),
 
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
@@ -401,7 +491,9 @@ operator_game_overview_tst_ () ->
              G = GOV#game_overview.game_rec,
              sync_delete(Game#game.id),
 
-             ?assertEqual("lorem ipsum dolor sit amet", G#game.description),
+             ?assertEqual(ResultGame#game{status = ongoing,
+                                          start_time= G#game.start_time}, G),
+
              GOV2 = GOV#game_overview{game_rec = undefined, map = undefined, players=undefined},
              Expected = {game_overview,undefined,order_phase,
                    {1901,spring}, undefined, undefined, undefined,undefined},
@@ -519,23 +611,45 @@ get_games_current_tst_ () ->
 
              GameRecord = test_game(),
              CreatorId = 1337,
+             JoinId = 1122330012,
              Game1 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId})),
              Game2 = sync_get(sync_new(GameRecord#game{creator_id=CreatorId})),
+             game:join_game(Game1#game.id, CreatorId, england),
+             game:join_game(Game2#game.id, CreatorId, england),
+
+             GetGame= fun(Id) ->
+                              fun() -> sync_get(Id) end
+                      end,
+
+             test_utils:wait_for_change(GetGame(Game1#game.id), Game1, 100),
+             UpdatedGame2 = test_utils:wait_for_change(GetGame(Game2#game.id),
+                                                       Game2, 100),
+
+             game:join_game(Game2#game.id, JoinId, france),
+             test_utils:wait_for_change(GetGame(Game2#game.id), UpdatedGame2, 100),
+
              game_timer:sync_event(Game2#game.id, timeout),
-             {CreatorId, Game1, Game2}
+             {{CreatorId, JoinId}, Game1, Game2}
      end,
-     fun({_CreatorId, _Game1, _Game2}) ->
+     fun({_Ids, _Game1, _Game2}) ->
              {ok, Results} = game:search("creator_id=1337"),
              lists:map(fun(GameId) -> sync_delete(GameId) end, Results)
      end,
-      fun({CreatorId, Game1, Game2}) -> % instantiator
+      fun({{CreatorId, JoinId}, Game1, Game2}) -> % instantiator
               fun() ->
+                      % test search for joined games which user is creator
                       {ok, Results} = game:get_games_current(CreatorId),
                       ResultIds = lists:map(fun(Game) -> Game#game.id end,
                                             Results),
                       ?assert(length(Results) =:= 2),
                       ?assert(lists:member(Game1#game.id, ResultIds)),
-                      ?assert(lists:member(Game2#game.id, ResultIds))
+                      ?assert(lists:member(Game2#game.id, ResultIds)),
+
+                      %test search for joined game which user is not creator
+                      % the should return only one game
+                      {ok, [ResultGame]} = game:get_games_current(JoinId),
+
+                      ?assertEqual(Game2#game.id, ResultGame#game.id)
               end
       end}.
 
@@ -684,9 +798,9 @@ create_user(Id) ->
           date_updated = {{2011, 10, 18}, {10, 42, 16}}}.
 
 create_mock_user(User) ->
-    BinId = db:int_to_bin(User#user.id),
-    DbObj = db_obj:create(?B_USER, BinId, User),
-    db:put(DbObj).
+    {ok, StoredUser} = user_management:create(User),
+    StoredUser.
+
 
 delete_mock_user(User) ->
     BinKey = db:int_to_bin(User#user.id),
@@ -706,15 +820,14 @@ test_game () ->
 user_list() ->
     [{12, england},
      {13, france},
-     {14, turkey},
      {15, austria},
      {16, russia},
      {17, germany},
      {18, italy}].
-finished_ov() ->
+finished_ov(TurkeyNick) ->
     [{england, "12"},
      {france, "13"},
-     {turkey, "testuser"},
+     {turkey, TurkeyNick},
      {austria, "15"},
      {russia, "16"},
      {germany, "17"},

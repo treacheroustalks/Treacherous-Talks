@@ -40,7 +40,6 @@
 
 -define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
 -define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
--define(GAME_PLAYER_LINK_USER, <<"user">>).
 -define(GAME_STATE_LINK_GAME, <<"game">>).
 -define(CURRENT_GAME_LINK_STATE, <<"game_state">>).
 -define(GAME_REC_NAME, game).
@@ -62,7 +61,14 @@
                 date_created = {date (), time ()} :: date (),
                 date_completed = undefined :: undefined | date (),
                 start_time = undefined :: undefined | {pos_integer(), pos_integer(), pos_integer()},
-                last_session = "" :: string()
+                last_session :: string(),
+                england = undefined :: undefined | integer(),
+                germany = undefined :: undefined | integer(),
+                france = undefined :: undefined | integer(),
+                austria = undefined :: undefined | integer(),
+                italy = undefined :: undefined | integer(),
+                russia = undefined :: undefined | integer(),
+                turkey = undefined :: undefined | integer()
                }).
 
 

@@ -52,7 +52,7 @@
 
 %% Password that xmpp client users will use
 -define(XMPP_PASSWORD, "password").
-
+-define(WAIT_TIME, 100).
 
 %% ------------------------------------------------------------------
 %% Requests
@@ -232,7 +232,7 @@ Supported commands are:").
 -define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Unhandled error.").
 -define(GAME_OVERVIEW_RESPONSE_NOT_PLAY, "Only game players can view the gam").
 
--define(GAME_VIEW_RESPONSE_SUCCESS, "Found 2 games:").
+-define(GAME_VIEW_RESPONSE_SUCCESS, "Found 1 games:").
 -define(GAME_VIEW_RESPONSE_ERROR, "Invalid user session. Please log in to continue.\n").
 
 -define(GAME_SEARCH_RESPONSE_SUCCESS(GameID), "Found 1 games").
@@ -300,27 +300,33 @@ setup_reg_login_instantiator() ->
      {Client,
       ?REGISTER_COMMAND_CORRECT(Nick),
       ?REG_RESPONSE_SUCCESS,
-      "valid registration attempt"},
+      "valid registration attempt",
+      no_wait},
      {Client,
       "REGISTER fdg END",
       ?REG_RESPONSE_BAD_SYNTAX,
-      "register command with missing fields"},
+      "register command with missing fields",
+      no_wait},
      {Client,
       "register me",
       ?RESPONSE_COMMAND_UNKNOWN,
-      "request matching no command"},
+      "request matching no command",
+      no_wait},
      {Client,
       ?LOGIN_COMMAND_CORRECT(Nick),
       ?LOGIN_RESPONSE_SUCCESS,
-      "valid login attempt"},
+      "valid login attempt",
+      no_wait},
      {Client,
       ?LOGIN_COMMAND_BAD_PASSWORD(Nick),
       "Invalid login data.\n",
-      "login request with invalid password"},
+      "login request with invalid password",
+      no_wait},
      {Client,
       ?LOGIN_COMMAND_BAD_NICK,
       "Invalid login data.\n",
-      "login request with invalid nickname"}].
+      "login request with invalid nickname",
+      no_wait}].
 
 setup_session_instantiator() ->
     Client = session_test_client,
@@ -341,100 +347,122 @@ setup_session_instantiator() ->
      {Client,
       ?GAME_ORDER_COMMAND(Session, GameID),
        ?GAME_ORDER_RESPONSE_INVALID_DATA,
-      "game order invalid data"},
+      "game order invalid data",
+      no_wait},
      {Client,
       ?GAME_ORDER_COMMAND_WRONG(Session, GameID),
        ?GAME_ORDER_RESPONSE_INVALID_INPUT,
-       "game order invalid input"},
+       "game order invalid input",
+      no_wait},
 
      {Client,
       ?UPDATE_COMMAND_CORRECT(Session),
       ?UPD_RESPONSE_SUCCESS,
-      "valid update attempt"},
+      "valid update attempt",
+      no_wait},
      {Client,
       ?UPDATE_COMMAND_CORRECT(InvalidSession),
       ?UPD_RESPONSE_SESSION_ERROR,
-      "update attempt with invalid session"},
+      "update attempt with invalid session",
+      no_wait},
      {Client,
       ?UPDATE_COMMAND_MISSING_FIELD(Session),
       ?UPD_RESPONSE_BAD_SYNTAX,
-      "update command with missing fields"},
+      "update command with missing fields",
+      no_wait},
      {Client,
       ?CREATE_COMMAND_CORRECT(Session, "white", "1M"),
       ?CREATE_RESPONSE_SUCCESS,
-      "valid create command"},
+      "valid create command",
+      no_wait},
      {Client,
       ?CREATE_COMMAND_CORRECT(InvalidSession, "white", "1M"),
       ?CREATE_RESPONSE_SESSION_ERROR,
-      "create attempt with invalid session"},
+      "create attempt with invalid session",
+      no_wait},
      {Client,
       ?CREATE_COMMAND_MISSING_FIELDS(Session),
       ?CREATE_RESPONSE_BAD_SYNTAX,
-      "create command with missing fields"},
+      "create command with missing fields",
+      no_wait},
 
      {Client,
       ?RECONFIG_COMMAND(Session, GameID),
       ?RECONFIG_RESPONSE_SUCCESS,
-      "successful reconfig game"},
+      "successful reconfig game",
+      ?WAIT_TIME},
      {Client,
       ?RECONFIG_COMMAND(Session, "1111222"),
       ?RECONFIG_RESPONSE_INVALID_DATA,
-      "invalid reconfig game data"},
+      "invalid reconfig game data",
+      no_wait},
 
      {Client,
       ?GAME_OVERVIEW_COMMAND(Session, GameID),
       ?GAME_OVERVIEW_RESPONSE_NOT_PLAY,
-      "game overview not play this game"},
+      "game overview not play this game",
+      no_wait},
 
      {Client,
       ?JOIN_GAME_COMMAND(Session, GameID, "england"),
       ?JOIN_GAME_RESPONSE_SUCCESS,
-      "successful join game"},
+      "successful join game",
+      ?WAIT_TIME},
      {Client,
       ?JOIN_GAME_COMMAND(Session, GameID, "england"),
       ?JOIN_GAME_RESPONSE_INVALID_DATA,
-      "invalid join game data"},
+      "invalid join game data",
+      no_wait},
      {Client,
       ?GAME_OVERVIEW_COMMAND(Session, GameID),
       ?GAME_OVERVIEW_RESPONSE_SUCCESS,
-      "successful game overview"},
+      "successful game overview",
+      no_wait},
 
      {Client,
       ?GAME_ORDER_COMMAND(Session, GameID),
       ?GAME_ORDER_RESPONSE_SUCCESS,
-      "game order successfully sent"},
+      "game order successfully sent",
+      no_wait},
      {Client,
       ?SEND_OFF_GAME_MSG(Session, "notExisiting", "a message"),
       ?SEND_OFF_GAME_MSG_RESPONSE_FAILED,
-      "game order successfully sent"},
+      "game order successfully sent",
+      no_wait},
 
      {Client,
        ?SEND_GAME_MSG(Session, GameID, "france", ?GAME_MSG),
        ?SEND_GAME_MSG_RESPONSE_NOT_ONGOING,
-       "send game message to a game which is not started"},
+       "send game message to a game which is not started",
+      no_wait},
 
      {Client,
       ?GAME_VIEW_COMMAND(Session),
       ?GAME_VIEW_RESPONSE_SUCCESS,
-      "successful game view"},
+      "successful game view",
+      no_wait},
      {Client,
       ?GAME_VIEW_COMMAND(InvalidSession),
       ?GAME_VIEW_RESPONSE_ERROR,
-      "invalid session"},
+      "invalid session",
+      no_wait},
 
      {Client,
       ?GAME_SEARCH_COMMAND(Session, GameID),
       ?GAME_SEARCH_RESPONSE_SUCCESS(GameID),
-      "successful game search"},
+      "successful game search",
+      no_wait},
      {Client,
       ?GAME_SEARCH_COMMAND_EMPTY_QUERY(Session),
       ?GAME_SEARCH_RESPONSE_ERROR,
-      "query was empty"},
+      "query was empty",
+      no_wait},
 
      {Client,
       ?GET_PROFILE_COMMAND(Session),
       ?GET_PROFILE_RESPONSE_SUCCESS,
-      "get user profile"}].
+      "get user profile",
+      no_wait}].
 
 
 setup_two_user_instantiator() ->
@@ -450,10 +478,12 @@ setup_two_user_instantiator() ->
     GameID2 = create_game(Client1, Session1, "grey", "1M"),
 
     join_game(Client1, Session1, GameID1, "england"),
-    join_game(Client2, Session2, GameID1, "france"),
-
     join_game(Client1, Session1, GameID2, "england"),
+    timer:sleep(?WAIT_TIME),
+
+    join_game(Client2, Session2, GameID1, "france"),
     join_game(Client2, Session2, GameID2, "france"),
+    timer:sleep(?WAIT_TIME),
 
     change_game_phase([GameID1, GameID2]),
     Msg = "Hello, this is a message! :)",
@@ -549,8 +579,11 @@ offline_game_message_test_() ->
               GameID = create_game(Client1, Session1, "white", "1M"),
 
               join_game(Client1, Session1, GameID, "england"),
+              timer:sleep(?WAIT_TIME),
               join_game(Client2, Session2, GameID, "france"),
+              timer:sleep(?WAIT_TIME),
               join_game(Client3, Session3, GameID, "germany"),
+              timer:sleep(?WAIT_TIME),
 
               change_game_phase([GameID]),
 
@@ -630,13 +663,20 @@ teardown([Clients|_])->
 %% instantiate tests
 %%-------------------------------------------------------------------
 instantiator([_Clients| Tests]) ->
-    lists:map(fun({Client, Request, Expect, Description}) ->
+    lists:map(fun({Client, Request, Expect, Description, WaitTime}) ->
                       fun() ->
                               ?debugFmt("Testing ~s.", [Description]),
                               Response = xmpp_client:xmpp_call(
                                            Client, ?SERVICE_BOT, Request),
+
                               ResponsePrefix = response_prefix(Expect, Response),
-                              ?assertEqual(Expect, ResponsePrefix)
+                              ?assertEqual(Expect, ResponsePrefix),
+                              case WaitTime of
+                                  no_wait ->
+                                      ok;
+                                  T ->
+                                      timer:sleep(T)
+                              end
                       end
               end, Tests).
 

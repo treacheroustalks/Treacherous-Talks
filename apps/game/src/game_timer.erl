@@ -159,13 +159,16 @@ waiting_phase({reconfig, UpdatedGame}, State) ->
     {next_state, waiting_phase, State#state{game = UpdatedGame}, Timeout};
 waiting_phase(timeout, State) ->
     %% This is where we "move" on to the next state!
+    {ok, Game} = game_worker:get_game((State#state.game)#game.id),
     NewState = State#state{phase = order_phase,
-                           game = State#state.game#game{status = ongoing,
+                           game = Game#game{status = ongoing,
                                                        start_time = now()}},
     phase_change(NewState#state.game, started),
     save_corpse(NewState#state.game#game.id),
-    Timeout = get_timeout(order_phase, State#state.game),
+    Timeout = get_timeout(order_phase, Game),
     {next_state, order_phase, NewState, Timeout}.
+
+
 waiting_phase(_Event, From, State) ->
     syncevent(waiting_phase, From, State).
 
@@ -250,7 +253,7 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 phase_change(Game = #game{id = ID}, started) ->
     lager:debug("Game ~p started", [ID]),
     %% maybe tell the users about game start?
-    game_worker:update_game(ID, Game),
+    game_utils:update_game(ID, Game),
     setup_game(ID),
     game_join_proc:stop(ID);
 phase_change(ID, build_phase) ->
@@ -402,7 +405,7 @@ end_game(GameID, NewStatus) ->
     db:delete (?B_CORPSES, list_to_binary (atom_to_list (?MODULE) ++
                                            integer_to_list (GameID))),
     FinishedGame = Game#game{status = NewStatus},
-    game_worker:update_game(GameID, FinishedGame).
+    game_utils:update_game(GameID, FinishedGame).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -460,12 +463,13 @@ get_timeout(Phase, Game) ->
 %%-------------------------------------------------------------------
 syncevent(waiting_phase, From, State) ->
     % This is where we "move" on to the next state!
+    {ok, Game} = game_worker:get_game((State#state.game)#game.id),
     NewState = State#state{phase = order_phase,
-                           game = State#state.game#game{status = ongoing,
+                           game = Game#game{status = ongoing,
                                                         start_time = now()}},
     phase_change(NewState#state.game, started),
     save_corpse(State#state.game#game.id),
-    Timeout = timer:minutes((State#state.game)#game.order_phase),
+    Timeout = timer:minutes(Game#game.order_phase),
     gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, NewState, Timeout};
 syncevent(order_phase, From, State) ->

@@ -111,6 +111,9 @@ game_timer_state_tst_ () ->
                                      waiting_time = 1},
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
              game:reconfig_game(UpdatedGame),
+             GetGame= fun() -> sync_get(Game#game.id) end,
+             test_utils:wait_for_change(GetGame, Game, 100),
+
              ?assertEqual(waiting_phase, game_timer:current_state(Game#game.id)),
              game_timer:sync_event(Game#game.id, timeout),
              ?assertEqual(order_phase, game_timer:current_state(Game#game.id)),

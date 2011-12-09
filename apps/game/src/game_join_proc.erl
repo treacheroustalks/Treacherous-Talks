@@ -40,7 +40,7 @@
 -include_lib("datatypes/include/bucket.hrl").
 
 %% API
--export([start/1, stop/1, is_alive/1, join_game/3, get_state/1]).
+-export([start/1, stop/1, is_alive/1, join_game/3, get_state/1, reconfig_game/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -82,7 +82,15 @@ join_game(GameId, UserId, Country) ->
    case get_proc(GameId, true) of
        {ok, Pid} ->
            gen_server:call(Pid, {join_game, GameId, UserId, Country});
-       {error, Error} ->
+       {error, _} = Error ->
+           Error
+   end.
+
+reconfig_game(GameId, Game) ->
+   case get_proc(GameId, true) of
+       {ok, Pid} ->
+           gen_server:call(Pid, {reconfig_game, GameId, Game});
+       {error, _} = Error ->
            Error
    end.
 
@@ -158,6 +166,16 @@ handle_call({join_game, GameId, UserId, Country}, _From,
             {reply, {error, Reason}, GamePlayersRec}
     end;
 
+handle_call({reconfig_game, GameId, Game}, _From,
+            State = #game_player{players=Players}) ->
+    Reply = case Players of
+                [] ->
+                    update_game(GameId, Game);
+                _ ->
+                    {error, player_joined_this_game_already}
+            end,
+    {reply, Reply, State};
+
 handle_call(get_state, _From, State) ->
     {reply, State, State};
 
@@ -224,7 +242,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
 do_join_game(GamePlayersRec=#game_player{ players=Players }, UserId, Country) ->
     case user_already_joined(Players, UserId) of
         false ->
@@ -234,7 +251,7 @@ do_join_game(GamePlayersRec=#game_player{ players=Players }, UserId, Country) ->
                     NewPlayers = [NewPlayer|Players],
                     NewGamePlayersRec =
                         GamePlayersRec#game_player{players=NewPlayers},
-                    store_game_players_new(NewGamePlayersRec),
+                    store_game_players_new(NewGamePlayersRec, NewPlayer),
                     {ok, NewGamePlayersRec};
                 false ->
                     {error, country_not_available}
@@ -261,36 +278,62 @@ user_already_joined(GameUsers, UserId) ->
             true
     end.
 
-%% Store the Game Players record with a link added to the new
-%% newly added user.
-store_game_players_new(GamePlayersRec) ->
+%% Store the Game Players in game record
+store_game_players_new(GamePlayersRec, #game_user{id =UserId,
+                                                       country=Country}) ->
     BinGameId = db:int_to_bin(GamePlayersRec#game_player.id),
 
     % Get the last known vclock
-    {ok, DBGamePlayersObj} = db:get (?B_GAME_PLAYER, BinGameId, [{r,1}]),
+    {ok, DBGameObj} = db:get (?B_GAME, BinGameId, [{r,1}]),
 
     % Update the db object.
     % Keep vclock from the GET we just did.
-    GamePlayersObj = db_obj:set_value(DBGamePlayersObj,
-                                      GamePlayersRec),
+    GamePropList= db_obj:get_value(DBGameObj),
+    Game = data_format:plist_to_rec(?GAME_REC_NAME, GamePropList),
+
+    Index = get_record_index(Country),
+    TmpGame = setelement(Index, Game, UserId),
+    TmpGamePropList = data_format:rec_to_plist(TmpGame),
+    TmpGameObj = db_obj:set_value(DBGameObj, TmpGamePropList),
 
     % Finally write it to the DB and return
-    db:put(GamePlayersObj, [{w,0}]).
+    db:put(TmpGameObj, [{w,0}]).
 %    error_logger:info_msg("put result: ~p~n",[Result]).
 
+%% reconfig game that means update the game record
+update_game(Id, Game = #game{}) ->
+    BinId = db:int_to_bin(Id),
+
+    % Get the last known vclock
+    {ok, DBGameObj} = db:get (?B_GAME, BinId, [{r,1}]),
+
+    % Update the db object.
+    % Keep vclock from the GET we just did.
+    GamePropList = data_format:rec_to_plist(Game),
+    TmpGameObj = db_obj:set_value(DBGameObj, GamePropList),
+
+    % Finally write it to the DB and return
+    GamePutResult = db:put(TmpGameObj, [{w,0}]),
+    case GamePutResult of
+        {error, _} = Error ->
+            Error;
+        _ ->
+            {ok, Id}
+    end.
 
 
 %% Read the Game Players record, waiting until all riak nodes agree.
 %% Returns {ok, GamePlayersObj} if all is cool, otherwise {error, Reason}
 read_game_players(GameId) ->
     BinGameId = db:int_to_bin(GameId),
-    case db:get(?B_GAME_PLAYER, BinGameId, [{r, all}]) of
+    case db:get(?B_GAME, BinGameId, [{r, all}]) of
         {error, _} = Error ->
             Error;
-        {ok, GamePlayersObj} ->
-            case db_obj:has_siblings(GamePlayersObj) of
+        {ok, GameObj} ->
+            case db_obj:has_siblings(GameObj) of
                 false ->
-                    {ok, db_obj:get_value(GamePlayersObj)};
+                    Game =data_format:db_obj_to_rec(GameObj, ?GAME_REC_NAME),
+                    {ok, game_utils:get_game_player(Game)};
                 true ->
                     % This shouldn't happen.
                     {error, "Game Players record had siblings?!?!?!"}
@@ -304,14 +347,42 @@ get_proc(GameID, Restart) ->
         Pid when is_pid(Pid) ->
             {ok, Pid};
         none when Restart == true ->
-            case start(GameID) of
-                {ok, Pid} ->
-                    {ok, Pid};
-                {error, Error} ->
-                    {error, Error}
+            case game_worker:get_game(GameID) of
+                {ok, Game = #game{status = waiting}} ->
+                    {ok, GamePlayers} = game_utils:get_game_player(Game),
+                    case start(GamePlayers) of
+                        {ok, Pid} ->
+                            {ok, Pid};
+                        {error, Error} ->
+                            {error, Error}
+                    end;
+                {ok, #game{}} ->
+                    {error, game_not_in_waiting};
+                {error, _} = Error ->
+                    Error
             end;
         none ->
             {ok, none};
         {error, _} = Error ->
             Error
+    end.
+
+%% return the index of the country in game record
+-spec get_record_index(atom()) -> integer().
+get_record_index(Country) ->
+    case Country of
+        england ->
+            #game.england;
+        germany ->
+            #game.germany;
+        france ->
+            #game.france;
+        austria ->
+            #game.austria;
+        italy ->
+            #game.italy;
+        russia ->
+            #game.russia;
+        turkey ->
+            #game.turkey
     end.
