@@ -22,23 +22,26 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(smtp_frontend_app).
-
 -behaviour(application).
 
-%% Application callbacks
 -export([start/2, stop/1]).
+
+-include_lib("utils/include/debug.hrl").
 
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    case net_adm:ping('backend@127.0.0.1') of
+    ?DEBUG("starting [~p]~n", [?MODULE]),
+    RespondingBackend = backends:get_responding_backend(),
+    ?DEBUG ("Backend: ~p~n", [RespondingBackend]),
+    case net_adm:ping(RespondingBackend) of
         pong ->
             pg2:start_link(),
             smtp_frontend_sup:start_link();
         pang ->
-            exit("Pinging backend@127.0.0.1 failed.")
+            erlang:error({error, could_not_find_backend})
     end.
 
 stop(_State) ->
