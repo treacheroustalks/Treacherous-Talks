@@ -253,6 +253,7 @@ join_game_tst_() ->
              % join new player with id=1122 and country=england
              JoinResult = game:join_game(Game#game.id, 1122, england),
              ?assertEqual({ok, Game#game.id}, JoinResult),
+             timer:sleep(100),
              GamePlayers = sync_get_game_player (Game#game.id),
              ?assertEqual(1, length(GamePlayers#game_player.players)),
              ?debugMsg("join game test end"),
