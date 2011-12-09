@@ -13,6 +13,7 @@
         <a class="btn primary" onclick="load_game_search_page();">Search games</a>&nbsp;
     </p>
     <fieldset class="span7">
+    <!-- Deprecated code. Kept here only for debugging purposes
     <legend>Reconfig game</legend>
     <form id="reconfig_form">
         <div class="clearfix">
@@ -26,6 +27,21 @@
         </div>
     </form>
     </fieldset>
+    <fieldset class="span7">
+    <legend>Play Game/Game overview</legend>
+    <form id="game_overview_form">
+        <div class="clearfix">
+            <label for="game_id">Game Id</label>
+            <div class="input">
+                <input id="pg_game_id" name="game_id" type="text" />
+            </div>
+        </div>
+        <div class="actions">
+            <input type="submit" class="btn primary" value="Get game overview" onclick="validate_dashboard_overview(); return false;">
+        </div>
+    </form>
+    </fieldset>
+     -->
     <fieldset class="span7">
     <legend>Join game</legend>
     <form id="join_game_form">
@@ -55,17 +71,20 @@
         </div>
     </form>
     </fieldset>
+  </div>
+  <div class="span8">
+    <h2>User options</h2>
     <fieldset class="span7">
-    <legend>Play Game/Game overview</legend>
-    <form id="game_overview_form">
+    <legend>Check presence</legend>
+    <form id="check_presence_form">
         <div class="clearfix">
-            <label for="game_id">Game Id</label>
+            <label for="user_nick">Nick</label>
             <div class="input">
-                <input id="pg_game_id" name="game_id" type="text" />
+                <input id="user_nick" name="user_nick" type="text" />
             </div>
         </div>
         <div class="actions">
-            <input type="submit" class="btn primary" value="Get game overview" onclick="validate_dashboard_overview(); return false;">
+            <input type="submit" class="btn primary" value="Check presence" onclick="validate_dashboard_presence(); return false;">
         </div>
     </form>
     </fieldset>

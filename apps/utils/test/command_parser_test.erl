@@ -109,10 +109,10 @@ user_msg_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_USER_MSG(?SESSION_ID)
                                         , im),
     Expected = {user_msg,
-                   {ok,?SESSION_ID,
-                       {frontend_msg,"nick",
-                           "\n\n    A sample message to nick player which\n"
-                       "    contain several line\n    have fun\n\n    ", undefined}}},
+                {ok,?SESSION_ID,
+                 {frontend_msg,"nick",
+                  "\n\n    A sample message to nick player which\n"
+                  "    contain several line\n    have fun\n\n    ", undefined}}},
     [
         ?_assertEqual(Expected, ActualOutput)
     ].
@@ -150,14 +150,23 @@ power_user_msg_test_() ->
             ?assertEqual(Expected, ActualOutput)
     end.
 
+get_presence_test_() ->
+    fun()->
+            ?debugMsg("correct get presence parsing"),
+            ActualOutput = command_parser:parse(
+                             ?SAMPLE_GET_PRESENCE(?SESSION_ID), im),
+            Expected = {get_presence, {ok,?SESSION_ID, "testusernick"}},
+            ?assertEqual(Expected, ActualOutput)
+    end.
+
 game_msg_test_() ->
     [
      fun() ->
-              ?debugMsg("game message parsing with missed game id"),
+             ?debugMsg("game message parsing with missed game id"),
              ActualOutput = command_parser:parse(
                               ?SAMPLE_GAME_MSG(?SESSION_ID, "dfgdf"), im),
              Expected = {game_msg,{error, {invalid_input,
-                                  [?GAMEID]}}},
+                                           [?GAMEID]}}},
 
              ?assertEqual(Expected, ActualOutput)
      end,

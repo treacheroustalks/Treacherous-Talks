@@ -183,7 +183,7 @@ get_ret({login, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 get_ret({get_session_user, success}, Ret=#ret{}, User) ->
-    RequiredFields = [nick, email, name, role],
+    RequiredFields = [id, nick, email, name, role],
     Data = data_format:rec_to_plist(User, {string, RequiredFields}),
     EventData = json2:obj_from_list(Data),
     msg_success(Ret#ret{event_data = EventData,
@@ -261,7 +261,7 @@ get_ret({get_games_ongoing, invalid_data}, Ret=#ret{}, _Data) ->
 get_ret({games_current, success}, Ret=#ret{}, Games) ->
     RequiredFields = [id, name, status, description,
                       press, order_phase, retreat_phase, build_phase,
-                      waiting_time, num_players],
+                      waiting_time, num_players, creator_id],
     EventData = lists:map(fun(Game) ->
                 json2:obj_from_list(data_format:rec_to_plist(Game,
                                     {string, RequiredFields}))
@@ -297,6 +297,11 @@ get_ret({game_search, success}, Ret=#ret{}, Games) ->
         end, Games),
     msg_success(Ret#ret{event_data = EventData});
 get_ret({game_search, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({get_presence, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({get_presence, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
 % General unhandled case

@@ -14,7 +14,7 @@
  -----------------------------------------------------------------------------*/
 var ws; // Websocket client
 var page; // Current page
-var delay = 1000; // Delay for message clear
+var delay = 3456; // Delay for message clear (in ms)
 var pageDiv = $('#page'); // Div to load pages on
 var cookie_name = 'treacherous_talks'; // Cookie name
 var cookie_expire_days = 7; // Cookie expiry in days
@@ -24,10 +24,11 @@ var home_page = initial_page; // Home page. Value changes on user login status
 
 var debug = true;
 var userObj = {
-    "email" : undefined,
-    "nick" : undefined,
-    "name" : undefined,
-    "role" : undefined
+        "id": undefined,
+        "email" : undefined,
+        "nick" : undefined,
+        "name" : undefined,
+        "role" : undefined
 };
 
 /*------------------------------------------------------------------------------
@@ -154,6 +155,7 @@ function logout() {
  * @return
  */
 function load_userObj(data) {
+    userObj.id = data.id;
     userObj.email = data.email;
     userObj.nick = data.nick;
     userObj.name = data.name;
@@ -166,6 +168,7 @@ function load_userObj(data) {
  * @return
  */
 function clean_userObj() {
+    userObj.id = undefined;
     userObj.email = undefined;
     userObj.nick = undefined;
     userObj.name = undefined;
@@ -277,13 +280,17 @@ function event_action(data) {
         clear_message();
         break;
     case "get_game_success":
-        if (is_empty_page(data.page) && dash_page) {
-            // This case occurs when a game is to be reconfigured from dashboard
+        if (is_empty_page(data.page) && page == 'reconfig_game') {
+            // This case occurs when a game is to be reconfigured
             load_reconfig_game_page(event_data);
         } else
             handle_event_page_load(data);
         break;
     case "get_game_invalid_data":
+        if (is_empty_page(data.page) && page == 'reconfig_game') {
+            page = home_page;
+            load_page();
+        }
         clear_message();
         break;
     case "game_overview_success":
@@ -311,6 +318,12 @@ function event_action(data) {
         load_get_games_ongoing(event_data);
         break;
     case "stop_game_success":
+        clear_message();
+        break;
+    case "get_presence_success":
+        clear_message();
+        break;
+    case "get_presence_invalid_data":
         clear_message();
         break;
     default:

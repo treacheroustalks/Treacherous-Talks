@@ -32,7 +32,9 @@
             ?OVERVIEW ++ "," ++
             ?VIEWCURRENTGAMES ++ "," ++
             ?SEARCH ++ "," ++
-            ?GETPROFILE).
+            ?GETPROFILE ++ "," ++
+            ?GETPRESENCE
+            ).
 -define(REGISTER, "REGISTER").
 -define(UPDATE, "UPDATE").
 -define(LOGIN, "LOGIN").
@@ -44,6 +46,7 @@
 -define(ORDER, "ORDER").
 -define(SEARCH, "SEARCH").
 -define(GETPROFILE, "GETPROFILE").
+-define(GETPRESENCE, "GETPRESENCE").
 -define(END, "END").
 
 

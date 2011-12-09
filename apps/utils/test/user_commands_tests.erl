@@ -127,6 +127,15 @@ parse_time_format_test_() ->
         )
     ].
 
+parse_get_presence_test_() ->
+    ActualOutput = user_commands:parse_get_presence(
+                                     ?SAMPLE_GET_PRESENCE(?SESSION_ID)),
+    Expected = {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==",
+                    "testusernick"},
+    [
+     ?_assertEqual(Expected, ActualOutput)
+    ].
+
 is_valid_value_test_() ->
     [
         ?_assertEqual(
