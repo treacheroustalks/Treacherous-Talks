@@ -2,7 +2,7 @@
 
 REBAR=../../rebar
 
-all: small_clean deps compile docs
+all: small_clean deps compile escript docs
 
 docs:
 	$(REBAR) skip_deps=true doc
@@ -20,10 +20,19 @@ compile:
 	rm -rf .eunit
 	$(REBAR) compile
 
+escript:
+	$(REBAR) skip_deps=true escriptize
+
 test:
 	$(REBAR) skip_deps=true eunit
+	rm -rf doc/coverage
+	mkdir doc/coverage
+	cp -r .eunit/*.html doc/coverage
 
-complete: small_clean deps compile test docs
+dia:
+	dialyzer -Wno_return -I ../ --src src
+
+complete: small_clean deps compile test docs dia
 	@echo ok
 
-.PHONY: all small_clean clean compile test docs complete
+.PHONY: all small_clean clean compile test docs dia complete

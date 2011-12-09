@@ -34,6 +34,7 @@ system-release/
 
 #escripts
 apps/cluster_manager/cluster_manager
+ext_test/fault_tolerance/fault_tolerance
 
 #integration test artifacts
 chromedriver.log

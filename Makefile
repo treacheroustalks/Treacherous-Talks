@@ -59,6 +59,7 @@ compile:
 	cd deps/yaws; make -j4
 	$(REBAR) compile
 	cd apps/cluster_manager; ../../$(REBAR) skip_deps=true escriptize
+	cd ext_test/fault_tolerance; ../../$(REBAR) skip_deps=true escriptize
 	cd ext_test/ejabberd_echo/; ../../$(REBAR) compile
 	cd ext_test/smtp_integration_test/; ../../$(REBAR) compile
 
@@ -90,6 +91,7 @@ inttest: release
 release: clean_release copy_docs
 	$(REBAR) generate
 	cp apps/cluster_manager/cluster_manager $(SYSREL)/tt/lib
+	cp ext_test/fault_tolerance/fault_tolerance $(SYSREL)/tt/lib
 
 # Remove all things in system-release except for Riak (if it's there) since we
 # don't build it with our tools. To make rmdir work even when $SYSREL doesn't
