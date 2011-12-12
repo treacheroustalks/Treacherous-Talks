@@ -45,18 +45,10 @@ dia:
 
 ### Build rules
 
-# Do a special fetch for Yaws since we cannot use it with rebar. Ignore clone
-# errors since they only mean that we already have cloned it
 get_deps:
 	$(REBAR) get-deps
-	cd deps; git clone -b websocket_hy10 \
-	https://github.com/ahilsend/yaws.git 2>&1 || echo ok
 
-# Build Yaws in the old boring way and in parallel with make -j4
 compile:
-	cd deps/yaws; autoconf
-	cd deps/yaws; ./configure --disable-pam
-	cd deps/yaws; make -j4
 	$(REBAR) compile
 	cd apps/cluster_manager; ../../$(REBAR) skip_deps=true escriptize
 	cd ext_test/fault_tolerance; ../../$(REBAR) skip_deps=true escriptize
