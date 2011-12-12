@@ -85,6 +85,18 @@ expected_updated_order_list() ->
       {move, {army, austria}, vienna, galicia}}
     ].
 
+expected_full_updated_order_list() ->
+    [
+     {support,
+      {army,england},
+      budapest,
+      {move,{army,austria},vienna,galicia}},
+     {support,
+      {army,austria},
+      budapest,
+      {move,{army,austria},vienna,galicia}}
+    ].
+
 expected_key(Id) ->
     game_worker:get_game_order_key(Id, england).
 
@@ -181,7 +193,9 @@ get_all_orders_tst_ () ->
              Move = sync_get_order(Key),
              ?debugMsg("GETALL------------------->>"),
              ?debugVal(game_utils:get_all_orders(Game#game.id)),
-             ?assertEqual(expected_updated_order_list(), Move)
+             ?assertEqual(expected_updated_order_list(), Move),
+             ?assertEqual(expected_full_updated_order_list(),
+                          game_utils:get_all_orders(Game#game.id))
      end].
 
 get_game_order_tst_ () ->
