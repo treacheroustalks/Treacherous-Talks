@@ -28,11 +28,12 @@ function run_script () {
     local_error=0
     # Run the script given in $1
     echonormal "$1"
-    $2 || local_error=1
+    ${@:2} || local_error=1
     case "$local_error" in
         0)  echonormal "Exit status: success\n" ;;
         *)  echoerr "Exit status: ERROR\n"
             errors=1 ;;
     esac
+    return $local_error
 }
 

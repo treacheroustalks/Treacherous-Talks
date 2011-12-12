@@ -2,6 +2,13 @@
     "Compare tests": [
         {"scaling-compare": "Scaling"},
         {"scaling-compare-bucket-props": "Scaling (changed bucket props)"},
+        {"concurrent-compare-new": "increasing load comparison"},
+        {"concurrent-compare-1-new": "1PC (increasing load) new"},
+        {"concurrent-compare-2-new": "2PCs (increasing load) new"},
+        {"concurrent-compare-3-new": "3PCs (increasing load) new"},
+        {"concurrent-compare-4-new": "4PCs (increasing load) new"},
+        {"concurrent-compare-5-new": "5PCs (increasing load) new"},
+        {"concurrent-compare-6-new": "6PCs (increasing load) new"},
         {"concurrent-compare-1": "1PC (increasing load)"},
         {"concurrent-compare-2": "2PCs (increasing load)"},
         {"concurrent-compare-3": "3PCs (increasing load)"},
