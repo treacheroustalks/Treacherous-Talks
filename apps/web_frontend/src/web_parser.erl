@@ -182,6 +182,13 @@ parse(RawData) ->
                         get_field ("session_id", Data),
                         {get_field ("nick", Data),
                          parse_moderator_str(get_field ("is_moderator", Data))}}};
+        "operator_game_overview" ->
+            GameId = get_integer("game_id", Data),
+            {operator_game_overview, {ok, get_field("session_id", Data), GameId}};
+        "operator_get_game_msg" ->
+            Key = get_field("order_key", Data),
+            Query = get_field("query", Data),
+            {operator_get_game_msg, {ok, get_field("session_id", Data), {Key, Query}}};
         "get_system_status" ->
             {get_system_status, {ok, get_field ("session_id", Data)}};
         "get_presence" ->

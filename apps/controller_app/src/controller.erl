@@ -164,7 +164,7 @@ handle_action({Command, {ok, Data}}, {CallbackFun, Args})
             CallbackFun(Args, {Command, success}, Result)
     end;
 handle_action({Command, {ok, SessionId}}, {CallbackFun, Args})
-  when Command == get_system_status->
+  when Command == get_system_status ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);
@@ -200,6 +200,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == get_presence;
        Command == send_report;
        Command == get_reports;
+       Command == operator_get_game_msg;
+       Command == operator_game_overview;
        Command == mark_report_as_done ->
     case session:alive(SessionId) of
         false ->

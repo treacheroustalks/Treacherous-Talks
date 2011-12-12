@@ -4,11 +4,29 @@
 </div>
 <div class="row">
   <div class="span15">
-  <div id="message"></div>
+    <div id="message"></div>
     <div class="clear"></div>
+    <p>
     <a href="javascript:void(0);" class="btn primary" onclick="load_add_remove_moderator_page();">Add/Remove moderator</a>&nbsp;
     <a href="javascript:void(0);" class="btn primary" onclick="get_system_status();">Server Management</a>&nbsp;
     <a href="javascript:void(0);" class="btn primary" onclick="get_database_status();">Database Management</a>&nbsp;
     <a href="javascript:void(0);" class="btn primary" onclick="get_games_ongoing();">Ongoing games</a>&nbsp;
+    </p>
   </div>
+
+  <fieldset class="span8">
+        <legend>Inspect game</legend>
+        <form>
+        <div class="clearfix">
+            <label for="game_id">Game Id</label>
+            <div class="input">
+                <input id="inspect_game_id" name="game_id" type="text" />
+            </div>
+            <div class="actions">
+                <a href="javascript:void(0);" class="btn primary" onclick="operator_game_overview($('#inspect_game_id').val());">Inspect Game</a>
+            </div>
+        </div>
+        </form>
+  </fieldset>
+
 </div>

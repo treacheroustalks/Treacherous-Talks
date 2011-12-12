@@ -168,10 +168,6 @@ function chatBoxBlink2(title){
 function closeChatBox(chatboxtitle) {
     $('#chatbox_'+chatboxtitle).css('display','none');
     restructureChatBoxes();
-
-    $.post("chat.php?action=closechat", { chatbox: chatboxtitle} , function(data){
-    });
-
 }
 
 function toggleChatBoxGrowth(chatboxtitle) {

@@ -59,6 +59,8 @@
          push_event/2,
          games_current/2,
          get_db_stats/2,
+         operator_game_overview/2,
+         operator_get_game_msg/2,
          game_search/2,
          assign_moderator/2,
          power_msg/2,
@@ -319,6 +321,19 @@ get_db_stats(SessionId, _Data) ->
 %%-------------------------------------------------------------------
 get_presence(SessionId, Nick) ->
     ?SESSION_CALL(SessionId, get_presence, Nick).
+
+%% @doc operator_game_overview/2
+%% Allow operator to inspect a game
+%%
+%% @spec operator_game_overview(string(), term()) ->
+%%         {ok, {#game_overview{}, list()}}
+%% @end
+%%-------------------------------------------------------------------
+operator_game_overview(SessionId, GameId) ->
+    ?SESSION_CALL(SessionId, operator_game_overview, GameId).
+
+operator_get_game_msg(SessionId, KeyQuery) ->
+    ?SESSION_CALL(SessionId, operator_get_game_msg, KeyQuery).
 
 %% --------------------------------------------------------------------
 %% @doc

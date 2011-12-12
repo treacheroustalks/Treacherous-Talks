@@ -37,6 +37,8 @@
           search/1, get_game_search/1,
           get_games_current/1,
           game_msg/3,
+          operator_game_overview/1,
+          operator_get_game_msg/2,
           stop_game/1,
           get_games_ongoing/0
          ]).
@@ -234,6 +236,26 @@ get_game_search(Query) ->
 %% ----------------------------------------------------------------------------
 get_games_ongoing() ->
     ?CALL_WORKER(get_games_ongoing).
+
+%% -----------------------------------------------------------------------------
+%%  Get the details of a game for operator to inspect
+%% operator_game_overview(GameId :: integer()) ->
+%%    {ok, {#game_overview{}, list()}}
+%% @end
+%% -----------------------------------------------------------------------------
+operator_game_overview(GameId) ->
+    ?CALL_WORKER({operator_game_overview, GameId}).
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Allow operator to inspect all game_message and game_order of a player
+%% @spec
+%% operator_get_game_msg(Key :: string(), Query :: string()) ->
+%%     {ok, {GameMessage :: list(), Order :: list()}}
+%% @end
+%%------------------------------------------------------------------------------
+operator_get_game_msg(Key, Query) ->
+    ?CALL_WORKER({operator_get_game_msg, Key, Query}).
 
 %% -----------------------------------------------------------------------------
 %% @doc

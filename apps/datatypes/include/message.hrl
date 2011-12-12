@@ -21,11 +21,16 @@
                         game_id :: integer(),
                         from_id :: integer(),
                         from_country :: country()| unknown,
+                        sender_country :: country(),% for operator to see grey press
+                        group_id :: integer(),% to merge broadcast messages into one
                         to_id :: integer(),
                         to_country :: country(),
                         content :: nonempty_string(),
                         date_created :: date (),
-                        status = unread :: read | unread
+                        status = unread :: read | unread,
+                        year :: integer(),
+                        season :: spring | fall,
+                        phase :: phase()
                        }).
 
 -record (report_message, {id :: integer(),

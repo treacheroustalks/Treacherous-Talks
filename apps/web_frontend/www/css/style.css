@@ -82,6 +82,14 @@ img.preloader {
     border: 1px solid red;
 }
 
+.admin_msg_bg1 {
+    background-color: #eee;
+}
+
+.admin_msg_bg2 {
+    background-color: #e0e0e0;
+}
+
 #dbtd {
     width: 70px;
     word-wrap: break-word;

@@ -243,6 +243,7 @@ adfadfasdfaldfad">>
 
     F Nth C A Lon-Nrg
     F Nth Convoy A Lon move Nrg
+    F Nth Convoy A yor-nwy
     F Wes C A Bre-Mar
     F Fin C A Bre move Mar
     F Wes Convoy A Bre->Mar

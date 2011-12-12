@@ -31,6 +31,8 @@
 -include_lib("datatypes/include/push_receiver.hrl").
 -include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/message.hrl").
+-include_lib("datatypes/include/game.hrl").
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -77,6 +79,7 @@ socket_server(WebSocket, ProtocolVersion) ->
                             Other ->
                                 Other
                         end,
+            io:format("ParsedCmd: ~p~n", [ParsedCmd]),
             controller:handle_action(ParsedCmd,
                                      {fun reply/3,
                                      [WebSocket, ProtocolVersion]}),
@@ -240,6 +243,34 @@ get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
 get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret({operator_game_overview, success}, Ret=#ret{}, GovTree) ->
+    operator_game_overview_ret(Ret, GovTree);
+get_ret({operator_game_overview, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({operator_get_game_msg, success}, Ret=#ret{}, {GMsgList, msg_only}) ->
+    SrtMsg = sort_by_date(GMsgList),
+    MergedMsg = merge_redundant_msg(SrtMsg),
+    Msg = [{struct, [{"from",atom_to_list(F)},{"to", term_to_string(T)}, {"content", M}]}
+    ||#game_message{to_country=T, sender_country=F, content=M} <- MergedMsg],
+    Data = [{"msg", Msg}, {"order", ""}],
+    EventData = json2:obj_from_list(Data),
+    msg_invisible(Ret#ret{event_data = EventData});
+get_ret({operator_get_game_msg, success}, Ret=#ret{}, {GMsgList, OrderList}) ->
+    Order = term_to_string(OrderList),
+    SrtGMsg = sort_by_date(GMsgList),
+    SrtGMsg2 = sort_by_group(SrtGMsg),
+
+    Msg = [{struct, [{"from",atom_to_list(F)},{"to", atom_to_list(T)}, {"content", M}]}
+    ||#game_message{to_country=T, sender_country=F, content=M} <- SrtGMsg2],
+
+    Data = [{"msg", Msg}, {"order", Order}],
+    EventData = json2:obj_from_list(Data),
+    msg_invisible(Ret#ret{event_data = EventData});
+
+get_ret({operator_get_game_msg, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
 get_ret({game_order, success}, Ret=#ret{}, _Data) ->
     msg_success(Ret);
 get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
@@ -356,5 +387,89 @@ all_db_stats_to_proplist([{ok, Json}| Rest], Num, Acc) ->
     all_db_stats_to_proplist(Rest, Num+1,
       [{"db_stats" ++ integer_to_list(Num), Json}| Acc]).
 
+tree_to_json_proplist(Tree) ->
+    [{integer_to_list(Year),
+      {struct, [{atom_to_list(Season)++"-"++atom_to_list(Phase),
+                       {array, [atom_to_list(Country)||Country<-CountryList]}}
+                || {{Season,Phase},CountryList} <- SPList]}}
+    || {Year, SPList} <- Tree].
+
+operator_game_overview_ret(Ret, {Gov, Tree}) ->
+    Game = Gov#game_overview.game_rec,
+    {{Year, Season}, Proplist} =
+        case Tree of
+            [] ->
+                {{1901, spring},[]};
+            _ ->
+                {Gov#game_overview.year_season, tree_to_json_proplist(Tree)}
+        end,
+    Data = [{"game_id", integer_to_list(Game#game.id)},
+            {"game_status", atom_to_list(Game#game.status)},
+            {"year_season", integer_to_list(Year)++"-"++atom_to_list(Season)},
+            {"players", term_to_string(Gov#game_overview.players)},
+            {"game_name", Game#game.name},
+            {"creator_id", integer_to_list(Game#game.creator_id)},
+            {"press", atom_to_list(Game#game.press)},
+            {"order_phase", integer_to_list(Game#game.order_phase)},
+            {"retreat_phase", integer_to_list(Game#game.retreat_phase)},
+            {"build_phase", integer_to_list(Game#game.build_phase)},
+            {"num_players", integer_to_list(Game#game.num_players)},
+            {"description", Game#game.description},
+            {"password", Game#game.password},
+            {"result", atom_to_list(Game#game.result)},
+            {"waiting_time", integer_to_list(Game#game.waiting_time)},
+            {"date_created", term_to_string(Game#game.date_created)},
+            {"date_completed", term_to_string(Game#game.date_completed)},
+            {"start_time", term_to_string(Game#game.start_time)},
+            {"last_session", Game#game.last_session},
+            {"links", {struct, Proplist}}
+           ],
+    EventData = json2:obj_from_list(Data),
+    msg_success(Ret#ret{event_data = EventData,
+                        page="operator_gov"}).
+
+term_to_string(Term) ->
+    lists:flatten(io_lib:format("~p", [Term])).
+
+sort_by_date(GMsgList) ->
+    SortByDate = fun(X, Y)->
+                     X#game_message.date_created > Y#game_message.date_created
+                  end,
+    lists:sort(SortByDate ,GMsgList).
+
+sort_by_group(SrtGMsg) ->
+    SortByGroup = fun(X, Y)->
+                     X#game_message.status < Y#game_message.status
+                  end,
+    Grouping = fun(X, Y)->
+        case X > Y of
+          true -> {X, Y};
+          false -> {Y, X}
+        end
+    end,
+    GroupedMsg = [Msg1#game_message{status=Grouping(Msg1#game_message.sender_country,
+      Msg1#game_message.to_country)} || Msg1 <- SrtGMsg],
+    lists:sort(SortByGroup ,GroupedMsg).
+
+merge_redundant_msg(SrtMsg) ->
+    Fun = fun(M, {Acc, LastGroup}) ->
+        CurrentGroup = M#game_message.group_id,
+        case LastGroup == CurrentGroup of
+            true ->
+                [H|Rest] = Acc,
+                LastTo = H#game_message.to_country,
+                CurrentTo = M#game_message.to_country,
+                case is_list(LastTo) of
+                    true -> {[M#game_message{to_country=
+                      [CurrentTo|LastTo]}|Rest], CurrentGroup};
+                    false -> {[M#game_message{to_country=
+                      [CurrentTo, LastTo]}|Rest], CurrentGroup}
+                end;
+            false ->
+                {[M|Acc], CurrentGroup}
+        end
+    end,
+    {MergedMsg, _} = lists:foldl(Fun, {[], undefined}, SrtMsg),
+    MergedMsg.
 
 </erl>

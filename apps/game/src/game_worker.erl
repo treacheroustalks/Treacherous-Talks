@@ -126,6 +126,12 @@ handle_call({get_game_player, GameID}, _From, State) ->
 handle_call({get_game_overview, GameID, UserID}, _From, State) ->
     Reply = get_game_overview(GameID, UserID),
     {reply, Reply, State};
+handle_call({operator_game_overview, GameID}, _From, State) ->
+    Reply = operator_game_overview(GameID),
+    {reply, Reply, State};
+handle_call({operator_get_game_msg, Key, Query}, _From, State) ->
+    Reply = operator_get_game_msg(Key, Query),
+    {reply, Reply, State};
 handle_call({delete_game, Key}, _From, State) ->
     BinKey = db:int_to_bin(Key),
     Reply = db:delete(?B_GAME, BinKey),
@@ -279,6 +285,61 @@ basic_game_overview(GameID, Game) ->
                    map = GameState#game_state.map,
                    phase = GameState#game_state.phase,
                    year_season = GameState#game_state.year_season}.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Allow operator to inspect a game
+%% @spec
+%% operator_game_overview(GameID :: integer()) ->
+%%     {ok, {#game_over_view{}, MsgTree :: list()}}
+%% @end
+%%-------------------------------------------------------------------
+operator_game_overview(GameID) ->
+    Result = (catch begin
+            {ok, Game} = get_game(GameID),
+            {ok, Players} = game_utils:get_db_obj(?B_GAME_PLAYER, GameID, [{r,1}]),
+            case game_utils:get_game_state(GameID) of
+                   {ok, GameState} -> % game ongoing
+                       {ok, GameMsgTree} = game_utils:get_game_msg_tree(GameID),
+                       {ok, {#game_overview{game_rec = Game,
+                                 map = GameState#game_state.map,
+                                 phase = GameState#game_state.phase,
+                                 players = Players,
+                                 year_season = GameState#game_state.year_season},
+                             GameMsgTree}};
+                    _ -> % game not started
+                       {ok, {#game_overview{game_rec = Game,
+                                            players = Players}, []}}
+            end
+        end),
+    case Result of
+        {'EXIT', Reason} -> {error, Reason};
+        _ -> Result
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Allow operator to inspect all game_message and game_order of a player
+%% @spec
+%% operator_get_game_msg(Key :: string(), Query :: string()) ->
+%%     {ok, {GameMessage :: list(), Order :: list()|msg_only}}
+%% @end
+%%-------------------------------------------------------------------
+operator_get_game_msg("", Query) ->% query for game_message only
+    case game_utils:search_game_msg(Query) of
+        {ok, GameMsg} ->
+            {ok, {GameMsg, msg_only}};
+        Error ->
+            Error
+    end;
+operator_get_game_msg(Key, Query) ->% query for both game_order & game_message
+    Order = game_utils:get_game_order (Key),
+    case game_utils:search_game_msg(Query) of
+        {ok, GameMsg} ->
+            {ok, {GameMsg, Order}};
+        Error ->
+            Error
+    end.
 
 %% ------------------------------------------------------------------
 %% @doc
@@ -524,12 +585,24 @@ send_game_msg(GMsg = #game_message{game_id = GameId,
         {ok, #game{press = Press, status = ongoing}} ->
             case get_target_players({FromId, GameId}, ToCountries, Role) of
                 {ok, {From, ToGameUserList}} ->
-                    Date = erlang:universaltime(),
-                    % from_country can be a moderator or operator too
-                    NewGMsg = GMsg#game_message{
+                    case game_utils:get_current_game(GameId) of
+                        {ok, GameCurrent} ->
+                            {Year, Season} = GameCurrent#game_current.year_season,
+                            Phase = GameCurrent#game_current.current_phase,
+                            Date = erlang:universaltime(),
+                            % from_country can be a moderator or operator too
+                            NewGMsg = GMsg#game_message{
+                                                year = Year,
+                                                season = Season,
+                                                phase = Phase,
                                                 from_country = From,
+                                                sender_country = From,
+                                                group_id = db:get_unique_id(),
                                                 date_created = Date},
-                    send_msg_to_msgapp(ToGameUserList, NewGMsg, Press, Role);
+                            send_msg_to_msgapp(ToGameUserList, NewGMsg, Press, Role);
+                        Error2 ->
+                            Error2
+                    end;
                 Other ->
                     Other
             end;

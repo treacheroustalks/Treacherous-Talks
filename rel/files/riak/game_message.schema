@@ -35,6 +35,17 @@
         ]},
 
         {field, [
+            {name, "sender_country"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "group_id"},
+            {type, integer},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
             {name, "to_id"},
             {type, integer},
             {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
@@ -57,6 +68,22 @@
 
         {field, [
             {name, "status"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+        
+        {field, [
+            {name, "year"},
+            {type, integer},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "season"},
+            {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
+        ]},
+
+        {field, [
+            {name, "phase"},
             {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
         ]}
     ]
