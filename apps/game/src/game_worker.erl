@@ -325,7 +325,7 @@ put_game_order(Key, GameOrderList) ->
     DBGameOrderObj = db_obj:create (?B_GAME_ORDER,
                                     BinID,
                                     #game_order{order_list=GameOrderList}),
-    spawn (fun() -> db:put (DBGameOrderObj) end),
+    db:put(DBGameOrderObj, [{w, 0}]),
     {ok, Key}.
 
 %% ------------------------------------------------------------------
