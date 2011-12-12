@@ -33,18 +33,19 @@ function copy-release {
     BIN=$SYS_DIR/bin/system_manager
 
     ssh $remote "
- echo \"[$1] Stopping system manager\" ;
- $BIN stop > /dev/null;
+ echo -e \"[$1]\tStopping system manager\" ;
+ $BIN stop &> /dev/null;
  rm -rf $REMOTE_RELEASE > /dev/null"
-    echo "[$1] Copying release $REMOTE_RELEASE/"
+    echo -e "[$1]\tCopying release to $REMOTE_RELEASE/"
     scp -r $LOCAL_RELEASE $remote:$REMOTE_RELEASE/ > /dev/null 
     ssh $remote "
+ rm -f $REMOTE_RELEASE/riak/data/ring/* > /dev/null;
  sed -i \"s:-name.*:-name $SYS_MGR_NAME@$1:g\" $nodename &&
  sed -i \"s:PIPE_DIR=.*:PIPE_DIR=/tmp/\\\$USER/\\\$RUNNER_BASE_DIR/:g\" $REMOTE_RELEASE/riak/bin/riak &&
- echo \"[$1] Starting system manager\" &&
+ echo -e \"[$1]\tStarting system manager\" &&
  $BIN start &&
  sleep $START_SLEEP &&
- echo \"[$1] Pinging system manager: \`$BIN ping\`\""
+ echo -e \"[$1]\tPinging system manager: \`$BIN ping\`\""
 }
 
 
@@ -143,9 +144,9 @@ function set-bucket-n_val {
 function set-bucket-n_vals {
     echo "setting bucket n_vals"
     RIAK=$1
-    NUM_OF_NODES=$2
 
     LOW=2
+    NUM_OF_NODES=$LOW
 
     echo "LOW=$LOW, NUM_OF_NODES=$NUM_OF_NODES"
 
@@ -161,6 +162,13 @@ function set-bucket-n_vals {
     set-bucket-n_val $RIAK "game_message" "$LOW"
     set-bucket-n_val $RIAK "game_player" "$NUM_OF_NODES"
     set-bucket-n_val $RIAK "game_state" "$NUM_OF_NODES"
+}
+
+
+function set-all-bucket-props {
+    for server in $@; do
+        set-bucket-n_vals $server $#
+    done
 }
 
 function update-basho-config {

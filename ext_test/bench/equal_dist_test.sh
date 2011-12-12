@@ -21,9 +21,7 @@ function test_equal_dist {
     servers="${SERVERS[@]:0:$Count}"
     stop-all $servers
     setup-and-start-cluster $servers
-    for s in $servers; do
-        set-bucket-n_vals $s $Count
-    done
+    set-all-bucket-props $servers
 
     # run the test
     RES_DIR=$RESULTS/equal_dist_$Count/

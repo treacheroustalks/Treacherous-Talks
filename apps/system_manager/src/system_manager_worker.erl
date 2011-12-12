@@ -302,7 +302,7 @@ int_start_release(Relname) ->
             % Ok, do regular start and try to ping it up to 15 times
             case handle_releases:start_release(Path, Relname) of
                 {ok, _Text} ->
-                    case handle_releases:ping_release_and_wait(Path, Relname, 15) of
+                    case handle_releases:ping_release_and_wait(Path, Relname, 30) of
                         up ->
                             ok;
                         down ->
