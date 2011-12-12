@@ -109,7 +109,8 @@ game_timer_state_tst_ () ->
 
              game_timer:sync_event(Id, timeout),
              ?assertEqual(retreat_phase, game_timer:current_state(Id)),
-             ?debugMsg("game timer state test end")
+             ?debugMsg("game timer state test end"),
+             sync_delete(Id)
      end,
      fun() ->
              ?debugMsg("game timer reconfig test"),
@@ -126,7 +127,8 @@ game_timer_state_tst_ () ->
              Expected = UpdatedGame#game{status = ongoing,
                                          start_time = Result#game.start_time},
              ?assertEqual(Expected, Result),
-             ?debugMsg("game timer reconfig test end")
+             ?debugMsg("game timer reconfig test end"),
+             sync_delete(Game#game.id)
      end].
 
 %%--------------------------------------------------------------------
@@ -185,7 +187,8 @@ game_current_tst_() ->
                           NewYearCurrent#game_current.current_phase),
              ?assertEqual({1902, spring},
                           NewYearCurrent#game_current.year_season),
-             ?debugMsg("Current game updates test end----------")
+             ?debugMsg("Current game updates test end----------"),
+             sync_delete(ID)
      end].
 
 %%--------------------------------------------------------------------
@@ -207,7 +210,8 @@ game_timer_end_tst_() ->
              ?assertEqual(Expected, Result),
              %% check that the game timer does not exist
              ?assertNot(is_process_alive(TimerPid)),
-             ?assertEqual(undefined, global:whereis_name({game_timer, ID}))
+             ?assertEqual(undefined, global:whereis_name({game_timer, ID})),
+             sync_delete(ID)
      end].
 
 %%--------------------------------------------------------------------
@@ -239,7 +243,8 @@ game_timer_game_over_tst_() ->
 
              {ok, FinishedGame} = game:get_game(ID),
              ?assertEqual(finished, FinishedGame#game.status),
-             ?assertNot(is_process_alive(TimerPid))
+             ?assertNot(is_process_alive(TimerPid)),
+             sync_delete(ID)
      end].
 
 %%--------------------------------------------------------------------
@@ -252,6 +257,14 @@ sync_new(Game=#game{}) ->
 sync_get(ID) ->
     {ok, Game} = game:get_game(ID),
     Game.
+
+sync_delete(ID) ->
+    case game:delete_game(ID) of
+        ok ->
+            ok;
+        Other ->
+            erlang:error ({error, {{received, Other}, {expected, ok}}})
+    end.
 
 
 %% Creates a map with Austria as winner
