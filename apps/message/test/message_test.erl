@@ -124,13 +124,28 @@ message_worker_tst_() ->
      {"write a game message in db",
       fun() ->
         message_worker:log_message(test_key(), test_game_msg(1122), ?B_GAME_MESSAGE),
-        timer:sleep(200),
-        ActualValue = message_util:get_message(test_key(), ?B_GAME_MESSAGE,
-                                               game_message),
+        GetMsg = fun () ->
+                         message_util:get_message(test_key(), ?B_GAME_MESSAGE,
+                                                  game_message)
+                 end,
+        ActualValue = wait_for_change (GetMsg, {error, notfound}, 1000),
         ?assertEqual({ok, test_game_msg(1122)},ActualValue),
         db:delete(?B_GAME_MESSAGE, db:int_to_bin(test_key()))
      end}
      ].
+
+wait_for_change (_, Initial, 0) ->
+    Initial;
+wait_for_change (Fun, Initial, Tries) ->
+    case Fun () of
+        Initial ->
+            ?debugVal (Initial),
+            timer:sleep (10),
+            wait_for_change (Fun, Initial, Tries -1);
+        Other ->
+            ?debugVal (Other),
+            Other
+    end.
 
 message_fail_tst_() ->
     [fun() ->
