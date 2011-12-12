@@ -45,10 +45,8 @@
 %% This function replies to the user depending on the result of the
 %% request.
 %% @end
-%%
-%% [@spec reply([From, To, ToHost], {Cmd, Status}=Result, Data) -> ok.
-%% @end]
 %%-------------------------------------------------------------------
+-spec reply([string()], Result::term(), Data::term()) -> ok.
 reply([From, To], Result, Data) ->
     % Note: From and To are interchanged when sending the mail
     send_mail(To, From, get_reply(Result, Data)).

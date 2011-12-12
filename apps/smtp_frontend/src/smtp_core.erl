@@ -25,8 +25,9 @@
 %%%
 %%% A simple example callback module for `gen_smtp_server_session' that also serves as
 %%% documentation for the required callback API.
-%%% @end
 %%%
+%%% @TODO Attribute original author and add specs
+%%% @end
 %%%-------------------------------------------------------------------
 -module(smtp_core).
 -behaviour(gen_smtp_server_session).

@@ -133,8 +133,6 @@ get_memory_usage() ->
     SystemMemoryData = memsup:get_system_memory_data(),
     MemoryData ++ SystemMemoryData.
 
-
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Returns the reductions on this nodes:

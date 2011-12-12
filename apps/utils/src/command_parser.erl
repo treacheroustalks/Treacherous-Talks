@@ -38,47 +38,47 @@
 
 -include("command_parser.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("datatypes/include/message.hrl").
 
 %%-------------------------------------------------------------------
-%% @todo at least the spec function arity is wrong
-%% @todo the `{game_order,...}' return case is missing in the specs. what else?
+%% @TODO at least the spec function arity is wrong
+%% @TODO the `{game_order,...}' return case is missing in the specs. what else?
 %% @doc
 %% Gets a binary string and parses it into a command and the
 %% correspondig value.
-%%
-%% [@spec parse(BinString:binary()) ->
-%% {register, {ok, #user{}}} |
-%% {register, Error} |
-%% {login, {ok, #user{}}} |
-%% {login, Error} |
-%% {play_order, {OrderList, ErrorList}} |
-%% {update, {ok, SessionId,[{#user.field, Value}]}} |
-%% {update, Error} |
-%% {create_game, {ok, Session, #game{}}} |
-%% {create_game, Error} |
-%% {reconfig_game, {ok, SessionId, {gameid, #game{}}}|
-%% {reconfig_game, {error, {required_fields, RequiredFields}}}|
-%% {reconfig_game,{error, {invalid_input, ErrorList}}}|
-%% {game_overview, {ok, SessionId, GameId}} |
-%% {game_overview, Error} |
-%% {join_game, {ok, SessionId, {GameId, Country}} |
-%% {join_game, Error} |
-%% {user_msg, {ok, SessionId, #frontend_msg{}}} |
-%% {user_msg, {error, {required_fields, list()}}} |
-%% {user_msg, {error, {invalid_input, list()}}} |
-%% {game_msg, {ok, SessionId, #frontend_msg{}}} |
-%% {game_msg, {error, {required_fields, list()}}} |
-%% {game_msg, {error, {invalid_input, list()}}} |
-%% {get_session_user, {ok, SessionId, no_arg}} |
-%% {get_session_user, {error, {required_fields, list()}}} |
-%% {get_session_user, {error, {invalid_input, list()}}} |
-%% {power_msg, {ok, #frontend_msg{}}} |
-%% {power_msg, {error, {required_fields, list()}}} |
-%% {power_msg, {error, {invalid_input, list()}}} |
-%% unknown_command]
 %% @end
 %%-------------------------------------------------------------------
 % if no matched input, let it crash to detect the bug earlier
+-spec parse(BinString::binary(), Client::atom()) ->
+          {register, {ok, #user{}}} |
+          {register, Error::term()} |
+          {login, {ok, #user{}}} |
+          {login, Error::term()} |
+          {play_order, {[term()], [term()]}} |
+          {update, {ok, SessionId::string(),[{UserRecFieldPos::integer(), Value::term()}]}} |
+          {update, Error::term()} |
+          {create_game, {ok, Session::string(), #game{}}} |
+          {create_game, Error::term()} |
+          {reconfig_game, {ok, SessionId::string(), {gameid, #game{}}}} |
+          {reconfig_game, {error, {required_fields, []}}}|
+          {reconfig_game,{error, {invalid_input, [term()]}}}|
+          {game_overview, {ok, SessionId::string(), GameId::integer()}} |
+          {game_overview, Error::term()} |
+          {join_game, {ok, SessionId::string(), {GameId::integer(), Country::atom()}}} |
+          {join_game, Error::term()} |
+          {user_msg, {ok, SessionId::string(), #frontend_msg{}}} |
+          {user_msg, {error, {required_fields, list()}}} |
+          {user_msg, {error, {invalid_input, list()}}} |
+          {game_msg, {ok, SessionId::string(), #frontend_msg{}}} |
+          {game_msg, {error, {required_fields, list()}}} |
+          {game_msg, {error, {invalid_input, list()}}} |
+          {get_session_user, {ok, SessionId::string(), no_arg}} |
+          {get_session_user, {error, {required_fields, list()}}} |
+          {get_session_user, {error, {invalid_input, list()}}} |
+          {power_msg, {ok, #frontend_msg{}}} |
+          {power_msg, {error, {required_fields, list()}}} |
+          {power_msg, {error, {invalid_input, list()}}} |
+          atom().
 parse(BinString, Client) when is_binary(BinString) ->
     Commands =    "("?LOGIN
                   "|"?ORDER

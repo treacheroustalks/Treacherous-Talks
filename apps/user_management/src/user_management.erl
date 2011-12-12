@@ -47,7 +47,6 @@
          update/1
         ]).
 
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Creates a new user and returns the result to the Client.
@@ -225,7 +224,3 @@ assign_moderator(Username, Action) ->
         _Error ->
             {error, user_not_found}
     end.
-
-%% ------------------------------------------------------------------
-%% Internal Functions
-%% ------------------------------------------------------------------

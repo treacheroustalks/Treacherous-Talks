@@ -45,5 +45,4 @@
                 last_session :: string()
                }).
 
-
 -endif.

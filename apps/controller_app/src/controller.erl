@@ -27,7 +27,6 @@
 %%% @end
 %%%
 %%% @since : 17 Oct 2011 by Bermuda Triangle
-%%% @todo broken specs
 %%% @end
 %%%-------------------------------------------------------------------
 -module(controller).
@@ -35,7 +34,6 @@
 %% Public API
 -export([handle_action/2, push_event/2,
          register_operator/1, register_operator/2]).
-
 
 %% Internal functions, exported for eUnit, do not use!
 -export([
@@ -74,32 +72,10 @@
 %% CallbackFun(Args, {Type::command(), Result::result()},
 %%                    ResultData::any()) -> ok.
 %%
-%% command() :: register |
-%%              login |
-%%              get_session_user |
-%%              update_user |
-%%              create_game |
-%%              get_game |
-%%              reconfig_game |
-%%              game_order |
-%%              join_game |
-%%              game_overview |
-%%              games_current |
-%%              user_msg |
-%%              game_msg |
-%%              assign_moderator |
-%%              power_msg |
-%%              stop_game |
-%%              get_presence |
-%%              send_report |
-%%              get_reports |
-%%              mark_report_as_done |
-%%              unkown_command.
-%%
 %% result() :: success | parse_error | invalid_data | invalid_session
 %%             | access_denied | error.
 %%
-%% Standard return (error) values for invalid_data
+%% Standard return (error) values for invalid_data.
 %% register ->          [nick_already_exists]
 %% login ->             [nick_not_unique,
 %%                       invalid_login_data,
@@ -123,8 +99,8 @@
 %% games_current ->     []
 %% game_search ->       []
 %% game_msg ->          [not_allowed_send_msg,
-%%                      game_does_not_exist,
-%%                      game_phase_not_ongoing]
+%%                       game_does_not_exist,
+%%                       game_phase_not_ongoing]
 %% get_db_stats ->      [get_stats_body_fail,
 %%                       get_stats_timeout,
 %%                       get_stats_tcp_error,
@@ -143,17 +119,39 @@
 %%
 %% @end
 %%
-%% [@spec
-%% handle_action(ParsedData::{command(), {ok, any()}} |
-%%                           {command(), {ok, integer(), any()}} |
-%%                           {command(), {error, any()}},
-%%               {CallbackFun::Fun, Args::[any()]},
-%%               SessionId::Integer()) -> ok.
-%% @end]
-%%
-%%   Note: whenever a new command add to controller we need to update
-%%    both tt_acl:moderator_cmd() and tt_acl:user_cmd
+%% Note: Whenever a new command is added to the controller, we need to update
+%% the ACLs (tt_acl:moderator_cmd() and tt_acl:user_cmd)
 %%-------------------------------------------------------------------
+-type command() :: register |
+             login |
+             get_session_user |
+             update_user |
+             create_game |
+             get_game |
+             reconfig_game |
+             game_order |
+             join_game |
+             game_overview |
+             games_current |
+             user_msg |
+             game_msg |
+             assign_moderator |
+             power_msg |
+             stop_game |
+             get_presence |
+             send_report |
+             get_reports |
+             mark_report_as_done |
+             unknown_command.
+-spec handle_action(ParsedData::{command(), {ok, any()}} |
+                        {command(), {ok, SessionId::string()}} |
+                        {command(), {ok, SessionId::string(), any()}} |
+                        {command(), {error, any()}} |
+                        {command(), Error::string()} |
+                        string() |
+                        unknown_command,
+                    {CallbackFun::fun(), Args::[any()]}) -> ok.
+
 handle_action({Command, {ok, Data}}, {CallbackFun, Args})
   when Command == register;
        Command == login ->
@@ -229,23 +227,24 @@ handle_action(Cmd, {CallbackFun, Args}) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Pushes an event to the user with given id, if online.
-%%
-%% @spec push_event(UserId::integer(), #push_event{}) -> ok
 %% @end
 %%-------------------------------------------------------------------
+-spec push_event(UserId::integer(), #push_event{}) -> ok.
 push_event(UserId, Event = #push_event{}) ->
     ?CAST_WORKER({push_event, {UserId, Event}}).
 
 
 %%-------------------------------------------------------------------
-%% @todo the whole documentation here is wrong. not only arity, even the name
 %% @deprecated only for eunit
-%% @doc create_user/2
+%% @doc register/1
 %%
 %% API for creation of a user
 %% @end
-%% [@spec create_user(Id::Integer(), #user{}) @end]
 %%-------------------------------------------------------------------
+-spec register(#user{}) ->
+          {ok, #user{}} |
+          {error, nick_already_exists} |
+          {{error, any()}}.
 register(User) ->
     ?CALL_WORKER({register, User}).
 
@@ -284,15 +283,15 @@ register_operator(Nick, Password) ->
 
 %%-------------------------------------------------------------------
 %% @deprecated only for eunit
-%% @doc login/1
+%% @doc login/2
 %%
 %% API for logging in a user
 %%
-%% @spec login({#user{}, #push_receiver{}}) ->
-%%          {ok, SessionId} | {error, nick_not_unique} |
-%%          {error, invalid_login_data} | {error, simultaneous_login}
 %% @end
 %%-------------------------------------------------------------------
+-spec login({#user{}, #push_receiver{}}) ->
+          {ok, SessionId::string()} | {error, nick_not_unique} |
+          {error, invalid_login_data} | {error, simultaneous_login}.
 login(Data = {#user{}, #push_receiver{}}) ->
     ?CALL_WORKER({login, Data}).
 
@@ -301,8 +300,8 @@ login(Data = {#user{}, #push_receiver{}}) ->
 %%
 %% API for getting system statistics
 %%
-%% @spec system_stats(OutputType::atom()) -> any() | {ok, string()}
 %% @end
 %%-------------------------------------------------------------------
+-spec system_stats(OutputType::atom()) -> any() | {ok, string()}.
 system_stats(OutputType) ->
     ?CALL_WORKER({system_stats, OutputType}).

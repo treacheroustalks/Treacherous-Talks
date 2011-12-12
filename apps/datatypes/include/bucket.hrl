@@ -30,19 +30,35 @@
 %%%
 %%%-------------------------------------------------------------------
 
--define(B_SESSION, <<"session">>).
+% User information
 -define(B_USER, <<"user">>).
--define(B_GAME, <<"game">>).
--define(B_GAME_CURRENT, <<"game_current">>).
--define(B_GAME_PLAYER, <<"game_player">>).
--define(B_GAME_ORDER, <<"game_order">>).
+
+% User session history
 -define(B_SESSION_HISTORY, <<"session_history">>).
+
+
+% Game information
+-define(B_GAME, <<"game">>).
+
+% Information of the current phase of a specific game
+-define(B_GAME_CURRENT, <<"game_current">>).
+
+% Mapping from game to game players
+-define(B_GAME_PLAYER, <<"game_player">>).
+
+% Game orders (for a specific phase)
+-define(B_GAME_ORDER, <<"game_order">>).
+
+% Game state (for a specific phase)
 -define(B_GAME_STATE, <<"game_state">>).
 
--define(B_MESSAGE, <<"message">>).
--define(MESSAGE_FROM_USER_LINK, <<"from_user">>).
--define(MESSAGE_TO_USER_LINK, <<"to_user">>).
 
+% General messages
+-define(B_MESSAGE, <<"message">>).
+
+% In game messages
 -define(B_GAME_MESSAGE, <<"game_message">>).
+
+% Corpse information
 -define(B_CORPSES, <<"corpses">>).
 -define(B_REPORT_MESSAGE, <<"report_message">>).

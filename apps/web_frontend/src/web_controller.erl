@@ -55,7 +55,7 @@ out(A) ->
         [Page] ->
             get_page(Page);
         _ ->
-        % @todo Set 404 headers
+        % @TODO Set 404 headers
         get_page("404")
     end.
 

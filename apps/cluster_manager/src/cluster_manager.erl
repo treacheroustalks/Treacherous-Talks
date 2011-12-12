@@ -53,7 +53,12 @@ option_spec_list() ->
      {parallel, $f, "parallel", undefined, "Parallelizes if possible"}
     ].
 
-
+%% -----------------------------------------------------------------------------
+%% @doc
+%%  Function that is used to call the cluster manager from command line
+%% @end
+%% -----------------------------------------------------------------------------
+-spec main(term()) -> term().
 main(Args) ->
     io:format("~p~n",[Args]),
     case getopt:parse(option_spec_list(), Args) of

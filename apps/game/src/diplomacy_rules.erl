@@ -59,6 +59,8 @@
 %%
 %% @end
 %% -----------------------------------------------------------------------------
+%% @TODO Change debug messages to log messages
+%% -----------------------------------------------------------------------------
 -module (diplomacy_rules).
 
 -export ([create/2,
@@ -725,7 +727,7 @@ get_build_licenses (Map) ->
       Dict,
       Owners).
 
-%% todo: this is the simple implementation that covers no chains of convoys:
+%% @TODO: this is the simple implementation that covers no chains of convoys:
 is_covered_by_convoy (Map, {move, Army, From, To}) ->
     ConvoyOrders = map:get_unit_info (Map, Army, From, convoys, []),
     lists:any (fun ({convoy, _Fleet, _Where, CArmy, CFrom, CTo}) ->

@@ -57,7 +57,7 @@ invalid(Callback, SessId, GameId) ->
     ?debugMsg("JOIN_GAME TEST INVALID"),
     % same as success, but since we joined germany already
     % we can't do it again....
-    % @todo add check if person is already in the game somewhere
+    % @TODO add check if person is already in the game somewhere
     Cmd = {join_game, {ok, SessId, {GameId, germany}}},
     Result = controller:handle_action(Cmd, Callback),
     {CmdRes, ResultData} = Result,

@@ -80,7 +80,8 @@ handle_call({put_game_order, GameId, UserId, GameOrderList}, _From, State) ->
     Reply = put_game_order(GameId, UserId, GameOrderList),
     {reply, Reply, State};
 
-handle_call({game_msg, Message = #game_message{}, ToCountries, Role}, _From, State) ->
+handle_call({game_msg, Message = #game_message{}, ToCountries, Role},
+            _From, State) ->
     Reply = send_game_msg(Message, ToCountries, Role),
     {reply, Reply, State};
 
@@ -264,6 +265,7 @@ get_game_overview(GameID, UserID) ->
         {no_game, _Player, GameError} ->
             GameError
     end.
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Creates basic game overview, only based on game and gamestate
@@ -309,6 +311,7 @@ put_game_order(GameId, UserId, GameOrderList) ->
         {no_game, _Player, GameError} ->
             GameError
     end.
+
 %% ------------------------------------------------------------------
 %% @doc
 %% Stores a game order
@@ -367,6 +370,7 @@ get_playercountry_game(GameId, UserId) ->
         _Error ->
             {no_game, UserId, {error, game_id_not_exist}}
     end.
+
 %% ------------------------------------------------------------------
 %% @doc Returns the country atom which a user is playing in a game
 %% @spec
@@ -434,7 +438,6 @@ get_country_by_id(UserID, Players) ->
         GameUser = #game_user{} ->
             GameUser
     end.
-
 
 %% ------------------------------------------------------------------
 %% @doc
@@ -513,11 +516,12 @@ get_games_ongoing() ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec send_game_msg(#game_message{}, list(), role()) ->{ok, integer()} |
-                                               {error, game_phase_not_ongoing} |
-                                               {error, user_not_playing_this_game}|
-                                               {error, not_allowed_send_msg} |
-                                               {error, any()}.
+-spec send_game_msg(#game_message{}, list(), role()) ->
+          {ok, integer()} |
+          {error, game_phase_not_ongoing} |
+          {error, user_not_playing_this_game}|
+          {error, not_allowed_send_msg} |
+          {error, any()}.
 send_game_msg(GMsg = #game_message{game_id = GameId,
                                    from_id = FromId}, ToCountries, Role) ->
     case get_game(GMsg#game_message.game_id) of

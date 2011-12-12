@@ -28,5 +28,4 @@
 
 -define (DATE(), {date (), now ()).
 
-
 -endif.

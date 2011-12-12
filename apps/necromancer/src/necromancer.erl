@@ -38,8 +38,8 @@
 %%  doesn't want to! All it needs is your implementation of a `get_corpses'
 %%  function and that you save all the information that you need to
 %%  clean up again.
-%% @todo make sure that no nodes are added more often than once.
-%% @todo when a node starts, make it watch exactly one other node via {@link watch/1}
+%% @TODO make sure that no nodes are added more often than once.
+%% @TODO when a node starts, make it watch exactly one other node via {@link watch/1}
 %% @end
 %% -----------------------------------------------------------------------------
 -module(necromancer).

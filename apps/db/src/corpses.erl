@@ -29,9 +29,11 @@
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("utils/include/debug.hrl").
 
+%% -----------------------------------------------------------------------------
 % @doc
 % returns all corpses that belong to a given backend
 % @end
+%% -----------------------------------------------------------------------------
 -spec get_corpses (DeadBackend :: node ()) -> [necromancer:corpse ()] | [].
 get_corpses (DeadBackend) when is_atom (DeadBackend) ->
     ?DEBUG ("get_corpses(~p)~n", [DeadBackend]),
@@ -49,12 +51,14 @@ get_corpses (DeadBackend) when is_atom (DeadBackend) ->
 save_corpse (Module, Data) ->
     save_corpse (Module, make_ref (), Data).
 
+%% -----------------------------------------------------------------------------
 % @doc
 % saves one corpse to the database with the key "`Module++Ref'"
 % `handle_corpse' will be called with `{Key, Data}' where `Key'
 % is the database-key and `Data' is your Data.
 % `Ref' has to be uniqe within the handler-module.
 % @end
+%% -----------------------------------------------------------------------------
 -spec save_corpse (module (), Ref :: any (), Data :: any ()) -> ok.
 save_corpse (Module, Ref, Data) ->
     ?DEBUG ("save_corpse(~p, ~p)~n", [Module, Data]),

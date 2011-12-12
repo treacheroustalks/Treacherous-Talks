@@ -61,4 +61,4 @@ handle_corpse ({Key, {node, Node}}) ->
                     end,
     lists:foreach (NotifyOfDeath, NewBackendNodes),
     db:delete (Key).
-    
+

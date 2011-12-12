@@ -215,12 +215,8 @@ do_mark_as_read(MessageId, Bucket)
             {error, notfound}
     end.
 
-%%------------------------------------------------------------------------------
-%%  @doc
-%%    this function gets id, record and bucket name and convert the record
-%%    to proplist and stores it in the db.
-%%  @end
-%%------------------------------------------------------------------------------
+%% This function gets id, record and bucket name and convert the record
+%% to proplist and stores it in the db.
 log_message(ID, Msg, Bucket) ->
     BinID = db:int_to_bin(ID),
     % convert record to proplist to be able to do search

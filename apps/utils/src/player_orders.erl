@@ -26,7 +26,7 @@
 %%% A module for recognizing play move orders in email body
 %%%
 %%% @TODO modify the code in a concurrent a way, so that results of some expensive initiations can be stored in other processes.
-%%% @todo use proper specs
+%%% @TODO use proper specs
 %%% @end
 %%%
 %%%-------------------------------------------------------------------
@@ -44,7 +44,7 @@
 -include("command_parser.hrl").
 
 %%------------------------------------------------------------------------------
-%% @todo input example is incomplete
+%% @TODO input example is incomplete
 %% @doc parse player's orders to a list of order terms.
 %%  Return {ok, {OrderList, ErrorList}}
 %%

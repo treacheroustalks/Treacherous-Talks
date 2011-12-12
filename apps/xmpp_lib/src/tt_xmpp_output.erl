@@ -46,10 +46,8 @@
 %% This function replies to the user depending on the result of the
 %% request.
 %% @end
-%%
-%% [@spec reply([From, To], {Cmd, Result}, Data) -> ok.
-%% @end]
 %%-------------------------------------------------------------------
+-spec reply([term()], Result::term(), Data::term()) -> ok.
 reply([From, To], Result, Data) ->
     send_chat(From, To, get_reply(Result, Data)).
 

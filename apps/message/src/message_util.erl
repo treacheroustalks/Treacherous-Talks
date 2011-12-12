@@ -29,6 +29,14 @@
 
 -export([get_message/3]).
 
+
+%% -----------------------------------------------------------------------------
+%% @doc
+%% Gets the message with the given message id
+%% @end
+%% -----------------------------------------------------------------------------
+-spec get_message(MessageId::integer(), Bucket::binary(), RecordName::atom()) ->
+          {ok, Message::term()} | {error, Error::term()}.
 get_message(MessageId, Bucket, RecordName) ->
     case db:get(Bucket, db:int_to_bin(MessageId), [{r,1}]) of
         {ok, DBObj} ->

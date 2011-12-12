@@ -57,7 +57,7 @@ success(Callback, SessId) ->
 
 invalid(_Callback, _SessId) ->
     ?debugMsg("CREATE_GAME TEST INVALID"),
-    % @todo no invalid case yet
+    % @TODO no invalid case yet
     ?debugMsg("CREATE_GAME TEST INVALID finished").
 %%-------------------------------------------------------------------
 %% Test data

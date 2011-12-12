@@ -68,8 +68,6 @@ start_link() ->
 %% @doc
 %% Initiates a ping call to a random controller_app_worker server
 %% @end
-%% [@spec ping() -> {pong, pid()}.
-%% @end]
 %%-------------------------------------------------------------------
 -spec ping() -> {pong, pid()}.
 ping() ->
@@ -83,8 +81,6 @@ ping() ->
 %% @doc
 %% Initiates the controller_app_worker
 %% @end
-%% [@spec init(no_arg::atom()) -> {ok, #state{}}.
-%% @end]
 %%-------------------------------------------------------------------
 -spec init(atom()) -> {ok, #state{}}.
 init(no_arg) ->
@@ -105,7 +101,7 @@ handle_call({system_stats, OutputType}, _From, State) ->
 %% @doc
 %% Handles call for creation of a user
 %% @end
-%% [@spec handle_call({create_user::atom(), Id::Integer(), #user{}},
+%% [@spec handle_call({register::atom(), #user{}},
 %%                     From::{pid(), Tag}, #state{}) -> {noreply, #state{}}.]
 %% @end
 %%-------------------------------------------------------------------
@@ -130,7 +126,7 @@ handle_call({register, User}, _From, State) ->
 %% session id.
 %% On fail, it returns the atom invalid
 %% @end
-%% [@spec handle_call({login::atom(), #user{}},
+%% [@spec handle_call({login::atom(), {#user{}, #push_receiver{}}},
 %%                     From::{pid(), Tag}, #state{}) ->
 %%%         {reply, interger(), #state{}} | {reply, invalid, #state{}}.]
 %% @end
@@ -231,13 +227,7 @@ id_from_user_siblings(DbObj) ->
           end,
     (data_format:db_obj_to_rec(Obj, ?USER_REC_NAME))#user.id.
 
-%%-------------------------------------------------------------------
-%% @doc
 %% Stop the last session in all siblings.
-%%
-%% @spec stop_sessions(#db_obj{}) -> ok
-%% @end
-%%-------------------------------------------------------------------
 stop_sessions(DbObj) ->
     Siblings = db_obj:get_siblings(DbObj),
     lists:foreach(fun(SibObj) ->

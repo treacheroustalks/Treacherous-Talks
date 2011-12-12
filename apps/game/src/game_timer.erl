@@ -71,10 +71,9 @@ start_link(Game) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to change the state of the FSM Timer.
-%% @spec event(Timer::integer(), Event::atom()) -> ok
 %% @end
 %%-------------------------------------------------------------------
--spec event(integer(), atom()) -> ok.
+-spec event(Timer::integer(), Event::atom()) -> ok.
 event(Timer, Event) ->
     gen_fsm:send_event({global, {?MODULE, Timer}}, Event).
 
@@ -82,49 +81,46 @@ event(Timer, Event) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends a synchronous event to change the state of the FSM Timer.
-%% @spec sync_event(Timer::integer(), Event::atom()) -> {ok, CurrentState :: atom()}
 %% @end
 %%-------------------------------------------------------------------
+-spec sync_event(Timer::integer(), Event::atom()) ->
+          {ok, CurrentState :: atom()}.
 sync_event(Timer, Event) ->
     gen_fsm:sync_send_event({global, {?MODULE, Timer}}, Event).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to find out the current state (ONLY for testing)
-%% @spec current_state(Timer::integer()) -> StateName::atom()
 %% @end
 %%-------------------------------------------------------------------
--spec current_state(pid()) -> atom().
+-spec current_state(Timer::integer()) -> atom().
 current_state(Timer) ->
     gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, phasename).
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to find out the state of the game (ONLY for testing)
-%% @spec get_game_state(Timer :: integer()) -> Game :: #game{}
 %% @end
 %%-------------------------------------------------------------------
--spec get_game_state(integer()) -> atom().
+-spec get_game_state(Timer::integer()) -> atom().
 get_game_state(Timer) ->
     gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, game).
 
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to stop it
-%% @spec stop(Timer::integer()) -> ok
 %% @end
 %%-------------------------------------------------------------------
--spec stop(integer()) -> ok.
+-spec stop(Timer::integer()) -> ok.
 stop(Timer) ->
     gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}}, stop).
 %%-------------------------------------------------------------------
 %% @doc
 %% Sends an event to Timer, to stop it and update the game to be either
 %% finished or stopped.
-%% @spec stop(Timer::integer(), NewState :: finished | stopped) ->
-%%           {ok, {Timer::integer(), NewState}}
 %% @end
 %%-------------------------------------------------------------------
--spec stop(integer(), finished | stopped) -> {ok, {integer(), atom()}}.
+-spec stop(Timer::integer(), finished | stopped) -> {ok, {integer(), atom()}}.
 stop(Timer, NewState) ->
     gen_fsm:sync_send_all_state_event({global, {?MODULE, Timer}},
                                       {stop, NewState}).

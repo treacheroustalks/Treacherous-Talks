@@ -249,7 +249,3 @@ resolve_conflict(Hist, DbObj, Field) ->
             Pos = find_newest(Hist, LastSessions),
             lists:nth(Pos, Siblings)
     end.
-
-%% ------------------------------------------------------------------
-%% Internal Functions
-%% ------------------------------------------------------------------

@@ -65,6 +65,7 @@ db_obj_to_rec(DbObj, RecordName) ->
 %% Convert game overview record into text format
 %% @end
 %%-------------------------------------------------------------------
+-spec game_overview_to_text(#game_overview{}) -> string().
 game_overview_to_text(#game_overview{} = GOV)->
     GameStatus = GOV#game_overview.game_rec#game.status,
     case GameStatus of
@@ -78,6 +79,7 @@ game_overview_to_text(#game_overview{} = GOV)->
 %% Produces the game overview data, based on the status of the game
 %% @end
 %%-------------------------------------------------------------------
+-spec create_game_info(Status::atom(), #game_overview{}) -> term().
 create_game_info(finished, GOV) ->
     GameRec = GOV#game_overview.game_rec,
     GameInfo = game_info_to_text(GOV),
@@ -105,6 +107,7 @@ create_game_info(Status, GOV) ->
 %% Creates a textual list of player, country pairs
 %% @end
 %%-------------------------------------------------------------------
+-spec player_list_to_text([term()]) -> string().
 player_list_to_text(PlayerList) ->
     lists:foldl(
       fun({Country, Nick}, Acc) ->
@@ -120,6 +123,7 @@ player_list_to_text(PlayerList) ->
 %% Creates basic game information, in textual form.
 %% @end
 %%-------------------------------------------------------------------
+-spec game_info_to_text(#game_overview{}) -> string().
 game_info_to_text(#game_overview{} = GOV) ->
     {Year, Season} = GOV#game_overview.year_season,
     Phase = GOV#game_overview.phase,
@@ -329,6 +333,8 @@ print_time(Msg, _Value, _Label) ->
 %%     Proplist - [{Key, Value}]
 %% @end
 %%-------------------------------------------------------------------
+-spec rec_to_plist(#user{} | #game{} | #message{} | #game_message{}) ->
+          term().
 rec_to_plist(RecordValue) ->
     Record = get_record(RecordValue),
     RecFields = case Record of
@@ -353,6 +359,8 @@ rec_to_plist(RecordValue) ->
 %%     Proplist - [{Key, Value}]
 %% @end
 %%-------------------------------------------------------------------
+-spec rec_to_plist(#user{} | #game{} | #message{} | #game_message{},
+                   {atom(), [atom()]}) -> term().
 rec_to_plist(RecordValue, {Format, RequiredFields}) ->
     FilterPL = rec_to_plist(RecordValue, RequiredFields),
     case Format of
@@ -381,6 +389,8 @@ rec_to_plist(RecordValue, RequiredFields) ->
 %%     Record
 %% @end
 %%-------------------------------------------------------------------
+-spec plist_to_rec(Record::atom(), PropList::term()) ->
+          #user{} | #game{} | #message{} | #game_message{}.
 plist_to_rec(Record, PropList) ->
     Values = plist_get_all_values(PropList),
     list_to_tuple([Record|Values]).
@@ -414,6 +424,7 @@ plist_get_all_values([{_Key, Value}|Ps], Acc) ->
 %% Get the type of the variable
 %% @end
 %%-------------------------------------------------------------------
+-spec type_of(X::any()) -> atom().
 type_of(X) when is_integer(X)   -> integer;
 type_of(X) when is_float(X)     -> float;
 type_of(X) when is_list(X)      -> list;
@@ -428,5 +439,11 @@ type_of(X) when is_reference(X) -> reference;
 type_of(X) when is_atom(X)      -> atom;
 type_of(_X)                     -> unknown.
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Convert binary data to integer
+%% @end
+%%-------------------------------------------------------------------
+-spec bin_to_int(binary()) -> integer().
 bin_to_int(B) ->
     list_to_integer(binary_to_list(B)).

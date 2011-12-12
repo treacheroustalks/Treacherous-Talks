@@ -21,6 +21,8 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
+%%% @TODO Update the error return values in the spec
+%%%-------------------------------------------------------------------
 -module (game).
 
 -export ([new_game/1,
@@ -113,7 +115,7 @@ get_game(Key) ->
 %% Value is the value to search for.
 %% @spec
 %% get_keys(Field :: any(), Value :: any()) ->
-%%     {ok, Keys :: list()} | {error, Error}
+%%     {ok, Keys :: list()} | Error
 %% @end
 %% -----------------------------------------------------------------------------
 get_keys(Field, Value) ->
@@ -157,7 +159,6 @@ reconfig_game(Game = #game{}) ->
 join_game(GameID, UserID, Country) ->
     ?CALL_WORKER({join_game, GameID, UserID, Country}).
 
-
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  gets a game players from the database and returns it
@@ -199,7 +200,7 @@ get_current_game(GameID) ->
 %%  ORed together and NotParams are passed as NOT
 %% @spec
 %% search(Query :: string()) ->
-%%     {ok, [integer()]} | {error, Error}
+%%     {ok, [integer()]} | Error
 %% @end
 %% ----------------------------------------------------------------------------
 search(Query) ->
@@ -210,7 +211,7 @@ search(Query) ->
 %%  Get the games for the given user with status = waiting | ongoing
 %% @spec
 %% get_games_current(UserID :: integer()) ->
-%%     {ok, [#game{}]} | {error, Error}
+%%     {ok, [#game{}]} | Error
 %% @end
 %% ----------------------------------------------------------------------------
 get_games_current(UserID) ->
@@ -220,7 +221,7 @@ get_games_current(UserID) ->
 %% @doc
 %%  Get the games for the given search query
 %% get_game_search(Query :: string()) ->
-%%     {ok, [#game{}]} | {error, Error}
+%%     {ok, [#game{}]} | Error
 %% @end
 %% ----------------------------------------------------------------------------
 get_game_search(Query) ->
@@ -229,7 +230,7 @@ get_game_search(Query) ->
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  Get the games for the given search query
-%% get_games_ongoing() -> {ok, [integer()]} | {error, Error}
+%% get_games_ongoing() -> {ok, [integer()]} | Error
 %% @end
 %% ----------------------------------------------------------------------------
 get_games_ongoing() ->
@@ -238,12 +239,6 @@ get_games_ongoing() ->
 %% -----------------------------------------------------------------------------
 %% @doc
 %%   Send in-game message to relevant players
-%% it could reply: ok |
-%%                 {error, game_phase_not_ongoing} |
-%%                 {error, user_not_playing_this_game}|
-%%                 {error, not_allowed_send_msg} |
-%%                 {error, any()}
-%%
 %% @end
 %% ----------------------------------------------------------------------------
 -spec game_msg(#game_message{}, list(), role()) ->ok |

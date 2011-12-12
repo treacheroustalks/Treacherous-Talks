@@ -198,6 +198,7 @@ get_index(Bucket, IdxTup={_Index, _IndexKey}) ->
 %%-------------------------------------------------------------------
 put(Obj) ->
     ?CALL_WORKER({put, Obj}).
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Stores an object in the database, supplying options.
@@ -235,6 +236,7 @@ put(Obj, Options) ->
 %%-------------------------------------------------------------------
 delete(Bucket, Key) ->
     ?CALL_WORKER({delete, Bucket, Key}).
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Deletes a value from the database, supplying options.
@@ -291,6 +293,7 @@ list_buckets() ->
 %%-------------------------------------------------------------------
 %% @doc
 %% Lists all keys for a given bucket.
+%% WARNING: To be used only for debugging and not for regular use
 %%
 %% @spec
 %%  list_keys(Bucket::binary()) ->
@@ -311,6 +314,7 @@ list_keys(Bucket) ->
 %%-------------------------------------------------------------------
 get_bucket(Bucket) ->
     ?CALL_WORKER({get_bucket, Bucket}).
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Sets the bucket properties.
@@ -324,7 +328,6 @@ set_bucket(Bucket, BucketProps) ->
     ?CALL_WORKER({set_bucket, Bucket, BucketProps}).
 
 
-% the magic map/reduce, no idea how to use those yet ...
 %%-------------------------------------------------------------------
 %% @doc
 %% Perform a map/reduce on the given Inputs.
@@ -400,7 +403,6 @@ get_db_stats() ->
 get_unique_id() ->
     db_c:get_unique_id().
 
-
 %%-------------------------------------------------------------------
 %% @doc
 %% Converts an integer id to the expected binary format.
@@ -410,6 +412,7 @@ get_unique_id() ->
 %%-------------------------------------------------------------------
 int_to_bin(Id) ->
     int_to_bin(Id, "").
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Converts an integer id to the expected binary format with a given
@@ -420,30 +423,3 @@ int_to_bin(Id) ->
 %%-------------------------------------------------------------------
 int_to_bin(Id, Suffix) ->
     list_to_binary(integer_to_list(Id) ++ Suffix).
-
-%%-------------------------------------------------------------------
-%% not sure if we need the streaming for now ...
-%%-------------------------------------------------------------------
-%stream_list_keys(Bucket) ->
-%    gen_server:call(service_worker:select_pid(?WORKER),
-%                    {stream_list_keys, Bucket}).
-%
-%
-%mapred_stream(Inputs, Query, ClientPid) ->
-%    gen_server:call(service_worker:select_pid(?WORKER),
-%                    {mapred_stream, Inputs, Query, ClientPid}).
-%mapred_stream(Inputs, Query, ClientPid, Timeout) ->
-%    gen_server:call(service_worker:select_pid(?WORKER),
-%                    {mapred_stream, Inputs, Query, ClientPid, Timeout}).
-%
-%
-%mapred_bucket_stream(Bucket, Query, ClientPid, Timeout) ->
-%    gen_server:call(service_worker:select_pid(?WORKER),
-%                    {mapred_bucket_stream, Bucket, Query, ClientPid, Timeout}).
-
-
-
-
-%% -------------------------------------------------------------------
-%% Internal functions
-%% -------------------------------------------------------------------

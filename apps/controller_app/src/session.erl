@@ -209,6 +209,8 @@ join_game(SessionId, Data = {_GameId, _Country}) ->
 %% @doc game_order/2
 %% API for sending a list game order
 %%
+%% @spec game_order(string(), {integer(), [term()]}) ->
+%%         {ok, [term()]} | {error, {string(), term()}}
 %% @end
 %%-------------------------------------------------------------------
 game_order(SessionId, Data = {_GameId, _OrderList}) ->
@@ -218,6 +220,9 @@ game_order(SessionId, Data = {_GameId, _OrderList}) ->
 %% @doc user_msg/2
 %% API for sending user message
 %%
+%% @spec user_msg(string(), #frontend_msg{}) ->
+%%         {ok, integer()} | {error, nick_not_unique} |
+%%         {error, invalid_nick} | {error, Error :: any()}
 %% @end
 %%-------------------------------------------------------------------
 user_msg(SessionId, FEMsg = #frontend_msg{}) ->
@@ -228,6 +233,10 @@ user_msg(SessionId, FEMsg = #frontend_msg{}) ->
 %% @doc game_msg/2
 %% API for sending game message
 %%
+%% @spec game_msg(string(), #frontend_msg{}) ->
+%%         {ok, integer()} | {error, not_allowed_send_msg} |
+%%         {error, game_does_not_exist}| {error, game_phase_not_ongoing} |
+%%         {error, Error :: any()}
 %% @end
 %%-------------------------------------------------------------------
 game_msg(SessionId, FEMsg = #frontend_msg{}) ->
@@ -237,6 +246,9 @@ game_msg(SessionId, FEMsg = #frontend_msg{}) ->
 %% @doc game_msg/2
 %% API for sending game message
 %%
+%% @spec power_msg(string(), #frontend_msg{}) ->
+%%         {ok, integer()} | {error, game_does_not_exist} |
+%%         {error, game_phase_not_ongoing} | {error, Error :: any()}
 %% @end
 %%-------------------------------------------------------------------
 power_msg(SessionId, FEMsg = #frontend_msg{}) ->

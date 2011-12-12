@@ -206,7 +206,7 @@ handle_call({create_game, Game}, _From,
             State=#state{user=User}) ->
     Creator = User#user.id,
     {ok, GameId} = game:new_game(Game#game{creator_id = Creator}),
-    % @todo no invalid create_game case yet ?
+    % @TODO no invalid create_game case yet ?
     {reply, {ok, GameId}, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc

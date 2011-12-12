@@ -32,7 +32,8 @@
 %%%-------------------------------------------------------------------
 -module (message).
 
--export ([user_msg/1,
+-export ([
+          user_msg/1,
           unread/1,
           mark_game_msg_as_read/1,
           mark_user_msg_as_read/1,
@@ -74,7 +75,6 @@
 user_msg(Msg=#message{}) ->
     ?CALL_WORKER({user_msg, Msg}).
 
-
 %% --------------------------------------------------------------------
 %% @doc
 %%  Returns the list of unread messages where UserId is the recipient.
@@ -106,6 +106,7 @@ mark_user_msg_as_read(MessageId) ->
           ok | {error, notfound}.
 mark_game_msg_as_read(MessageId) ->
     ?CALL_WORKER({mark_as_read, MessageId, ?B_GAME_MESSAGE}).
+
 %% -----------------------------------------------------------------------------
 %% @doc
 %%  get a record of game message and log the message and send it to users

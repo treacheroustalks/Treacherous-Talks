@@ -165,7 +165,7 @@ generate_order (Phase, _, _, _) ->
 -define (MAX_YEARS, 10).
 
 %% -----------------------------------------------------------------------------
-%% @todo add possibility to translate the orders to `lists' so we can include the parser in our load testing, too.
+%% @TODO add possibility to translate the orders to `lists' so we can include the parser in our load testing, too.
 %% @doc
 %% Returns a list of  order-`dicts'. <br/>
 %% Don't rely on the order of those dicts,

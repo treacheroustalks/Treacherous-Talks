@@ -200,7 +200,7 @@ mapred_bucket_stream(RC, Bucket, Query, ClientPid, Timeout) ->
     ?PASS4(RC, mapred_bucket_stream, Bucket, Query, ClientPid, Timeout).
 
 get_unique_id() ->
-    %TODO create some id ...
+    %@TODO create some id such as https://github.com/seancribbs/riak_id
     random_id().
 
 search(RC, Bucket, Query) ->

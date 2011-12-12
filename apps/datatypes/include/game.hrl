@@ -40,7 +40,6 @@
 
 -define (REQUIRED (Field), Field = erlang:error ({error, {field_required,Field, ?MODULE,?LINE}})).
 -define (REQUIRED, erlang:error ({error, {field_requried, ?MODULE,?LINE}})).
-%-define (REQUIRED, undefined).
 -define(GAME_PLAYER_LINK_USER, <<"user">>).
 -define(GAME_STATE_LINK_GAME, <<"game">>).
 -define(CURRENT_GAME_LINK_STATE, <<"game_state">>).
@@ -106,16 +105,3 @@
     order_list :: any()}).
 
 -endif.
-%INDEX
-%status
-%press
-%num_players
-
-%BUCKET
-%game
-
-%KEY
-%id
-
-%LINK
-%game_message    the game links to all the messages for the current game
