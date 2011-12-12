@@ -64,7 +64,9 @@ parser_test_() ->
       fun operator_get_game_msg/0,
       fun operator_game_overview/0,
       fun stop_game/0,
-      fun get_presence/0
+      fun get_presence/0,
+      fun mark_as_done/0,
+      fun get_reports/0
      ]}.
 
 get_db_stats() ->
@@ -151,9 +153,11 @@ get_games_ongoing() ->
     ?assertEqual (get_games_ongoing_exp_data(),
                   web_parser:parse(get_games_ongoing_data())).
 
+
 get_presence() ->
     ?assertEqual (get_presence_exp_data(),
                   web_parser:parse(get_presence_data())).
+
 
 operator_get_game_msg() ->
     ?assertEqual (operator_get_game_msg_exp_data(),
@@ -162,6 +166,16 @@ operator_get_game_msg() ->
 operator_game_overview() ->
     ?assertEqual (operator_game_overview_exp_data(),
                   web_parser:parse(operator_game_overview_data())).
+
+mark_as_done() ->
+    ?assertEqual(mark_as_done_exp_data(),
+                 web_parser:parse(mark_as_done_data())).
+
+get_reports() ->
+    ?assertEqual(get_reports_exp_data(),
+                 web_parser:parse(get_reports_data())).
+
+
 
 %% Expected data
 operator_get_game_msg_exp_data() ->
@@ -308,9 +322,19 @@ stop_game_exp_data() ->
     {stop_game, {ok,
                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
 
+
 get_presence_exp_data() ->
     {get_presence, {ok,
                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", "qnick"}}.
+
+mark_as_done_exp_data() ->
+    {mark_report_as_done, {ok,
+                              "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                              654321}}.
+get_reports_exp_data() ->
+    {get_reports, {ok,
+                   "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
+
 
 %% Input data
 
@@ -526,6 +550,7 @@ stop_game_data() ->
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]}]}}]}}.
 
+
 get_presence_data() ->
     {ok,{struct,
      [{"action","get_presence"},
@@ -534,6 +559,7 @@ get_presence_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"nick","qnick"}]}]}}]}}.
+
 
 operator_game_overview_data() ->
     {ok,{struct,
@@ -553,3 +579,20 @@ operator_get_game_msg_data() ->
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"query","query"}]},
             {struct,[{"order_key","order_key"}]}]}}]}}.
+
+mark_as_done_data() ->
+    {ok, {struct,
+          [{"action", "mark_as_done"},
+           {"data",
+            {array,
+             [{struct, [{"session_id",
+                         "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+              {struct,[{"issue_id","654321"}]}]}}]}}.
+
+get_reports_data() ->
+    {ok,{struct,
+         [{"action","get_reports"},
+          {"data",
+           {array,
+            [{struct,[{"session_id",
+                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.

@@ -332,6 +332,14 @@ function event_action(data) {
         break;
     case "get_presence_invalid_data":
         clear_message();
+    case "mark_as_done_success":
+        clear_message();
+        break;
+    case "get_reports_success":
+        load_report_inbox(event_data);
+        break;
+    case "get_reports_invalid_data":
+        clear_message();
         break;
     default:
         break;

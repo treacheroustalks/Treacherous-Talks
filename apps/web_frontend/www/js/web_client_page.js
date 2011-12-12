@@ -18,13 +18,7 @@
  */
 function load_page(callback) {
     var page_url = window.document.location + 'page/' + page + '.yaws';
-    $("#admin_menu").hide();
     $("#power_msg").val('');
-    if(page != "home" && page != "register"){
-        if(userObj.role == "operator"){
-            $("#admin_menu").show();
-        }
-    }
     $.get(page_url, function(data) {
         pageDiv.html(data);
         if (callback != undefined)
@@ -150,6 +144,28 @@ function load_get_database_status(event_data) {
     acc += "</table>"
     $('#database_status_data').html('<p>' + acc + '</p>');
 }
+/**
+ * Load the report inbox page
+ */
+function load_report_inbox(event_data) {
+    if(event_data.length > 0){
+        var done_link = function(id){
+            return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="mark_as_done(' + id + '); deleteRow(this.parentNode.parentNode.rowIndex, \'rdt\');">Done</a>';
+        }
+
+        for(var i = 0; i < event_data.length; i++){
+            var obj = event_data[i];
+            event_data[i]['Done'] = done_link(obj.id);
+        }
+        var keys = get_keys(event_data[0]);
+
+        $('#report_data').html(JsonToTable(event_data, keys, 'rdt', 'rdc'));
+    }
+    else{
+        $('#report_data').html('<p>' + "No reports found" + '</p>');
+    }
+}
+
 
 /**
  * Load the get ongoing games page for the operator
@@ -178,6 +194,7 @@ function load_get_games_ongoing(event_data) {
     $('#games_ongoing_data').html(JsonToTable(data, keys, 'gnt', 'gnc'));
 }
 
+
 /**
  * Load a page for setting moderator
  */
@@ -191,6 +208,14 @@ function load_add_remove_moderator_page() {
  */
 function load_operator_page() {
     page = 'operator';
+    load_page();
+}
+
+/**
+ * Load the operator control pannel page
+ */
+function load_moderator_page() {
+    page = 'moderator';
     load_page();
 }
 
@@ -358,6 +383,12 @@ function login_update_elements() {
         $("#power_section").show();
     else
         $("#power_section").hide();
+    if(userObj.role == "moderator"){
+        $("#moderator_menu").show();
+    }
+    if(userObj.role == "operator"){
+        $("#operator_menu").show();
+    }
 }
 
 /**
@@ -365,6 +396,8 @@ function login_update_elements() {
  */
 function logout_update_elements() {
     clean_userObj();
+    $("#moderator_menu").hide();
+    $("#operator_menu").hide();
     $("#logout").hide();
     $("#login_form").show();
     $("#register_menu").show();
@@ -438,6 +471,33 @@ function stop_game(game_id) {
     };
     call_server('stop_game', dataObj);
 }
+
+/**
+  * Call server to get reports
+  */
+function get_reports() {
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie() }
+        ]
+    };
+    call_server('get_reports', dataObj);
+}
+
+/**
+  * Call server to mark an issue as done
+  */
+function mark_as_done(issue_id){
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "issue_id" : issue_id
+        } ]
+    };
+    call_server('mark_as_done', dataObj);
+}
+
 
 /**
  * Call server to send off game
@@ -1138,4 +1198,8 @@ function get_keys(obj) {
         keys.push(key);
     }
     return keys;
+}
+
+function deleteRow(row, table){
+    document.getElementById(table).deleteRow(row);
 }

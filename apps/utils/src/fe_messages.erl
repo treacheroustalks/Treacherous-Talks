@@ -190,6 +190,21 @@ get({stop_game, success}, _Val) ->
 get({stop_game, invalid_data}, Error) ->
     resp_unhandled_error(Error);
 
+get({get_reports, success}, _Val) ->
+    resp("");
+get({get_reports, invalid_data}, _Error) ->
+    resp("");
+
+get({mark_report_as_done, success}, _Val) ->
+    resp("Issue marked as done~n");
+get({mark_report_as_done, invalid_data}, Error) ->
+    case Error of
+        notfound ->
+            resp("The issue could not be found.~n");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
+
 % Game order
 get({game_order, success}, _Val) ->
     resp("Game order sent successfully:~n~n");

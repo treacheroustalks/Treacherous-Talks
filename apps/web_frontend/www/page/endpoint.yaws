@@ -335,6 +335,34 @@ get_ret({get_presence, success}, Ret=#ret{}, _Data) ->
 get_ret({get_presence, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret({get_reports, success}, Ret=#ret{}, Reports) ->
+    EventData =
+        lists:map(
+          fun(Report) ->
+                  DateCreated = data_format:date_to_str(
+                                  Report#report_message.date_created),
+                  Data = [{"id",
+                           Report#report_message.id},
+                          {"Date",
+                           lists:flatten(DateCreated)},
+                          {"Type",
+                           atom_to_list(Report#report_message.type)},
+                          {"From User",
+                           Report#report_message.from_nick},
+                          {"Message",
+                           Report#report_message.content}],
+                  json2:obj_from_list(Data)
+          end, Reports),
+    msg_invisible(Ret#ret{event_data = EventData,
+                          page = "report_inbox"});
+get_ret({get_reports, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({mark_report_as_done, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({mark_report_as_done, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
 % General unhandled case
 get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
     Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."

@@ -112,7 +112,8 @@ handle_call({user_msg, Msg=#message{}}, _From, State) ->
     {reply, Result, State};
 
 handle_call({report_msg, Report = #report_message{}}, _From, State) ->
-    Result = log_report_msg(undefined, Report),
+    ReportMsg = Report#report_message{date_created = erlang:universaltime()},
+    Result = log_report_msg(undefined, ReportMsg),
     {reply, Result, State};
 
 handle_call(_Request, _From, State) ->

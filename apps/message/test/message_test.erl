@@ -392,7 +392,8 @@ report_player_tst_() ->
                                         IssueRec#report_message.id end,
                                 Reports),
              ?assert(lists:member(ID, IDList)),
-             ?debugMsg("Report messages sent and received test SUCCESS")
+             ?debugMsg("Report messages sent and received test SUCCESS"),
+             delete_message(ID, ?B_REPORT_MESSAGE)
      end,
      fun() ->
              ?debugMsg("Mark report as done test"),
@@ -406,7 +407,8 @@ report_player_tst_() ->
                                                       ?B_REPORT_MESSAGE,
                                                       report_message),
              ?assertEqual(done, DoneMsg#report_message.status),
-             ?debugMsg("Mark report as done test SUCCESS")
+             ?debugMsg("Mark report as done test SUCCESS"),
+             delete_message(MsgID, ?B_REPORT_MESSAGE)
      end
     ].
 
@@ -422,6 +424,9 @@ delete_messages(UserId,Bucket) ->
                       db:delete(Bucket, db:int_to_bin(Key))
               end,
               Keys).
+
+delete_message(Key, Bucket) ->
+    db:delete(Bucket, db:int_to_bin(Key)).
 
 make_game_msg_as_read(ToUserId, FromUserId) ->
     GetUnread = fun() ->

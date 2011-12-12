@@ -1,0 +1,11 @@
+<!-- reports inbox page -->
+<div class="page-header">
+  <h1>Reports inbox</h1>
+</div>
+<div class="row">
+  <div class="span15">
+  <div id="message"></div>
+    <div class="clear"></div>
+        <div id="report_data"></div>
+  </div>
+ </div>

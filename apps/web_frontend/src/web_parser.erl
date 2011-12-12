@@ -46,6 +46,7 @@
 %% Action - chooses the message that has to be generated
 %% Data - Data in the form of Erlang version of JSON that is yet to be decoded.
 %%        Data is used to create the message content based in Action
+
 -spec parse(Data::term()) ->
           {register, {ok, #user{}}} |
           {login, {ok, #user{}}} |
@@ -65,7 +66,10 @@
           {user_msg, {ok, string(), #frontend_msg{}}} |
           {assign_moderator, {ok, string(), {string(), atom()}}} |
           {get_system_status, {ok, string()}} |
-          {get_presence, {ok, string(), string()}}.
+          {get_presence, {ok, string(), string()}} |
+          {get_reports, {ok, string()}} |
+          {mark_as_done, {ok, string(), integer()}}.
+
 parse(RawData) ->
     {Action, Data} = decode(RawData),
     case Action of
@@ -191,7 +195,14 @@ parse(RawData) ->
         "get_system_status" ->
             {get_system_status, {ok, get_field ("session_id", Data)}};
         "get_presence" ->
-            {get_presence, {ok, get_field ("session_id", Data), get_field ("nick", Data)}}
+            {get_presence, {ok, get_field ("session_id", Data), get_field ("nick", Data)}};
+        "get_reports" ->
+            {get_reports, {ok,
+                           get_field("session_id", Data), dummy}};
+        "mark_as_done" ->
+            IssueId = get_integer("issue_id", Data),
+            {mark_report_as_done, {ok,
+                                   get_field("session_id", Data), IssueId}}
     end.
 
 
