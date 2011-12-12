@@ -33,7 +33,7 @@
 -export([init/1]).
 
 %% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 30000, Type, [I]}).
 
 %% ===================================================================
 %% API functions
@@ -49,6 +49,7 @@ start_link() ->
 init([]) ->
     {ok, { {one_for_one, 5, 10},
            [
+            ?CHILD(release_status_tracker, worker),
             ?CHILD(system_manager_worker_sup, supervisor),
             ?CHILD(system_manager_config, worker)
            ]} }.
