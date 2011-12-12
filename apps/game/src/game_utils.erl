@@ -128,15 +128,15 @@ get_game_state(ID)->
 get_all_orders(ID) ->
     Key = game_utils:get_keyprefix({id, ID}),
     Keys = lists:map(fun(Country) ->
-                             Key ++ "-" ++ Country
+                             list_to_binary(Key ++ "-" ++ Country)
                      end, ?COUNTRIES),
     case db:get_values(?B_GAME_ORDER, Keys) of
         {ok, Orders} ->
             lists:flatten(lists:map(fun(Order) ->
                                             Order#game_order.order_list
                                     end, Orders));
-        _Error ->
-            []
+        Error ->
+            erlang:error(Error)
     end.
 
 %% ------------------------------------------------------------------
