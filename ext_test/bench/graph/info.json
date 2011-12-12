@@ -1633,5 +1633,845 @@
                 "info": "6 machine, 6 load worker"
             }
         ]
+    },
+    "scaling-bucket-props-1": {
+        "location": "data/scaling_bucket_props_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc with adapted n_val",
+                "info": "1 PCs with adapted bucket properties (n_val)"
+            }
+        ]
+    },
+    "scaling-bucket-props-2": {
+        "location": "data/scaling_bucket_props_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc with adapted n_val",
+                "info": "2 PCs with adapted bucket properties (n_val)"
+            }
+        ]
+    },
+    "scaling-bucket-props-3": {
+        "location": "data/scaling_bucket_props_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc with adapted n_val",
+                "info": "3 PCs with adapted bucket properties (n_val)"
+            }
+        ]
+    },
+    "scaling-bucket-props-4": {
+        "location": "data/scaling_bucket_props_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc with adapted n_val",
+                "info": "4 PCs with adapted bucket properties (n_val)"
+            }
+        ]
+    },
+    "scaling-bucket-props-5": {
+        "location": "data/scaling_bucket_props_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc with adapted n_val",
+                "info": "5 PCs with adapted bucket properties (n_val)"
+            }
+        ]
+    },
+    "scaling-bucket-props-6": {
+        "location": "data/scaling_bucket_props_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc with adapted n_val",
+                "info": "6 PCs with adapted bucket properties (n_val)"
+            }
+        ]
+    },
+    "concurrent-80-1": {
+        "location": "data/concurrent_80_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 80 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 80 load worker"
+            }
+        ]
+    },
+    "concurrent-85-1": {
+        "location": "data/concurrent_85_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 85 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 85 load worker"
+            }
+        ]
+    },
+    "concurrent-90-1": {
+        "location": "data/concurrent_90_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 90 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 90 load worker"
+            }
+        ]
+    },
+    "concurrent-95-1": {
+        "location": "data/concurrent_95_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 95 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 95 load worker"
+            }
+        ]
+    },
+    "concurrent-100-1": {
+        "location": "data/concurrent_100_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 100 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 100 load worker"
+            }
+        ]
+    },
+    "concurrent-105-1": {
+        "location": "data/concurrent_105_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 105 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 105 load worker"
+            }
+        ]
+    },
+    "concurrent-110-1": {
+        "location": "data/concurrent_110_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 110 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 110 load worker"
+            }
+        ]
+    },
+    "concurrent-115-1": {
+        "location": "data/concurrent_115_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 115 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 115 load worker"
+            }
+        ]
+    },
+    "concurrent-120-1": {
+        "location": "data/concurrent_120_1",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "1 PSc, 120 load worker",
+                "info": "1 PCs, rate 1 ops/sec, 120 load worker"
+            }
+        ]
+    },
+    "concurrent-80-2": {
+        "location": "data/concurrent_80_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 80 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 80 load worker"
+            }
+        ]
+    },
+    "concurrent-85-2": {
+        "location": "data/concurrent_85_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 85 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 85 load worker"
+            }
+        ]
+    },
+    "concurrent-90-2": {
+        "location": "data/concurrent_90_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 90 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 90 load worker"
+            }
+        ]
+    },
+    "concurrent-95-2": {
+        "location": "data/concurrent_95_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 95 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 95 load worker"
+            }
+        ]
+    },
+    "concurrent-100-2": {
+        "location": "data/concurrent_100_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 100 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 100 load worker"
+            }
+        ]
+    },
+    "concurrent-105-2": {
+        "location": "data/concurrent_105_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 105 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 105 load worker"
+            }
+        ]
+    },
+    "concurrent-110-2": {
+        "location": "data/concurrent_110_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 110 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 110 load worker"
+            }
+        ]
+    },
+    "concurrent-115-2": {
+        "location": "data/concurrent_115_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 115 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 115 load worker"
+            }
+        ]
+    },
+    "concurrent-120-2": {
+        "location": "data/concurrent_120_2",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "2 PSc, 120 load worker",
+                "info": "2 PCs, rate 2 ops/sec, 120 load worker"
+            }
+        ]
+    },
+    "concurrent-80-3": {
+        "location": "data/concurrent_80_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 80 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 80 load worker"
+            }
+        ]
+    },
+    "concurrent-85-3": {
+        "location": "data/concurrent_85_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 85 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 85 load worker"
+            }
+        ]
+    },
+    "concurrent-90-3": {
+        "location": "data/concurrent_90_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 90 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 90 load worker"
+            }
+        ]
+    },
+    "concurrent-95-3": {
+        "location": "data/concurrent_95_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 95 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 95 load worker"
+            }
+        ]
+    },
+    "concurrent-100-3": {
+        "location": "data/concurrent_100_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 100 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 100 load worker"
+            }
+        ]
+    },
+    "concurrent-105-3": {
+        "location": "data/concurrent_105_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 105 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 105 load worker"
+            }
+        ]
+    },
+    "concurrent-110-3": {
+        "location": "data/concurrent_110_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 110 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 110 load worker"
+            }
+        ]
+    },
+    "concurrent-115-3": {
+        "location": "data/concurrent_115_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 115 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 115 load worker"
+            }
+        ]
+    },
+    "concurrent-120-3": {
+        "location": "data/concurrent_120_3",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "3 PSc, 120 load worker",
+                "info": "3 PCs, rate 3 ops/sec, 120 load worker"
+            }
+        ]
+    },
+    "concurrent-80-4": {
+        "location": "data/concurrent_80_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 80 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 80 load worker"
+            }
+        ]
+    },
+    "concurrent-85-4": {
+        "location": "data/concurrent_85_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 85 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 85 load worker"
+            }
+        ]
+    },
+    "concurrent-90-4": {
+        "location": "data/concurrent_90_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 90 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 90 load worker"
+            }
+        ]
+    },
+    "concurrent-95-4": {
+        "location": "data/concurrent_95_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 95 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 95 load worker"
+            }
+        ]
+    },
+    "concurrent-100-4": {
+        "location": "data/concurrent_100_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 100 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 100 load worker"
+            }
+        ]
+    },
+    "concurrent-105-4": {
+        "location": "data/concurrent_105_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 105 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 105 load worker"
+            }
+        ]
+    },
+    "concurrent-110-4": {
+        "location": "data/concurrent_110_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 110 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 110 load worker"
+            }
+        ]
+    },
+    "concurrent-115-4": {
+        "location": "data/concurrent_115_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 115 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 115 load worker"
+            }
+        ]
+    },
+    "concurrent-120-4": {
+        "location": "data/concurrent_120_4",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "4 PSc, 120 load worker",
+                "info": "4 PCs, rate 4 ops/sec, 120 load worker"
+            }
+        ]
+    },
+    "concurrent-80-5": {
+        "location": "data/concurrent_80_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 80 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 80 load worker"
+            }
+        ]
+    },
+    "concurrent-85-5": {
+        "location": "data/concurrent_85_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 85 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 85 load worker"
+            }
+        ]
+    },
+    "concurrent-90-5": {
+        "location": "data/concurrent_90_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 90 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 90 load worker"
+            }
+        ]
+    },
+    "concurrent-95-5": {
+        "location": "data/concurrent_95_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 95 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 95 load worker"
+            }
+        ]
+    },
+    "concurrent-100-5": {
+        "location": "data/concurrent_100_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 100 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 100 load worker"
+            }
+        ]
+    },
+    "concurrent-105-5": {
+        "location": "data/concurrent_105_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 105 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 105 load worker"
+            }
+        ]
+    },
+    "concurrent-110-5": {
+        "location": "data/concurrent_110_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 110 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 110 load worker"
+            }
+        ]
+    },
+    "concurrent-115-5": {
+        "location": "data/concurrent_115_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 115 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 115 load worker"
+            }
+        ]
+    },
+    "concurrent-120-5": {
+        "location": "data/concurrent_120_5",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "5 PSc, 120 load worker",
+                "info": "5 PCs, rate 5 ops/sec, 120 load worker"
+            }
+        ]
+    },
+    "concurrent-80-6": {
+        "location": "data/concurrent_80_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 80 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 80 load worker"
+            }
+        ]
+    },
+    "concurrent-85-6": {
+        "location": "data/concurrent_85_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 85 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 85 load worker"
+            }
+        ]
+    },
+    "concurrent-90-6": {
+        "location": "data/concurrent_90_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 90 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 90 load worker"
+            }
+        ]
+    },
+    "concurrent-95-6": {
+        "location": "data/concurrent_95_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 95 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 95 load worker"
+            }
+        ]
+    },
+    "concurrent-100-6": {
+        "location": "data/concurrent_100_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 100 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 100 load worker"
+            }
+        ]
+    },
+    "concurrent-105-6": {
+        "location": "data/concurrent_105_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 105 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 105 load worker"
+            }
+        ]
+    },
+    "concurrent-110-6": {
+        "location": "data/concurrent_110_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 110 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 110 load worker"
+            }
+        ]
+    },
+    "concurrent-115-6": {
+        "location": "data/concurrent_115_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 115 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 115 load worker"
+            }
+        ]
+    },
+    "concurrent-120-6": {
+        "location": "data/concurrent_120_6",
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "6 PSc, 120 load worker",
+                "info": "6 PCs, rate 6 ops/sec, 120 load worker"
+            }
+        ]
     }
 }

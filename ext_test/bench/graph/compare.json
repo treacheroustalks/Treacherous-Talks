@@ -468,5 +468,170 @@
                 "info": "Comparing the performance of various Riak configurations"
             }
         ]
+    },
+    "scaling-compare-bucket-props": {
+        "sources": [
+            {"scaling-bucket-props-1": "1x"},
+            {"scaling-bucket-props-2": "2x"},
+            {"scaling-bucket-props-3": "3x"},
+            {"scaling-bucket-props-4": "4x"},
+            {"scaling-bucket-props-5": "5x"},
+            {"scaling-bucket-props-6": "6x"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Scaling benchmarks - changed n_val",
+                "info": "Comparing changed bucket properties for 1 to 6 PCs"
+            }
+        ]
+    },
+    "concurrent-compare-1": {
+        "sources": [
+            {"concurrent-80-1": "1PCs 80 load worker"},
+            {"concurrent-85-1": "1PCs 85 load worker"},
+            {"concurrent-90-1": "1PCs 90 load worker"},
+            {"concurrent-95-1": "1PCs 95 load worker"},
+            {"concurrent-100-1": "1PCs 100 load worker"},
+            {"concurrent-105-1": "1PCs 105 load worker"},
+            {"concurrent-110-1": "1PCs 110 load worker"},
+            {"concurrent-115-1": "1PCs 115 load worker"},
+            {"concurrent-120-1": "1PCs 120 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many load worker 1PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-2": {
+        "sources": [
+            {"concurrent-80-2": "2PCs 80 load worker"},
+            {"concurrent-85-2": "2PCs 85 load worker"},
+            {"concurrent-90-2": "2PCs 90 load worker"},
+            {"concurrent-95-2": "2PCs 95 load worker"},
+            {"concurrent-100-2": "2PCs 100 load worker"},
+            {"concurrent-105-2": "2PCs 105 load worker"},
+            {"concurrent-110-2": "2PCs 110 load worker"},
+            {"concurrent-115-2": "2PCs 115 load worker"},
+            {"concurrent-120-2": "2PCs 120 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many load worker 2PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-3": {
+        "sources": [
+            {"concurrent-80-3": "3PCs 80 load worker"},
+            {"concurrent-85-3": "3PCs 85 load worker"},
+            {"concurrent-90-3": "3PCs 90 load worker"},
+            {"concurrent-95-3": "3PCs 95 load worker"},
+            {"concurrent-100-3": "3PCs 100 load worker"},
+            {"concurrent-105-3": "3PCs 105 load worker"},
+            {"concurrent-110-3": "3PCs 110 load worker"},
+            {"concurrent-115-3": "3PCs 115 load worker"},
+            {"concurrent-120-3": "3PCs 120 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many load worker 3PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-4": {
+        "sources": [
+            {"concurrent-80-4": "4PCs 80 load worker"},
+            {"concurrent-85-4": "4PCs 85 load worker"},
+            {"concurrent-90-4": "4PCs 90 load worker"},
+            {"concurrent-95-4": "4PCs 95 load worker"},
+            {"concurrent-100-4": "4PCs 100 load worker"},
+            {"concurrent-105-4": "4PCs 105 load worker"},
+            {"concurrent-110-4": "4PCs 110 load worker"},
+            {"concurrent-115-4": "4PCs 115 load worker"},
+            {"concurrent-120-4": "4PCs 120 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many load worker 4PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-5": {
+        "sources": [
+            {"concurrent-80-5": "5PCs 80 load worker"},
+            {"concurrent-85-5": "5PCs 85 load worker"},
+            {"concurrent-90-5": "5PCs 90 load worker"},
+            {"concurrent-95-5": "5PCs 95 load worker"},
+            {"concurrent-100-5": "5PCs 100 load worker"},
+            {"concurrent-105-5": "5PCs 105 load worker"},
+            {"concurrent-110-5": "5PCs 110 load worker"},
+            {"concurrent-115-5": "5PCs 115 load worker"},
+            {"concurrent-120-5": "5PCs 120 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many load worker 5PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-6": {
+        "sources": [
+            {"concurrent-80-6": "6PCs 80 load worker"},
+            {"concurrent-85-6": "6PCs 85 load worker"},
+            {"concurrent-90-6": "6PCs 90 load worker"},
+            {"concurrent-95-6": "6PCs 95 load worker"},
+            {"concurrent-100-6": "6PCs 100 load worker"},
+            {"concurrent-105-6": "6PCs 105 load worker"},
+            {"concurrent-110-6": "6PCs 110 load worker"},
+            {"concurrent-115-6": "6PCs 115 load worker"},
+            {"concurrent-120-6": "6PCs 120 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many load worker 6PCs can handle"
+            }
+        ]
     }
 }
