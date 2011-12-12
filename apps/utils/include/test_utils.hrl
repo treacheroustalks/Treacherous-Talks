@@ -468,6 +468,19 @@ adfadfasdfaldfad">>
 ">>
 ).
 
+-define(SAMPLE_GET_PRESENCE(Session),
+<<"
+    asdfasdfasdfasdf
+    GETPRESENCE
+
+    SESSION: " Session "
+    NICKNAME: testusernick
+
+    END
+    2563564565asdfa
+">>
+).
+
 -define(SAMPLE_GET_PROFILE(Session),
 <<"
     asdfasdfasdfasdf

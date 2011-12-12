@@ -292,6 +292,21 @@ get(in_game_msg, GMsg =#game_message{}) ->
                   GMsg#game_message.content])
     end;
 
+% User update
+get({get_presence, success}, Val) ->
+    case Val of
+        user_online ->
+            resp("User is ONLINE.~n");
+        user_offline ->
+            resp("User is OFFLINE.~n")
+    end;
+get({get_presence, invalid_data}, Error) ->
+    case Error of
+        user_not_found ->
+            resp("Given user does not exist.~n");
+        _ ->
+            resp_unhandled_error(Error)
+    end;
 
 % Unimplemented command
 get({Cmd, _Status}, _Val) ->

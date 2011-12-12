@@ -61,7 +61,8 @@ parser_test_() ->
       fun get_system_status/0,
       fun game_search/0,
       fun get_games_ongoing/0,
-      fun stop_game/0
+      fun stop_game/0,
+      fun get_presence/0
      ]}.
 
 get_db_stats() ->
@@ -147,6 +148,10 @@ parse_countries_str() ->
 get_games_ongoing() ->
     ?assertEqual (get_games_ongoing_exp_data(),
                   web_parser:parse(get_games_ongoing_data())).
+
+get_presence() ->
+    ?assertEqual (get_presence_exp_data(),
+                  web_parser:parse(get_presence_data())).
 
 
 %% Expected data
@@ -284,6 +289,10 @@ get_games_ongoing_exp_data() ->
 stop_game_exp_data() ->
     {stop_game, {ok,
                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
+
+get_presence_exp_data() ->
+    {get_presence, {ok,
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", "qnick"}}.
 
 %% Input data
 
@@ -498,3 +507,12 @@ stop_game_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"game_id","654321"}]}]}}]}}.
+
+get_presence_data() ->
+    {ok,{struct,
+     [{"action","get_presence"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"nick","qnick"}]}]}}]}}.

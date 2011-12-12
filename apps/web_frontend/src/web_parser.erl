@@ -46,26 +46,26 @@
 %% Action - chooses the message that has to be generated
 %% Data - Data in the form of Erlang version of JSON that is yet to be decoded.
 %%        Data is used to create the message content based in Action
--spec
-parse(Data::term()) ->
-        {register, {ok, #user{}}} |
-        {login, {ok, #user{}}} |
-        {update, {ok, string(), #user{}}} |
-        {create_game, {ok, string(), #game{}}} |
-        {reconfig_game, {ok, string(), #game{}}} |
-        {join_game, {ok, string(), {integer(), atom()}}} |
-        {game_overview, {ok, string(), integer()}} |
-        {game_order, {ok, string(), {integer(), term()}}} |
-        {games_current, {ok, string(), atom()}} |
-        {game_search, {ok, string(), string()}} |
-        {get_games_ongoing, {ok, string(), term()}} |
-        {get_db_stats, {ok, string(), term()}} |
-        {game_msg, {ok, string(), #frontend_msg{}}} |
-        {stop_game, {ok, string(), integer()}} |
-        {power_msg, {ok, string(), #frontend_msg{}}} |
-        {user_msg, {ok, string(), #frontend_msg{}}} |
-        {assign_moderator, {ok, string(), {string(), atom()}}} |
-        {get_system_status, {ok, string()}}.
+-spec parse(Data::term()) ->
+          {register, {ok, #user{}}} |
+              {login, {ok, #user{}}} |
+              {update, {ok, string(), #user{}}} |
+              {create_game, {ok, string(), #game{}}} |
+              {reconfig_game, {ok, string(), #game{}}} |
+              {join_game, {ok, string(), {integer(), atom()}}} |
+              {game_overview, {ok, string(), integer()}} |
+              {game_order, {ok, string(), {integer(), term()}}} |
+              {games_current, {ok, string(), atom()}} |
+              {game_search, {ok, string(), string()}} |
+              {get_games_ongoing, {ok, string(), term()}} |
+              {get_db_stats, {ok, string(), term()}} |
+              {game_msg, {ok, string(), #frontend_msg{}}} |
+              {stop_game, {ok, string(), integer()}} |
+              {power_msg, {ok, string(), #frontend_msg{}}} |
+              {user_msg, {ok, string(), #frontend_msg{}}} |
+              {assign_moderator, {ok, string(), {string(), atom()}}} |
+              {get_system_status, {ok, string()}} |
+              {get_presence, {ok, string(), string()}}.
 
 parse(RawData) ->
     {Action, Data} = decode(RawData),
@@ -183,8 +183,9 @@ parse(RawData) ->
                         {get_field ("nick", Data),
                          parse_moderator_str(get_field ("is_moderator", Data))}}};
         "get_system_status" ->
-            {get_system_status, {ok,
-                        get_field ("session_id", Data)}}
+            {get_system_status, {ok, get_field ("session_id", Data)}};
+        "get_presence" ->
+            {get_presence, {ok, get_field ("session_id", Data), get_field ("nick", Data)}}
     end.
 
 

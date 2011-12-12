@@ -42,7 +42,8 @@
          parse_game_search/1,
          parse_games_current/1,
          parse_join/1,
-         parse_get_session_user/1]).
+         parse_get_session_user/1,
+         parse_get_presence/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -381,6 +382,31 @@ parse_overview(Data) ->
                                 RequiredFields) of
                 [] ->
                     {ok, SessionId, list_to_integer(GameId)};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_get_presence/1
+%%
+%% Parses a get_presence request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+parse_get_presence(Data) ->
+    RequiredFields = [?SESSION, ?NICKNAME],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId, Nick] = ReqValues,
+
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    {ok, SessionId, Nick};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end

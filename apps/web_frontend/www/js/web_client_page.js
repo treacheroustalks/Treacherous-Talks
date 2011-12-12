@@ -168,7 +168,6 @@ function load_update_user_data() {
  * Load the reconfig_game page
  */
 function load_reconfig_game_page(page_data) {
-    page = 'reconfig_game';
     load_page(function() {
         load_reconfig_game_data(page_data)
     });
@@ -235,13 +234,30 @@ function load_game_search_page() {
  */
 function load_games_current(data) {
     var view_link = function(id) {
-        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">view</a>';
+        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">View</a>';
     }
+    var reconfig_link = function(id) {
+        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="reconfig_game(' + id + ')">Reconfig</a>';
+    }
+
     // Add view link to all the games
     for ( var i = 0; i < data.length; i++) {
         var obj = data[i];
-        data[i]['view'] = view_link(obj.id);
+        data[i]['View'] = view_link(obj.id);
+        if(userObj.id == obj.creator_id)
+            data[i]['Reconfig'] = reconfig_link(obj.id);
+        else
+            data[i]['Reconfig'] = "-";
+
+        // Filter out some fields
+        delete data[i]['creator_id'];
+        delete data[i]['order_phase'];
+        delete data[i]['retreat_phase'];
+        delete data[i]['build_phase'];
+        delete data[i]['num_players'];
+        delete data[i]['waiting_time'];
     }
+
     // Create html table from JSON and display it
     var keys = get_keys(data[0]);
     $('#games_current_data').html(JsonToTable(data, keys, 'gct', 'gcc'));
@@ -311,6 +327,21 @@ function get_game_overview(game_id) {
         } ]
     };
     call_server('game_overview', dataObj);
+}
+
+/**
+ * Call server to reconfigure a game
+ */
+function reconfig_game(game_id) {
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "game_id" : game_id
+        } ]
+    };
+    page = 'reconfig_game';
+    call_server('get_game', dataObj);
 }
 
 /**
@@ -479,6 +510,7 @@ function validate_login() {
 
 /**
  * Validate temporary form on dashboard to get game_id
+ * DEPRECATED
  */
 function validate_dashboard_reconfig() {
     var form = get_form_data('#reconfig_form');
@@ -497,6 +529,25 @@ function validate_dashboard_reconfig() {
         } ]
     };
     call_server('get_game', dataObj);
+}
+
+/**
+ * Validate temporary form on dashboard to get user presence
+ */
+function validate_dashboard_presence() {
+    var form = get_form_data('#check_presence_form');
+
+    if (check_field_empty(form.user_nick, 'User nick'))
+        return false;
+
+    var dataObj = {
+        "content" : [ {
+            "session_id" : get_cookie()
+        }, {
+            "nick" : form.user_nick
+        } ]
+    };
+    call_server('get_presence', dataObj);
 }
 
 /**
@@ -527,6 +578,7 @@ function validate_dashboard_join() {
 
 /**
  * Validate temporary form on dashboard to get overview of a game
+ * DEPRECATED
  */
 function validate_dashboard_overview() {
     var form = get_form_data('#game_overview_form');

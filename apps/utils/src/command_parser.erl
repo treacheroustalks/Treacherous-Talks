@@ -93,6 +93,7 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?MESSAGE
                   "|"?GETPROFILE
                   "|"?POWERMESSAGE
+                  "|"?GETPRESENCE
                   ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -143,7 +144,9 @@ parse(BinString, Client) when is_binary(BinString) ->
                             {user_msg, user_commands:parse_user_msg(Data)}
                     end;
                 <<?POWERMESSAGE>> ->
-                    {power_msg, user_commands:parse_game_msg(Data)}
+                    {power_msg, user_commands:parse_game_msg(Data)};
+                <<?GETPRESENCE>> ->
+                    {get_presence, user_commands:parse_get_presence(Data)}
             end;
          nomatch ->
                 unknown_command
