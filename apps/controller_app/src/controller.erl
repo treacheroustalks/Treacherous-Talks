@@ -91,6 +91,9 @@
 %%              power_msg |
 %%              stop_game |
 %%              get_presence |
+%%              send_report |
+%%              get_reports |
+%%              mark_report_as_done |
 %%              unkown_command.
 %%
 %% result() :: success | parse_error | invalid_data | invalid_session
@@ -134,6 +137,9 @@
 %% stop_game ->         []
 %% get_games_ongoing -> []
 %% get_presence ->      [user_not_found]
+%% send_report ->       []
+%% get_reports ->       []
+%% mark_report_as_done -> [notfound]
 %%
 %% @end
 %%
@@ -191,7 +197,10 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == power_msg;
        Command == stop_game;
        Command == get_games_ongoing;
-       Command == get_presence ->
+       Command == get_presence;
+       Command == send_report;
+       Command == get_reports;
+       Command == mark_report_as_done ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

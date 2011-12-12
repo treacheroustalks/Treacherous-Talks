@@ -79,8 +79,16 @@ handle_call({unread, UserId}, _From, State) ->
     Unread = do_unread(UserId),
     {reply, Unread, State};
 
+handle_call({get_reports, Role}, _From, State) ->
+    Reports = get_reports(Role),
+    {reply, Reports, State};
+
 handle_call({mark_as_read, MessageId, Bucket}, _From, State) ->
     Result = do_mark_as_read(MessageId, Bucket),
+    {reply, Result, State};
+
+handle_call({mark_as_done, ReportId}, _From, State) ->
+    Result = do_mark_as_done(ReportId),
     {reply, Result, State};
 
 handle_call({user_msg, Msg=#message{}}, _From, State) ->
@@ -103,6 +111,10 @@ handle_call({user_msg, Msg=#message{}}, _From, State) ->
              end,
     {reply, Result, State};
 
+handle_call({report_msg, Report = #report_message{}}, _From, State) ->
+    Result = log_report_msg(undefined, Report),
+    {reply, Result, State};
+
 handle_call(_Request, _From, State) ->
     ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -112,6 +124,7 @@ handle_cast({game_msg, GMsg = #game_message{}}, State) ->
     Event = #push_event{type = in_game_msg, data = GMsg},
     controller:push_event(GMsg#game_message.to_id, Event),
     {noreply, State};
+
 
 handle_cast(_Msg, State) ->
     ?DEBUG("received unhandled cast: ~p~n",[{_Msg, State}]),
@@ -139,6 +152,10 @@ log_game_msg(undefined, GMsg = #game_message{}) ->
     ID = db:get_unique_id(),
     log_message(ID, GMsg#game_message{id = ID}, ?B_GAME_MESSAGE).
 
+log_report_msg(undefined, Report = #report_message{}) ->
+    ID = db:get_unique_id(),
+    log_message(ID, Report#report_message{id = ID}, ?B_REPORT_MESSAGE).
+
 do_unread(UserId) ->
     {ok, UserMsges} = get_unread_msges(UserId, ?B_MESSAGE, message),
     {ok, GameMsges} = get_unread_msges(UserId, ?B_GAME_MESSAGE, game_message),
@@ -153,6 +170,25 @@ get_unread_msges(UserId, Bucket, RecordName) ->
                          end,
                          PropLists),
     {ok, Messages}.
+
+get_reports(Role) ->
+    Query = lists:flatten(io_lib:format("to=~p AND status=notdone", [Role])),
+    db_utils:do_search_values(?B_REPORT_MESSAGE, Query, report_message).
+
+do_mark_as_done(ReportId) ->
+    case db:get(?B_REPORT_MESSAGE, db:int_to_bin(ReportId)) of
+        {ok, DBObj} ->
+            PropList = db_obj:get_value(DBObj),
+            ReportMsg = data_format:plist_to_rec(report_message, PropList),
+            DoneMsg = ReportMsg#report_message{status = done},
+            Updated = data_format:rec_to_plist(DoneMsg),
+            DoneDBObj = db_obj:set_value(DBObj, Updated),
+            db:put(DoneDBObj),
+            {ok, ReportId};
+        {error, notfound} ->
+            {error, notfound}
+    end.
+
 
 do_mark_as_read(MessageId, Bucket)
   when Bucket == ?B_MESSAGE;

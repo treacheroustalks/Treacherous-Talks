@@ -72,7 +72,10 @@ has_access(Command, user) ->
 %% @end
 %% ------------------------------------------------------------------
 moderator_cmd() ->
-    [power_msg].
+    [power_msg,
+     get_reports,
+     mark_report_as_done
+    ].
 
 %% ------------------------------------------------------------------
 %% @doc
@@ -93,5 +96,6 @@ user_cmd() ->
      games_current,
      game_search ,
      game_msg,
-     get_presence
+     get_presence,
+     send_report
     ].
