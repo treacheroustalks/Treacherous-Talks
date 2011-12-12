@@ -21,9 +21,8 @@ function test_equal_dist {
     servers="${SERVERS[@]:0:$Count}"
     stop-all $servers
     setup-and-start-cluster $servers
-    LST=$(echo "$Count-1" | bc)
-    for i in $(seq 0 $LST); do
-        set-bucket-n_vals ${SERVERS[$i]} $Count
+    for s in $servers; do
+        set-bucket-n_vals $s $Count
     done
 
     # run the test
