@@ -112,7 +112,7 @@ push_t() ->
 
 %% helper functions
 create_user() ->
-    #user{id = undefined,
+    #user{id = db_c:get_unique_id(),
           nick = "testuser" ++ integer_to_list(db_c:get_unique_id()),
           email = "test@user.com",
           password = "test_passw0rd",
