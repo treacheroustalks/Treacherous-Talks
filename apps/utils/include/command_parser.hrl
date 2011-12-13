@@ -33,7 +33,9 @@
             ?VIEWCURRENTGAMES ++ "," ++
             ?SEARCH ++ "," ++
             ?GETPROFILE ++ "," ++
-            ?GETPRESENCE
+            ?GETPRESENCE ++ "," ++
+            ?REPORTPLAYER ++ "," ++
+            ?REPORTISSUE
             ).
 -define(REGISTER, "REGISTER").
 -define(UPDATE, "UPDATE").
@@ -47,6 +49,8 @@
 -define(SEARCH, "SEARCH").
 -define(GETPROFILE, "GETPROFILE").
 -define(GETPRESENCE, "GETPRESENCE").
+-define(REPORTPLAYER, "REPORTPLAYER").
+-define(REPORTISSUE, "REPORTISSUE").
 -define(END, "END").
 
 

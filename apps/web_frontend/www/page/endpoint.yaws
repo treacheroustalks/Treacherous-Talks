@@ -363,6 +363,11 @@ get_ret({mark_report_as_done, success}, Ret=#ret{}, _Data) ->
 get_ret({mark_report_as_done, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret ({send_report, success}, Ret, _Data) ->
+    msg_success(Ret#ret{page="user_help"});
+get_ret ({send_report, invalid_data}, Ret, _Data) ->
+    msg_error(Ret);
+
 % General unhandled case
 get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
     Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."

@@ -494,7 +494,43 @@ adfadfasdfaldfad">>
 ">>
 ).
 
+-define(SAMPLE_PLAYER_REPORT(Session),
+<<"
+    asdfasdfasdfasdf
+    REPORTPLAYER
 
+    SESSION: " Session "
+
+    CONTENT: report a player
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_ISSUE_REPORT(Session),
+<<"
+    asdfasdfasdfasdf
+    REPORTISSUE
+
+    SESSION: " Session "
+
+    CONTENT: report an issue
+    END
+    2563564565asdfa
+">>
+).
+
+-define(SAMPLE_FAILING_REPORT(Session),
+<<"
+    asdfasdfasdfasdf
+    REPORTISSUE
+
+    SESSION: " Session "
+
+    END
+    2563564565asdfa
+">>
+).
 %%--------------------------------------------------------------------
 %% test utilities
 %%--------------------------------------------------------------------

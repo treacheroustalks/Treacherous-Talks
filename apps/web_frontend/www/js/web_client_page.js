@@ -219,6 +219,14 @@ function load_moderator_page() {
     load_page();
 }
 
+/** Load the user help page
+  *
+  */
+function load_report_page() {
+    page = 'user_help';
+    load_page();
+}
+
 /**
  * Load the registration page
  */
@@ -377,6 +385,7 @@ function login_update_elements() {
     $("#login_form").hide();
     $("#logout").show();
     $("#register_menu").hide();
+    $("#help_menu").show();
     $("#user_nick").html("<b>"+userObj.nick+"</b>");
     drawChatBoxes();
     if(userObj.role!="user")
@@ -398,6 +407,7 @@ function logout_update_elements() {
     clean_userObj();
     $("#moderator_menu").hide();
     $("#operator_menu").hide();
+    $("#help_menu").hide();
     $("#logout").hide();
     $("#login_form").show();
     $("#register_menu").show();
@@ -563,6 +573,7 @@ function get_games_ongoing() {
     call_server('get_games_ongoing', dataObj);
 }
 
+
 function operator_game_overview(inspect_game_id) {
     var dataObj = {
         "content" : [
@@ -596,6 +607,7 @@ function operator_get_game_msg(msg_only, game_id, year, season_phase, country) {
     };
     call_server('operator_get_game_msg', dataObj);
 }
+
 
 /*------------------------------------------------------------------------------
  Form cleanup functions
@@ -639,6 +651,9 @@ function handle_enter() {
         break;
     case 'add_remove_moderator':
         validate_add_remove_moderator();
+        break;
+    case 'user_help':
+        validate_send_report();
         break;
     default:
         break;
@@ -998,7 +1013,37 @@ function validate_game() {
 
     call_server('game_order', dataObj);
 }
+/**
+  * Validate send report
+  */
+function validate_send_report(){
+    var form = get_form_data('#report_form');
+    var type = form.report_type;
 
+    if (check_field_empty(type, 'report_type', "Please choose a type of issue"))
+        return false;
+    if(check_field_empty(form.report_message, 'report_message', "Please enter a message"))
+        return false;
+
+    if(type == "report_user"){
+        var to = "moderator"
+    }else{
+        var to = "operator"
+    }
+
+    var dataObj = {
+        "content" : [
+            { "session_id" : get_cookie()
+            }, {
+                "to" : to
+            }, {
+                "type" : type
+            }, {
+                "content" : form.report_message
+            }
+        ]};
+    call_server('send_report', dataObj);
+}
 /**
  * Check if a given field is empty and display appropriate message
  *

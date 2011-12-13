@@ -75,9 +75,12 @@
           {get_session_user, {ok, SessionId::string(), no_arg}} |
           {get_session_user, {error, {required_fields, list()}}} |
           {get_session_user, {error, {invalid_input, list()}}} |
-          {power_msg, {ok, #frontend_msg{}}} |
+          {power_msg, {ok, SessionId::string(), #frontend_msg{}}} |
           {power_msg, {error, {required_fields, list()}}} |
           {power_msg, {error, {invalid_input, list()}}} |
+          {send_report, {ok, SessionId::string(), #report_message{}}} |
+          {send_report, {error, {required_fields, list()}}} |
+          {send_report, {error, {invalid_input, list()}}} |
           atom().
 parse(BinString, Client) when is_binary(BinString) ->
     Commands =    "("?LOGIN
@@ -94,6 +97,8 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?GETPROFILE
                   "|"?POWERMESSAGE
                   "|"?GETPRESENCE
+                  "|"?REPORTPLAYER
+                  "|"?REPORTISSUE
                   ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -146,7 +151,11 @@ parse(BinString, Client) when is_binary(BinString) ->
                 <<?POWERMESSAGE>> ->
                     {power_msg, user_commands:parse_game_msg(Data)};
                 <<?GETPRESENCE>> ->
-                    {get_presence, user_commands:parse_get_presence(Data)}
+                    {get_presence, user_commands:parse_get_presence(Data)};
+                <<?REPORTPLAYER>> ->
+                    {send_report, user_commands:parse_send_report(Data, report_player)};
+                <<?REPORTISSUE>> ->
+                    {send_report, user_commands:parse_send_report(Data, report_issue)}
             end;
          nomatch ->
                 unknown_command

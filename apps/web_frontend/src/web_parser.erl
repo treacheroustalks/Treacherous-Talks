@@ -68,7 +68,8 @@
           {get_system_status, {ok, string()}} |
           {get_presence, {ok, string(), string()}} |
           {get_reports, {ok, string()}} |
-          {mark_as_done, {ok, string(), integer()}}.
+          {mark_as_done, {ok, string(), integer()}} |
+          {send_report, {ok, string(), #report_message{}}}.
 
 parse(RawData) ->
     {Action, Data} = decode(RawData),
@@ -202,7 +203,15 @@ parse(RawData) ->
         "mark_as_done" ->
             IssueId = get_integer("issue_id", Data),
             {mark_report_as_done, {ok,
-                                   get_field("session_id", Data), IssueId}}
+                                   get_field("session_id", Data), IssueId}};
+        "send_report" ->
+            {send_report,
+             {ok,
+              get_field ("session_id", Data),
+              #report_message{to = list_to_atom(get_field("to", Data)),
+                              type = list_to_atom(get_field("type", Data)),
+                              content = get_field("content", Data)}
+             }}
     end.
 
 

@@ -223,6 +223,41 @@ game_msg_test_() ->
      end
     ].
 
+send_report_test_() ->
+    [
+     fun() ->
+             ?debugMsg("correct report player parsing"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_PLAYER_REPORT(?SESSION_ID), im),
+             ExpectedOutput = {send_report,
+                               {ok, ?SESSION_ID,
+                               #report_message{to = moderator,
+                                               type = report_player,
+                                               content = "report a player"}}},
+             ?assertEqual(ExpectedOutput, ActualOutput)
+     end,
+     fun() ->
+             ?debugMsg("correct report issue parsing"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_ISSUE_REPORT(?SESSION_ID), im),
+             ExpectedOutput = {send_report,
+                               {ok, ?SESSION_ID,
+                               #report_message{to = operator,
+                                               type = report_issue,
+                                               content = "report an issue"}}},
+             ?assertEqual(ExpectedOutput, ActualOutput)
+     end,
+     fun() ->
+             ?debugMsg("incorrect report parsing - missing content"),
+             ActualOutput = command_parser:parse(
+                              ?SAMPLE_FAILING_REPORT(?SESSION_ID), im),
+             Expected = {send_report,{error, {required_fields,
+                                           [?SESSION, ?CONTENT]}}},
+
+             ?assertEqual(Expected, ActualOutput)
+     end
+    ].
+
 unit_missing_test_() ->
     ActualOutput = command_parser:parse(?SAMPLE_TEST_ORDERS_UNIT_MISSING, im),
     %io:format(user, "~p~n", [ActualOutput]),

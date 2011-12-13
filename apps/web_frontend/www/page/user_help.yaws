@@ -1,0 +1,23 @@
+<!-- send reports page -->
+<div class="page-header">
+  <h1>Help&nbsp<small>Request assistance</small></h1>     
+</div>
+<div id="message"></div>
+<div class="row">
+  <div class="span7">
+    <form id="report_form">
+      <div class="clearfix">
+          <select name="report_type" id="report_type">
+            <option value="">Select Report Type</option>
+            <option value="report_user">Report User</option>
+            <option value="report_issue">Report Issue</option>
+          </select><br><br>
+          <textarea class="xlarge" id="report_message" name="report_message" rows="5" cols="50"></textarea>
+        <div class="actions">
+          <input type="submit" class="btn primary" value="Submit" onclick="validate_send_report(); return false;"/>
+          <button type="reset" class="btn" onclick="load_home_page();">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

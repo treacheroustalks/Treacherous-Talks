@@ -43,7 +43,8 @@
          parse_games_current/1,
          parse_join/1,
          parse_get_session_user/1,
-         parse_get_presence/1]).
+         parse_get_presence/1,
+         parse_send_report/2]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -516,6 +517,44 @@ parse_games_current(Data) ->
                     {error, {invalid_input, ErrorList}}
             end
     end.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_send_report/2
+%%
+%% Parses a send report request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_send_report(Data :: binary(), ReportType :: atom()) ->
+          {ok, SessionId::string(), #report_message{}} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_send_report(Data, ReportType) ->
+    RequiredFields = [?SESSION, ?CONTENT],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId, Content] = ReqValues,
+
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    To = case ReportType of
+                             report_issue -> operator;
+                             report_player -> moderator
+                         end,
+                    {ok, SessionId,
+                    #report_message{to = To,
+                                    type = ReportType,
+                                    content = Content}};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+
 
 %% Internal functions
 %%------------------------------------------------------------------------------

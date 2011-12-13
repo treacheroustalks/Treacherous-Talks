@@ -279,7 +279,11 @@ get({assign_moderator, invalid_data}, Error) ->
         _ ->
             resp_unhandled_error(Error)
     end;
-
+% send report
+get({send_report, success}, _Val) ->
+    resp("Issue successfully sent");
+get({send_report, invalid_data}, Error) ->
+    resp_unhandled_error(Error);
 
 % Invalid session
 get({_Cmd, invalid_session}, _Val) ->

@@ -66,7 +66,8 @@ parser_test_() ->
       fun stop_game/0,
       fun get_presence/0,
       fun mark_as_done/0,
-      fun get_reports/0
+      fun get_reports/0,
+      fun send_report/0
      ]}.
 
 get_db_stats() ->
@@ -175,7 +176,9 @@ get_reports() ->
     ?assertEqual(get_reports_exp_data(),
                  web_parser:parse(get_reports_data())).
 
-
+send_report() ->
+    ?assertEqual(get_send_report_exp_data(),
+                 web_parser:parse(get_send_report_data())).
 
 %% Expected data
 operator_get_game_msg_exp_data() ->
@@ -335,6 +338,12 @@ get_reports_exp_data() ->
     {get_reports, {ok,
                    "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
 
+get_send_report_exp_data() ->
+    {send_report, {ok,
+                   "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                   #report_message{to = operator,
+                                   type = report_issue,
+                                   content = "report an issue"}}}.
 
 %% Input data
 
@@ -596,3 +605,14 @@ get_reports_data() ->
            {array,
             [{struct,[{"session_id",
                        "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
+
+get_send_report_data() ->
+    {ok, {struct,
+          [{"action","send_report"},
+           {"data",
+            {array,
+             [{struct,[{"session_id",
+                        "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+              {struct,[{"to","operator"}]},
+              {struct,[{"type","report_issue"}]},
+              {struct,[{"content","report an issue"}]}]}}]}}.

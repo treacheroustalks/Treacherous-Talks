@@ -30,6 +30,7 @@
 
 -include_lib("datatypes/include/user.hrl").% #user{}
 -include_lib("datatypes/include/game.hrl").% #game{}
+-include_lib("datatypes/include/message.hrl").% #report_message{}
 
 -include("include/test_utils.hrl").% ?SAMPLE_EMAILS
 -include("include/command_parser.hrl").
@@ -132,6 +133,16 @@ parse_get_presence_test_() ->
                                      ?SAMPLE_GET_PRESENCE(?SESSION_ID)),
     Expected = {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==",
                     "testusernick"},
+    [
+     ?_assertEqual(Expected, ActualOutput)
+    ].
+
+parse_send_report_test_() ->
+    ActualOutput = user_commands:parse_send_report(
+                     ?SAMPLE_PLAYER_REPORT(?SESSION_ID), report_player),
+    Expected = {ok, ?SESSION_ID, #report_message{to = moderator,
+                                                 type = report_player,
+                                                 content = "report a player"}},
     [
      ?_assertEqual(Expected, ActualOutput)
     ].
