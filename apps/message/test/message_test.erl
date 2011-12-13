@@ -125,8 +125,12 @@ message_worker_tst_() ->
     [{"write a user message in db",
       fun() ->
         message_worker:log_message(test_key(), test_msg(), ?B_MESSAGE),
-        timer:sleep(100),
-        ActualValue = message_util:get_message(test_key(), ?B_MESSAGE, message),
+        GetMsg = fun() ->
+                         message_util:get_message(test_key(),
+                                                  ?B_MESSAGE,
+                                                  message)
+                 end,
+        ActualValue = wait_for_change (GetMsg, {error,notfound}, 1000),
         ?assertEqual({ok, test_msg()},ActualValue),
         db:delete(?B_MESSAGE, db:int_to_bin(test_key()))
      end},
@@ -151,9 +155,9 @@ wait_for_change (Fun, Initial, Tries) ->
             ?debugVal (Initial),
             timer:sleep (10),
             wait_for_change (Fun, Initial, Tries -1);
-        Other ->
-            ?debugVal (Other),
-            Other
+        Changed ->
+            ?debugVal (Changed),
+            Changed
     end.
 
 message_fail_tst_() ->
@@ -172,9 +176,15 @@ message_success_tst_() ->
              % send msg to "to_user"
              {ok, Key} = message:user_msg(test_msg()),
 
-             timer:sleep(100),
+             GetMsg = fun() ->
+                              message_util:get_message(Key,
+                                                       ?B_MESSAGE,
+                                                       message)
+                      end,
              % check if the msg has been correctly stored in db
-             {ok, ActualMessage} = message_util:get_message(Key, ?B_MESSAGE, message),
+             {ok, ActualMessage} = wait_for_change(GetMsg,
+                                                   {error,notfound},
+                                                   1000),
              Expected = (test_msg())#message{id = Key,
                                            date_created =
                                                ActualMessage#message.date_created},
@@ -214,10 +224,11 @@ unread_tst_() ->
                OtherMessage = ( test_msg2() )#message{ to_id = (to_user2())#user.id,
                                                        to_nick = (to_user2())#user.nick },
                {ok, _Key3} = message:user_msg(OtherMessage),
-               timer:sleep(100),
-
+               GetUnread = fun() ->
+                                   message:unread((to_user())#user.id)
+                           end,
                % check if the msg has been correctly stored in db
-               Result = message:unread((to_user())#user.id),
+               Result = wait_for_change(GetUnread, {ok,[],[]}, 1000),
 
                {ok, {UnreadUserMsg, []}} = Result,
 
@@ -318,31 +329,39 @@ unread_tst_() ->
        fun() ->
                %check for message bucket
                {ok, Key1} = message:user_msg(test_msg()),
-               timer:sleep(100),
-               {ok, Message} = message_util:get_message(Key1, ?B_MESSAGE, message),
+               GetMsg = fun() ->
+                                message_util:get_message(Key1,
+                                                         ?B_MESSAGE,
+                                                         message)
+                        end,
+               {ok, Message} = wait_for_change(GetMsg, {error,notfound}, 1000),
                ?assertEqual(unread, Message#message.status),
                ok = message:mark_user_msg_as_read(Key1),
-               timer:sleep(100),
-               {ok, ReadMessage} = message_util:get_message(Key1, ?B_MESSAGE, message),
+               {ok, ReadMessage} = wait_for_change(GetMsg,
+                                                   {ok,Message},
+                                                   1000),
                ?assertEqual(read, ReadMessage#message.status),
 
                %check for game_message bucket
                ok = message:game_msg(test_game_msg(to_user_id())),
-               timer:sleep(100),
-               Result= message:unread((to_user())#user.id),
+               GetUnread = fun() ->
+                                   message:unread((to_user())#user.id)
+                           end,
+               Result = wait_for_change(GetUnread, {ok,{[],[]}}, 1000),
                ?debugFmt("it should return unread game messages ~p~n", [Result]),
                {ok, {[], [UnreadGameMsg]}} =Result,
                GameMsgKey = UnreadGameMsg#game_message.id,
-               {ok, GMsg} = message_util:get_message(GameMsgKey,
-                                                        ?B_GAME_MESSAGE,
-                                                        game_message),
+               GetMsg2 = fun() ->
+                                 message_util:get_message(GameMsgKey,
+                                                          ?B_GAME_MESSAGE,
+                                                          game_message)
+                         end,
+               {ok, GMsg} = GetMsg2(),
                ?assertEqual(unread, GMsg#game_message.status),
 
                ok = message:mark_game_msg_as_read(GameMsgKey),
-               timer:sleep(100),
-               {ok, ReadGMsg} = message_util:get_message(GameMsgKey,
-                                                        ?B_GAME_MESSAGE,
-                                                        game_message),
+               
+               {ok, ReadGMsg} = wait_for_change(GetMsg2, {ok,GMsg}, 1000),
                ?assertEqual(read, ReadGMsg#game_message.status)
        end},
       {"message:mark_as_unread/1 negative test",
@@ -360,9 +379,15 @@ report_player_tst_() ->
     [fun() ->
              ?debugMsg("Report messages sent and received test"),
              TestReport = test_report_msg(),
+             GetReports = fun() ->
+                                  message:get_reports(
+                                    TestReport#report_message.to)
+                          end,
+             GetReportsInitial = GetReports(),
              {ok, ID} = message:report_msg(TestReport),
-             timer:sleep(100),
-             {ok, Reports} = message:get_reports(TestReport#report_message.to),
+             {ok, Reports} = wait_for_change(GetReports,
+                                             GetReportsInitial,
+                                             1000),
              IDList = lists:map(fun(IssueRec) ->
                                         IssueRec#report_message.id end,
                                 Reports),
@@ -373,8 +398,10 @@ report_player_tst_() ->
              ?debugMsg("Mark report as done test"),
              TestReport = test_report_msg(),
              {ok, MsgID} = message:report_msg(TestReport),
-             timer:sleep(100),
-             {ok, MsgID} = message:mark_report_as_done(MsgID),
+             MarkDone = fun() ->
+                                message:mark_report_as_done(MsgID)
+                        end,
+             {ok, MsgID} = wait_for_change(MarkDone, {error,notfound}, 1000),
              {ok, DoneMsg} = message_util:get_message(MsgID,
                                                       ?B_REPORT_MESSAGE,
                                                       report_message),
@@ -397,9 +424,12 @@ delete_messages(UserId,Bucket) ->
               Keys).
 
 make_game_msg_as_read(ToUserId, FromUserId) ->
-    {ok, {_, UnreadGameMsges}} = message:unread(ToUserId),
+    GetUnread = fun() ->
+                     message:unread(ToUserId)
+                 end,
+    Orig = {ok, {_, UnreadGameMsges}} = GetUnread(),
     GMsg = lists:keyfind(FromUserId, #game_message.from_id, UnreadGameMsges),
     ?debugVal(GMsg),
     R = message:mark_game_msg_as_read(GMsg#game_message.id),
-    timer:sleep(100),
+    wait_for_change(GetUnread, Orig, 1000),
     R.
