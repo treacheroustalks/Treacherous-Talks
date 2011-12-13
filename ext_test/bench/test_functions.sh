@@ -27,36 +27,53 @@ function stop-all {
 }
 
 function copy-release {
-    remote=$TEST_USER@$1
-    SYS_DIR=$REMOTE_RELEASE/tt
+    tar_file=$1
+    host=$2
+    remote=$TEST_USER@$host
+    SYS_DIR=system-release/tt
     nodename=$SYS_DIR/etc/nodename.system_manager
     BIN=$SYS_DIR/bin/system_manager
 
     ssh $remote "
- echo -e \"[$1]\tStopping system manager\" ;
+ echo -e \"[$host]\tStopping system manager\" ;
  $BIN stop &> /dev/null;
- rm -rf $REMOTE_RELEASE > /dev/null" &&
-    echo -e "[$1]\tCopying release to $REMOTE_RELEASE/"
-    scp -r $LOCAL_RELEASE $remote:$REMOTE_RELEASE/ > /dev/null &&
+ rm -rf system-release > /dev/null" &&
+    echo -e "[$host]\tCopying release $tar_file"
+    scp $tar_file $remote:. > /dev/null &&
     ssh $remote "
- rm -f $REMOTE_RELEASE/riak/data/ring/* > /dev/null;
- sed -i \"s:-name.*:-name $SYS_MGR_NAME@$1:g\" $nodename &&
- sed -i \"s:PIPE_DIR=.*:PIPE_DIR=/tmp/\\\$USER/\\\$RUNNER_BASE_DIR/:g\" $REMOTE_RELEASE/riak/bin/riak &&
- echo -e \"[$1]\tStarting system manager\" &&
+ tar xfz $tar_file &>/dev/null;
+ rm $tar_file
+ sed -i \"s:-name.*:-name $SYS_MGR_NAME@$host:g\" $nodename &&
+ sed -i \"s:PIPE_DIR=.*:PIPE_DIR=/tmp/\\\$USER/\\\$RUNNER_BASE_DIR/:g\" system-release/riak/bin/riak &&
+ echo -e \"[$host]\tStarting system manager\" &&
  $BIN start &&
  sleep $START_SLEEP &&
- echo -e \"[$1]\tPinging system manager: \`$BIN ping\`\""
+ echo -e \"[$host]\tPinging system manager: \`$BIN ping\`\""
 }
 
 
 function start-remote-sys-managers {
+    tar_file=sys_mgr.tar.gz
+    sys_dir=`dirname $LOCAL_RELEASE`
+    tar_cmd="tar czf $tar_file `basename $LOCAL_RELEASE`"
+
+    echo "$tar_cmd"
+    rm -f $LOCAL_RELEASE/riak/data/ring/* &> /dev/null
+    rm -rf $LOCAL_RELEASE/riak/log &> /dev/null
+    rm -rf $LOCAL_RELEASE/tt/log &> /dev/null
+    cd $sys_dir
+    $tar_cmd &>/dev/null
+    cd - &>/dev/null
+    mv $sys_dir/$tar_file $tar_file
+
     for server in $@; do
-        copy-release $server &
+        copy-release $tar_file $server &
     done
     ret_val=0
     for job in `jobs -p`; do
         wait $job || ret_val=1
     done
+    rm -f $tar_file &> /dev/null
     return $ret_val
 }
 
@@ -121,7 +138,7 @@ function create-cluster-config {
 
 function start-cluster {
     BIN=$LOCAL_RELEASE/tt/bin/cluster_manager
-    $BIN -c -s $CLUSTER_CONFIG &&
+    $BIN -f -c -s $CLUSTER_CONFIG &&
     $BIN -f -j $CLUSTER_CONFIG &&
     sleep $START_SLEEP &&
     $BIN -f -p $CLUSTER_CONFIG

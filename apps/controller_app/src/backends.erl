@@ -41,6 +41,9 @@
           watch_neighbour/0,
           change_state/2]).
 
+
+-define(PING_SLEEP, 100).
+-define(PING_TRIES, 10).
 %% -----------------------------------------------------------------------------
 %% @doc
 %% `necromancer:watch'es the neighbour this node is responsible for.
@@ -110,62 +113,39 @@ get_remote_responding_backend () ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Go through a list of nodes and return the first one that is not equal to
-%% `node()' AND that is ping-able. <br/>
-%% The implementation is a bit complicated, it roughly works like this:
-%% for each of the backends except `node()', a process is spawned that tries to
-%% ping it. The first one that responds with "pong" will be the one that is
-%% returned. As soon as the quickest responding backend is found, the other
-%% ping-processes are killed (since their result is not needed any more).
-%% If no backends in the list is reachable, this function takes as long as the
-%% slowest ping try takes to return `pang', so be careful.
+%% Go through a list of nodes and return the first one that is ping-able. <br/>
+%% This functions tries ping all nodes in the Nodes list and returns the
+%% first one that returned a pong. In case none returned a pong it will
+%% sleep and then repeat this ?PING_TRIES times.
 %% @end
 %%-------------------------------------------------------------------
 -spec get_responding_backend(undefined | [] | [Node]) -> Node | undefined when
       Node :: atom().
-get_responding_backend ([]) ->
+get_responding_backend([]) ->
     undefined;
-get_responding_backend (Nodes) ->
-    Self = self (),
-    Ref = make_ref (),
-    Ping = fun (Node) ->
-                   spawn (
-                     fun () ->
-                             case net_adm:ping (Node) of
-                                 pong ->
-                                     Self ! {response, Ref, Node, self ()};
-                                 pang ->
-                                     Self ! {no_response, Ref, Node, self ()}
-                             end
-                     end)
-           end,
-    PingProcesses = lists:map (Ping, Nodes),
-    response_loop (Ref, PingProcesses).
+get_responding_backend(undefined) ->
+    undefined;
+get_responding_backend(Nodes) ->
+    responding_backend_fun(Nodes, ?PING_TRIES).
 
--spec response_loop (any (), [] | [pid ()]) -> node () | undefined.
-response_loop (Ref, PingProcesses) ->
-    receive
-        {response, Ref, Node, _} ->
-            %% kill all the ping process and empty self()'s mailbox:
-            lists:foreach (
-              fun (PingProcess) ->
-                      exit (PingProcess, normal),
-                      receive
-                          {_, Ref, _, _} ->
-                              ok
-                      after
-                          0 -> ok
-                      end
-              end,
-              PingProcesses),
-            Node;
-        {no_response, Ref, _, PingProcess} ->
-            NewPingProcesses = lists:delete (PingProcess, PingProcesses),
-            case NewPingProcesses of
-                [] ->
-                    undefined;
-                NewPingProcesses -> response_loop (Ref, NewPingProcesses)
-            end
+-spec responding_backend_fun([Node], Tries) -> Node | undefined when
+      Node :: atom(),
+      Tries :: non_neg_integer().
+responding_backend_fun(_Nodes, 0) ->
+    undefined;
+responding_backend_fun(Nodes, Tries) ->
+    PingResult = lists:map(fun(Node) ->
+                                   {net_adm:ping(Node), Node}
+                           end, Nodes),
+    Pings = lists:filter(fun({pong,_}) -> true;
+                            (_) -> false
+                         end, PingResult),
+    case Pings of
+        [] ->
+            timer:sleep(?PING_SLEEP),
+            responding_backend_fun(Nodes, Tries-1);
+        [{pong, Backend}|_] ->
+            Backend
     end.
 
 %% @doc
@@ -195,9 +175,9 @@ change_state (_OtherKey, _) ->
 %% @end
 -spec get_all_backends () -> [node ()] | [].
 get_all_backends () ->
-    case application:get_env (controller_app, backend_nodes) of
+    case application:get_env(controller_app, backend_nodes) of
         {ok, Backends} ->
-            lists:sort(Backends);
+            Backends;
         _ ->
             []
     end.

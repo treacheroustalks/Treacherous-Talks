@@ -2,13 +2,12 @@ TT_CONFIG=config/tt_general.config
 CONCURRENT=1
 #MODE="{rate, 7}"
 MODE="max"
-DURATION=60        # in minutes
+DURATION=20        # in minutes
 REPORT_INTERVAL=60 # in seconds
 
 TIMESTAMP=`date +"%y.%m.%d_%H-%M"`
 
 LOCAL_RELEASE="../../system-release"
-REMOTE_RELEASE="system-release"
 CLUSTER_CONFIG=cluster.config
 
 START_SLEEP=5
@@ -29,13 +28,13 @@ RIAK_HANDSHAKE_PORT=9201
 
 TEST_USER="load_test"
 SERVERS=(
-        "andre.pcs"
         "stephan.pcs"
-        "jd.pcs"
         "rahim.pcs"
         "suku.pcs"
         "dilshod.pcs"
         "erik.pcs"
         "lin.pcs"
+        "jd.pcs"
         "tiina.pcs"
+        "andre.pcs"
 )
