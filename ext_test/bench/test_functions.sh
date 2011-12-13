@@ -35,9 +35,9 @@ function copy-release {
     ssh $remote "
  echo -e \"[$1]\tStopping system manager\" ;
  $BIN stop &> /dev/null;
- rm -rf $REMOTE_RELEASE > /dev/null"
+ rm -rf $REMOTE_RELEASE > /dev/null" &&
     echo -e "[$1]\tCopying release to $REMOTE_RELEASE/"
-    scp -r $LOCAL_RELEASE $remote:$REMOTE_RELEASE/ > /dev/null 
+    scp -r $LOCAL_RELEASE $remote:$REMOTE_RELEASE/ > /dev/null &&
     ssh $remote "
  rm -f $REMOTE_RELEASE/riak/data/ring/* > /dev/null;
  sed -i \"s:-name.*:-name $SYS_MGR_NAME@$1:g\" $nodename &&
@@ -53,11 +53,16 @@ function start-remote-sys-managers {
     for server in $@; do
         copy-release $server &
     done
-    wait
+    ret_val=0
+    for job in `jobs -p`; do
+        wait $job || ret_val=1
+    done
+    return $ret_val
 }
 
 
 function create-cluster-config {
+    echo 
     rm -f $CLUSTER_CONFIG > /dev/null
     echo "%% -*- erlang -*-" > $CLUSTER_CONFIG
     echo "[" >> $CLUSTER_CONFIG
@@ -116,18 +121,18 @@ function create-cluster-config {
 
 function start-cluster {
     BIN=$LOCAL_RELEASE/tt/bin/cluster_manager
-    $BIN -f -c -s -j $CLUSTER_CONFIG &&
+    $BIN -c -s $CLUSTER_CONFIG &&
+    $BIN -f -j $CLUSTER_CONFIG &&
     sleep $START_SLEEP &&
     $BIN -f -p $CLUSTER_CONFIG
 }
 
 
 function setup-and-start-cluster {
-    echonormal "Starting remote system managers"
-    start-remote-sys-managers "$@"
+    run_script "Starting remote system managers" "start-remote-sys-managers $@" &&
 
-    create-cluster-config "$@"
-    run_script "Starting up the cluster" "start-cluster"
+    create-cluster-config "$@" &&
+    run_script "Starting up the cluster" "start-cluster" &&
 
     sleep $START_SLEEP
 }
@@ -178,4 +183,26 @@ function update-basho-config {
     sed -i "s:{.*report_interval,.*}:{report_interval, $REPORT_INTERVAL}:g" $TT_CONFIG
     sed -i "s:{.*tt_node,.*}:{tt_node, '$B_NAME@$1'}:g" $TT_CONFIG
 
+}
+
+
+function setup-and-benchmark {
+    res_dir=$1
+    server=$2
+    servers=${@:2}
+
+    update-basho-config $server
+    stop-all $servers 
+
+    ret_val=1
+    setup-and-start-cluster $servers && ret_val=0
+
+    # run the test
+    if [ $ret_val -eq 0 ] ; then
+        run-basho $TT_CONFIG $res_dir
+        ./backend_stats.escript $B_NAME@$server
+    fi
+
+    stop-all $servers
+    return $ret_val
 }

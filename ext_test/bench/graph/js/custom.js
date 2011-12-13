@@ -79,7 +79,7 @@ function load_graph(graph_key) {
 // Hacked graph for one use only!
 // FIXME: Delete or fix this after use!
 function load_hack_graph() {
-    var graph_key = "scaling-compare-opt";
+    var graph_key = "concurrent-compare-new";
 
     $.each(compare[graph_key].plots, function(i, plot) {
         // Only the first graph
@@ -148,7 +148,7 @@ function load_hack_graph() {
         function norm_array(key, val, graph_data) {
             var ret = new Array();
             $.each(val, function(i, v){
-                var denom = graph_data['1x:successful'][i];
+                var denom = graph_data['1PCs 14 load worker:successful'][i];
 
                 if(denom > 0)
                     ret.push(v/denom);

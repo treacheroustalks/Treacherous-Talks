@@ -633,5 +633,146 @@
                 "info": "Comparing how many load worker 6PCs can handle"
             }
         ]
+    },
+    "concurrent-compare-1-new": {
+        "sources": [
+            {"concurrent-10-1": "1PCs 10 load worker"},
+            {"concurrent-11-1": "1PCs 11 load worker"},
+            {"concurrent-12-1": "1PCs 12 load worker"},
+            {"concurrent-13-1": "1PCs 13 load worker"},
+            {"concurrent-14-1": "1PCs 14 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 1PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-2-new": {
+        "sources": [
+            {"concurrent-15-2": "2PCs 15 load worker"},
+            {"concurrent-16-2": "2PCs 16 load worker"},
+            {"concurrent-17-2": "2PCs 17 load worker"},
+            {"concurrent-18-2": "2PCs 18 load worker"},
+            {"concurrent-19-2": "2PCs 19 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 2PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-3-new": {
+        "sources": [
+            {"concurrent-25-3": "3PCs 25 load worker"},
+            {"concurrent-26-3": "3PCs 26 load worker"},
+            {"concurrent-27-3": "3PCs 27 load worker"},
+            {"concurrent-28-3": "3PCs 28 load worker"},
+            {"concurrent-29-3": "3PCs 29 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 3PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-4-new": {
+        "sources": [
+            {"concurrent-32-4": "4PCs 32 load worker"},
+            {"concurrent-33-4": "4PCs 33 load worker"},
+            {"concurrent-34-4": "4PCs 34 load worker"},
+            {"concurrent-35-4": "4PCs 35 load worker"},
+            {"concurrent-36-4": "4PCs 36 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 4PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-5-new": {
+        "sources": [
+            {"concurrent-34-5": "5PCs 34 load worker"},
+            {"concurrent-35-5": "5PCs 35 load worker"},
+            {"concurrent-36-5": "5PCs 36 load worker"},
+            {"concurrent-37-5": "5PCs 37 load worker"},
+            {"concurrent-38-5": "5PCs 38 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 5PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-6-new": {
+        "sources": [
+            {"concurrent-32-6": "6PCs 32 load worker"},
+            {"concurrent-33-6": "6PCs 33 load worker"},
+            {"concurrent-34-6": "6PCs 34 load worker"},
+            {"concurrent-35-6": "6PCs 35 load worker"},
+            {"concurrent-36-6": "6PCs 36 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 6PCs can handle"
+            }
+        ]
+    },
+    "concurrent-compare-new": {
+        "sources": [
+            {"concurrent-14-1": "1PCs 14 load worker"},
+            {"concurrent-19-2": "2PCs 19 load worker"},
+            {"concurrent-30-3": "3PCs 30 load worker"},
+            {"concurrent-36-4": "4PCs 36 load worker"},
+            {"concurrent-38-5": "5PCs 38 load worker"},
+            {"concurrent-36-6": "6PCs 36 load worker"}
+        ],
+        "plots": [
+            {
+                "file": "summary.csv",
+                "values": ["successful", "failed"],
+                "interval": 60,
+                "xlabel": "Time (seconds)",
+                "ylabel": "Throughput (Flows/time)",
+                "name": "Increasing load worker benchmarks",
+                "info": "Comparing how many requests 6PCs can handle"
+            }
+        ]
     }
 }
