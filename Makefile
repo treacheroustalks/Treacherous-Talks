@@ -141,7 +141,18 @@ riak_release:
 	mv riak-build/riak-*/rel/riak $(SYSREL)
 	rm -rf riak-build
 
+# Start the full stack
+start:
+	$(SYSREL)/tt/bin/system_manager start
+	$(SYSREL)/tt/bin/cluster_manager ext_test/configs/fullstack.config -c -s -f
+
+# Stop the full stack
+stop:
+	$(SYSREL)/tt/bin/cluster_manager ext_test/configs/fullstack.config -t -f
+	$(SYSREL)/tt/bin/system_manager stop
+
 
 .PHONY: standard complete get_deps compile docs small_clean clean test \
 	unittest inttest release clean_release copy_docs tar_release \
-	deb_release create_deps_file fetch_deps_file plt dia riak_release
+	deb_release create_deps_file fetch_deps_file plt dia riak_release \
+	start stop
