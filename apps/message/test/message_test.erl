@@ -263,6 +263,7 @@ unread_tst_() ->
 
                {ok, {UnreadUserMsges, UnreadGameMsges}} = Result,
 
+               timer:sleep(100),
                % exactly as many as expected, ie NOT OtherMessage
                ?assertEqual(2, length(UnreadUserMsges)),
                ?assertEqual(1, length(UnreadGameMsges)),
@@ -381,16 +382,6 @@ report_player_tst_() ->
              ?debugMsg("Mark report as done test SUCCESS")
      end
     ].
-
-get_DB_obj(Bucket, Key) ->
-    BinKey = db:int_to_bin(Key),
-    DBReply = db:get(Bucket, BinKey),
-    case DBReply of
-        {ok, DBObj} ->
-            DBObj;
-        Other ->
-            Other
-    end.
 
 delete_user_messages(UserId) ->
     delete_messages(UserId,?B_MESSAGE),

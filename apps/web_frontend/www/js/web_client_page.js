@@ -52,6 +52,78 @@ function load_get_system_status(event_data) {
     $('#system_status_data').html('<p>' + nl2br(event_data.system_status) + '</p>');
 }
 
+function load_operator_game_overview(event_data) {
+    var acc = "";
+    var id = event_data.game_id;
+    var links = event_data.links;
+    for(var i in event_data){
+        acc += i + ":&nbsp&nbsp" + "<b>" + event_data[i] + "</b><br>";
+    }
+    acc += "<br><table><tr><td>";
+    if(links)
+        acc += '<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
+                '\',\'\',\'\',\'\');op_inspect_country=false;">(Game context)</a><br>'
+    for(var i in links){//year
+        var season_phase = links[i];
+        acc += '<a id="ys'+ i +'" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').show();\
+        $(\'#ys'+i+'\').hide();$(\'#yh'+i+'\').show();">[+] ' + i + '</a>\
+        <a id="yh'+ i +'" class="hide" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').hide();\
+        $(\'#ys'+i+'\').show();$(\'#yh'+i+'\').hide();">[-] ' + i + '</a>\
+        &nbsp&nbsp<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
+                '\',\''+i+'\',\'\',\'\');op_inspect_country=false;">(context)</a><br>\
+        <ul id="sp'+ i +'" class="hide">';
+
+        for(var j in season_phase){
+            var countries = season_phase[j];
+            acc += '<a id="ys'+ i+j +'" href="javascript:void(0);" onclick="$(\'#sp'+ i+j +'\').show();\
+            $(\'#ys'+ i+j +'\').hide();$(\'#yh'+i+j+'\').show();">[+] ' + j + '</a>\
+            <a id="yh'+ i+j +'" class="hide" href="javascript:void(0);" onclick="$(\'#sp'+i+j+'\').hide();\
+            $(\'#ys'+i+j+'\').show();$(\'#yh'+i+j+'\').hide();">[-] ' + j + '</a>\
+            &nbsp&nbsp<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
+                '\',\''+i+'\',\''+j+'\',\'\');op_inspect_country=false;">(context)</a><br>\
+            <ul id="sp'+ i+j +'" class="hide">';
+
+            for(var k=0; k < countries.length; k++){
+                acc += '<li><a href="javascript:void(0);" onclick="operator_get_game_msg(false,\''+id+
+                '\',\''+i+'\',\''+j+'\',\''+countries[k]+'\');op_inspect_country=\''+countries[k]+'\'">' + countries[k] + '</a></li>';
+            }
+            acc += "</ul>";
+        }
+        acc += "</ul>";
+    }
+    acc += "</td><td><div id='operator_msg_screen'></div></td></tr></table>";
+    $('#operator_game_overview').html(acc);
+    print(event_data);
+}
+
+function load_operator_get_game_msg(event_data){
+    var ord = event_data.order;
+    var msg = event_data.msg;
+    var acc = (ord?"<b>Orders:</b><br>"+nl2br(ord)+"<br><br>":"")+(msg?"<b>Negotiations:</b><br>":"<b>No Message</b>");
+    var last_to;
+    var bg;
+    for(var i=0; i < msg.length; i++){
+        var from = msg[i].from;
+        var to = msg[i].to;
+        if(op_inspect_country){
+            if(from == op_inspect_country){
+                if(last_to != to)
+                    bg = bg!="admin_msg_bg1"?"admin_msg_bg1":"admin_msg_bg2";
+                acc += "<div class='"+bg+"'>"+ from +" -> "+ to +": "+ msg[i].content+"</div>";
+                last_to = to;
+            }else{
+                if(last_to != from)
+                    bg = bg!="admin_msg_bg1"?"admin_msg_bg1":"admin_msg_bg2";
+                acc += "<div class='"+bg+"'>"+ to +" <- "+ from +": "+ msg[i].content+"</div>";
+                last_to = from;
+            }
+        }else
+            acc += "<div>"+ from +" -> "+ to +": "+ msg[i].content+"</div>";
+    }
+    $('#operator_msg_screen').html(acc);
+    print(event_data);
+}
+
 /**
  * Load the database status page
  */
@@ -84,7 +156,7 @@ function load_get_database_status(event_data) {
  */
 function load_get_games_ongoing(event_data) {
     var view_link = function(id) {
-        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">View</a>';
+        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="operator_game_overview(' + id + ')">View</a>';
     }
 
     var stop_link = function(id) {
@@ -429,6 +501,40 @@ function get_games_ongoing() {
         ]
     };
     call_server('get_games_ongoing', dataObj);
+}
+
+function operator_game_overview(inspect_game_id) {
+    var dataObj = {
+        "content" : [
+            { "game_id" : inspect_game_id },
+            { "session_id" : get_cookie() }
+        ]
+    };
+    call_server('operator_game_overview', dataObj);
+}
+
+function operator_get_game_msg(msg_only, game_id, year, season_phase, country) {
+    var order_key = msg_only?"":game_id+"-"+year+"-"+season_phase+"-"+country;
+    var query = "game_id="+game_id;
+    if(year)
+        query += " AND year="+year;
+    if(season_phase){
+        var sp = season_phase.split("-");
+        var season = sp[0];
+        var phase = sp[1];
+        query += " AND season="+season+" AND phase="+phase;
+    }
+    if(country)
+        query += " AND (from_country="+country+" OR "+"to_country="+country+")";
+
+    var dataObj = {
+        "content" : [
+            { "order_key" : order_key },
+            { "query" : query },
+            { "session_id" : get_cookie() }
+        ]
+    };
+    call_server('operator_get_game_msg', dataObj);
 }
 
 /*------------------------------------------------------------------------------

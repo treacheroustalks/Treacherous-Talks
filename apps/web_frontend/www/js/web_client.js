@@ -21,6 +21,7 @@ var cookie_expire_days = 7; // Cookie expiry in days
 var initial_page = 'home'; // First page to be loaded
 var dash_page = 'dashboard'; // First page to be loaded once logged in
 var home_page = initial_page; // Home page. Value changes on user login status
+var op_inspect_country; // Which country the operator is inspecting
 
 var debug = true;
 var userObj = {
@@ -310,6 +311,12 @@ function event_action(data) {
         break;
     case "get_db_stats_success":
         load_get_database_status(event_data);
+        break;
+    case "operator_game_overview_success":
+        load_operator_game_overview(event_data);
+        break;
+    case "operator_get_game_msg_success":
+        load_operator_get_game_msg(event_data);
         break;
     case "get_system_status_success":
         load_get_system_status(event_data);

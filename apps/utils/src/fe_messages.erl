@@ -35,6 +35,7 @@
 -include_lib("datatypes/include/game.hrl").
 -include_lib("datatypes/include/message.hrl").
 -include_lib("datatypes/include/user.hrl").
+-include_lib("utils/include/debug.hrl").
 
 -export([get/2, resp/1, resp/2, resp_unhandled_error/1]).
 
@@ -93,6 +94,24 @@ get({get_db_stats, invalid_data}, Error) ->
 % Operator get ongoing games
 get({get_games_ongoing, _}, _Data) ->
     resp("");
+
+% Get session user
+get({operator_game_overview, success}, _Val) ->
+    resp("operator game overview success");
+get({operator_game_overview, invalid_data}, Error) ->
+    io:format(user,"#######~p~n",[Error]),
+    case Error of
+        {{badmatch,{error,notfound}}, _} ->
+            resp("no such game in game bucket");
+        _ ->
+            resp("operator game overview fail")
+    end;
+
+% Get session user
+get({operator_get_game_msg, success}, _Val) ->
+    resp("operator get game msg success");
+get({operator_get_game_msg, invalid_data}, _Val) ->
+    resp("operator get game msg fail");
 
 % Get session user
 get({get_session_user, success}, Val) ->

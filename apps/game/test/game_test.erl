@@ -68,6 +68,7 @@ game_test_ () ->
       get_game_overview_tst_(),
       translate_game_order_tst_(),
       game_search_tst_(),
+      operator_game_overview_tst_(),
       game_search_ext_tst_(),
       stop_game_tst_(),
       get_games_current_tst_(),
@@ -122,6 +123,7 @@ delete_game_tst_ () ->
      fun () ->
               % create a game
               OrigGame = test_game (),
+
               Key = sync_new(OrigGame),
               Game = sync_get(Key),
 
@@ -380,6 +382,30 @@ get_game_overview_tst_ () ->
              sync_delete(1234), % ensure it doesn't exist
              ?assertEqual({error, notfound},
                           game:join_game(1234, 1122, england))
+     end].
+
+operator_game_overview_tst_ () ->
+    [fun() ->
+             ?debugMsg("operator game overview test. Case: VALID"),
+             GameRecord = test_game(),
+             % Create a new Game
+             Game = sync_get(sync_new(GameRecord)),
+             % join new player with id=1122 and country=england
+             JoinResult = game:join_game(Game#game.id, 1122, england),
+             ?assertEqual({ok, Game#game.id}, JoinResult),
+             timer:sleep(100),
+
+             % start the game
+             game_timer:sync_event(Game#game.id, timeout),
+             {ok, {GOV, _Tree}} = game:operator_game_overview(Game#game.id),
+             G = GOV#game_overview.game_rec,
+             sync_delete(Game#game.id),
+
+             ?assertEqual("lorem ipsum dolor sit amet", G#game.description),
+             GOV2 = GOV#game_overview{game_rec = undefined, map = undefined, players=undefined},
+             Expected = {game_overview,undefined,order_phase,
+                   {1901,spring}, undefined, undefined, undefined,undefined},
+             ?assertEqual(Expected, GOV2)
      end].
 
 %%------------------------------------------------------------------------------

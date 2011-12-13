@@ -162,6 +162,16 @@ controller_operator_session_test_() ->
      fun instantiator/1
     }.
 
+controller_operator_game_overview_test_() ->
+    {setup,
+     fun() ->
+             app_start(),
+             operator_game_setup()
+     end,
+     fun app_stop/1,
+     fun instantiator/1
+    }.
+
 controller_moderator_session_game_test_() ->
     {setup,
      fun() ->
@@ -416,6 +426,49 @@ joined_game_setup() ->
     {Mods, [Callback, SessId, GameId]}.
 
 %%-------------------------------------------------------------------
+%% operator game tests
+%%-------------------------------------------------------------------
+operator_game_setup() ->
+    Mods = [
+            operator_game_overview_tests
+           ],
+    Callback = callback(),
+    Reply = {fun(_,_,Data) -> Data end, []},
+
+    User = create_user(),
+    Operator = User#user{role = operator},
+    Register = {register, {ok, Operator}},
+    NewUser= controller:handle_action(Register, Reply),
+
+    User2 = create_user2(),
+    Register2 = {register, {ok, User2}},
+    NewUser2= controller:handle_action(Register2, Reply),
+
+    User3 = create_user3(),
+    Register3 = {register, {ok, User3}},
+    NewUser3= controller:handle_action(Register3, Reply),
+
+    Login = {login, {ok, {NewUser, get_receiver()}}},
+    Login2 = {login, {ok, {NewUser2, get_receiver()}}},
+    Login3 = {login, {ok, {NewUser3, get_receiver()}}},
+
+    SessId = controller:handle_action(Login, Reply),
+    SessId2 = controller:handle_action(Login2, Reply),
+    SessId3 = controller:handle_action(Login3, Reply),
+
+    NewGame = create_game(),
+    GameCreate = {create_game, {ok, SessId, NewGame}},
+    GameId = controller:handle_action(GameCreate, Reply),
+
+    JoinGame2 = {join_game, {ok, SessId2, {GameId, england}}},
+    controller:handle_action(JoinGame2, Reply),
+
+    JoinGame3 = {join_game, {ok, SessId3, {GameId, germany}}},
+    controller:handle_action(JoinGame3, Reply),
+
+    {Mods, [Callback, SessId, GameId]}.
+
+%%-------------------------------------------------------------------
 %% Moderator with game tests
 %%-------------------------------------------------------------------
 moderator_session_joined_game_setup() ->
@@ -457,6 +510,34 @@ moderator_session_joined_game_setup() ->
 create_user() ->
     #user{id = undefined,
           nick = "testuser" ++ integer_to_list(db_c:get_unique_id()),
+          email = "test@user.com",
+          password = "test_passw0rd",
+          name = "Test User",
+          role = user,
+          channel = mail,
+          last_ip = {127, 0, 0, 0},
+          last_login = never,
+          score = 0,
+          date_created = {{2011, 10, 18}, {10, 42, 15}},
+          date_updated = {{2011, 10, 18}, {10, 42, 16}}}.
+
+create_user2() ->
+    #user{id = undefined,
+          nick = "testuser2" ++ integer_to_list(db_c:get_unique_id()),
+          email = "test@user.com",
+          password = "test_passw0rd",
+          name = "Test User",
+          role = user,
+          channel = mail,
+          last_ip = {127, 0, 0, 0},
+          last_login = never,
+          score = 0,
+          date_created = {{2011, 10, 18}, {10, 42, 15}},
+          date_updated = {{2011, 10, 18}, {10, 42, 16}}}.
+
+create_user3() ->
+    #user{id = undefined,
+          nick = "testuser3" ++ integer_to_list(db_c:get_unique_id()),
           email = "test@user.com",
           password = "test_passw0rd",
           name = "Test User",

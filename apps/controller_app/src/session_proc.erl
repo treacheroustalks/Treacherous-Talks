@@ -312,6 +312,29 @@ handle_call(games_current, _From,
 handle_call({game_search, Query}, _From, State) ->
     Reply = game:get_game_search(Query),
     {reply, Reply, State, ?TIMEOUT};
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for searching the game bucket
+%% @end
+%% [@spec handle_call({games_current::atom(), UserId::Integer(),
+%%                     Country::country()}, From::{pid(), Tag}, #state{}) ->
+%%                                                  {reply, ok, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({operator_game_overview, GameId}, _From, State) ->
+    Reply = game:operator_game_overview(GameId),
+    {reply, Reply, State, ?TIMEOUT};
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Allow operator to inspect in-game message and player orders
+%% @end
+%%-------------------------------------------------------------------
+handle_call({operator_get_game_msg, {Key, Query}}, _From, State) ->
+    Reply = game:operator_get_game_msg(Key, Query),
+    {reply, Reply, State, ?TIMEOUT};
+
 %%-------------------------------------------------------------------
 %% @doc
 %% Handles call for getting all ongoing games

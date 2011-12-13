@@ -27,13 +27,13 @@
 -include_lib ("datatypes/include/game.hrl").
 -include_lib ("datatypes/include/message.hrl").
 -include_lib ("datatypes/include/push_event.hrl").
-
+-include_lib ("datatypes/include/bucket.hrl").
 
 -export([receive_push_event/2, receive_init/0]).
 -define (TEST_TIMEOUT, 3000).
 
 apps () ->
-    [datatypes, service, protobuffs, riakc, db, game, message].
+    [datatypes, service, protobuffs, riakc, db, game, message, utils].
 
 app_started_setup () ->
     ?debugMsg ("starting apps:"),
@@ -62,7 +62,9 @@ game_messaging_test_ () ->
       get_target_players_tst_(),
       game_msg_send_tst_(),
       mod_msg_success_tst_(),
-      user_msg_fail_tst_()
+      user_msg_fail_tst_(),
+      operator_get_game_msg_tst_(),
+      get_game_msg_tree_tst_()
      ]}.
 
 
@@ -103,7 +105,7 @@ mod_msg_success_tst_() ->
             %?debugVal(_Result = game:game_msg(GMsg, Countries, moderator)),
             {UserIDs, Senders} = sync_game_msg(GMsg,
                                                [germany, france], moderator),
-
+            sync_delete(Game#game.id),
             ?assert(lists:member(2222, UserIDs)),
             ?assert(lists:member(3333, UserIDs)),
             ?assertEqual([moderator, moderator], Senders)
@@ -127,6 +129,7 @@ user_msg_fail_tst_() ->
             GMsg = #game_message{content = "test user game message", from_id= 1357,
                                  game_id = Game#game.id},
             Res = game:game_msg(GMsg, [germany, france], user),
+            sync_delete(Game#game.id),
             ?assertEqual({error, user_not_playing_this_game}, Res)
     end.
 
@@ -144,7 +147,6 @@ get_target_players_tst_() ->
     ?assertEqual(Expected,Actual)
     end].
 
-%% @TODO write test for game_msg
 game_msg_send_tst_() ->
     [fun() ->
              ?debugMsg("Ensure a in-game message is correctly dilivered to controller"),
@@ -168,6 +170,7 @@ game_msg_send_tst_() ->
                                   game_id = Game#game.id},
 
              {Result1, Result2} = sync_game_msg(GMsg, [germany, france], user),
+             sync_delete(Game#game.id),
              ?assertEqual([], UserIDs -- Result1),
              ?assertEqual([], FromCountries -- Result2)
     end,
@@ -188,6 +191,7 @@ game_msg_send_tst_() ->
              GMsg = #game_message{content = "test send game message", from_id= 1111,
                                   game_id = Game#game.id},
              Result = game:game_msg(GMsg, [germany, france], user),
+             sync_delete(Game#game.id),
              ?assertEqual({error,game_phase_not_ongoing}, Result)
     end,
      fun() ->
@@ -212,10 +216,71 @@ game_msg_send_tst_() ->
                                   game_id = Game#game.id},
              ?debugMsg("sync_game_msg"),
              {Result1, Result2} = sync_game_msg(GMsg, [germany, france], user),
+             sync_delete(Game#game.id),
              ?assertEqual([], UserIDs -- Result1),
              ?assertEqual([], FromCountries -- Result2)
     end].
 
+get_game_msg_tree_tst_() ->
+    [fun() ->
+        Msg1 = #game_message{game_id=7777, content="msg1", year = 1901,season=fall,phase=order,date_created=1,sender_country=england},
+        Msg2 = #game_message{game_id=7777, content="msg2", year = 1902,season=spring,phase=build,date_created=2,sender_country=germany},
+        Msg3 = #game_message{game_id=7777, content="msg3", year = 1902,season=fall,phase=retreat,date_created=3,sender_country=england},
+        Msg4 = #game_message{game_id=7777, content="msg4", year = 1904,season=spring,phase=retreat,date_created=4,sender_country=russia},
+        Msg5 = #game_message{game_id=7777, content="msg5", year = 1905,season=spring,phase=order,date_created=5,sender_country=austria},
+        put_game_msg(99991, Msg1),
+        put_game_msg(99992, Msg2),
+        put_game_msg(99993, Msg3),
+        put_game_msg(99994, Msg4),
+        put_game_msg(99995, Msg5),
+        {ok, Actual} = game_utils:get_game_msg_tree(7777),
+        io:format(user,"~p~n",[Actual]),
+        del_game_msg(99991),
+        del_game_msg(99992),
+        del_game_msg(99993),
+        del_game_msg(99994),
+        del_game_msg(99995),
+        Expected = [{1901,[{{fall,order},[england]}]},
+                {1902,[{{spring,build},[germany]},{{fall,retreat},[england]}]},
+                {1904,[{{spring,retreat},[russia]}]},
+                {1905,[{{spring,order},[austria]}]}],
+        ?assertEqual(Expected, Actual)
+    end].
+
+operator_get_game_msg_tst_() ->
+    [fun() ->
+        Msg1 = #game_message{game_id=7777, content="msg1", year = 1902,season=fall,phase=order,date_created=1,sender_country=england},
+        Msg2 = #game_message{game_id=7777, content="msg2", year = 1902,season=fall,phase=order,date_created=2,sender_country=england},
+        Msg3 = #game_message{game_id=7777, content="msg3", year = 1902,season=fall,phase=retreat,date_created=3,sender_country=england},
+        Msg4 = #game_message{game_id=7777, content="msg4", year = 1904,season=spring,phase=retreat,date_created=4,sender_country=russia},
+        Msg5 = #game_message{game_id=7777, content="msg5", year = 1905,season=spring,phase=order,date_created=5,sender_country=austria},
+        put_game_msg(99991, Msg1),
+        put_game_msg(99992, Msg2),
+        put_game_msg(99993, Msg3),
+        put_game_msg(99994, Msg4),
+        put_game_msg(99995, Msg5),
+        Key = "7777-1902-fall-order_phase-england",
+        BinID = list_to_binary(Key),
+        DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, #game_order{order_list=[move,support,convoy,hold]}),
+        db:put (DBGameOrderObj),
+
+        Query = "game_id=7777 AND year=1902 AND season=fall AND phase=order AND sender_country=england",
+        {ok, Actual} = game:operator_get_game_msg(Key, Query),
+
+        db:delete (?B_GAME_ORDER, BinID),
+        del_game_msg(99991),
+        del_game_msg(99992),
+        del_game_msg(99993),
+        del_game_msg(99994),
+        del_game_msg(99995),
+
+        Expected = {[{game_message,undefined,7777,undefined,undefined,england,undefined,undefined,
+                undefined,"msg2",2,unread,1902,fall,order},
+              {game_message,undefined,7777,undefined,undefined,england,undefined,undefined,
+                undefined,"msg1",1,unread,1902,fall,order}],
+              [move,support,convoy,hold]},
+        ?assertEqual(Expected, Actual)
+    end].
 %%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
@@ -266,3 +331,22 @@ sync_new(Game=#game{}) ->
 sync_get(ID) ->
     {ok, Game} = game:get_game(ID),
     Game.
+
+sync_delete(ID) ->
+    case game:delete_game(ID) of
+        ok ->
+            ok;
+        Other ->
+            erlang:error ({error, {{received, Other}, {expected, ok}}})
+    end.
+
+put_game_msg(Key, Msg) ->
+    BinID = db:int_to_bin(Key),
+    % convert record to proplist to be able to do search
+    MsgPropList = data_format:rec_to_plist(Msg),
+    DbObj = db_obj:create(?B_GAME_MESSAGE, BinID, MsgPropList),
+    db:put(DbObj).
+
+del_game_msg(Key) ->
+    BinKey = db:int_to_bin(Key),
+    db:delete(?B_GAME_MESSAGE, BinKey).

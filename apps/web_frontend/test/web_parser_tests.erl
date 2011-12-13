@@ -61,6 +61,8 @@ parser_test_() ->
       fun get_system_status/0,
       fun game_search/0,
       fun get_games_ongoing/0,
+      fun operator_get_game_msg/0,
+      fun operator_game_overview/0,
       fun stop_game/0,
       fun get_presence/0
      ]}.
@@ -153,8 +155,24 @@ get_presence() ->
     ?assertEqual (get_presence_exp_data(),
                   web_parser:parse(get_presence_data())).
 
+operator_get_game_msg() ->
+    ?assertEqual (operator_get_game_msg_exp_data(),
+                  web_parser:parse(operator_get_game_msg_data())).
+
+operator_game_overview() ->
+    ?assertEqual (operator_game_overview_exp_data(),
+                  web_parser:parse(operator_game_overview_data())).
 
 %% Expected data
+operator_get_game_msg_exp_data() ->
+    {operator_get_game_msg,
+     {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+      {"order_key","query"}}}.
+
+operator_game_overview_exp_data() ->
+    {operator_game_overview,
+                   {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                       654321}}.
 
 get_db_stats_exp_data() ->
     {get_db_stats,
@@ -516,3 +534,22 @@ get_presence_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"nick","qnick"}]}]}}]}}.
+
+operator_game_overview_data() ->
+    {ok,{struct,
+     [{"action","operator_game_overview"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"game_id","654321"}]}]}}]}}.
+
+operator_get_game_msg_data() ->
+    {ok,{struct,
+     [{"action","operator_get_game_msg"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+            {struct,[{"query","query"}]},
+            {struct,[{"order_key","order_key"}]}]}}]}}.

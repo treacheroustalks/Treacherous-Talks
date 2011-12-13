@@ -30,6 +30,7 @@
 -module(game_utils).
 
 -include_lib ("datatypes/include/game.hrl").
+-include_lib ("datatypes/include/message.hrl").
 -include_lib ("datatypes/include/user.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("eunit/include/eunit.hrl").
@@ -49,6 +50,8 @@
          get_db_obj/3,
          translate_game_order/3,
          get_game_current_key/1,
+         get_game_msg_tree/1,
+         search_game_msg/1,
          is_power_user/1
         ]).
 
@@ -69,9 +72,8 @@ get_keyprefix({id, ID}) ->
         {ok, Current} ->
             get_keyprefix({game_current, Current});
         {error, notfound} ->
-%            ?debugMsg("Error not found! Keyprefix"),
             % This case occurs when the game is in the wait state
-            integer_to_list(ID) ++ "-1900-spring-order_phase"
+            integer_to_list(ID) ++ "-1901-spring-order_phase"
     end;
 get_keyprefix({game_current, Current}) ->
     {Year, Season} = Current#game_current.year_season,
@@ -139,7 +141,7 @@ get_all_orders(ID) ->
 
 %% ------------------------------------------------------------------
 %% @doc Gets the game orders for a given key
-%% Key: "3457892458-1900-fall-order-england"
+%% Key: "3457892458-1901-fall-order_phase-england"
 %% @spec
 %% get_game_order(ID) -> list(tuple())
 %% @end
@@ -223,7 +225,7 @@ get_keys(Field, Val) ->
     {ok, Query} = db_utils:get_search_term(Field, Val, ?GAME_REC_NAME),
     case db_utils:do_search(?B_GAME, Query) of
         {ok, []} ->
-            {error, does_not_exist};
+            {ok, []};
         {ok, List} ->
             {ok, List};
         Other ->
@@ -383,3 +385,103 @@ get_game_map(GameID) ->
         Error ->
             Error
     end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Get a hierachical tree,
+%% so that operator UI can use this tree to render in-game message navigator
+%%
+%% Output Example:
+%% {ok, {year, [{1901,
+%%          [{spring_order_phase,
+%%            [england,germany]},
+%%           {spring-retreat_phase,
+%%            [english,germany,austria]}
+%%          ]
+%%         },
+%%         {1902,
+%%          [{spring_order_phase,
+%%            [english,germany]}]}]}}
+%% @end
+%%-------------------------------------------------------------------
+get_game_msg_tree(GameId) ->
+    case search_game_msg("game_id="++integer_to_list(GameId)) of
+        {ok, GMsgList} ->
+            Fun = fun(X, Y)->
+                     X#game_message.date_created > Y#game_message.date_created
+                  end,
+            SortedList = lists:usort(Fun, GMsgList),
+            {ok, game_msg_tree(SortedList)};
+        Error -> Error
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Performs a search on the game_message bucket
+%% @end
+%%-------------------------------------------------------------------
+-spec search_game_msg(string()) -> {ok, [integer()]} | {error, term()}.
+search_game_msg(Query) ->
+    case db:search_values(?B_GAME_MESSAGE, Query) of
+        {ok, Msgs} ->
+            % Convert game proplists to game records
+            {ok, lists:map(fun(MsgPropList) ->
+                                   data_format:plist_to_rec(?GAME_MSG_REC_NAME,
+                                                            MsgPropList)
+                           end, Msgs)};
+        Error ->
+            Error
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Helper function for converting game_message history to a hierachical tree,
+%% so that operator UI can use this tree to render in-game message navigator
+%%
+%% Output Example:
+%% {year, [{1901,
+%%          [{spring_order_phase,
+%%            [england,germany]},
+%%           {spring-retreat_phase,
+%%            [english,germany,austria]}
+%%          ]
+%%         },
+%%         {1902,
+%%          [{spring_order_phase,
+%%            [english,germany]}]}]}
+%% @end
+%%-------------------------------------------------------------------
+-spec game_msg_tree([#game_message{}]) -> [term()].
+game_msg_tree(GMsgList) ->
+    game_msg_tree(GMsgList, []).
+game_msg_tree([], Acc) -> Acc;
+game_msg_tree([#game_message{year=Year, season=Season,
+                             phase=Phase, sender_country=Country}|Rest], Acc) ->
+    Tuple = {Year, {Season,Phase}, Country},
+    NewAcc = game_msg_tree_year(Tuple, Acc, Acc),
+    game_msg_tree(Rest, NewAcc);
+game_msg_tree([[]|Rest], Acc) ->
+    game_msg_tree(Rest, Acc).
+
+game_msg_tree_year({Year, SeasonPhase, Country}, [], YearList) ->
+    [{Year, [{SeasonPhase, [Country]}]}|YearList];
+game_msg_tree_year({Year, SeasonPhase, Country}, [{Year, SPList}|_], YearList) ->
+    lists:keyreplace(Year,1,YearList,{Year,
+      game_msg_tree_seasonphase({SeasonPhase, Country}, SPList, SPList)});
+game_msg_tree_year({Year, SeasonPhase, Country}, [_|Rest], YearList) ->
+    game_msg_tree_year({Year, SeasonPhase, Country}, Rest, YearList).
+
+game_msg_tree_seasonphase({SeasonPhase, Country}, [], SPList) ->
+    [{SeasonPhase, [Country]}|SPList];
+game_msg_tree_seasonphase({SeasonPhase, Country}, [{SeasonPhase, CountryList}|_], SPList) ->
+    lists:keyreplace(SeasonPhase,1,SPList,{SeasonPhase,
+      game_msg_tree_country(Country, CountryList, CountryList)});
+game_msg_tree_seasonphase({SeasonPhase, Country}, [_|Rest], SPList) ->
+    game_msg_tree_seasonphase({SeasonPhase, Country}, Rest, SPList).
+
+game_msg_tree_country(Country, [], CountryList) ->
+    [Country|CountryList];
+game_msg_tree_country(Country, [Country|_], CountryList) ->
+    CountryList;
+game_msg_tree_country(Country, [_|Rest], CountryList) ->
+    game_msg_tree_country(Country, Rest, CountryList).
