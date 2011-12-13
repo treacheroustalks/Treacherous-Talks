@@ -191,11 +191,14 @@ get_all_orders_tst_ () ->
              sync_put_order (Game#game.id, UserID1, input_updated_order_list()),
              timer:sleep(100),
              Move = sync_get_order(Key),
-             ?debugMsg("GETALL------------------->>"),
-             ?debugVal(game_utils:get_all_orders(Game#game.id)),
+             ?debugMsg("Get all orders test"),
              ?assertEqual(expected_updated_order_list(), Move),
-             ?assertEqual(expected_full_updated_order_list(),
-                          game_utils:get_all_orders(Game#game.id))
+             FullOrders = game_utils:get_all_orders(Game#game.id),
+             ExpectedFullOrders = expected_full_updated_order_list(),
+             ?assertEqual(length(FullOrders), length(ExpectedFullOrders)),
+             lists:foreach(fun(Order) ->
+                                ?assert(lists:member(Order, ExpectedFullOrders))
+                           end, FullOrders)
      end].
 
 get_game_order_tst_ () ->
