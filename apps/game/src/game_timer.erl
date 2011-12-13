@@ -24,6 +24,8 @@
 -module(game_timer).
 -behaviour(gen_fsm).
 
+-compile([{parse_transform, lager_transform}]).
+
 -include_lib("utils/include/debug.hrl").
 
 -include_lib ("datatypes/include/bucket.hrl").
@@ -134,7 +136,8 @@ init(#game{status = waiting} = Game) ->
 init(#game{status = ongoing} = Game) ->
     {ok, CurrentGame} = game:get_current_game(Game#game.id),
     GamePhase = CurrentGame#game_current.current_phase,
-    ?DEBUG("Restarting game timer in GAME PHASE: ~p~n", [GamePhase]),
+    lager:info("Restarting game ~p timer. Game phase: ~p",
+               [Game#game.id, GamePhase]),
     NewState = #state{game = Game,
                       phase = GamePhase},
     save_corpse(NewState),
@@ -199,11 +202,11 @@ handle_event(_Event, StateName, State) ->
     {next_state, StateName, State}.
 
 handle_sync_event({stop, NewState}, _From, _StateName, State) ->
-    ?DEBUG("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
+    lager:debug("Stopping timer for ~p...", [(State#state.game)#game.id]),
     end_game((State#state.game)#game.id, NewState),
     {stop, normal, {ok, {(State#state.game)#game.id, NewState}}, State};
 handle_sync_event(stop, _From, _StateName, State) ->
-    ?DEBUG("Stopping timer for ~p...~n", [(State#state.game)#game.id]),
+    lager:debug("Stopping timer for ~p...", [(State#state.game)#game.id]),
     {stop, normal, stop_request, State};
 handle_sync_event(statename, _From, StateName, State) ->
     {reply, StateName, StateName, State};
@@ -219,7 +222,7 @@ handle_info(_Info, StateName, State) ->
     {next_state, StateName, State}.
 
 terminate(_Reason, _StateName, _State) ->
-    ?DEBUG("Terminating game timer ~p~n", [_State]),
+    lager:debug("Terminating game timer ~p", [_State]),
     ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
@@ -238,13 +241,13 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %% @end
 %%-------------------------------------------------------------------
 phase_change(Game = #game{id = ID}, started) ->
-    ?DEBUG("Game ~p started~n", [ID]),
+    lager:debug("Game ~p started", [ID]),
     %% maybe tell the users about game start?
     game_worker:update_game(ID, Game),
     setup_game(ID),
     game_join_proc:stop(ID);
 phase_change(ID, build_phase) ->
-    ?DEBUG("Game ~p entered build_phase~n", [ID]),
+    lager:debug("Game ~p entered build_phase", [ID]),
     {ok, GameState} = game_utils:get_game_state(ID),
     % skip count phase if it is not fall
     case GameState#game_state.year_season of
@@ -261,13 +264,13 @@ phase_change(ID, build_phase) ->
                     {ok, true};
                 true ->
                     % game over!
-                    ?DEBUG("Game over ~p~n", [ID]),
+                    lager:debug("Game over ~p", [ID]),
                     end_game(ID, finished),
                     {stop, normal, game_over}
             end
     end;
 phase_change(ID, Phase) ->
-    ?DEBUG("Game ~p entered ~p~n", [ID, Phase]),
+    lager:debug("Game ~p entered ~p", [ID, Phase]),
     {ok, OldState} = game_utils:get_game_state(ID),
     NewCurrentGame = update_current_game(ID, Phase),
     new_state(NewCurrentGame, OldState#game_state.map).
@@ -285,7 +288,7 @@ process_phase(ID, Phase) ->
     {ok, GameState} = game_utils:get_game_state(ID),
     Map = game_utils:to_rule_map(GameState#game_state.map),
     Orders = game_utils:get_all_orders(ID),
-    ?DEBUG("Received orders: ~p~n", [Orders]),
+    lager:debug("Received orders: ~p", [Orders]),
     Result = rules:process(Phase, Map, ?RULES, Orders),
     update_state(GameState#game_state{map = game_utils:to_mapterm(Map)}),
     game_utils:delete_map(Map),
@@ -420,10 +423,10 @@ new_state(CurrentGame, Map) ->
 handle_corpse ({_Key, GameRec}) when is_record (GameRec, game)->
     % the entry in the corpse bucket is not deleted, it will only be
     % updated, as the key never changes
-    ?DEBUG ("restart_game -> ~p~n", [game:restart_game(GameRec)]).
+    lager:info("restart game ~p -> ~p", [GameRec, game:restart_game(GameRec)]).
 
 save_corpse(State = #state{}) ->
-    ?DEBUG("saving game -> ~p~n", [State#state.game#game.id]),
+    lager:debug("saving game corpse-> ~p~n", [State#state.game#game.id]),
     corpses:save_corpse (game_timer, State#state.game#game.id,
                          State#state.game).
 
@@ -488,4 +491,3 @@ syncevent(build_phase, From, State) ->
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
-

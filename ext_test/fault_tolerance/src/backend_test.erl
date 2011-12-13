@@ -33,7 +33,7 @@
             {struct,[{name, <<"fault_tolerance_test">>}]},
             {struct,[{description,
                       list_to_binary(
-                        io_lib:format("A game for testing ressurection. "
+                        io_lib:format("A game for testing resurrection. "
                                       "Created ~p",
                                       [calendar:local_time()]))
                      }]},
@@ -77,26 +77,28 @@ backend_test_() ->
                        fun backend_test_instantiator/1}).
 
 backend_test_setup() ->
+    %% --- APPS and NETWORKING ---
     ok = application:start(fault_tolerance),
     os:cmd("epmd -daemon"), % net_kernel needs epmd.
     net_kernel:start([fault_tolerance_test, longnames]),
     erlang:set_cookie(node(), 'treacherous_talks'),
+
+    %% --- SETUP CLUSTER ---
     %% This env var would normally be set by the fault_tolerance escript.
     {ok, ClustConf} = application:get_env(fault_tolerance, test_cluster_config),
     StartupOrder = cluster_utils:generate_startup_order(ClustConf),
     ProcessedConfig = cluster_utils:preprocess_clustconf(ClustConf),
     DistribConfResult = cluster_utils:distribute_config(ProcessedConfig),
-
-    ?debugVal(DistribConfResult),
+    WebAddr = get_web_addr(ClustConf),
+    ?debugFmt("DistribConfResult =~n~p", [DistribConfResult]),
     StartResult = cluster_utils:do_action_on_releases(StartupOrder, start_release),
-    ?debugVal(StartResult),
+    ?debugFmt("StartResult =~n~p", [StartResult]),
     NotifyResult = cluster_utils:notify_backends(ClustConf),
-    ?debugVal(NotifyResult),
+    ?debugFmt("NotifyResult =~n~p", [NotifyResult]),
     PingResult = cluster_utils:do_action_on_releases(StartupOrder, ping_release),
-    ?debugVal(PingResult),
+    ?debugFmt("PingResult =~n~p", [PingResult]),
 
     %% --- REGISTER (but don't care if nick taken) ---
-    WebAddr = get_web_addr(ClustConf),
     {ok, _Pid} = test_client:connect(WebAddr, 8000),
     web_frontend_send(?JSON_REGISTER),
     _RegResult = web_frontend_recv(),
@@ -145,14 +147,12 @@ backend_test_instantiator({WebAddr, SessId, GameId, ClustConf}) ->
               prettyp_game_info(get_game_info(SessId2, GameId)),
 
               %% --- START BACKEND A ---
+              StartResult = cluster_utils:do_action_on_releases(StartupOrder, start_release),
+              ?debugFmt("StartResult =~n~p", [StartResult]),
+              NotifyResult = cluster_utils:notify_backends(ClustConf),
+              ?debugFmt("NotifyResult =~n~p", [NotifyResult]),
               %%PingResult = cluster_utils:do_action_on_releases(StartupOrder, ping_release),
               %%?debugVal(PingResult),
-              StartResult = cluster_utils:do_action_on_releases(StartupOrder, start_release),
-              ?debugVal(StartResult),
-              NotifyResult = cluster_utils:notify_backends(ClustConf),
-              ?debugVal(NotifyResult),
-              %%PingResult2 = cluster_utils:do_action_on_releases(StartupOrder, ping_release),
-              %%?debugVal(PingResult2),
 
               wait_seconds(65), % give BackendB time to sync with BackendA
 
@@ -174,13 +174,15 @@ backend_test_instantiator({WebAddr, SessId, GameId, ClustConf}) ->
               prettyp_game_info(GameInfoStart),
 
               %% --- WAIT FOR PHASE CHANGE ---
-              wait_seconds(120),
+              wait_seconds(90),
 
               %% --- RECOVERY CHECK END ---
               ?debugMsg("RECOVERY CHECK END - GameInfoEnd"),
               GameInfoEnd = get_game_info(SessId3, GameId),
               prettyp_game_info(GameInfoEnd),
 
+              %% just for tester
+              ?debugVal((GameInfoStart == GameInfoEnd)),
               ?assertNot(GameInfoStart == GameInfoEnd)
       end
      ]}.
@@ -191,6 +193,7 @@ backend_test_teardown(_) ->
     ShutdownOrder = lists:reverse(StartupOrder),
     StopResult = cluster_utils:do_action_on_releases(ShutdownOrder, stop_release),
     ?debugVal(StopResult),
+    error_logger:tty(false), % shut up now the test is over.
     application:stop(fault_tolerance),
     net_kernel:stop().
 

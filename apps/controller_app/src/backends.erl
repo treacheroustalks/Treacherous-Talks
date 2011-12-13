@@ -32,6 +32,8 @@
 
 -module (backends).
 
+-compile([{parse_transform, lager_transform}]).
+
 -include_lib ("utils/include/debug.hrl").
 -include_lib ("eunit/include/eunit.hrl").
 
@@ -160,7 +162,8 @@ change_state (backend_nodes, NewList) ->
     NewLeft = get_left_neighbour (),
     if
         OldLeft =/= NewLeft ->
-            ?DEBUG ("left neighbour changed..~n"),
+            lager:info("left neighbor changed. was ~p now ~p",
+                       [OldLeft, NewLeft]),
             necromancer:unwatch (OldLeft),
             necromancer:watch (NewLeft);
         true ->
