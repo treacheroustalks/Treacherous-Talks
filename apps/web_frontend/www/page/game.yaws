@@ -1,6 +1,6 @@
 <!-- Game overview page -->
 <div class="page-header">
-  <h1>Finished game overview<small></small></h1>
+  <h1>Game overview<small></small></h1>
 </div>
 <div class="row">
   <div class="span15">
@@ -22,7 +22,8 @@
         <div class="actions">
             <input type="submit" class="btn primary" value="Submit game orders" onclick="validate(); return false;">&nbsp;
             <input type="reset" class="btn" value="Reset">&nbsp;
-            <a href="javascript:void(0);" class="btn" onclick="load_home_page();">Back</a>
+            <a href="javascript:void(0);" class="btn" onclick="load_home_page();">Back</a>&nbsp;
+            <a href="javascript:void(0);" class="btn primary" onclick="refresh_game();">Refresh</a>&nbsp;
         </div>
     </form>
     </fieldset>

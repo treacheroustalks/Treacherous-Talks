@@ -316,6 +316,15 @@ function get_games_current() {
 }
 
 /**
+ * Refresh the game overview page
+ */
+function refresh_game() {
+    var form = get_form_data('#play_game_form');
+    get_game_overview(form.game_id);
+}
+
+
+/**
  * Call server to get game overview of specified game
  */
 function get_game_overview(game_id) {
