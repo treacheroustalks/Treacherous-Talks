@@ -149,7 +149,7 @@ get_target_players_tst_() ->
 
 game_msg_send_tst_() ->
     [fun() ->
-             ?debugMsg("Ensure a in-game message is correctly dilivered to controller"),
+             ?debugMsg("Ensure a in-game message is correctly delivered to controller"),
              ?debugMsg("send game message test to several users white press"),
              GameRecord = test_game(white),
              % Create a new Game
@@ -195,7 +195,7 @@ game_msg_send_tst_() ->
              ?assertEqual({error,game_phase_not_ongoing}, Result)
     end,
      fun() ->
-             ?debugMsg("Ensure a in-game message is correctly dilivered to controller"),
+             ?debugMsg("Ensure a in-game message is correctly delivered to controller"),
              ?debugMsg("send game message to several users grey press"),
              GameRecord = test_game(grey),
              % Create a new Game
@@ -279,7 +279,15 @@ operator_get_game_msg_tst_() ->
               {game_message,undefined,7777,undefined,undefined,england,undefined,undefined,
                 undefined,"msg1",1,unread,1902,fall,order}],
               [move,support,convoy,hold]},
-        ?assertEqual(Expected, Actual)
+        % Get the lists and check for membership in the message list since we
+        % cannot guarantee ordering
+        {ActualMsgList, ActualOrderList} = Actual,
+        {ExpectedMsgList, ExpectedOrderList} = Expected,
+        ?assertEqual(length(ActualMsgList), length(ExpectedMsgList)),
+        ?assertEqual(ActualOrderList, ExpectedOrderList),
+        lists:foreach(fun(Msg) ->
+                              ?assert(lists:member(Msg, ExpectedMsgList))
+                      end, ActualMsgList)
     end].
 %%------------------------------------------------------------------------------
 %% Helpers
