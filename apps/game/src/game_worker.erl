@@ -102,9 +102,15 @@ handle_call({stop_game, ID}, _From, State) ->
                 % timers.
                 exit:_Error ->
                     {ok, Game} = get_game(ID),
-                    game_timer_sup:create_timer(Game),
-                    game_timer:event(ID, restart),
-                    game_timer:stop(ID, stopped)
+                        case Game#game.status of
+                            ongoing ->
+                                game_timer_sup:create_timer(Game),
+                                game_timer:stop(ID, stopped);
+                            waiting ->
+                                game_timer_sup:create_timer(Game),
+                                game_timer:stop(ID, stopped);
+                            _ -> {error, game_not_active}
+                        end
             end,
     {reply, Reply, State};
 handle_call({reconfig_game, Game=#game{id = ID}}, _From, State) ->
