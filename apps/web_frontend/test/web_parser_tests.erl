@@ -67,7 +67,9 @@ parser_test_() ->
       fun get_presence/0,
       fun mark_as_done/0,
       fun get_reports/0,
-      fun send_report/0
+      fun send_report/0,
+      fun set_push_receiver/0,
+      fun logout/0
      ]}.
 
 get_db_stats() ->
@@ -180,6 +182,14 @@ send_report() ->
     ?assertEqual(get_send_report_exp_data(),
                  web_parser:parse(get_send_report_data())).
 
+set_push_receiver() ->
+    ?assertEqual(set_push_receiver_exp_data(),
+                 web_parser:parse(set_push_receiver_data())).
+
+logout() ->
+    ?assertEqual(logout_exp_data(),
+                 web_parser:parse(logout_data())).
+
 %% Expected data
 operator_get_game_msg_exp_data() ->
     {operator_get_game_msg,
@@ -259,7 +269,7 @@ create_game_exp_data() ->
 
 get_session_user_exp_data() ->
     {get_session_user, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
-                        dummy}}.
+                        no_arg}}.
 
 get_game_exp_data() ->
     {get_game, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", 654321}}.
@@ -299,7 +309,7 @@ game_order_exp_data() ->
 
 games_current_exp_data() ->
     {games_current, {ok,
-                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", no_arg}}.
 
 game_search_exp_data() ->
     {game_search,{ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
@@ -319,7 +329,7 @@ assign_moderator_exp_data() ->
 
 get_games_ongoing_exp_data() ->
     {get_games_ongoing, {ok,
-                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
+                     "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", no_arg}}.
 
 stop_game_exp_data() ->
     {stop_game, {ok,
@@ -336,7 +346,7 @@ mark_as_done_exp_data() ->
                               654321}}.
 get_reports_exp_data() ->
     {get_reports, {ok,
-                   "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", dummy}}.
+                   "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==", no_arg}}.
 
 get_send_report_exp_data() ->
     {send_report, {ok,
@@ -344,6 +354,12 @@ get_send_report_exp_data() ->
                    #report_message{to = operator,
                                    type = report_issue,
                                    content = "report an issue"}}}.
+set_push_receiver_exp_data() ->
+    {set_push_receiver, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}}.
+
+logout_exp_data() ->
+    {logout, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                         no_arg}}.
 
 %% Input data
 
@@ -616,3 +632,19 @@ get_send_report_data() ->
               {struct,[{"to","operator"}]},
               {struct,[{"type","report_issue"}]},
               {struct,[{"content","report an issue"}]}]}}]}}.
+
+set_push_receiver_data() ->
+    {ok,{struct,
+     [{"action","set_push_receiver"},
+      {"data",
+       {array,
+           [{struct,[{"session_id",
+                      "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
+
+logout_data() ->
+    {ok,{struct,
+         [{"action","logout"},
+          {"data",
+           {array,
+            [{struct,[{"session_id",
+                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.

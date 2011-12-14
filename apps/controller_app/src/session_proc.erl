@@ -445,6 +445,18 @@ handle_call(get_reports, _From, State = #state{user = User}) ->
 handle_call({mark_report_as_done, IssueID}, _From, State) ->
     Reply = message:mark_report_as_done(IssueID),
     {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for updating the push receiver of this process
+%% @end
+%% @spec
+%% handle_call({set_push_receiver :: atom(), PushReceiver :: #push_receiver{}},
+%%             From :: {pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({set_push_receiver, PushReceiver}, _From, State) ->
+    {reply, {ok, success}, State#state{push_receiver = PushReceiver}, ?TIMEOUT};
 %% Unhandled request
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),

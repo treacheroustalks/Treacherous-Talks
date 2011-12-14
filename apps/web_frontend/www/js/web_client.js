@@ -91,8 +91,6 @@ function init() {
 
 /**
  * Init function run once we have a websocket connection
- *
- * @return
  */
 function on_connect() {
     // Check cookie
@@ -140,20 +138,7 @@ function call_server(command, dataObj) {
 }
 
 /**
- * Logs out the user
- */
-function logout() {
-    delete_cookie();
-    home_page = initial_page;
-    logout_update_elements();
-    page = home_page;
-    load_page();
-}
-
-/**
  * Load the local userObj
- *
- * @return
  */
 function load_userObj(data) {
     userObj.id = data.id;
@@ -164,9 +149,7 @@ function load_userObj(data) {
 }
 
 /**
- * clean the local userObj
- *
- * @return
+ * Clean the local userObj
  */
 function clean_userObj() {
     userObj.id = undefined;
@@ -262,16 +245,19 @@ function event_action(data) {
             // This case occurs when a logged in user reloads a page
             load_page();
             login_update_elements();
-            home_page = dash_page;
+            if(home_page != dash_page) {
+                set_push_receiver();        // Update web socket connection pid
+                home_page = dash_page;
+            }
         } else
             handle_event_page_load(data);
         clear_message();
         break;
     case "get_session_user_invalid_data":
-        logout();
+        logout_update_elements();
         break;
     case "get_session_user_invalid_session":
-        logout();
+        logout_update_elements();
         break;
     case "update_user_success":
         load_userObj(event_data);
@@ -339,6 +325,13 @@ function event_action(data) {
         load_report_inbox(event_data);
         break;
     case "get_reports_invalid_data":
+        clear_message();
+        break;
+    case "logout_success":
+        logout_update_elements();
+        break;
+    case "logout_invalid_data":
+        logout_update_elements();
         clear_message();
         break;
     default:

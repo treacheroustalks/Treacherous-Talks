@@ -54,6 +54,10 @@ body {
     display: none;
 }
 
+.topbar div > ul > li.hide, .nav > li.hide {
+    display: none;
+}
+
 #logout {
     line-height: 40px;
 }
@@ -97,8 +101,4 @@ img.preloader {
 
 #user_nick {
     color: #229922;
-}
-
-.topbar div > ul > li.hide, .nav > li.hide {
-  display: none;
 }

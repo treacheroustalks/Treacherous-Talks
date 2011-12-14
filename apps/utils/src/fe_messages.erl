@@ -346,6 +346,16 @@ get({get_presence, invalid_data}, Error) ->
             resp_unhandled_error(Error)
     end;
 
+% Set push receiver
+get({set_push_receiver, _}, _) ->
+    resp("");
+
+% User update
+get({logout, success}, _Val) ->
+    resp("Logged out successfully.~n");
+get({logout, invalid_data}, Error) ->
+    resp("Logout failed. Reason: ~p.~n", [Error]);
+
 % Unimplemented command
 get({Cmd, _Status}, _Val) ->
     resp("Messages not implemented for ~p.~n", [Cmd]);

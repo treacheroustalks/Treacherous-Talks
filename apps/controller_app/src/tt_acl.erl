@@ -97,5 +97,6 @@ user_cmd() ->
      game_search ,
      game_msg,
      get_presence,
-     send_report
+     send_report,
+     set_push_receiver
     ].

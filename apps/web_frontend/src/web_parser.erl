@@ -50,6 +50,7 @@
 -spec parse(Data::term()) ->
           {register, {ok, #user{}}} |
           {login, {ok, #user{}}} |
+          {logout, {ok, string(), atom()}} |
           {update, {ok, string(), #user{}}} |
           {create_game, {ok, string(), #game{}}} |
           {reconfig_game, {ok, string(), #game{}}} |
@@ -69,7 +70,8 @@
           {get_presence, {ok, string(), string()}} |
           {get_reports, {ok, string()}} |
           {mark_as_done, {ok, string(), integer()}} |
-          {send_report, {ok, string(), #report_message{}}}.
+          {send_report, {ok, string(), #report_message{}}} |
+          {set_push_receiver, {ok, string()}}.
 
 parse(RawData) ->
     {Action, Data} = decode(RawData),
@@ -79,7 +81,7 @@ parse(RawData) ->
              {ok, #user{nick = get_field("nick", Data),
                         password = get_field("password", Data)}}};
         "get_session_user" ->
-            {get_session_user, {ok, get_field("session_id", Data), dummy}};
+            {get_session_user, {ok, get_field("session_id", Data), no_arg}};
         "register" ->
             {register,
              {ok, #user{nick = get_field("nick", Data),
@@ -153,12 +155,12 @@ parse(RawData) ->
             {game_order, {ok, get_field("session_id", Data),
                           {GameId, ResultOrders}}};
         "games_current" ->
-            {games_current, {ok, get_field("session_id", Data), dummy}};
+            {games_current, {ok, get_field("session_id", Data), no_arg}};
         "game_search" ->
             Query = get_search_query(Data),
             {game_search, {ok, get_field("session_id", Data), Query}};
         "get_games_ongoing" ->
-            {get_games_ongoing, {ok, get_field("session_id", Data), dummy}};
+            {get_games_ongoing, {ok, get_field("session_id", Data), no_arg}};
         "get_db_stats" ->
             {get_db_stats, {ok, get_field("session_id", Data), []}};
         "game_msg" ->
@@ -192,14 +194,16 @@ parse(RawData) ->
         "operator_get_game_msg" ->
             Key = get_field("order_key", Data),
             Query = get_field("query", Data),
-            {operator_get_game_msg, {ok, get_field("session_id", Data), {Key, Query}}};
+            {operator_get_game_msg, {ok, get_field("session_id", Data),
+                                     {Key, Query}}};
         "get_system_status" ->
             {get_system_status, {ok, get_field ("session_id", Data)}};
         "get_presence" ->
-            {get_presence, {ok, get_field ("session_id", Data), get_field ("nick", Data)}};
+            {get_presence, {ok, get_field ("session_id", Data),
+                            get_field ("nick", Data)}};
         "get_reports" ->
             {get_reports, {ok,
-                           get_field("session_id", Data), dummy}};
+                           get_field("session_id", Data), no_arg}};
         "mark_as_done" ->
             IssueId = get_integer("issue_id", Data),
             {mark_report_as_done, {ok,
@@ -211,7 +215,11 @@ parse(RawData) ->
               #report_message{to = list_to_atom(get_field("to", Data)),
                               type = list_to_atom(get_field("type", Data)),
                               content = get_field("content", Data)}
-             }}
+             }};
+        "set_push_receiver" ->
+            {set_push_receiver, {ok, get_field ("session_id", Data)}};
+        "logout" ->
+            {logout, {ok, get_field ("session_id", Data), no_arg}}
     end.
 
 

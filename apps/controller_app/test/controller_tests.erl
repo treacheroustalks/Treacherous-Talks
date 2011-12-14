@@ -38,8 +38,8 @@
 -include_lib("datatypes/include/bucket.hrl").
 
 
--export([create_user/0, create_game/0, get_receiver/0, get_event/0,
-        create_operator/0]).
+-export([create_user/0, create_game/0, start_receiver/0,
+         get_receiver/0, get_event/0, create_operator/0]).
 
 -define(TIMEOUT, 3000).
 %%-------------------------------------------------------------------
@@ -66,10 +66,10 @@ app_start() ->
                    end,
                    apps ()),
     error_logger:tty(false),
-    register(receiver, spawn(fun() -> receiver([]) end)).
+    start_receiver().
 
 app_stop(_) ->
-    whereis(receiver) ! stop,
+    stop_receiver(),
     [ ?assertEqual(ok, application:stop(App)) || App <- lists:reverse(apps())],
     error_logger:tty(true).
 
@@ -84,6 +84,12 @@ callback() ->
 %%-------------------------------------------------------------------
 %% helper: event receiver
 %%-------------------------------------------------------------------
+start_receiver() ->
+    register(receiver, spawn(fun() -> receiver([]) end)).
+
+stop_receiver() ->
+    whereis(receiver) ! stop.
+
 receiver(Events) ->
    receive
        {push, no_args, Event} ->
@@ -276,7 +282,7 @@ session_setup() ->
     Mods = [
             update_user_tests, get_session_user_tests,
             create_game_tests, user_msg_tests, report_problem_tests,
-            push_events_tests, logout_tests
+            push_events_tests, set_push_receiver_tests, logout_tests
            ],
     Callback = callback(),
     Reply = {fun(_,_,Data) -> Data end, []},

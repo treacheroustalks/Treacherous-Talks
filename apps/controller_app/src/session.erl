@@ -69,7 +69,8 @@
          get_presence/2,
          send_report/2,
          get_reports/2,
-         mark_report_as_done/2
+         mark_report_as_done/2,
+         set_push_receiver/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -418,3 +419,12 @@ get_reports(SessionId, _Data) ->
 %%-------------------------------------------------------------------
 mark_report_as_done(SessionId, IssueID) ->
     ?SESSION_CALL(SessionId, mark_report_as_done, IssueID).
+
+%%-------------------------------------------------------------------
+%% @doc set_push_receiver/2
+%% Update the push receiver for the given session
+%%
+%% @end
+%%-------------------------------------------------------------------
+set_push_receiver(SessionId, PushReceiver = #push_receiver{}) ->
+    ?SESSION_CALL(SessionId, set_push_receiver, PushReceiver).
