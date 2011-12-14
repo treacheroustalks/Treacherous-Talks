@@ -12,7 +12,6 @@
 /*------------------------------------------------------------------------------
  Page functions
  -----------------------------------------------------------------------------*/
-
 /**
  * Load page on the browser
  */
@@ -50,6 +49,8 @@ function load_operator_game_overview(event_data) {
     var acc = "";
     var id = event_data.game_id;
     var links = event_data.links;
+
+    delete event_data.links;
     for(var i in event_data){
         acc += i + ":&nbsp&nbsp" + "<b>" + event_data[i] + "</b><br>";
     }
@@ -280,20 +281,26 @@ function load_reconfig_game_page(page_data) {
  * Update the game overview page with event data
  */
 function load_game_overview_data(page_data) {
-    if (page_data.game_status == 'ongoing'){
-        $('#game_id').val(page_data.game_id);
-        $('#game_info').html(nl2br(page_data.game_info));
-        $('#game').html(nl2br(page_data.game));
-        $('#provinces').html(nl2br(page_data.provinces));
-        $('#units').html(nl2br(page_data.units));
-        $('#orders').html(nl2br(page_data.orders));
-    }
-    else{
-        $('#game_info').html(nl2br(page_data.game_info));
-        $('#game').html(nl2br(page_data.game));
-        $('#players').html(nl2br(page_data.players));
-        $('#map').html(nl2br(page_data.map));
-        $('#orders').html(nl2br(page_data.orders));
+    var units = page_data.unit_list;
+    var owners = page_data.owner_list;
+    var punits = page_data.player_units;
+
+    var acc = "<b>Status: "+page_data.game_status+"</b><br>";
+    acc += "<b>"+nl2br(page_data.game_info)+"</b><br>";
+    acc += "<b>"+nl2br(page_data.game)+"</b><br>";
+    acc += "Country: <b>"+nl2br(page_data.country)+"</b><br>";
+    var ord_acc = "<b>"+nl2br(page_data.orders)+"</b><br>";
+
+    $('#gov_info').html(acc);
+    $('#game_id').val(page_data.game_id);
+    $('#mid_area').html('<div id="canvas_div"><canvas id="canvas" width="1200" height="1000"></canvas></div>');
+    $('#game_order_info').html(ord_acc);
+    draw(units, owners);
+
+    rownum = 0;
+    $('#order_gen').html("");
+    for(var prov in punits){
+        add_order_row(punits[prov],prov);
     }
 }
 
@@ -585,7 +592,6 @@ function get_games_ongoing() {
     call_server('get_games_ongoing', dataObj);
 }
 
-
 function operator_game_overview(inspect_game_id) {
     var dataObj = {
         "content" : [
@@ -637,7 +643,18 @@ function set_push_receiver() {
 /*------------------------------------------------------------------------------
  Form cleanup functions
  -----------------------------------------------------------------------------*/
-function clear_game_orders() {
+function clear_game_orders(event_data) {
+    var acc = "";
+    var ords = event_data.my_orders;
+
+    for(var i=0; i<ords.length; i++){
+        acc += (i+1) +": ";
+        for(var j in ords[i]){
+            acc += ords[i][j]+" ";
+        }
+        acc += "<br>";
+    }
+    $("#game_order_info").html("<b>"+acc+"</b>");
     $("#game_order").val("");
 }
 

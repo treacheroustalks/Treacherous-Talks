@@ -394,7 +394,7 @@ put_game_order(Key, GameOrderList) ->
                                     BinID,
                                     #game_order{order_list=GameOrderList}),
     db:put(DBGameOrderObj, [{w, 0}]),
-    {ok, Key}.
+    {ok, {Key, GameOrderList}}.
 
 %% ------------------------------------------------------------------
 %% @doc
@@ -410,7 +410,7 @@ update_game_order(ID, NewOrder) ->
             game_utils:update_db_obj(Obj,
                                      #game_order{order_list = NewOrder},
                                      [{w, 1}]),
-            {ok, ID};
+            {ok, {ID, NewOrder}};
         Error ->
             {error, Error}
     end.

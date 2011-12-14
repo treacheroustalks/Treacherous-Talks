@@ -233,13 +233,40 @@ get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret#ret{page="dashboard"});
 
 get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
+    Map = digraph_io:from_erlang_term(GOv#game_overview.map),
+    PCountry = GOv#game_overview.country,
+    Prov = map:get_provinces(Map),
+    Unit = map:get_units(Map),
+    PUnit = lists:foldl(fun({P1,{U1,C1}}, Acc1)->
+        case C1 of
+            PCountry ->
+                [{atom_to_list(P1),atom_to_list(U1)}|Acc1];
+            _ ->
+                Acc1
+        end end, [], Unit),
+
+    Ulist = [{atom_to_list(P)++"__"++atom_to_list(C), atom_to_list(U)}
+    || {P,{U,C}} <- Unit],
+    Fun = fun(X, Acc) ->
+        case map:get_province_info(Map,X, center) of
+            true ->
+                case map:get_province_info(Map,X,owner) of
+                    undefined ->
+                        Acc;
+                    Owner ->
+                        [{atom_to_list(X), atom_to_list(Owner)}|Acc]
+                end;
+            _ -> Acc
+        end
+    end,
+    Slist = lists:foldl(Fun, [], Prov),
+
     case data_format:game_overview_to_text(GOv) of
-        {_, finished, FinishedData} ->
-            finished_overview_ret(FinishedData, Ret);
-        {GameId, _Status, Data} ->
-            game_overview_ret(GameId, Data, Ret);
+        {GameId, Status, Data} ->
+            game_overview_ret({PUnit, Ulist, Slist},GameId, Status, Data, Ret);
         _ -> msg_error(Ret)
     end;
+
 get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
@@ -271,8 +298,13 @@ get_ret({operator_get_game_msg, success}, Ret=#ret{}, {GMsgList, OrderList}) ->
 get_ret({operator_get_game_msg, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
-get_ret({game_order, success}, Ret=#ret{}, _Data) ->
-    msg_success(Ret);
+get_ret({game_order, success}, Ret=#ret{}, {_Key, Orders}) ->
+    Proplist = [{"my_orders", interpret_orderlist(Orders)}],
+    io:format(user, "##Ls##~p~n", [Proplist]),
+
+    EventData = json2:obj_from_list(Proplist),
+    io:format(user, "##Ed##~p~n", [EventData]),
+    msg_success(Ret#ret{event_data = EventData});
 get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
@@ -398,29 +430,23 @@ ret_to_proplist(Ret) ->
     RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, ret)],
     lists:zip(RecordInfo, tl(tuple_to_list(Ret))).
 
-game_overview_ret(Id, {Info, Country, Game, Provinces, Units, Orders}, Ret=#ret{}) ->
+game_overview_ret({PUnit, Ulist, Slist}, Id, Status, {Info, Country, Game, Provinces, Units, Orders}, Ret=#ret{}) ->
     OrdersString = lists:flatten(io_lib:format("~p", [Orders])),
-    Data = [{"game_status", "ongoing"},
+    Data = [{"game_status", atom_to_list(Status)},
             {"game_id", integer_to_list(Id)},
             {"country", atom_to_list(Country)},
             {"game_info", lists:flatten(Info)},
             {"game", lists:flatten(Game)},
             {"provinces", lists:flatten(Provinces)},
             {"units", lists:flatten(Units)},
+            {"owner_list", {struct, Slist}},
+            {"unit_list", {struct, Ulist}},
+            {"player_units", {struct, PUnit}},
             {"orders", OrdersString}],
     EventData = json2:obj_from_list(Data),
+    io:format(user, "~p~n", [EventData]),
     msg_success(Ret#ret{event_data = EventData,
                         page="game"}).
-
-finished_overview_ret({Info, PlayerInfo, Game, FinalMap}, Ret=#ret{}) ->
-    Data = [{"game_status", "finished"},
-            {"game_info", lists:flatten(Info)},
-            {"game", lists:flatten(Game)},
-            {"players", lists:flatten(PlayerInfo)},
-            {"map", lists:flatten(FinalMap)}],
-    EventData = json2:obj_from_list(Data),
-    msg_success(Ret#ret{event_data = EventData,
-                        page="game_finished"}).
 
 all_db_stats_to_proplist(DbStatsList) ->
     all_db_stats_to_proplist(DbStatsList, 0, []).
@@ -520,5 +546,62 @@ push_receiver(WebSocket, ProtocolVersion) ->
       pid = self(),
       args = [WebSocket, ProtocolVersion],
       type = web}.
+
+interpret_orderlist(OrdList) ->
+    [begin
+        case X of
+            {hold, {U1, _}, L1} ->
+                {struct, [
+                    {"u1", atom_to_list(U1)},
+                    {"l1", atom_to_list(L1)},
+                    {"action", "hold"}
+                ]};
+            {move, {U1, _}, L1, L2} ->
+                {struct, [
+                    {"u1", atom_to_list(U1)},
+                    {"l1", atom_to_list(L1)},
+                    {"action", "move"},
+                    {"l2", atom_to_list(L2)}
+                ]};
+            {support, {U1, _}, L1, {move, {U2, _}, L2, L3}} ->
+                {struct, [
+                    {"u1", atom_to_list(U1)},
+                    {"l1", atom_to_list(L1)},
+                    {"action", "support_move"},
+                    {"u2", atom_to_list(U2)},
+                    {"l2", atom_to_list(L2)},
+                    {"l3", atom_to_list(L3)}
+                ]};
+            {support, {U1, _}, L1, {hold, {U2, _}, L2}} ->
+                {struct, [
+                    {"action", "support_hold"},
+                    {"u1", atom_to_list(U1)},
+                    {"u2", atom_to_list(U2)},
+                    {"l1", atom_to_list(L1)},
+                    {"l2", atom_to_list(L2)}
+                ]};
+            {disband,{U1,_}, L1} ->
+                {struct, [
+                    {"action", "disband"},
+                    {"u1", atom_to_list(U1)},
+                    {"l1", atom_to_list(L1)}
+                ]};
+            {build,{U1,_}, L1} ->
+                {struct, [
+                    {"action", "build"},
+                    {"u1", atom_to_list(U1)},
+                    {"l1", atom_to_list(L1)}
+                ]};
+            {convoy, {fleet,_},L1,{army,_}, L2, L3} ->
+                {struct, [
+                    {"u1", "fleet"},
+                    {"l1", atom_to_list(L1)},
+                    {"action", "convoy"},
+                    {"u2", "army"},
+                    {"l2", atom_to_list(L2)},
+                    {"l3", atom_to_list(L3)}
+                ]}
+        end
+    end || X <- OrdList].
 
 </erl>

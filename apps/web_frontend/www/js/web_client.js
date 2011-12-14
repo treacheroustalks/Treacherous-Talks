@@ -286,7 +286,7 @@ function event_action(data) {
         break;
     case "game_order_success":
         clear_message();
-        clear_game_orders();
+        clear_game_orders(event_data);
         break;
     case "games_current_success":
         clear_message();

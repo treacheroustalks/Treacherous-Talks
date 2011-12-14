@@ -46,6 +46,10 @@ body {
 }
 
 /*-----------------------*/
+.spacer {
+	letter-spacing:2px;
+}
+
 .clear {
     clear: both;
 }
@@ -101,4 +105,31 @@ img.preloader {
 
 #user_nick {
     color: #229922;
+}
+
+.topbar div > ul > li.hide, .nav > li.hide {
+  display: none;
+}
+
+.order_select {
+    width: 155px;
+    height: 18px;
+    margin-bottom: 7px;
+    padding: 0px;
+    color: #222;
+    background-color: #eee;
+}
+
+#canvas_div {
+    position: absolute;
+    left: 23px;
+}
+
+#canvas_hold {
+    width: 1153px;
+    height:1020px;
+}
+
+.long_txt {
+    width: 450px;
 }

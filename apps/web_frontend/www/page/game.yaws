@@ -4,16 +4,60 @@
 </div>
 <div class="row">
   <div class="span15">
-  <div id="message"></div>
+    <div id="message"></div>
     <div class="clear"></div>
+    <div id="gov_info"></div>
+    <style type="text/css">img {display:none;}</style>
+    <!-- Flags -->
+    <img src="image/Components/FlagAustria.png" id="austria_flag">
+    <img src="image/Components/FlagEngland.png" id="england_flag">
+    <img src="image/Components/FlagFrance.png"  id="france_flag">
+    <img src="image/Components/FlagGermany.png" id="germany_flag">
+    <img src="image/Components/FlagItaly.png"   id="italy_flag">
+    <img src="image/Components/FlagRussia.png"  id="russia_flag">
+    <img src="image/Components/FlagTurkey.png"  id="turkey_flag">
+    <!-- Fleet -->
+    <img src="image/Components/FleetAustria.png" id="austria_fleet">
+    <img src="image/Components/FleetEngland.png" id="england_fleet">
+    <img src="image/Components/FleetFrance.png"  id="france_fleet">
+    <img src="image/Components/FleetGermany.png" id="germany_fleet">
+    <img src="image/Components/FleetItaly.png"   id="italy_fleet">
+    <img src="image/Components/FleetRussia.png"  id="russia_fleet">
+    <img src="image/Components/FleetTurkey.png"  id="turkey_fleet">
+    <!-- Army -->
+    <img src="image/Components/ArmyAustria.png" id="austria_army">
+    <img src="image/Components/ArmyEngland.png" id="england_army">
+    <img src="image/Components/ArmyFrance.png"  id="france_army">
+    <img src="image/Components/ArmyGermany.png" id="germany_army">
+    <img src="image/Components/ArmyItaly.png"   id="italy_army">
+    <img src="image/Components/ArmyRussia.png"  id="russia_army">
+    <img src="image/Components/ArmyTurkey.png"  id="turkey_army">
+
+    <div id="mid_area"></div>
+    <div id="canvas_hold"></div>
+
     <fieldset>
     <legend>Play game</legend>
+    <form>
+        <div class="clearfix">
+            <label for="game_order_info">Your Current Orders</label>
+            <div class="input" name="game_order_info">
+                <div style="line-height: 1.4" id="game_order_info"></div>
+            </div>
+            <br>
+            <label for="select_game_order">Select orders</label>
+            <div class="input" name="select_game_order">
+                <div id="order_gen"></div>
+                <a href="javascript:void(0);" class="btn" onclick="order_generate();">Generate orders</a>
+            </div>
+        </div>
+    </form>
     <form id="play_game_form">
         <div class="clearfix">
             <label for="game_order">Game orders</label>
             <input type="hidden" id="game_id" name="game_id" value=""/>
             <div class="input">
-              <textarea class="xlarge" id="game_order" name="game_order" rows="5"></textarea>
+              <textarea class="long_txt" id="game_order" name="game_order" rows="5"></textarea>
               <span class="help-block">
                   Game orders for this phase (Optional)
               </span>
@@ -27,36 +71,5 @@
         </div>
     </form>
     </fieldset>
-
-    <table>
-    <thead>
-        <tr>
-            <th>Legend</th>
-            <th>Value</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Game Info:</td>
-            <td><div id="game_info"></div></td>
-        </tr>
-        <tr>
-            <td>Orders</td>
-            <td><div id="orders"></div></td>
-        </tr>
-        <tr>
-            <td>Game</td>
-            <td><div id="game"></div></td>
-        </tr>
-        <tr>
-            <td>Provinces</td>
-            <td><div id="provinces"></div></td>
-        </tr>
-        <tr>
-            <td>Units</td>
-            <td><div id="units"></div></td>
-        </tr>
-    </tbody>
-    </table>
   </div>
 </div>

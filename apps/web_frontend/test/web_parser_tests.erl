@@ -161,7 +161,6 @@ get_presence() ->
     ?assertEqual (get_presence_exp_data(),
                   web_parser:parse(get_presence_data())).
 
-
 operator_get_game_msg() ->
     ?assertEqual (operator_get_game_msg_exp_data(),
                   web_parser:parse(operator_get_game_msg_data())).
@@ -584,7 +583,6 @@ get_presence_data() ->
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
             {struct,[{"nick","qnick"}]}]}}]}}.
-
 
 operator_game_overview_data() ->
     {ok,{struct,

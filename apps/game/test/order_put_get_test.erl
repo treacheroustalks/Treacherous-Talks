@@ -154,7 +154,7 @@ put_game_order_tst_ () ->
              % start the game
              game_timer:sync_event(Game#game.id, timeout),
              %%timer:sleep(50),
-             Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
+             {Key,_} = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              timer:sleep(100),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
@@ -183,7 +183,7 @@ get_all_orders_tst_ () ->
              % start the game
              %game_worker:phase_change(Game, started),
              game_timer:sync_event(Game#game.id, timeout),
-             Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
+             {Key,_} = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              timer:sleep(100),
              sync_put_order (Game#game.id, UserID, input_updated_order_list()),
@@ -215,7 +215,7 @@ get_game_order_tst_ () ->
              %game_worker:phase_change(Game#game{status=ongoing}, started),
              %timer:sleep(50),
              game_timer:sync_event(Game#game.id, timeout),
-             Key = sync_put_order (Game#game.id, UserID, input_test_order_list()),
+             {Key,_} = sync_put_order (Game#game.id, UserID, input_test_order_list()),
              ?assertEqual(expected_key(Game#game.id), Key),
              timer:sleep(100),
              Move = sync_get_order(Key),

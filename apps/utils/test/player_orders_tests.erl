@@ -26,7 +26,7 @@
 %% Description: TODO: Add description to user_commands
 -module(player_orders_tests).
 
--import(player_orders, [interpret_str_orders/1,init_valid_region/0,
+-import(player_orders, [interpret_str_orders/1,
         translate_abbv_to_fullname_atom/1,translate_location/1,interpret_order_line/1]).
 -include_lib("eunit/include/eunit.hrl").
 
@@ -67,14 +67,6 @@ parse_orders_test_() ->
       {move,army,london,norwegian_sea,north_coast},
       {move,army,belgium,munich,any_coast},
       {move,army,london,norwegian_sea,any_coast}]}},
-    [
-        ?_assertEqual(Expected, ActualOutput)
-    ].
-
-init_valid_region_test_() ->
-    init_valid_region(),
-    ActualOutput = lists:all(fun(X)-> get(X) end, ?LOCATIONS),
-    Expected = true,
     [
         ?_assertEqual(Expected, ActualOutput)
     ].

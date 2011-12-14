@@ -36,7 +36,7 @@
 -export([parse_orders/1]).
 
 %% Exports for eunit
--export([init_valid_region/0,translate_location/1,interpret_str_orders/1,
+-export([translate_location/1,interpret_str_orders/1,
          translate_abbv_to_fullname_atom/1,interpret_order_line/1]).
 
 -include("test_utils.hrl").
@@ -98,7 +98,6 @@ parse_orders (EmailBody) when is_binary(EmailBody) ->
     parse_orders (binary_to_list(EmailBody));
 parse_orders ([]) -> {error, "empty order"};
 parse_orders (EmailBody) ->
-    init_valid_region(),
     CutTailBlank = string:strip(EmailBody, right),
     MailLines = string:tokens(CutTailBlank, "\n,"),
 
@@ -208,7 +207,6 @@ interpret_order_line (OrderLine) ->
                     obj_unit = ObjUnit,
                     obj_src_loc = ObjSrc, obj_dst_loc = ObjDst};
         build when ObjUnit /=nil, ObjSrc /=nil, ObjUnit/=nil ->
-            % @TODO default coast for special coastal province
             #build{obj_unit = ObjUnit, obj_loc = ObjSrc, coast = Coast};
         disband when ObjSrc /= nil, ObjUnit/=nil ->
             #disband{obj_unit = ObjUnit, obj_loc = ObjSrc};
@@ -228,10 +226,11 @@ translate_location(Loc) ->
         {'EXIT', _} ->
             throw({error, Loc ++ "#invalid location name, not in atom table"});
         MatchedAtom ->
-            case get(MatchedAtom) of
-                true -> MatchedAtom;
-                undefined ->
-                    throw({error, Loc ++ "#invalid location name, not in procdict"})
+            case (catch dict:fetch(MatchedAtom, ?LOC_DICT)) of
+                true ->
+                    MatchedAtom;
+                _ ->
+                    throw({error, Loc ++ "#invalid location name, not in location list"})
             end
     end.
 
@@ -262,9 +261,3 @@ get_translation(Key, PropList, ErrorMsg) ->
         _ ->
             Value
     end.
-
-
-% Make sure the procdict won't be rewritten some where else
-% @TODO check if there's some way better than procdict
-init_valid_region () ->
-    lists:foreach(fun(X) -> put(X, true) end, ?LOCATIONS).
