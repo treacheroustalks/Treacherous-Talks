@@ -261,8 +261,6 @@ function load_update_user_page() {
 
 /**
  * Update the user data on update_user page
- *
- * @return
  */
 function load_update_user_data() {
     $('#email').val(userObj.email);
@@ -301,8 +299,6 @@ function load_game_overview_data(page_data) {
 
 /**
  * Update the game data on reconfig_game page
- *
- * @return
  */
 function load_reconfig_game_data(page_data) {
     $('#game_legend').append(page_data.id);
@@ -401,9 +397,23 @@ function login_update_elements() {
 }
 
 /**
+ * Logs out the user
+ */
+function logout() {
+    var dataObj = {
+            "content" : [ {
+                "session_id" : get_cookie()
+            } ]
+        };
+    call_server('logout', dataObj);
+}
+
+/**
  * Element updates on the page when user logs out
  */
 function logout_update_elements() {
+    delete_cookie();
+    home_page = initial_page;
     clean_userObj();
     $("#moderator_menu").hide();
     $("#operator_menu").hide();
@@ -412,6 +422,8 @@ function logout_update_elements() {
     $("#login_form").show();
     $("#register_menu").show();
     cleanChatBoxes();
+    page = home_page;
+    load_page();
 }
 
 /*------------------------------------------------------------------------------
@@ -608,6 +620,19 @@ function operator_get_game_msg(msg_only, game_id, year, season_phase, country) {
     call_server('operator_get_game_msg', dataObj);
 }
 
+/**
+ * A new web socket connection is created on page refresh. Update the push
+ * receiver in the backend for this case.
+ */
+function set_push_receiver() {
+    var session_id = get_cookie();
+    var dataObj = {
+        "content" : [ {
+            "session_id" : session_id
+        } ]
+    };
+    call_server('set_push_receiver', dataObj);
+}
 
 /*------------------------------------------------------------------------------
  Form cleanup functions

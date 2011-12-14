@@ -116,6 +116,7 @@
 %% send_report ->       []
 %% get_reports ->       []
 %% mark_report_as_done -> [notfound]
+%% set_push_receiver -> []
 %%
 %% @end
 %%
@@ -142,6 +143,7 @@
              send_report |
              get_reports |
              mark_report_as_done |
+             set_push_receiver |
              unknown_command.
 -spec handle_action(ParsedData::{command(), {ok, any()}} |
                         {command(), {ok, SessionId::string()}} |
@@ -200,7 +202,8 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == get_reports;
        Command == operator_get_game_msg;
        Command == operator_game_overview;
-       Command == mark_report_as_done ->
+       Command == mark_report_as_done;
+       Command == set_push_receiver ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);

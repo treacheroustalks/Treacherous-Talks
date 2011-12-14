@@ -71,11 +71,11 @@ socket_server(WebSocket, ProtocolVersion) ->
             io:format("Got data from Websocket: ~p~n", [json_decode(Data)]),
             ParsedCmd = case web_parser:parse(json_decode(Data)) of
                             {login, {ok, User}} ->
-                                PushReceiver = #push_receiver{
-                                  pid = self(),
-                                  args = [WebSocket, ProtocolVersion],
-                                  type = web},
-                                {login, {ok, {User, PushReceiver}}};
+                                {login, {ok, {User,
+                                push_receiver(WebSocket, ProtocolVersion)}}};
+                            {set_push_receiver, {ok, SessionId}} ->
+                                {set_push_receiver, {ok, SessionId,
+                                    push_receiver(WebSocket, ProtocolVersion)}};
                             Other ->
                                 Other
                         end,
@@ -368,6 +368,16 @@ get_ret ({send_report, success}, Ret, _Data) ->
 get_ret ({send_report, invalid_data}, Ret, _Data) ->
     msg_error(Ret);
 
+get_ret({set_push_receiver, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({set_push_receiver, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({logout, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({logout, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
 % General unhandled case
 get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
     Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."
@@ -504,5 +514,11 @@ merge_redundant_msg(SrtMsg) ->
     end,
     {MergedMsg, _} = lists:foldl(Fun, {[], undefined}, SrtMsg),
     MergedMsg.
+
+push_receiver(WebSocket, ProtocolVersion) ->
+    PushReceiver = #push_receiver{
+      pid = self(),
+      args = [WebSocket, ProtocolVersion],
+      type = web}.
 
 </erl>
