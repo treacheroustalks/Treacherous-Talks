@@ -1,6 +1,6 @@
 function draw(units, owners) {
     var coordinates = {
-      //Supply centers: [centerX, centerY, flagX, flagY]
+      //Supply centers: [flagX, flagY]
       sweden_center:           [585,305],
       norway_center:           [507,285],
       denmark_center:          [513,418],
@@ -166,19 +166,17 @@ function draw(units, owners) {
 
   var ctx = document.getElementById('canvas').getContext('2d');
   var map = new Image();
+  map.src = '/image/Components/Map.png';
   map.onload = function() {
       //Draw Map
       ctx.drawImage(map,0,0);
-
-      canvas = document.createElement('CANVAS');
-      canvas.setAttribute('width',35);
-      canvas.setAttribute('height',25);
 
       for(var province in owners) {
           var country = owners[province];
           var key = province + '_center';
           var x = coordinates[key][0];
           var y = coordinates[key][1];
+          print(document.getElementById(country+'_flag'));
           ctx.drawImage(document.getElementById(country+'_flag'), x, y);
       }
 
@@ -202,8 +200,6 @@ function draw(units, owners) {
           }
       }
   };
-  print([units,owners]);
-  map.src = 'image/Components/Map.png';
 }
 
 function primeOnChangeEvents() {
@@ -361,7 +357,7 @@ function add_order_row(unit, prov) {
             "</select>\n\n"+
 
             "<select class='order_select' id=\"order"+rownum+"\" style='width:70px'>\n"+
-                "<option value=\"e:unitb"+rownum+" d:order2"+rownum+" e:target"+rownum+" d:target2"+rownum+"\">Move</option>\n"+
+                "<option value=\"d:unitb"+rownum+" d:order2"+rownum+" e:target"+rownum+" d:target2"+rownum+"\">Move</option>\n"+
                 "<option value=\"e:unitb"+rownum+" s:order2"+rownum+" e:target"+rownum+" d:target2"+rownum+"\">Support</option>\n"+
                 "<option value=\"e:unitb"+rownum+" c:order2"+rownum+" e:target"+rownum+" e:target2"+rownum+"\">Convoy</option>\n"+
                 "<option selected value=\"d:unitb"+rownum+" d:order2"+rownum+" d:target"+rownum+" d:target2"+rownum+"\">Hold</option>\n"+

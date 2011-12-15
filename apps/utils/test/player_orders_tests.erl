@@ -91,7 +91,7 @@ interpret_str_orders_test_() ->
     ].
 
 interpret_order_line_test_() ->
-    ActualOutput = interpret_order_line(["a","boh","s","a","vie","nrg","nc"]),
+    ActualOutput = interpret_order_line(["a ","boh","s","a ","vie","nrg","nc"]),
     Expected = {support_move,army,bohemia,army,vienna,norwegian_sea,north_coast},
     [
         ?_assertEqual(Expected, ActualOutput)

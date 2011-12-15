@@ -88,7 +88,6 @@ function load_operator_game_overview(event_data) {
     }
     acc += "</td><td><div id='operator_msg_screen'></div></td></tr></table>";
     $('#operator_game_overview').html(acc);
-    print(event_data);
 }
 
 function load_operator_get_game_msg(event_data){
@@ -116,7 +115,6 @@ function load_operator_get_game_msg(event_data){
             acc += "<div>"+ from +" -> "+ to +": "+ msg[i].content+"</div>";
     }
     $('#operator_msg_screen').html(acc);
-    print(event_data);
 }
 
 /**
@@ -281,21 +279,24 @@ function load_reconfig_game_page(page_data) {
  * Update the game overview page with event data
  */
 function load_game_overview_data(page_data) {
+    var punits = page_data.player_units;
     var units = page_data.unit_list;
     var owners = page_data.owner_list;
-    var punits = page_data.player_units;
 
     var acc = "<b>Status: "+page_data.game_status+"</b><br>";
-    acc += "<b>"+nl2br(page_data.game_info)+"</b><br>";
     acc += "<b>"+nl2br(page_data.game)+"</b><br>";
     acc += "Country: <b>"+nl2br(page_data.country)+"</b><br>";
-    var ord_acc = "<b>"+nl2br(page_data.orders)+"</b><br>";
-
+    var ord_acc = "<b>"+nl2br(page_data.orders)+"</b>";
+    var stat_acc = "<b>"+nl2br(page_data.game_info)+"</b>";
     $('#gov_info').html(acc);
     $('#game_id').val(page_data.game_id);
     $('#mid_area').html('<div id="canvas_div"><canvas id="canvas" width="1200" height="1000"></canvas></div>');
     $('#game_order_info').html(ord_acc);
-    draw(units, owners);
+    $('#game_stat_info').html(stat_acc);
+
+    $('#world').ready(function(){
+        draw(units, owners);
+    });
 
     rownum = 0;
     $('#order_gen').html("");
@@ -1289,4 +1290,14 @@ function get_keys(obj) {
 
 function deleteRow(row, table){
     document.getElementById(table).deleteRow(row);
+}
+
+/*------------------------------------------------------------------------------
+ Key listeners
+ -----------------------------------------------------------------------------*/
+//SHIFT+ENTER to send game order
+function game_order_keypress(e){
+    if(e.shiftKey && e.which==13){
+        validate_game();
+    }
 }

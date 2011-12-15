@@ -300,10 +300,7 @@ get_ret({operator_get_game_msg, invalid_data}, Ret=#ret{}, _Data) ->
 
 get_ret({game_order, success}, Ret=#ret{}, {_Key, Orders}) ->
     Proplist = [{"my_orders", interpret_orderlist(Orders)}],
-    io:format(user, "##Ls##~p~n", [Proplist]),
-
     EventData = json2:obj_from_list(Proplist),
-    io:format(user, "##Ed##~p~n", [EventData]),
     msg_success(Ret#ret{event_data = EventData});
 get_ret({game_order, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
