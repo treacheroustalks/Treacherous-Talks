@@ -91,9 +91,9 @@ handle_call({new_game, Game=#game{id = ID}}, _From, State) ->
     NewID = NewGame#game.id,
     game_timer_sup:create_timer(NewID),
     {reply, {ok, NewID}, State};
-handle_call({restart_game, Game}, _From, State) ->
-    game_timer_sup:create_timer(Game),
-    {reply, {ok, Game#game.id}, State};
+handle_call({restart_game, GameID}, _From, State) ->
+    game_timer_sup:create_timer(GameID),
+    {reply, {ok, GameID}, State};
 handle_call({stop_game, ID}, _From, State) ->
     Reply = try game_timer:stop(ID, stopped)
             catch

@@ -148,7 +148,7 @@ init_ongoing_game(Game) ->
                [Game#game.id, GamePhase]),
     NewState = #state{game = Game,
                       phase = GamePhase},
-    save_corpse(NewState),
+    save_corpse(Game#game.id),
     Timeout = get_timeout(GamePhase, Game),
     {ok, GamePhase, NewState, Timeout}.
 
@@ -163,7 +163,7 @@ waiting_phase(timeout, State) ->
                            game = State#state.game#game{status = ongoing,
                                                        start_time = now()}},
     phase_change(NewState#state.game, started),
-    save_corpse(NewState),
+    save_corpse(NewState#state.game#game.id),
     Timeout = get_timeout(order_phase, State#state.game),
     {next_state, order_phase, NewState, Timeout}.
 waiting_phase(_Event, From, State) ->
@@ -427,15 +427,14 @@ new_state(CurrentGame, Map) ->
                                         ?GAME_STATE_LINK_GAME}),
     db:put(GameStateLinkObj, [{w,1}]).
 
-handle_corpse ({_Key, GameRec}) when is_record (GameRec, game)->
+handle_corpse ({_Key, GameID}) ->
     % the entry in the corpse bucket is not deleted, it will only be
     % updated, as the key never changes
-    lager:info("restart game ~p -> ~p", [GameRec, game:restart_game(GameRec)]).
+    lager:info("restart game ~p -> ~p", [GameID, game:restart_game(GameID)]).
 
-save_corpse(State = #state{}) ->
-    lager:debug("saving game corpse-> ~p~n", [State#state.game#game.id]),
-    corpses:save_corpse (game_timer, State#state.game#game.id,
-                         State#state.game).
+save_corpse(GameID) ->
+    lager:debug("saving game corpse-> ~p~n", [GameID]),
+    corpses:save_corpse (game_timer, GameID, GameID).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -465,7 +464,7 @@ syncevent(waiting_phase, From, State) ->
                            game = State#state.game#game{status = ongoing,
                                                         start_time = now()}},
     phase_change(NewState#state.game, started),
-    save_corpse(NewState),
+    save_corpse(State#state.game#game.id),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, NewState, Timeout};

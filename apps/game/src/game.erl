@@ -78,12 +78,12 @@ new_game(Game=#game{}) ->
 %% @doc
 %%  restarts a game timer
 %% @spec
-%% restart_game(Game :: #game{}) ->
+%% restart_game(GameID :: integer()) ->
 %%     {ok, ID :: integer} | Error
 %% @end
 %% -----------------------------------------------------------------------------
-restart_game(Game=#game{}) ->
-    ?CALL_WORKER({restart_game, Game}).
+restart_game(GameID) ->
+    ?CALL_WORKER({restart_game, GameID}).
 
 %% -----------------------------------------------------------------------------
 %% @doc
