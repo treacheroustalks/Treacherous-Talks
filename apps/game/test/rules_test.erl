@@ -109,6 +109,45 @@ support_stronger_unit_moves_test () ->
                                      strength)),
     map_data:delete (Map).
 
+remove_invalid_order_phase_orders_test() ->
+    Map = map_data:create(standard_game),
+    Orders = [bob, {build,{fleet,england},edinburgh},
+              {disband, {fleet, england}, edinburgh}],
+    % if this doesn't crash we are happy
+    rules:process(order_phase, Map,
+                  diplomacy_rules, Orders),
+    map_data:delete(Map).
+
+remove_invalid_retreat_phase_orders_test() ->
+    Map = map_data:create(standard_game),
+    % if this doesn't crash we are happy
+    Orders = [bob, {build,{fleet,england},edinburgh},
+              {disband, {fleet, england}, edinburgh},
+              {convoy, {fleet, england}, edinburgh,
+               {army, england}, london, sweden},
+              {support, {fleet, england}, edinburgh,
+               {hold, {army, england}, london}},
+              {support, {fleet, england}, edinburgh,
+               {move, {army, england}, london, berlin}}],
+    rules:process(retreat_phase, Map,
+                  diplomacy_rules, Orders),
+    map_data:delete(Map).
+
+remove_invalid_build_phase_orders_test() ->
+    Map = map_data:create(standard_game),
+    % if this doesn't crash we are happy
+    Orders = [bob, {hold, {fleet, england}, edinburgh},
+              {move, {fleet, england}, edinburgh, london},
+              {convoy, {fleet, england}, edinburgh,
+               {army, england}, london, sweden},
+              {support, {fleet, england}, edinburgh,
+               {hold, {army, england}, london}},
+              {support, {fleet, england}, edinburgh,
+               {move, {army, england}, london, berlin}}],
+    rules:process(build_phase, Map,
+                  diplomacy_rules, Orders),
+    map_data:delete(Map).
+
 %% manual diagram 5
 diagram_5_test () ->
     Map = map_data:create (standard_game),
