@@ -49,21 +49,21 @@ worker_count() ->
 %% @doc
 %% Starts a new timer, for the game Game
 %% @end
-%% [@spec create_timer(Game::#game{}) -> {ok, Timer::pid()}.
+%% [@spec create_timer(GameID::integer()) -> {ok, Timer::pid()}.
 %% @end]
 %%-------------------------------------------------------------------
--spec create_timer(#game{}) -> {ok, pid()}.
-create_timer(Game) ->
-    supervisor:start_child(?MODULE, [Game]).
+-spec create_timer(GameID :: integer()) -> {ok, pid()}.
+create_timer(GameID) ->
+    supervisor:start_child(?MODULE, [GameID]).
 
-terminate_timer(Game) ->
-    supervisor:terminate_child(?MODULE, Game#game.id).
+terminate_timer(GameID) ->
+    supervisor:terminate_child(?MODULE, GameID).
 
-restart_timer(Game) ->
-    supervisor:restart_child(?MODULE, Game#game.id).
+restart_timer(GameID) ->
+    supervisor:restart_child(?MODULE, GameID).
 
-delete_timer(Game) ->
-    supervisor:delete_child(?MODULE, Game#game.id).
+delete_timer(GameID) ->
+    supervisor:delete_child(?MODULE, GameID).
 
 %% ===================================================================
 %% Supervisor callbacks

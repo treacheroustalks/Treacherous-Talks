@@ -75,7 +75,6 @@ phase_timer_test_ () ->
      fun app_started_setup/0,
      fun app_started_teardown/1,
      [ping_tst_(),
-      game_timer_create_tst_(),
       game_timer_state_tst_(),
       game_current_tst_(),
       game_timer_end_tst_(),
@@ -84,14 +83,6 @@ phase_timer_test_ () ->
 
 ping_tst_ () ->
     [fun()-> {pong, _Pid} = game_worker:ping () end].
-%%--------------------------------------------------------------------
-%% Tests game timer - creation of a new game timer
-%%--------------------------------------------------------------------
-game_timer_create_tst_() ->
-    [fun() ->
-             Game = test_game(),
-             ?assertMatch({ok, _Pid}, game_timer_sup:create_timer(Game))
-     end].
 
 %%--------------------------------------------------------------------
 %% Tests game timer - changes state on sent events
@@ -206,7 +197,7 @@ game_timer_end_tst_() ->
              ?assertEqual({ok, {ID, finished}}, game_timer:stop(ID, finished)),
              {ok, Result} = game:get_game(ID),
              Expected = Game#game{status = finished,
-                                      start_time = Result#game.start_time},
+                                  start_time = Result#game.start_time},
              ?assertEqual(Expected, Result),
              %% check that the game timer does not exist
              ?assertNot(is_process_alive(TimerPid)),

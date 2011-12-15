@@ -67,8 +67,8 @@
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-start_link(Game) ->
-    gen_fsm:start_link({global, {?MODULE, Game#game.id}}, ?MODULE, Game, []).
+start_link(GameID) ->
+    gen_fsm:start_link({global, {?MODULE, GameID}}, ?MODULE, GameID, []).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -130,11 +130,19 @@ stop(Timer, NewState) ->
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
-init(#game{status = waiting} = Game) ->
-    Timeout = timer:minutes(Game#game.waiting_time),
-    {ok, waiting_phase, #state{game = Game, phase = waiting_phase}, Timeout};
-init(#game{status = ongoing} = Game) ->
-    {ok, CurrentGame} = game:get_current_game(Game#game.id),
+init(GameID) ->
+    {ok, Game} = game_worker:get_game(GameID),
+    case Game#game.status of
+        ongoing ->
+            init_ongoing_game(Game);
+        waiting ->
+            Timeout = timer:minutes(Game#game.waiting_time),
+            {ok, waiting_phase,
+             #state{game = Game, phase = waiting_phase}, Timeout}
+        end.
+
+init_ongoing_game(Game) ->
+    {ok, CurrentGame} = game_utils:get_current_game(Game#game.id),
     GamePhase = CurrentGame#game_current.current_phase,
     lager:info("Restarting game ~p timer. Game phase: ~p",
                [Game#game.id, GamePhase]),
@@ -222,7 +230,6 @@ handle_info(_Info, StateName, State) ->
     {next_state, StateName, State}.
 
 terminate(_Reason, _StateName, _State) ->
-    lager:debug("Terminating game timer ~p", [_State]),
     ok.
 
 code_change(_OldVsn, StateName, State, _Extra) ->
