@@ -25,7 +25,7 @@
 -define(PLAYER_ORDERS, true).
 
 -define(ORD_PARSER_SETTING, [{capture,[1, 2, 3, 4, 5, 7, 8] ,list}]).
--define(UNIT_PTN, "(army|fleet|a|f)?").
+-define(UNIT_PTN, "(army|fleet|a |f )?").
 -define(LOC_PTN, "([a-z_]{3,})?").
 -define(ACT_PTN, "(->|-|move|support|hold\s*$|convoy|disband|build|m|s|h\s*$|c|^\s*b|^\s*d)").
 -define(MOV_PTN, "(->|-|move|m |hold|h)?").
@@ -85,8 +85,8 @@
 ).
 
 -define(TRANS_UNIT,
-[{"a", army},
- {"f", fleet},
+[{"a ", army},
+ {"f ", fleet},
  {"army", army},
  {"fleet", fleet},
  {[],nil}]
