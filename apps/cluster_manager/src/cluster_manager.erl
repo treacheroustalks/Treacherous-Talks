@@ -60,7 +60,6 @@ option_spec_list() ->
 %% -----------------------------------------------------------------------------
 -spec main(term()) -> term().
 main(Args) ->
-    io:format("~p~n",[Args]),
     case getopt:parse(option_spec_list(), Args) of
         {ok, {[], _NonOptionArg}} ->
             usage();
@@ -99,8 +98,8 @@ run(Opts) ->
                 true ->
                     case Parallel of
                         false ->
-                            cluster_utils:do_action_on_releases(StartingOrder,
-                                                                start_release);
+                            cluster_utils:do_action_on_releases(
+                              StartingOrder, start_release);
                         true ->
                             cluster_utils:do_parallel_action_on_releases(
                               ParallelOrder, start_release)
@@ -122,12 +121,17 @@ run(Opts) ->
                     case Parallel of
                         false ->
                             ShutdownOrder = lists:reverse(StartingOrder),
-                            cluster_utils:do_action_on_releases(ShutdownOrder,
-                                                                stop_release);
+                            Res = cluster_utils:do_action_on_releases(
+                                    ShutdownOrder, stop_release);
                         true ->
                             ShutdownOrder = [lists:reverse(StartingOrder)],
-                            cluster_utils:do_parallel_action_on_releases(
-                              ShutdownOrder, stop_release)
+                            Res = cluster_utils:do_parallel_action_on_releases(
+                                    ShutdownOrder, stop_release)
+                    end,
+                    % Halt and exit with error code on stop error
+                    case check_results_for_errors(Res) of
+                        ok -> ok;
+                        error -> halt(1)
                     end;
                 false -> ok
             end,
@@ -157,6 +161,23 @@ join_riak_nodes([{Host, _SysMgrPrefix, RelPrefix}| RiakList]) ->
     ReleaseList = [ {Node, SysMgrPre, JoinNode, RelPre} ||
                       {Node, SysMgrPre, RelPre} <- RiakList],
     cluster_utils:do_action_on_releases(ReleaseList, join_riak).
+
+% Helper that checks results lists for any result that returned something else
+% than ok
+-spec check_results_for_errors(list()) -> ok | error.
+check_results_for_errors(Result) ->
+    OnlyRes = [ ActionRes || {_Action, _Release, _Host, ActionRes} <- Result ],
+    CheckIfOk = fun(Term) ->
+                        case Term of
+                            ok -> true;
+                            _Error -> false
+                        end
+                end,
+    Error = lists:all(CheckIfOk, OnlyRes),
+    case Error of
+        true -> ok;
+        false -> error
+    end.
 
 %% Getopt helpers
 usage() ->

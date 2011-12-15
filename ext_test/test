@@ -11,9 +11,6 @@ startriak=1
 
 # Internal variables
 cwd="$( cd -P "$( dirname "$0" )" && pwd )"
-sysrel=$cwd/../system-release
-cm=$sysrel/tt/bin/cluster_manager
-sm=$sysrel/tt/bin/system_manager
 errors=0
 
 source $cwd/common_functions.sh
@@ -54,22 +51,6 @@ do
     esac
     shift
 done
-
-# Description: Starts a system using system_manager and cluster_manager
-# Argument: the config file to use
-start_system () {
-    cd $cwd
-    $sm start
-    $cm -f -c -s "$1"
-}
-
-# Description: Stops a system using system_manager and cluster_manager
-# Argument: the config file to use
-stop_system () {
-    cd $cwd
-    $cm -f -t "$1"
-    $sm stop
-}
 
 
 ###### Script starts here

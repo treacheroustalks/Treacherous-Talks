@@ -143,13 +143,11 @@ riak_release:
 
 # Start the full stack
 start:
-	$(SYSREL)/tt/bin/system_manager start
-	$(SYSREL)/tt/bin/cluster_manager ext_test/configs/fullstack.config -c -s -f
+	bash ext_test/common_functions.sh start_system "configs/fullstack.config"
 
 # Stop the full stack
 stop:
-	$(SYSREL)/tt/bin/cluster_manager ext_test/configs/fullstack.config -t -f
-	$(SYSREL)/tt/bin/system_manager stop
+	bash ext_test/common_functions.sh stop_system "configs/fullstack.config"
 
 
 .PHONY: standard complete get_deps compile docs small_clean clean test \

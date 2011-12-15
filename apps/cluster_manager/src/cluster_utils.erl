@@ -62,17 +62,19 @@ do_parallel_action_on_releases(ParallelReleases, Action) ->
                        Pid ! {action, Res}
                end,
     Self = self(),
-    lists:map(
-      fun(Releases) ->
-              lists:foreach(
-                fun(Rel) ->
-                        spawn(fun() -> DoAction(Rel, Self) end)
-                end, Releases),
-              lists:map(
-                fun(_Rel) ->
-                        receive {action, Res} -> Res end
-                end, Releases)
-      end, ParallelReleases).
+    Result = lists:map(
+               fun(Releases) ->
+                       lists:foreach(
+                         fun(Rel) ->
+                                 spawn(fun() -> DoAction(Rel, Self) end)
+                         end, Releases),
+                       lists:map(
+                         fun(_Rel) ->
+                                 receive {action, Res} -> Res end
+                         end, Releases)
+               end, ParallelReleases),
+    % Remove outer lists so that return is same as do_action_on_releases
+    lists:flatten(Result).
 
 
 %% Perform an action (start/stop/ping/halt) on all releases in the given list
