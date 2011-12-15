@@ -122,7 +122,8 @@
       GameType :: standard_game,
       GamePhase :: order_phase | retreat_phase | count_phase | build_phase.
 create (standard_game, order_phase) ->
-    [unit_exists_rule (),
+    [filter_order_phase_rule(),
+     unit_exists_rule (),
      convoy_rule (),
      unit_can_go_there_rule (),
      implicit_hold_rule (),
@@ -132,7 +133,8 @@ create (standard_game, order_phase) ->
      bounce2_rule (),
      hold_vs_move2_rule ()];
 create (standard_game, retreat_phase) ->
-    [unit_exists_rule (),
+    [filter_retreat_phase_rule(),
+     unit_exists_rule (),
      unit_can_go_there_rule (),
      implicit_hold_rule (),
      trade_places_rule (),
@@ -145,7 +147,8 @@ create (standard_game, count_phase) ->
      count_units_rule (),
      game_over_rule ()];
 create (standard_game, build_phase) ->
-    [unit_can_build_there_rule (),
+    [filter_build_phase_rule(),
+     unit_can_build_there_rule (),
      can_build_rule (),
      civil_disorder_rule ()].
 
@@ -196,6 +199,27 @@ do_process (build_phase, Map, {disband_furthest_units, Nation, ToDisband}) ->
 do_process (Phase, _Map, Order) ->
     erlang:error ({error,
                    {unhandled_case, ?MODULE, ?LINE, [Phase, 'Map', Order]}}).
+
+%% remove orders that are invalid for the order phase
+filter_order_phase_rule () ->
+    #rule{name = filter_order_phase,
+          arity = 1,
+          detector = fun invalid_order_phase_order/2,
+          actor = fun delete_orders_actor/2}.
+
+%% remove orders that are invalid for the retreat phase
+filter_retreat_phase_rule () ->
+    #rule{name = filter_retreat_phase,
+          arity = 1,
+          detector = fun invalid_retreat_phase_order/2,
+          actor = fun delete_orders_actor/2}.
+
+%% remove orders that are invalid for the build phase
+filter_build_phase_rule () ->
+    #rule{name = filter_build_phase,
+          arity = 1,
+          detector = fun invalid_build_phase_order/2,
+          actor = fun delete_orders_actor/2}.
 
 %% remove orders for non-existing units
 unit_exists_rule () ->
@@ -550,6 +574,33 @@ unit_can_go_there_detector (_Map, _) ->
 
 unit_does_not_exist (Map, {Order}) ->
     not map:unit_exists (Map, get_first_from (Order), get_first_unit (Order)).
+
+invalid_order_phase_order(_Map, {{hold, _Unit, _Prov}}) ->
+    false;
+invalid_order_phase_order(_Map, {{move, _Unit, _From, _To}}) ->
+    false;
+invalid_order_phase_order(_Map, {{support, _Unit, _Prov, {hold, _SUnit, _SProv}}}) ->
+    false;
+invalid_order_phase_order(_Map, {{support, _Unit, _Prov, {move, _SUnit, _From, _To}}}) ->
+    false;
+invalid_order_phase_order(_Map, {{convoy, _Fleet, _FProv, _Army, _From, _To}}) ->
+    false;
+invalid_order_phase_order(_Map, _) ->
+    true.
+
+invalid_retreat_phase_order(_Map, {{hold, _Unit, _Prov}}) ->
+    false;
+invalid_retreat_phase_order(_Map, {{move, _Unit, _From, _To}}) ->
+    false;
+invalid_retreat_phase_order(_Map, _) ->
+    true.
+
+invalid_build_phase_order(_Map, {{build, _Unit, _Prov}}) ->
+    false;
+invalid_build_phase_order(_Map, {{disband, _Unit, _Prob}}) ->
+    false;
+invalid_build_phase_order(_Map, _) ->
+    true.
 
 trade_places_detector (_Map, {{move, _Unit1, From, To},
                               {move, _Unit2, To, From}}) ->
