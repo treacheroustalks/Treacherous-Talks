@@ -23,6 +23,7 @@
 %%%-------------------------------------------------------------------
 
 -module (corpses).
+-compile([{parse_transform, lager_transform}]).
 
 -export ([get_corpses/1, save_corpse/2, save_corpse/3]).
 
@@ -36,8 +37,8 @@
 %% -----------------------------------------------------------------------------
 -spec get_corpses (DeadBackend :: node ()) -> [necromancer:corpse ()] | [].
 get_corpses (DeadBackend) when is_atom (DeadBackend) ->
-    ?DEBUG ("get_corpses(~p)~n", [DeadBackend]),
-    Query = "node=" ++ atom_to_list(node()),
+    lager:info("DeadBackend = ~p", [DeadBackend]),
+    Query = "node=" ++ atom_to_list(DeadBackend),
     case db:search_values(?B_CORPSES, Query) of
         {ok, Corpses} ->
             lists:map(fun(Corpse) ->
@@ -61,7 +62,7 @@ save_corpse (Module, Data) ->
 %% -----------------------------------------------------------------------------
 -spec save_corpse (module (), Ref :: any (), Data :: any ()) -> ok.
 save_corpse (Module, Ref, Data) ->
-    ?DEBUG ("save_corpse(~p, ~p)~n", [Module, Data]),
+    lager:debug("saving corpse for module = ~p Data = ~p", [Module, Data]),
     Key = lists:flatten(io_lib:format ("~p~p", [Module, Ref])),
     BinKey = list_to_binary(Key),
     Node = atom_to_list(node()),

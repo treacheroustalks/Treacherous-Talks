@@ -44,6 +44,7 @@
 %% -----------------------------------------------------------------------------
 -module(necromancer).
 -vsn("1.0.0").
+-compile([{parse_transform, lager_transform}]).
 
 -include_lib ("utils/include/debug.hrl").
 
@@ -77,7 +78,7 @@ start_link (GetCorpsesFun) ->
         true ->
             ok;
         Else ->
-            ?DEBUG ("COULD NOT REGISTER BECAUSE OF ~p~n", [Else]),
+            lager:error("COULD NOT REGISTER BECAUSE OF ~p~n", [Else]),
             erlang:error ({error, {?MODULE, could_not_start, Else}})
     end,
     {ok, Pid}.
@@ -140,13 +141,13 @@ loop (State = #state{nodes = Nodes}) ->
 
 -spec do_watch (node (), #state{}) -> #state{}.
 do_watch (Node, State = #state{nodes = Nodes}) ->
-    ?DEBUG ("watch(~p)~n", [Node]),
+    lager:info("watching ~p", [Node]),
     case net_adm:ping (Node) of
         pong ->
             erlang:monitor_node (Node, true),
             State#state{nodes = [Node | Nodes]};
         pang ->
-            ?DEBUG ("~p is not reachable.~n", [Node]),
+            lager:info("~p is not reachable.~n", [Node]),
             spawn (fun () -> wait_for_node (Node) end),
             State
     end.
@@ -155,7 +156,7 @@ wait_for_node (Node) ->
     timer:sleep (1000),
     case net_adm:ping (Node) of
         pong ->
-            ?DEBUG ("~p is finally reachable!~n", [Node]),
+            lager:info("~p is finally reachable!~n", [Node]),
             necromancer_srv ! {watch, Node};
         pang ->
             wait_for_node (Node)
@@ -163,19 +164,19 @@ wait_for_node (Node) ->
 
 -spec do_unwatch (node (), #state{}) -> #state{}.
 do_unwatch (Node, State = #state{nodes = Nodes}) ->
-    ?DEBUG ("unwatch(~p)~n", [Node]),
+    lager:info("unwatching ~p", [Node]),
     erlang:monitor_node (Node, false),
     State#state{nodes = lists:delete (Node, Nodes)}.
 
 -spec handle_death (node (), #state{}) -> ok.
 handle_death (DeadNode, State = #state{get_corpses_fun = GetCorpses}) ->
-    ?DEBUG ("Node ~p died. Handling death...~n", [DeadNode]),
+    lager:info("Node ~p died. Handling its death...", [DeadNode]),
     AliveNodes = [node () | lists:delete (DeadNode, State#state.nodes)],
     Corpses = GetCorpses (DeadNode),
-    ?DEBUG ("Corpses: ~p~n", [Corpses]),
-    ?DEBUG ("AliveNodes: ~p~n", [AliveNodes]),
+    lager:info("Corpses: ~p", [Corpses]),
+    lager:info("AliveNodes: ~p", [AliveNodes]),
     HandleCorpse = fun (Corpse, AliveNode) ->
-                           ?DEBUG ("handling corpse ~p on node ~p~n",
+                           lager:info("handling corpse ~p on node ~p",
                                    [Corpse, AliveNode]),
                            {Module, Data} = Corpse,
                            rpc:call (AliveNode,
