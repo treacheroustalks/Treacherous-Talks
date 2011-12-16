@@ -66,6 +66,14 @@ END\r
 adfadfasdfaldfad">>
 ).
 
+-define(SAMPLE_LOGOUT,
+<<"sddfaadfaff\r
+LOGOUT\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
+END\r
+adfadfasdfaldfad">>
+).
+
 -define(SAMPLE_UPDATE,
 <<"sddfaadfaff\r
 UPDATE\r

@@ -24,6 +24,7 @@
 -define(SUPPORTED_COMMANDS,
             ?REGISTER ++ "," ++
             ?LOGIN ++ "," ++
+            ?LOGOUT ++ "," ++
             ?UPDATE ++ "," ++
             ?RECONFIG ++ "," ++
             ?CREATE ++ "," ++
@@ -40,6 +41,7 @@
 -define(REGISTER, "REGISTER").
 -define(UPDATE, "UPDATE").
 -define(LOGIN, "LOGIN").
+-define(LOGOUT, "LOGOUT").
 -define(RECONFIG, "RECONFIG").
 -define(CREATE, "CREATE").
 -define(OVERVIEW, "OVERVIEW").

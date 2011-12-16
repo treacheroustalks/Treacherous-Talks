@@ -202,6 +202,15 @@ END").
     2563564565asdfa
 ").
 
+-define(LOGOUT_COMMAND(Session),
+"LOGOUT
+SESSION: " ++ Session ++ "
+END").
+-define(LOGOUT_COMMAND_INVALID_INPUT(Session),
+"LOGOUT
+
+END").
+
 %%------------------------------------------------------------------
 %% Responses
 %%------------------------------------------------------------------
@@ -247,6 +256,11 @@ Supported commands are:").
 -define(SEND_GAME_MSG_RESPONSE_SUCCESS, "Game Message was sent. Game ID is: ").
 -define(GET_PROFILE_RESPONSE_SUCCESS, "Your Profile:\nNICKNAME:").
 -define(SEND_GAME_MSG_RESPONSE_NOT_ONGOING, "Error: Cannot send messages to a game that is not ongoing").
+
+-define(LOGOUT_RESPONSE_SUCCESS, "Logged out successfully.").
+-define(LOGOUT_RESPONSE_ERROR, "Invalid input for the given command.\n").
+-define(LOGOUT_RESPONSE_INVALID_INPUT, "The command [logout] could not be interpreted correctly:
+Required fields: [\"SESSION\"]").
 %%-------------------------------------------------------------------
 %% @doc
 %%-------------------------------------------------------------------
@@ -462,6 +476,22 @@ setup_session_instantiator() ->
       ?GET_PROFILE_COMMAND(Session),
       ?GET_PROFILE_RESPONSE_SUCCESS,
       "get user profile",
+      no_wait},
+
+     {Client,
+      ?LOGOUT_COMMAND(Session),
+      ?LOGOUT_RESPONSE_SUCCESS,
+      "successful logout",
+      no_wait},
+     {Client,
+      ?LOGOUT_COMMAND("234252345234sdgr43534"),
+      ?LOGOUT_RESPONSE_ERROR,
+      "invalid input for session id",
+      no_wait},
+     {Client,
+      ?LOGOUT_COMMAND_INVALID_INPUT(Session),
+      ?LOGOUT_RESPONSE_INVALID_INPUT,
+      "logout command could not be interpreted",
       no_wait}].
 
 

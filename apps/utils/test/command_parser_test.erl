@@ -58,6 +58,8 @@ parse_test_() ->
                         })),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}})),
+     ?_test(check_parse(?SAMPLE_LOGOUT,
+                        {logout, {ok, ?SESSION_ID, no_arg}})),
      ?_test(check_parse(?SAMPLE_GAME_OVERVIEW,
                         {game_overview, {ok, ?SESSION_ID, 111222}})),
      ?_test(check_parse(?SAMPLE_JOIN_GAME,
