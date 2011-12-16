@@ -357,7 +357,7 @@ get({get_presence, invalid_data}, Error) ->
 get({set_push_receiver, _}, _) ->
     resp("");
 
-% User update
+% User logout
 get({logout, success}, _Val) ->
     resp("Logged out successfully.~n");
 get({logout, invalid_data}, Error) ->

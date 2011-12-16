@@ -35,6 +35,7 @@
          parse_update/1,
          parse_register/1,
          parse_login/1,
+         parse_logout/1,
          parse_reconfig/1,
          parse_overview/1,
          parse_user_msg/1,
@@ -198,6 +199,30 @@ parse_login(Data) ->
                                 RequiredFields) of
                 [] ->
                     {ok, #user{nick = Nick, password = Pw}};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_logout/1
+%%
+%% Parses a logout string into a user record.
+%% @end
+%%------------------------------------------------------------------------------
+parse_logout(Data) ->
+    RequiredFields = [?SESSION],
+    Values = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, Values) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [Sess] = Values,
+
+            case get_error_list(Values, get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    {ok, Sess, no_arg};
                 ErrorList ->
                     {error, {invalid_input, ErrorList}}
             end

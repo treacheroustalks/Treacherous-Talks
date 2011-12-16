@@ -54,6 +54,8 @@
           {register, Error::term()} |
           {login, {ok, #user{}}} |
           {login, Error::term()} |
+          {logout, {ok, string(), atom()}} |
+          {logout, Error::term()} |
           {play_order, {[term()], [term()]}} |
           {update, {ok, SessionId::string(),[{UserRecFieldPos::integer(), Value::term()}]}} |
           {update, Error::term()} |
@@ -64,8 +66,12 @@
           {reconfig_game,{error, {invalid_input, [term()]}}}|
           {game_overview, {ok, SessionId::string(), GameId::integer()}} |
           {game_overview, Error::term()} |
+          {games_current, {ok, SessionId::string(), atom()}} |
+          {games_current, Error::term()} |
           {join_game, {ok, SessionId::string(), {GameId::integer(), Country::atom()}}} |
           {join_game, Error::term()} |
+          {game_search, {ok, SessionId::string(), Query::string()}} |
+          {game_search, Error::term()} |
           {user_msg, {ok, SessionId::string(), #frontend_msg{}}} |
           {user_msg, {error, {required_fields, list()}}} |
           {user_msg, {error, {invalid_input, list()}}} |
@@ -84,6 +90,7 @@
           atom().
 parse(BinString, Client) when is_binary(BinString) ->
     Commands =    "("?LOGIN
+                  "|"?LOGOUT
                   "|"?ORDER
                   "|"?CREATE
                   "|"?RECONFIG
@@ -107,6 +114,8 @@ parse(BinString, Client) when is_binary(BinString) ->
             case Cmd of
                 <<?LOGIN>> ->
                     {login, user_commands:parse_login(Data)};
+                <<?LOGOUT>> ->
+                    {logout, user_commands:parse_logout(Data)};
                 <<?ORDER>> ->
                     {game_order, player_orders:parse_orders(Data)};
                 <<?CREATE>> ->

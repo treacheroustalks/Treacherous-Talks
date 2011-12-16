@@ -42,6 +42,12 @@ parse_login_test_() ->
         ?_assertEqual(Expected, ActualOutput)
     ].
 
+parse_logout_test_() ->
+    ActualOutput = user_commands:parse_logout(?SAMPLE_LOGOUT),
+    Expected = {ok, ?SESSION_ID, no_arg},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
 
 parse_register_test_() ->
     ActualOutput = user_commands:parse_register(?SAMPLE_REGISTER),
