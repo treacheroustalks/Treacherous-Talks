@@ -11,5 +11,5 @@ main(Args) ->
             halt(1);
         {ok, [Config]} ->
             application:set_env(fault_tolerance, test_cluster_config, Config),
-            eunit:test(backend_test)
+            eunit:test(backend_test:all_tests(), [verbose])
     end.

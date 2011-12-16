@@ -297,7 +297,7 @@ store_game_players_new(GamePlayersRec, #game_user{id =UserId,
     TmpGameObj = db_obj:set_value(DBGameObj, TmpGamePropList),
 
     % Finally write it to the DB and return
-    db:put(TmpGameObj, [{w,0}]).
+    db:put(TmpGameObj, [{w,1}]).
 %    error_logger:info_msg("put result: ~p~n",[Result]).
 
 %% reconfig game that means update the game record
