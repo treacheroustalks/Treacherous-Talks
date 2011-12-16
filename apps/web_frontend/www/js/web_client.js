@@ -22,6 +22,7 @@ var initial_page = 'home'; // First page to be loaded
 var dash_page = 'dashboard'; // First page to be loaded once logged in
 var home_page = initial_page; // Home page. Value changes on user login status
 var op_inspect_country; // Which country the operator is inspecting
+var view_game_id;
 
 var debug = true;
 var userObj = {

@@ -27,7 +27,7 @@ function load_page(callback) {
 
 function on_phase_change(page_data) {
     print(page);
-    if(page == 'game'){
+    if(page == 'game' && view_game_id == page_data.game_id){
         clear_message();
         load_game_overview_data(page_data);
     }
@@ -471,6 +471,7 @@ function refresh_game() {
  * Call server to get game overview of specified game
  */
 function get_game_overview(game_id) {
+    view_game_id = game_id;
     var dataObj = {
         "content" : [ {
             "session_id" : get_cookie()
