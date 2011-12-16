@@ -16,10 +16,10 @@ SYS_MGR_NAME="load_system_manager"
 RIAK_NAME="load_riak"
 B_NAME="load_backend"
 
-DB_WORKER=100
-CONTROLLER_WORKER=100
-GAME_WORKER=100
-MESSAGE_WORKER=100
+DB_WORKER=50
+CONTROLLER_WORKER=50
+GAME_WORKER=50
+MESSAGE_WORKER=50
 
 RIAK_BACKEND=riak_kv_bitcask_backend
 RIAK_PB_PORT=9001
@@ -34,7 +34,7 @@ SERVERS=(
         "dilshod.pcs"
         "erik.pcs"
         "lin.pcs"
-        "jd.pcs"
         "tiina.pcs"
+        "jd.pcs"
         "andre.pcs"
 )

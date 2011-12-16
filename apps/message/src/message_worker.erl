@@ -44,7 +44,7 @@
          code_change/3]).
 
 %% export for eunit
--export([log_message/3]).
+-export([log_message/5]).
 
 -include_lib("utils/include/debug.hrl").
 
@@ -88,7 +88,7 @@ handle_call({mark_as_read, MessageId, Bucket}, _From, State) ->
     {reply, Result, State};
 
 handle_call({mark_as_done, ReportId}, _From, State) ->
-    Result = do_mark_as_done(ReportId),
+    Result = do_mark_as_read(ReportId, ?B_REPORT_MESSAGE_UNREAD),
     {reply, Result, State};
 % user not allowed to send message to himself
 handle_call({user_msg, #message{from_nick= Nick, to_nick= Nick}}, _From, State) ->
@@ -107,11 +107,9 @@ handle_call({user_msg, Msg=#message{}}, _From, State) ->
                      Event = #push_event{type = off_game_msg, data = NewMsg},
                      case controller:sync_push_event(ToID, Event) of
                          {ok, success} ->
-                             log_user_msg(undefined,
-                                          NewMsg#message{status= read});
+                             log_user_msg(undefined, NewMsg, read);
                          {error, _} ->
-                             log_user_msg(undefined,
-                                          NewMsg#message{status= unread})
+                             log_user_msg(undefined, NewMsg, unread)
                      end;
                  {error, does_not_exist} ->
                      {error, invalid_nick};
@@ -125,6 +123,14 @@ handle_call({report_msg, Report = #report_message{}}, _From, State) ->
     Result = log_report_msg(undefined, ReportMsg),
     {reply, Result, State};
 
+handle_call({get_all_game_msg, GameId}, _From, State) ->
+    Result = get_all_game_msg(GameId),
+    {reply, Result, State};
+
+handle_call({get_game_msg_by_phase, GameId, Year, Season, Phase}, _From, State) ->
+    Result = get_game_msg_by_phase(GameId, Year, Season, Phase),
+    {reply, Result, State};
+
 handle_call(_Request, _From, State) ->
     ?DEBUG("received unhandled call: ~p~n",[{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -133,11 +139,9 @@ handle_cast({game_msg, GMsg = #game_message{}}, State) ->
     Event = #push_event{type = in_game_msg, data = GMsg},
     case controller:sync_push_event(GMsg#game_message.to_id, Event) of
         {ok, success} ->
-            {ok, _ID} = log_game_msg(undefined,
-                                     GMsg#game_message{status = read});
+            {ok, _ID} = log_game_msg(undefined, GMsg, read);
         {error, _} ->
-            {ok, _ID} = log_game_msg(undefined,
-                                     GMsg#game_message{status = unread})
+            {ok, _ID} = log_game_msg(undefined, GMsg, unread)
         end,
 {noreply, State};
 
@@ -160,83 +164,120 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-log_user_msg(undefined, Msg = #message{}) ->
-    ID = db:get_unique_id(),
-    log_message(ID, Msg#message{id = ID}, ?B_MESSAGE).
+log_user_msg(undefined, Msg = #message{from_id=From, to_id=To}, Status) ->
+    Id = integer_to_list(db:get_unique_id()) ++ "-" ++
+        integer_to_list(From) ++ "-" ++
+        integer_to_list(To),
+    log_message(Id, Msg#message{id = Id},
+                ?B_MESSAGE, ?B_MESSAGE_UNREAD, Status).
 
-log_game_msg(undefined, GMsg = #game_message{}) ->
-    ID = db:get_unique_id(),
-    log_message(ID, GMsg#game_message{id = ID}, ?B_GAME_MESSAGE).
+log_game_msg(undefined,
+             GMsg = #game_message{from_id=From, to_id=To,
+                                  game_id=GameId, year=Year,
+                                  season=Season, phase=Phase},
+             Status) ->
+    Id = integer_to_list(db:get_unique_id()) ++ "-" ++
+        integer_to_list(From) ++ "-" ++
+        integer_to_list(To) ++ "-" ++
+        integer_to_list(GameId) ++ "-" ++
+        integer_to_list(Year) ++ "-" ++
+        atom_to_list(Season) ++ "-" ++
+        atom_to_list(Phase),
+    log_message(Id, GMsg#game_message{id = Id},
+                ?B_GAME_MESSAGE, ?B_GAME_MESSAGE_UNREAD, Status).
 
-log_report_msg(undefined, Report = #report_message{}) ->
-    ID = db:get_unique_id(),
-    log_message(ID, Report#report_message{id = ID}, ?B_REPORT_MESSAGE).
+log_report_msg(undefined, Report = #report_message{to=To}) ->
+    Id = integer_to_list(db:get_unique_id()) ++ "-" ++
+        atom_to_list(To),
+    log_message(Id, Report#report_message{id = Id},
+                ?B_REPORT_MESSAGE, ?B_REPORT_MESSAGE_UNREAD, unread).
 
 do_unread(UserId) ->
-    {ok, UserMsges} = get_unread_msges(UserId, ?B_MESSAGE, message),
-    {ok, GameMsges} = get_unread_msges(UserId, ?B_GAME_MESSAGE, game_message),
+    {ok, UserMsges} = get_unread_msges(UserId, ?B_MESSAGE,
+                                       ?B_MESSAGE_UNREAD),
+    {ok, GameMsges} = get_unread_msges(UserId, ?B_GAME_MESSAGE,
+                                       ?B_GAME_MESSAGE_UNREAD),
     {ok, {UserMsges, GameMsges}}.
 
 
-get_unread_msges(UserId, Bucket, RecordName) ->
-    Query = lists:flatten(io_lib:format("to_id=~p AND status=unread", [UserId])),
-    {ok, PropLists} = db:search_values(Bucket, Query),
-    Messages = lists:map(fun(PropList) ->
-                                 data_format:plist_to_rec(RecordName, PropList)
-                         end,
-                         PropLists),
-    {ok, Messages}.
+get_unread_msges(UserId, Bucket, UnreadBucket) ->
+    Query = [ [<<"tokenize">>, <<"-">>, 3], [<<"eq">>, db:int_to_bin(UserId)]],
+    {ok, Unread} = db:get_key_filter(UnreadBucket, Query),
+    Keys = lists:map(fun(#unread{id=Id}) ->
+                             list_to_binary(Id)
+                        end, Unread),
+    db:get_values(Bucket, Keys).
 
 get_reports(Role) ->
-    Query = lists:flatten(io_lib:format("to=~p AND status=notdone", [Role])),
-    db_utils:do_search_values(?B_REPORT_MESSAGE, Query, report_message).
-
-do_mark_as_done(ReportId) ->
-    case db:get(?B_REPORT_MESSAGE, db:int_to_bin(ReportId)) of
-        {ok, DBObj} ->
-            PropList = db_obj:get_value(DBObj),
-            ReportMsg = data_format:plist_to_rec(report_message, PropList),
-            DoneMsg = ReportMsg#report_message{status = done},
-            Updated = data_format:rec_to_plist(DoneMsg),
-            DoneDBObj = db_obj:set_value(DBObj, Updated),
-            db:put(DoneDBObj),
-            {ok, ReportId};
-        {error, notfound} ->
-            {error, notfound}
-    end.
+    Query = [ [<<"tokenize">>, <<"-">>, 2],
+              [<<"eq">>, list_to_binary(atom_to_list(Role))]],
+    {ok, Unread} = db:get_key_filter(?B_REPORT_MESSAGE_UNREAD, Query),
+    Keys = lists:map(fun(#unread{id=Id}) ->
+                             list_to_binary(Id)
+                        end, Unread),
+    db:get_values(?B_REPORT_MESSAGE, Keys).
 
 
 do_mark_as_read(MessageId, Bucket)
-  when Bucket == ?B_MESSAGE;
-       Bucket == ?B_GAME_MESSAGE ->
-    case db:get(Bucket, db:int_to_bin(MessageId), [{r,1}]) of
-        {ok, DBObj} ->
-            PropList = db_obj:get_value(DBObj),
-            % modify via the record format to maintain the property order easily
-            UpdatedPropList =
-                case Bucket of
-                    ?B_MESSAGE ->
-                        Message = data_format:plist_to_rec(message, PropList),
-                        ReadMessage = Message#message{status=read},
-                        data_format:rec_to_plist(ReadMessage);
-                    ?B_GAME_MESSAGE ->
-                        Message = data_format:plist_to_rec(game_message, PropList),
-                        ReadGameMessage = Message#game_message{status=read},
-                        data_format:rec_to_plist(ReadGameMessage)
-                end,
-            ReadDBObj = db_obj:set_value(DBObj, UpdatedPropList),
-            db:put(ReadDBObj, [{w, 0}]),
-            ok;
-        {error, notfound} ->
-            {error, notfound}
-    end.
+  when Bucket == ?B_MESSAGE_UNREAD;
+       Bucket == ?B_GAME_MESSAGE_UNREAD;
+       Bucket == ?B_REPORT_MESSAGE_UNREAD ->
+    db:delete(Bucket, list_to_binary(MessageId)),
+    {ok, marked_as_read}.
 
 %% This function gets id, record and bucket name and convert the record
 %% to proplist and stores it in the db.
-log_message(ID, Msg, Bucket) ->
-    BinID = db:int_to_bin(ID),
-    % convert record to proplist to be able to do search
-    MsgPropList = data_format:rec_to_plist(Msg),
-    DbObj = db_obj:create(Bucket, BinID, MsgPropList),
+log_message(Id, Msg, Bucket, UnreadBucket, Status) ->
+    BinId = list_to_binary(Id),
+    Unread = #unread{id = Id},
+
+    DbObj = db_obj:create(Bucket, BinId, Msg),
     db:put(DbObj, [{w,0}]),
-    {ok, ID}.
+
+    case Status of
+        unread ->
+            DbObjUnread = db_obj:create(UnreadBucket, BinId, Unread),
+            db:put(DbObjUnread, [{w,0}]);
+        read ->
+            ok
+    end,
+    {ok, Id}.
+
+
+get_all_game_msg(GameId) ->
+    Query = [ [<<"tokenize">>, <<"-">>, 4], [<<"eq">>, db:int_to_bin(GameId)]],
+    db:get_key_filter(?B_GAME_MESSAGE, Query).
+
+get_game_msg_by_phase(GameId, Year, Season, Phase) ->
+    Queries =[ [[<<"tokenize">>, <<"-">>, 4], [<<"eq">>, db:int_to_bin(GameId)]] ],
+    Queries2 = case Year of
+                  undefined ->
+                      Queries;
+                  _ ->
+                       [ [[<<"tokenize">>, <<"-">>, 5],
+                          [<<"eq">>, db:int_to_bin(Year)]] | Queries]
+              end,
+    Queries3 = case Season of
+                  undefined ->
+                      Queries2;
+                  _ ->
+                      [ [[<<"tokenize">>, <<"-">>, 6],
+                         [<<"eq">>, atom_to_bin(Season)]] | Queries2]
+              end,
+    Queries4 = case Phase of
+                  undefined ->
+                      Queries3;
+                  _ ->
+                      [ [[<<"tokenize">>, <<"-">>, 7],
+                         [<<"eq">>, atom_to_bin(Phase)]] | Queries3]
+              end,
+    Query = case Queries4 of
+                [Q1] -> Q1;
+                _ ->
+                    [[<<"and">> | Queries4]]
+            end,
+    db:get_key_filter(?B_GAME_MESSAGE, Query).
+
+
+atom_to_bin(Atom) ->
+    list_to_binary(atom_to_list(Atom)).

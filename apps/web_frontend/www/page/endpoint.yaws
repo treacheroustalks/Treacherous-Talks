@@ -530,7 +530,7 @@ sort_by_date(GMsgList) ->
 
 sort_by_group(SrtGMsg) ->
     SortByGroup = fun(X, Y)->
-                          X#game_message.status < Y#game_message.status
+                          X#game_message.group_id < Y#game_message.group_id
                   end,
     Grouping = fun(X, Y)->
                        case X > Y of
@@ -538,10 +538,9 @@ sort_by_group(SrtGMsg) ->
                            false -> {Y, X}
                        end
                end,
-    GroupedMsg = [Msg1#game_message{status=
-                                    Grouping(Msg1#game_message.sender_country,
-                                             Msg1#game_message.to_country)}
-                  || Msg1 <- SrtGMsg],
+    GroupedMsg = [Msg1#game_message{
+                    group_id=Grouping(Msg1#game_message.sender_country,
+                                    Msg1#game_message.to_country)} || Msg1 <- SrtGMsg],
     lists:sort(SortByGroup ,GroupedMsg).
 
 merge_redundant_msg(SrtMsg) ->

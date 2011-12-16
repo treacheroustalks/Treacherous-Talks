@@ -67,8 +67,8 @@ function load_operator_game_overview(event_data) {
 
     acc += "Players:<br><ul><b>";
     for(var i in players){
-        var id = players[i];
-        acc += i+":&nbsp&nbsp"+"<a href='javascript:void(0)'>"+id+"</a><br>";
+        var p_id = players[i];
+        acc += i+":&nbsp&nbsp"+"<a href='javascript:void(0)'>"+p_id+"</a><br>";
     }
     acc += "</b></ul>";
 
@@ -681,22 +681,23 @@ function operator_game_overview(inspect_game_id) {
 
 function operator_get_game_msg(msg_only, game_id, year, season_phase, country) {
     var order_key = msg_only?"":game_id+"-"+year+"-"+season_phase+"-"+country;
-    var query = "game_id="+game_id;
-    if(year)
-        query += " AND year="+year;
     if(season_phase){
         var sp = season_phase.split("-");
         var season = sp[0];
         var phase = sp[1];
-        query += " AND season="+season+" AND phase="+phase;
     }
-    if(country)
-        query += " AND (from_country="+country+" OR "+"to_country="+country+")";
+    var year_val = year ? year : "undefined";
+    var season_val = season ? season : "undefined";
+    var phase_val = phase ? phase : "undefined";
 
+    print(phase_val);
     var dataObj = {
         "content" : [
             { "order_key" : order_key },
-            { "query" : query },
+            { "game_id" : game_id },
+            { "year" : year_val },
+            { "season" : season_val },
+            { "phase" : phase_val },
             { "session_id" : get_cookie() }
         ]
     };

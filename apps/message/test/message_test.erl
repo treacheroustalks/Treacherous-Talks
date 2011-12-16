@@ -82,7 +82,10 @@ test_game_msg(ToUser) ->
                   from_id = user_id1(),
                   to_country = france,
                   to_id = ToUser,
-                  content = "game message"
+                  content = "game message",
+                  year = 1901,
+                  season = spring,
+                  phase = order_phase
                  }.
 
 test_report_msg() ->
@@ -94,7 +97,7 @@ test_report_msg() ->
                    }.
 
 test_key() ->
-    1234.
+    "1234-4321-9999".
 user_id1() ->
     5555.
 user_id2() ->
@@ -132,26 +135,26 @@ ping_tst_ () ->
 message_worker_tst_() ->
     [{"write a user message in db",
       fun() ->
-        message_worker:log_message(test_key(), test_msg(), ?B_MESSAGE),
+        message_worker:log_message(test_key(), test_msg(),
+                                   ?B_MESSAGE, ?B_MESSAGE_UNREAD, unread),
         GetMsg = fun() ->
                          message_util:get_message(test_key(),
-                                                  ?B_MESSAGE,
-                                                  message)
+                                                  ?B_MESSAGE)
                  end,
         ActualValue = wait_for_change (GetMsg, {error,notfound}, 1000),
         ?assertEqual({ok, test_msg()},ActualValue),
-        db:delete(?B_MESSAGE, db:int_to_bin(test_key()))
+        db:delete(?B_MESSAGE, list_to_binary(test_key()))
      end},
      {"write a game message in db",
       fun() ->
-        message_worker:log_message(test_key(), test_game_msg(1122), ?B_GAME_MESSAGE),
+        message_worker:log_message(test_key(), test_game_msg(1122),
+                                   ?B_GAME_MESSAGE, ?B_MESSAGE_UNREAD, unread),
         GetMsg = fun () ->
-                         message_util:get_message(test_key(), ?B_GAME_MESSAGE,
-                                                  game_message)
+                         message_util:get_message(test_key(), ?B_GAME_MESSAGE)
                  end,
         ActualValue = wait_for_change (GetMsg, {error, notfound}, 1000),
         ?assertEqual({ok, test_game_msg(1122)},ActualValue),
-        db:delete(?B_GAME_MESSAGE, db:int_to_bin(test_key()))
+        db:delete(?B_GAME_MESSAGE, list_to_binary(test_key()))
      end}
      ].
 
@@ -196,8 +199,7 @@ message_success_tst_() ->
 
              GetMsg = fun() ->
                               message_util:get_message(Key,
-                                                       ?B_MESSAGE,
-                                                       message)
+                                                       ?B_MESSAGE)
                       end,
              % check if the msg has been correctly stored in db
              {ok, ActualMessage} = wait_for_change(GetMsg,
@@ -211,7 +213,7 @@ message_success_tst_() ->
 
              % clean up
              db:delete(?B_USER, db:int_to_bin(to_user_id())),
-             db:delete(?B_MESSAGE, db:int_to_bin(Key))
+             db:delete(?B_MESSAGE, list_to_binary(Key))
      end},
      {"succesfully stor message when user is on-line",
       fun() ->
@@ -225,14 +227,13 @@ message_success_tst_() ->
 
              GetMsg = fun() ->
                               message_util:get_message(Key,
-                                                       ?B_MESSAGE,
-                                                       message)
+                                                       ?B_MESSAGE)
                       end,
              % check if the msg has been correctly stored in db
              {ok, ActualMessage} = wait_for_change(GetMsg,
                                                    {error,notfound},
                                                    1000),
-             Expected = (test_msg())#message{id = Key, status= read,
+             Expected = (test_msg())#message{id = Key,
                                            date_created =
                                                ActualMessage#message.date_created},
              ?assertEqual(Expected,
@@ -240,7 +241,7 @@ message_success_tst_() ->
 
              % clean up
              db:delete(?B_USER, db:int_to_bin(to_user_id())),
-             db:delete(?B_MESSAGE, db:int_to_bin(Key))
+             db:delete(?B_MESSAGE, list_to_binary(Key))
      end}
      ].
 
@@ -265,16 +266,14 @@ unread_tst_() ->
              % register tested and other user
              user_management:create(to_user()),
              user_management:create(to_user2()),
-
-             % DB doesn't provide consistency. Ensure no existing messages.
-             delete_user_messages(( to_user() )#user.id),
-             delete_user_messages(( to_user2() )#user.id)
+             delete_msg_of_user(to_user_id()),
+             delete_msg_of_user(user_id2())
      end,
      fun(_) -> % cleanup
+             delete_msg_of_user(to_user_id()),
+             delete_msg_of_user(user_id2()),
              db:delete(?B_USER, db:int_to_bin(to_user_id())),
-             db:delete(?B_USER, db:int_to_bin(( to_user2() )#user.id)),
-             delete_user_messages(( to_user() )#user.id),
-             delete_user_messages(( to_user2() )#user.id)
+             db:delete(?B_USER, db:int_to_bin(( to_user2() )#user.id))
      end,
      [{"Only messages of given user retrieved, and they contain what they should",
        fun() -> % test
@@ -302,19 +301,19 @@ unread_tst_() ->
                Actual1 = lists:keyfind(Key1, #message.id, UnreadUserMsg),
 
                Expected1 = (test_msg())#message{id = Key1,
-                                                date_created = Actual1#message.date_created,
-                                                status = unread},
+                                                date_created = Actual1#message.date_created},
 
                Actual2 = lists:keyfind(Key2, #message.id, UnreadUserMsg),
                Expected2 = (test_msg2())#message{id = Key2,
-                                                 date_created = Actual2#message.date_created,
-                                                 status = unread},
+                                                 date_created = Actual2#message.date_created},
                % exactly as expected
                ?assertEqual(Expected1, Actual1),
                ?assertEqual(Expected2, Actual2)
        end},
       {"All user and game message of given user retrieved, and they contain what they should",
        fun() -> % test
+               delete_msg_of_user(to_user_id()),
+               delete_msg_of_user(user_id2()),
                % send msg to "to_user"
                {ok, Key1} = message:user_msg(test_msg()),
                {ok, Key2} = message:user_msg(test_msg2()),
@@ -346,13 +345,11 @@ unread_tst_() ->
                Actual1 = lists:keyfind(Key1, #message.id, UnreadUserMsges),
 
                Expected1 = (test_msg())#message{id = Key1,
-                                                date_created = Actual1#message.date_created,
-                                                status = unread},
+                                                date_created = Actual1#message.date_created},
 
                Actual2 = lists:keyfind(Key2, #message.id, UnreadUserMsges),
                Expected2 = (test_msg2())#message{id = Key2,
-                                                 date_created = Actual2#message.date_created,
-                                                 status = unread},
+                                                 date_created = Actual2#message.date_created},
                [GameMsg] = UnreadGameMsges,
                Expected3 = (test_game_msg(to_user_id()))#game_message{
                                                     id =GameMsg#game_message.id},
@@ -365,6 +362,8 @@ unread_tst_() ->
        end},
       {"user and game messages are retrieved",
        fun() -> % test
+               delete_msg_of_user(to_user_id()),
+               delete_msg_of_user(user_id2()),
                % send msg to "to_user"
                {ok, Key1} = message:user_msg(test_msg()),
                {ok, _Key2} = message:user_msg(test_msg2()),
@@ -390,50 +389,22 @@ unread_tst_() ->
        end},
       {"message:mark_as_unread/2 positive test",
        fun() ->
+               delete_msg_of_user(to_user_id()),
+               delete_msg_of_user(user_id2()),
                %check for message bucket
-               {ok, Key1} = message:user_msg(test_msg()),
-               GetMsg = fun() ->
-                                message_util:get_message(Key1,
-                                                         ?B_MESSAGE,
-                                                         message)
-                        end,
-               {ok, Message} = wait_for_change(GetMsg, {error,notfound}, 1000),
-               ?assertEqual(unread, Message#message.status),
-               ok = message:mark_user_msg_as_read(Key1),
-               {ok, ReadMessage} = wait_for_change(GetMsg,
-                                                   {ok,Message},
-                                                   1000),
-               ?assertEqual(read, ReadMessage#message.status),
-
-               %check for game_message bucket
+               {ok, _Key1} = message:user_msg(test_msg()),
                ok = message:game_msg(test_game_msg(to_user_id())),
                GetUnread = fun() ->
                                    message:unread((to_user())#user.id)
                            end,
                Result = wait_for_change(GetUnread, {ok,{[],[]}}, 1000),
-               ?debugFmt("it should return unread game messages ~p~n", [Result]),
-               {ok, {[], [UnreadGameMsg]}} =Result,
-               GameMsgKey = UnreadGameMsg#game_message.id,
-               GetMsg2 = fun() ->
-                                 message_util:get_message(GameMsgKey,
-                                                          ?B_GAME_MESSAGE,
-                                                          game_message)
-                         end,
-               {ok, GMsg} = GetMsg2(),
-               ?assertEqual(unread, GMsg#game_message.status),
+               {ok, {[UnreadMsg], [UnreadGameMsg]}} = Result,
 
-               ok = message:mark_game_msg_as_read(GameMsgKey),
+               message:mark_user_msg_as_read(UnreadMsg#message.id),
+               message:mark_game_msg_as_read(UnreadGameMsg#game_message.id),
 
-               {ok, ReadGMsg} = wait_for_change(GetMsg2, {ok,GMsg}, 1000),
-               ?assertEqual(read, ReadGMsg#game_message.status)
-       end},
-      {"message:mark_as_unread/1 negative test",
-       fun() ->
-               % Make sure it doesn't exist
-               Key = 12345,
-               db:delete(?B_MESSAGE, db:int_to_bin(Key)),
-               ?assertEqual({error, notfound},
-                            message:mark_user_msg_as_read(Key))
+               Result2 = wait_for_change(GetUnread, Result, 1000),
+               ?assertEqual({ok, {[], []}}, Result2)
        end}
     ]}.
 
@@ -442,9 +413,10 @@ report_player_tst_() ->
     [fun() ->
              ?debugMsg("Report messages sent and received test"),
              TestReport = test_report_msg(),
+             To = TestReport#report_message.to,
+             delete_reports(To),
              GetReports = fun() ->
-                                  message:get_reports(
-                                    TestReport#report_message.to)
+                                  message:get_reports(To)
                           end,
              GetReportsInitial = GetReports(),
              {ok, ID} = message:report_msg(TestReport),
@@ -455,41 +427,26 @@ report_player_tst_() ->
                                         IssueRec#report_message.id end,
                                 Reports),
              ?assert(lists:member(ID, IDList)),
-             ?debugMsg("Report messages sent and received test SUCCESS"),
-             delete_message(ID, ?B_REPORT_MESSAGE)
+             ?debugMsg("Report messages sent and received test SUCCESS")
      end,
      fun() ->
              ?debugMsg("Mark report as done test"),
              TestReport = test_report_msg(),
+             To = TestReport#report_message.to,
+             delete_reports(To),
              {ok, MsgID} = message:report_msg(TestReport),
-             MarkDone = fun() ->
-                                message:mark_report_as_done(MsgID)
-                        end,
-             {ok, MsgID} = wait_for_change(MarkDone, {error,notfound}, 1000),
-             {ok, DoneMsg} = message_util:get_message(MsgID,
-                                                      ?B_REPORT_MESSAGE,
-                                                      report_message),
-             ?assertEqual(done, DoneMsg#report_message.status),
-             ?debugMsg("Mark report as done test SUCCESS"),
-             delete_message(MsgID, ?B_REPORT_MESSAGE)
+             message:mark_report_as_done(MsgID),
+             GetReports = fun() ->
+                                  message:get_reports(To)
+                          end,
+             GetReportsInitial = {ok, [TestReport]},
+             {ok, Reports} = wait_for_change(GetReports,
+                                             GetReportsInitial,
+                                             1000),
+             ?assertEqual([], Reports),
+             ?debugMsg("Mark report as done test SUCCESS")
      end
     ].
-
-delete_user_messages(UserId) ->
-    delete_messages(UserId,?B_MESSAGE),
-    delete_messages(UserId,?B_GAME_MESSAGE).
-
-delete_messages(UserId,Bucket) ->
-    Query = io_lib:format("to_id=~p", [UserId]),
-    {ok, Result} = db:search(Bucket, Query),
-    Keys = data_format:search_result_keys(Result),
-    lists:map(fun(Key) ->
-                      db:delete(Bucket, db:int_to_bin(Key))
-              end,
-              Keys).
-
-delete_message(Key, Bucket) ->
-    db:delete(Bucket, db:int_to_bin(Key)).
 
 make_game_msg_as_read(ToUserId, FromUserId) ->
     GetUnread = fun() ->
@@ -501,3 +458,30 @@ make_game_msg_as_read(ToUserId, FromUserId) ->
     R = message:mark_game_msg_as_read(GMsg#game_message.id),
     wait_for_change(GetUnread, Orig, 1000),
     R.
+
+
+delete_msg_of_user(UserId) ->
+    Query = [[<<"matches">>, db:int_to_bin(UserId)]],
+    Res = db:get_key_filter(?B_MESSAGE, Query),
+    {ok, Msgs} = Res,
+    lists:foreach(fun(#message{id=Id}) ->
+                          db:delete(?B_MESSAGE, Id),
+                          db:delete(?B_MESSAGE_UNREAD, Id)
+                  end, Msgs),
+
+    Res2 = db:get_key_filter(?B_GAME_MESSAGE, Query),
+    {ok, GMsgs} = Res2,
+    lists:foreach(fun(#game_message{id=Id}) ->
+                          db:delete(?B_GAME_MESSAGE, Id),
+                          db:delete(?B_GAME_MESSAGE_UNREAD, Id)
+                  end, GMsgs).
+
+delete_reports(To) ->
+    Query = [[<<"matches">>, list_to_binary(atom_to_list(To))]],
+    Res = db:get_key_filter(?B_REPORT_MESSAGE, Query),
+    {ok, Msgs} = Res,
+    lists:foreach(fun(#report_message{id=Id}) ->
+                          db:delete(?B_REPORT_MESSAGE, Id),
+                          db:delete(?B_REPORT_MESSAGE_UNREAD, Id)
+                  end, Msgs).
+

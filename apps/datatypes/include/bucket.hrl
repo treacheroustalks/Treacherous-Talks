@@ -55,10 +55,15 @@
 
 % General messages
 -define(B_MESSAGE, <<"message">>).
+-define(B_MESSAGE_UNREAD, <<"message_unread">>).
 
 % In game messages
 -define(B_GAME_MESSAGE, <<"game_message">>).
+-define(B_GAME_MESSAGE_UNREAD, <<"game_message_unread">>).
+
+% Report messages
+-define(B_REPORT_MESSAGE, <<"report_message">>).
+-define(B_REPORT_MESSAGE_UNREAD, <<"report_message_unread">>).
 
 % Corpse information
 -define(B_CORPSES, <<"corpses">>).
--define(B_REPORT_MESSAGE, <<"report_message">>).

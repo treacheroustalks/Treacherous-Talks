@@ -27,7 +27,7 @@
 -include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/message.hrl").
 
--export([get_message/3]).
+-export([get_message/2]).
 
 
 %% -----------------------------------------------------------------------------
@@ -35,14 +35,17 @@
 %% Gets the message with the given message id
 %% @end
 %% -----------------------------------------------------------------------------
--spec get_message(MessageId::integer(), Bucket::binary(), RecordName::atom()) ->
+-spec get_message(MessageId::integer(), Bucket::binary()) ->
           {ok, Message::term()} | {error, Error::term()}.
-get_message(MessageId, Bucket, RecordName) ->
-    case db:get(Bucket, db:int_to_bin(MessageId), [{r,1}]) of
+get_message(MessageId, Bucket) ->
+    case db:get(Bucket, list_to_binary(MessageId), [{r,1}]) of
         {ok, DBObj} ->
-            MessagePropList = db_obj:get_value(DBObj),
-            Message = data_format:plist_to_rec(RecordName, MessagePropList),
+            Message = db_obj:get_value(DBObj),
             {ok, Message};
         {error, Error} ->
             {error, Error}
     end.
+
+
+
+

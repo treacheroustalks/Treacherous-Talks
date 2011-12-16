@@ -32,15 +32,17 @@
 -define (TEST_TIMEOUT, 3000).
 
 apps () ->
-    [datatypes, service, protobuffs, riakc, db, game].
+    [datatypes, service, protobuffs, riakc, db, message, game].
 
 app_started_setup () ->
     ?debugMsg ("starting apps:"),
+    error_logger:tty(false),
     Response = [{App, application:start (App)} || App <- apps ()],
     ?debugMsg (io_lib:format ("~p", [Response])).
 
 app_started_teardown (_) ->
-    [application:stop (App) || App <- lists:reverse (apps ())].
+    [application:stop (App) || App <- lists:reverse (apps ())],
+    error_logger:tty(true).
 
 %%------------------------------------------------------------------------------
 %% @doc

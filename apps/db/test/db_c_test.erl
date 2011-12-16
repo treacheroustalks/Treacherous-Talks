@@ -99,6 +99,75 @@ write_undefined_tst_ (Client) ->
 
 
 %% -------------------------------------------------------------------
+%% Key filter test
+%% -------------------------------------------------------------------
+key_filter_test_ () ->
+    {setup,
+     fun() -> % setup
+             Client = connected_startup(),
+             Bucket = <<"key_filter_bucket">>,
+             Id = db_c:get_unique_id(),
+             StrId = integer_to_list(Id),
+             Prefix = "key_filter",
+
+             Key1 = list_to_binary(Prefix ++ "_1_" ++ StrId),
+             Val1 = {test, item1, Id},
+             DBObj1 = db_obj:create(Bucket, Key1, Val1),
+             db_c:put(Client, DBObj1),
+
+             Key2 = list_to_binary(Prefix ++ "_2_" ++ StrId),
+             Val2 = {test, item2, Id},
+             DBObj2 = db_obj:create(Bucket, Key2, Val2),
+             db_c:put(Client, DBObj2),
+
+             Key3 = list_to_binary(Prefix ++ "_3_" ++ StrId ++ "bob"),
+             Val3 = {test, item3, Id},
+             DBObj3 = db_obj:create(Bucket, Key3, Val3),
+             db_c:put(Client, DBObj3),
+             {Client, Bucket, StrId, Prefix, Val1, Val2, Val3}
+     end,
+     fun({Client, Bucket, _Id, _Pre, _Val1, _Val2, _Val3}) -> %teardown
+             db_c:empty_bucket(Client, Bucket),
+             connected_teardown(Client)
+     end,
+     fun({Client, Bucket, StrId, Prefix, Val1, Val2, Val3}) -> %test
+             [fun() ->
+                      KeyFilter1 = [[<<"ends_with">>,  list_to_binary(StrId)]],
+                      Result1 = db_c:get_key_filter(Client, Bucket, KeyFilter1),
+                      ?assertMatch({ok, _List}, Result1),
+                      {ok, List1} = Result1,
+                      Expected1 = [Val1, Val2],
+                      equal_lists(Expected1, List1),
+
+                      KeyFilter2 = [[<<"matches">>,  list_to_binary(StrId)]],
+                      Result2 = db_c:get_key_filter(Client, Bucket, KeyFilter2),
+                      ?assertMatch({ok, _List}, Result2),
+                      {ok, List2} = Result2,
+                      Expected2 = [Val1, Val2, Val3],
+                      equal_lists(Expected2, List2),
+
+                      KeyFilter3 = [[<<"and">>,
+                                     [[<<"starts_with">>,  list_to_binary(Prefix)]],
+                                     [[<<"ends_with">>,  <<"bob">>]]
+                                    ]],
+                      Result3 = db_c:get_key_filter(Client, Bucket, KeyFilter3),
+                      ?assertMatch({ok, _List}, Result3),
+                      {ok, List3} = Result3,
+                      Expected3 = [Val3],
+                      equal_lists(Expected3, List3)
+              end]
+     end}.
+
+
+equal_lists(L1, L2) ->
+    ?debugVal(L1),
+    ?debugVal(L2),
+    ?assertEqual(length(L1), length(L2)),
+    lists:foreach(fun(Val) ->
+                          ?assert(lists:member(Val, L1))
+                  end, L2).
+
+%% -------------------------------------------------------------------
 %% Secondary indices tests
 %% -------------------------------------------------------------------
 %% secondary_indices_test_ () ->

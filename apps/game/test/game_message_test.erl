@@ -43,7 +43,8 @@ app_started_setup () ->
     meck:expect(controller, sync_push_event,
                 fun(UserID, Event) ->
                         game_msg ! {controller_push_event, {UserID, Event}},
-                         ok end),
+                        {ok, success}
+                end),
     ?debugMsg (io_lib:format ("~p", [Response])).
 
 app_started_teardown (_) ->
@@ -249,73 +250,153 @@ game_msg_send_tst_() ->
     end].
 
 get_game_msg_tree_tst_() ->
-    [fun() ->
-        Msg1 = #game_message{game_id=7777, content="msg1", year = 1901,season=fall,phase=order,date_created=1,sender_country=england},
-        Msg2 = #game_message{game_id=7777, content="msg2", year = 1902,season=spring,phase=build,date_created=2,sender_country=germany},
-        Msg3 = #game_message{game_id=7777, content="msg3", year = 1902,season=fall,phase=retreat,date_created=3,sender_country=england},
-        Msg4 = #game_message{game_id=7777, content="msg4", year = 1904,season=spring,phase=retreat,date_created=4,sender_country=russia},
-        Msg5 = #game_message{game_id=7777, content="msg5", year = 1905,season=spring,phase=order,date_created=5,sender_country=austria},
-        put_game_msg(99991, Msg1),
-        put_game_msg(99992, Msg2),
-        put_game_msg(99993, Msg3),
-        put_game_msg(99994, Msg4),
-        put_game_msg(99995, Msg5),
-        {ok, Actual} = game_utils:get_game_msg_tree(7777),
-        io:format(user,"~p~n",[Actual]),
-        del_game_msg(99991),
-        del_game_msg(99992),
-        del_game_msg(99993),
-        del_game_msg(99994),
-        del_game_msg(99995),
-        Expected = [{1901,[{{fall,order},[england]}]},
-                {1902,[{{spring,build},[germany]},{{fall,retreat},[england]}]},
-                {1904,[{{spring,retreat},[russia]}]},
-                {1905,[{{spring,order},[austria]}]}],
-        ?assertEqual(Expected, Actual)
-    end].
+    {setup,
+      fun() ->
+              GameRecord = test_game(white),
+              Game = sync_get(sync_new(GameRecord)),
+              JoinResult = game:join_game(Game#game.id, 1111, england),
+              ?assertEqual({ok, Game#game.id}, JoinResult),
+              JoinResult2 = game:join_game(Game#game.id, 2222, russia),
+              ?assertEqual({ok, Game#game.id}, JoinResult2),
+              JoinResult3 = game:join_game(Game#game.id, 3333, austria),
+              ?assertEqual({ok, Game#game.id}, JoinResult3),
+
+              GameId = Game#game.id,
+              game_timer:sync_event(GameId, timeout),
+              timer:sleep(50),
+
+              Msg1 = #game_message{game_id=GameId, content="msg1",
+                                   sender_country=england,
+                                   from_id=1111, to_id=2222},
+              Msg2 = #game_message{game_id=GameId, content="msg2",
+                                   sender_country=england,
+                                   from_id=1111, to_id=2222},
+              Msg3 = #game_message{game_id=GameId, content="msg3",
+                                   sender_country=england,
+                                   from_id=2222, to_id=1111},
+              Msg4 = #game_message{game_id=GameId, content="msg4",
+                                   sender_country=russia,
+                                   from_id=2222, to_id=1111},
+              Msg5 = #game_message{game_id=GameId, content="msg5",
+                                   sender_country=austria,
+                                   from_id=3333, to_id=2222},
+              ?debugVal(GameId),
+              CurGameFun = fun() ->
+                                BinKey = game_utils:get_game_current_key(GameId),
+                                {ok, DBReply} = db:get(?B_GAME_CURRENT,
+                                                       BinKey, [{r,1}]),
+                                db_obj:get_value(DBReply)
+                        end,
+              Initial = CurGameFun(),
+              ?debugVal(sync_game_msg(Msg1, [russia], user)),
+              game_timer:sync_event(GameId, timeout),
+              CurGame1 = test_utils:wait_for_change(CurGameFun, Initial, 10),
+              ?debugVal(sync_game_msg(Msg2, [russia], user)),
+              ?debugVal(sync_game_msg(Msg3, [england], user)),
+              game_timer:sync_event(GameId, timeout),
+              CurGame2 = test_utils:wait_for_change(CurGameFun, CurGame1, 10),
+              ?debugVal(sync_game_msg(Msg4, [england], user)),
+              game_timer:sync_event(GameId, timeout),
+              CurGame3 = test_utils:wait_for_change(CurGameFun, CurGame2, 10),
+              game_timer:sync_event(GameId, timeout),
+              CurGame4 = test_utils:wait_for_change(CurGameFun, CurGame3, 10),
+              game_timer:sync_event(GameId, timeout),
+              CurGame5 = test_utils:wait_for_change(CurGameFun, CurGame4, 10),
+              game_timer:sync_event(GameId, timeout),
+              test_utils:wait_for_change(CurGameFun, CurGame5, 10),
+              ?debugVal(sync_game_msg(Msg5, [russia], user)),
+              GameId
+     end,
+     fun(GameId) ->
+             sync_delete(GameId),
+             delete_messages(GameId)
+     end,
+     fun(GameId) ->
+         [fun() ->
+             {ok, Actual} = game_utils:get_game_msg_tree(GameId),
+             Expected = [{1901,[{{spring,order_phase},[england]},
+                                {{spring,retreat_phase},[russia, england]},
+                                {{fall,order_phase},[russia]}]},
+                         {1902,[{{spring,retreat_phase},[austria]}]}],
+             ?assertEqual(Expected, Actual)
+          end]
+    end}.
 
 operator_get_game_msg_tst_() ->
-    [fun() ->
-        Msg1 = #game_message{game_id=7777, content="msg1", year = 1902,season=fall,phase=order,date_created=1,sender_country=england},
-        Msg2 = #game_message{game_id=7777, content="msg2", year = 1902,season=fall,phase=order,date_created=2,sender_country=england},
-        Msg3 = #game_message{game_id=7777, content="msg3", year = 1902,season=fall,phase=retreat,date_created=3,sender_country=england},
-        Msg4 = #game_message{game_id=7777, content="msg4", year = 1904,season=spring,phase=retreat,date_created=4,sender_country=russia},
-        Msg5 = #game_message{game_id=7777, content="msg5", year = 1905,season=spring,phase=order,date_created=5,sender_country=austria},
-        put_game_msg(99991, Msg1),
-        put_game_msg(99992, Msg2),
-        put_game_msg(99993, Msg3),
-        put_game_msg(99994, Msg4),
-        put_game_msg(99995, Msg5),
-        Key = "7777-1902-fall-order_phase-england",
-        BinID = list_to_binary(Key),
-        DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, #game_order{order_list=[move,support,convoy,hold]}),
-        db:put (DBGameOrderObj),
+    [{setup,
+      fun() ->
+              GameRecord = test_game(white),
+              Game = sync_get(sync_new(GameRecord)),
+              JoinResult = game:join_game(Game#game.id, 1111, england),
+              ?assertEqual({ok, Game#game.id}, JoinResult),
+              JoinResult2 = game:join_game(Game#game.id, 2222, russia),
+              ?assertEqual({ok, Game#game.id}, JoinResult2),
+              JoinResult3 = game:join_game(Game#game.id, 3333, austria),
+              ?assertEqual({ok, Game#game.id}, JoinResult3),
 
-        Query = "game_id=7777 AND year=1902 AND season=fall AND phase=order AND sender_country=england",
-        {ok, Actual} = game:operator_get_game_msg(Key, Query),
+              GameId = Game#game.id,
+              CurGameFun = fun() ->
+                                   BinKey = game_utils:get_game_current_key(GameId),
+                                   db:get(?B_GAME_CURRENT, BinKey, [{r,1}])
+                        end,
+              Initial = CurGameFun(),
+              game_timer:sync_event(GameId, timeout),
+              CurGame1 = test_utils:wait_for_change(CurGameFun, Initial, 10),
+
+              Msg1 = #game_message{game_id=GameId, content="msg1",
+                                   sender_country=england,
+                                   from_id=1111, to_id=2222},
+              Msg2 = #game_message{game_id=GameId, content="msg2",
+                                   sender_country=england,
+                                   from_id=1111, to_id=2222},
+              Msg3 = #game_message{game_id=GameId, content="msg3",
+                                   sender_country=england,
+                                   from_id=1111, to_id=2222},
+              ?debugVal(GameId),
+              ?debugVal(sync_game_msg(Msg1, [russia], user)),
+              ?debugVal(sync_game_msg(Msg2, [russia], user)),
+              game_timer:sync_event(GameId, timeout),
+              test_utils:wait_for_change(CurGameFun, CurGame1, 10),
+              ?debugVal(sync_game_msg(Msg3, [russia], user)),
+              {GameId, Msg1, Msg2}
+     end,
+     fun({GameId, _, _}) ->
+             sync_delete(GameId),
+             delete_messages(GameId)
+     end,
+     fun({GameId, Msg1, Msg2}) ->
+             [fun() ->
+        Key = integer_to_list(GameId) ++
+                          "-1901-spring-order_phase-england",
+        BinID = list_to_binary(Key),
+        Orders = [move,support,convoy,hold],
+        DBGameOrderObj = db_obj:create(?B_GAME_ORDER, BinID,
+                                       #game_order{order_list=Orders}),
+        db:put(DBGameOrderObj),
+
+        {ok, Actual} = game:operator_get_game_msg(
+                         Key, GameId, 1901, spring, order_phase),
 
         db:delete (?B_GAME_ORDER, BinID),
-        del_game_msg(99991),
-        del_game_msg(99992),
-        del_game_msg(99993),
-        del_game_msg(99994),
-        del_game_msg(99995),
 
-        Expected = {[{game_message,undefined,7777,undefined,undefined,england,undefined,undefined,
-                undefined,"msg2",2,unread,1902,fall,order},
-              {game_message,undefined,7777,undefined,undefined,england,undefined,undefined,
-                undefined,"msg1",1,unread,1902,fall,order}],
-              [move,support,convoy,hold]},
+        Expected = {[Msg1, Msg2], Orders},
         % Get the lists and check for membership in the message list since we
         % cannot guarantee ordering
         {ActualMsgList, ActualOrderList} = Actual,
         {ExpectedMsgList, ExpectedOrderList} = Expected,
-        ?assertEqual(length(ActualMsgList), length(ExpectedMsgList)),
-        ?assertEqual(ActualOrderList, ExpectedOrderList),
+        ?debugVal(Actual),
+        ?assertEqual(length(ExpectedMsgList), length(ActualMsgList)),
+        ?assertEqual(ExpectedOrderList, ActualOrderList),
         lists:foreach(fun(Msg) ->
-                              ?assert(lists:member(Msg, ExpectedMsgList))
+                              ExptMsg = lists:keyfind(
+                                          Msg#game_message.content,
+                                          #game_message.content,
+                                          ExpectedMsgList),
+                              ?assertMatch(#game_message{}, ExptMsg)
                       end, ActualMsgList)
-    end].
+              end]
+    end
+     }].
 %%------------------------------------------------------------------------------
 %% Helpers
 %%------------------------------------------------------------------------------
@@ -375,13 +456,12 @@ sync_delete(ID) ->
             erlang:error ({error, {{received, Other}, {expected, ok}}})
     end.
 
-put_game_msg(Key, Msg) ->
-    BinID = db:int_to_bin(Key),
-    % convert record to proplist to be able to do search
-    MsgPropList = data_format:rec_to_plist(Msg),
-    DbObj = db_obj:create(?B_GAME_MESSAGE, BinID, MsgPropList),
-    db:put(DbObj).
+delete_messages(GameId) ->
+    Query = [[<<"matches">>, db:int_to_bin(GameId)]],
+    Res = db:get_key_filter(?B_GAME_MESSAGE, Query),
+    {ok, Msgs} = Res,
+    lists:foreach(fun(#game_message{id=Id}) ->
+                          db:delete(?B_GAME_MESSAGE, Id, [{w, all}]),
+                          db:delete(?B_GAME_MESSAGE_UNREAD, Id, [{w, all}])
+                  end, Msgs).
 
-del_game_msg(Key) ->
-    BinKey = db:int_to_bin(Key),
-    db:delete(?B_GAME_MESSAGE, BinKey).

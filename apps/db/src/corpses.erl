@@ -25,48 +25,80 @@
 -module (corpses).
 -compile([{parse_transform, lager_transform}]).
 
--export ([get_corpses/1, save_corpse/2, save_corpse/3]).
+-export ([get_corpses/1, save_corpse/2, save_corpse/3,
+          delete_corpse/1, delete_corpse/3]).
 
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("utils/include/debug.hrl").
 
-%% -----------------------------------------------------------------------------
+%%-------------------------------------------------------------------
 % @doc
 % returns all corpses that belong to a given backend
 % @end
-%% -----------------------------------------------------------------------------
+%%-------------------------------------------------------------------
 -spec get_corpses (DeadBackend :: node ()) -> [necromancer:corpse ()] | [].
 get_corpses (DeadBackend) when is_atom (DeadBackend) ->
     lager:info("DeadBackend = ~p", [DeadBackend]),
-    Query = "node=" ++ atom_to_list(DeadBackend),
-    case db:search_values(?B_CORPSES, Query) of
-        {ok, Corpses} ->
-            lists:map(fun(Corpse) ->
-                              {data, Data} = lists:keyfind(data, 1, Corpse),
-                              Data
-                      end, Corpses);
-        _ ->
-            []
+    Query = create_node_query(DeadBackend),
+    case db:get_key_filter(?B_CORPSES, Query) of
+        {ok, Corpses} -> Corpses;
+        _ -> []
     end.
 
 save_corpse (Module, Data) ->
     save_corpse (Module, make_ref (), Data).
 
-%% -----------------------------------------------------------------------------
+%%-------------------------------------------------------------------
 % @doc
 % saves one corpse to the database with the key "`Module++Ref'"
 % `handle_corpse' will be called with `{Key, Data}' where `Key'
 % is the database-key and `Data' is your Data.
 % `Ref' has to be uniqe within the handler-module.
 % @end
-%% -----------------------------------------------------------------------------
+%%-------------------------------------------------------------------
 -spec save_corpse (module (), Ref :: any (), Data :: any ()) -> ok.
 save_corpse (Module, Ref, Data) ->
     lager:debug("saving corpse for module = ~p Data = ~p", [Module, Data]),
-    Key = lists:flatten(io_lib:format ("~p~p", [Module, Ref])),
+    Key = create_key(node(), Module, Ref),
     BinKey = list_to_binary(Key),
-    Node = atom_to_list(node()),
     DbData = {Module, {Key, Data}},
-    DBO = db_obj:create(?B_CORPSES, BinKey, [{node, Node}, {data, DbData}]),
+    DBO = db_obj:create(?B_CORPSES, BinKey, DbData),
     db:put(DBO, [{w, 0}]),
     ok.
+
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Deletes a corpse from the database.
+%% @end
+%%-------------------------------------------------------------------
+-spec delete_corpse(Key :: string()) -> ok.
+delete_corpse(Key) ->
+    BinKey = list_to_binary(Key),
+    db:delete(?B_CORPSES, BinKey),
+    ok.
+
+-spec delete_corpse(node(), module(), Ref :: any()) -> ok.
+delete_corpse(Node, Module, Ref) ->
+    Key = create_bin_key(Node, Module, Ref),
+    db:delete(?B_CORPSES, Key),
+    ok.
+
+
+%%-------------------------------------------------------------------
+%% Internal functions
+%%-------------------------------------------------------------------
+-spec create_key(node(), module(), Ref :: any()) -> string().
+create_key(Node, Mod, Ref) ->
+    atom_to_list(Node) ++ "-" ++
+    atom_to_list(Mod) ++ "-" ++
+    lists:flatten(io_lib:format("~p", [Ref])).
+
+-spec create_bin_key(node(), module(), Ref :: any()) -> binary().
+create_bin_key(Node, Mod, Ref) ->
+    list_to_binary(create_key(Node, Mod, Ref)).
+
+-spec create_node_query(node()) -> any().
+create_node_query(Node) ->
+    [[<<"starts_with">>, list_to_binary(atom_to_list(Node)) ]].

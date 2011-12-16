@@ -331,8 +331,9 @@ handle_call({operator_game_overview, GameId}, _From, State) ->
 %% Allow operator to inspect in-game message and player orders
 %% @end
 %%-------------------------------------------------------------------
-handle_call({operator_get_game_msg, {Key, Query}}, _From, State) ->
-    Reply = game:operator_get_game_msg(Key, Query),
+handle_call({operator_get_game_msg, {Key, GameId, Year, Season, Phase}},
+            _From, State) ->
+    Reply = game:operator_get_game_msg(Key, GameId, Year, Season, Phase),
     {reply, Reply, State, ?TIMEOUT};
 
 %%-------------------------------------------------------------------

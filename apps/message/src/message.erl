@@ -40,7 +40,9 @@
           game_msg/1,
           report_msg/1,
           mark_report_as_done/1,
-          get_reports/1
+          get_reports/1,
+          get_all_game_msg/1,
+          get_game_msg_by_phase/4
          ]).
 
 -include_lib ("datatypes/include/game.hrl").
@@ -96,7 +98,7 @@ unread(UserId) ->
 -spec message:mark_user_msg_as_read(MessageId :: integer()) ->
           ok | {error, notfound}.
 mark_user_msg_as_read(MessageId) ->
-    ?CALL_WORKER({mark_as_read, MessageId, ?B_MESSAGE}).
+    ?CALL_WORKER({mark_as_read, MessageId, ?B_MESSAGE_UNREAD}).
 
 %% --------------------------------------------------------------------
 %% @doc
@@ -107,7 +109,7 @@ mark_user_msg_as_read(MessageId) ->
 -spec message:mark_game_msg_as_read(MessageId :: integer()) ->
           ok | {error, notfound}.
 mark_game_msg_as_read(MessageId) ->
-    ?CALL_WORKER({mark_as_read, MessageId, ?B_GAME_MESSAGE}).
+    ?CALL_WORKER({mark_as_read, MessageId, ?B_GAME_MESSAGE_UNREAD}).
 
 %% -----------------------------------------------------------------------------
 %% @doc
@@ -147,3 +149,11 @@ mark_report_as_done(ReportId) ->
 -spec get_reports(Role :: atom()) -> {ok, [#report_message{}]}.
 get_reports(Role) ->
     ?CALL_WORKER({get_reports, Role}).
+
+
+get_all_game_msg(GameId) ->
+    ?CALL_WORKER({get_all_game_msg, GameId}).
+
+
+get_game_msg_by_phase(GameId, Year, Season, Phase)->
+    ?CALL_WORKER({get_game_msg_by_phase, GameId, Year, Season, Phase}).
