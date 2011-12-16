@@ -57,15 +57,25 @@ function load_operator_game_overview(event_data) {
     var acc = "";
     var id = event_data.game_id;
     var links = event_data.links;
+    var players = event_data.players;
 
+    delete event_data.players;
     delete event_data.links;
     for(var i in event_data){
         acc += i + ":&nbsp&nbsp" + "<b>" + event_data[i] + "</b><br>";
     }
+
+    acc += "Players:<br><ul><b>";
+    for(var i in players){
+        var id = players[i];
+        acc += i+":&nbsp&nbsp"+"<a href='javascript:void(0)'>"+id+"</a><br>";
+    }
+    acc += "</b></ul>";
+
     acc += "<br><table><tr><td>";
     if(links)
         acc += '<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
-                '\',\'\',\'\',\'\');op_inspect_country=false;">(Game context)</a><br>'
+                '\',\'\',\'\',\'\');op_inspect_country=false;">(Game context)</a><br>';
     for(var i in links){//year
         var season_phase = links[i];
         acc += '<a id="ys'+ i +'" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').show();\
@@ -287,34 +297,69 @@ function load_reconfig_game_page(page_data) {
  * Update the game overview page with event data
  */
 function load_game_overview_data(page_data) {
-    var punits = page_data.player_units;
+    var status = page_data.game_status;
+    delete page_data.game_status;
+
+    if(status == "ongoing"){
+        var orders = page_data.orders;
+        var punits = page_data.player_units;
+        var year = page_data.year;
+        var season = page_data.season;
+        var phase = page_data.phase;
+        delete page_data.orders;
+        delete page_data.player_units;
+        delete page_data.year;
+        delete page_data.season;
+        delete page_data.phase;
+        var stat_acc = "<b>"+year+"_"+season+"_"+phase+"</b>";
+
+        $('#game_header').html("<h1>Game Overview</h1>");
+        $('#game_order_info').html(orders?interpret_orders(orders):"No Orders");
+        $('#game_stat_info').html(stat_acc);
+        $('#game_stat').show();
+
+        rownum = 0;
+        $('#order_gen').html("");
+        if(phase=="order_phase")
+            for(var prov in punits){
+                add_order_row(punits[prov],prov);
+            }
+        else if(phase=="retreat_phase")
+            for(var prov in punits){
+                add_retreat_order_row(punits[prov],prov);
+            }
+        else if(phase=="build_phase")
+            add_build_order_row(punits, page_data.owner_list ,page_data.country);
+
+    }else if(page_data.status == "finished"){
+        $('#game_header').html("<h1>Finished Game Overview</h1>");
+        $('#game_stat').hide();
+    }
+
     var units = page_data.unit_list;
     var owners = page_data.owner_list;
 
-    var acc = "<b>Status: "+page_data.game_status+"</b><br>";
-    acc += "<b>"+nl2br(page_data.game)+"</b><br>";
-    acc += "Country: <b>"+nl2br(page_data.country)+"</b><br>";
-    var ord_acc = "<b>"+nl2br(page_data.orders)+"</b>";
-    var stat_acc = "<b>"+nl2br(page_data.game_info)+"</b>";
+    delete page_data.unit_list;
+    delete page_data.owner_list;
+    var acc = "";
+    for(var i in page_data){
+        acc += i+": <b>"+page_data[i]+"</b><br>";
+    }
+    acc += "<br>";
     $('#gov_info').html(acc);
     $('#game_id').val(page_data.game_id);
     $('#mid_area').html('<div id="canvas_div"><canvas id="canvas" width="1200" height="1000"></canvas></div>');
-    $('#game_order_info').html(ord_acc);
-    $('#game_stat_info').html(stat_acc);
 
+    //after page contents are loaded, draw the map and units
     $('#world').ready(function(){
         draw(units, owners);
     });
-
-    rownum = 0;
-    $('#order_gen').html("");
-    for(var prov in punits){
-        add_order_row(punits[prov],prov);
-    }
 }
 
 /**
  * Update the game data on reconfig_game page
+ *
+ * @return
  */
 function load_reconfig_game_data(page_data) {
     $('#game_legend').append(page_data.id);
@@ -654,17 +699,7 @@ function set_push_receiver() {
  Form cleanup functions
  -----------------------------------------------------------------------------*/
 function clear_game_orders(event_data) {
-    var acc = "";
-    var ords = event_data.my_orders;
-
-    for(var i=0; i<ords.length; i++){
-        acc += (i+1) +": ";
-        for(var j in ords[i]){
-            acc += ords[i][j]+" ";
-        }
-        acc += "<br>";
-    }
-    $("#game_order_info").html("<b>"+acc+"</b>");
+    $("#game_order_info").html("<b>"+interpret_orders(event_data.my_orders)+"</b>");
     $("#game_order").val("");
 }
 
@@ -1299,6 +1334,38 @@ function get_keys(obj) {
 
 function deleteRow(row, table){
     document.getElementById(table).deleteRow(row);
+}
+
+function interpret_orders(ords){
+    var acc = "";
+    for(var i=0; i<ords.length; i++){
+        var ord = ords[i];
+        switch(ord.action){
+            case "hold":
+                acc += ord.u1+" "+ord.l1+" Hold\n<br>";
+            break;
+            case "move":
+                acc += ord.u1+" "+ord.l1+"->"+ord.l2+"\n<br>";
+            break;
+            case "support_move":
+                acc += ord.u1+" "+ord.l1+" Support "+ord.u2+" "+ord.l2+"->"+ord.l3+"\n<br>";
+            break;
+            case "support_hold":
+                acc += ord.u1+" "+ord.l1+" Support "+ord.u2+" "+ord.l2+" hold\n<br>";
+            break;
+            case "convoy":
+                acc += ord.u1+" "+ord.l1+" Convoy "+ord.u2+" "+ord.l2+"->"+ord.l3+"\n<br>";
+            break;
+            case "build":
+                acc += "Build "+ord.u1+" "+ord.l1+"\n<br>";
+            break;
+            case "disband":
+                acc += "Disband "+ord.u1+" "+ord.l1+"\n<br>";
+            break;
+        }
+    }
+    return "<a href=\"javascript:void(0)\" onclick=\"$('#game_order')"+
+           ".val($('#game_order_info').text())\"><b>"+acc+"</b></a>";
 }
 
 /*------------------------------------------------------------------------------

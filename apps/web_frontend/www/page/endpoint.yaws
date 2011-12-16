@@ -232,8 +232,8 @@ get_ret({join_game, error}, Ret=#ret{}, _Data) ->
 get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret#ret{page="dashboard"});
 
-get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
-    game_overview_do_ret(Ret#ret{page="game"}, GOv);
+get_ret({game_overview, success}, Ret=#ret{}, Gov) ->
+    game_overview_do_ret(Ret#ret{page="game"}, Gov);
 
 get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
@@ -398,54 +398,46 @@ ret_to_proplist(Ret) ->
     RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, ret)],
     lists:zip(RecordInfo, tl(tuple_to_list(Ret))).
 
-game_overview_do_ret(Ret = #ret{}, GOv) ->
-    Map = digraph_io:from_erlang_term(GOv#game_overview.map),
-    PCountry = GOv#game_overview.country,
-    Prov = map:get_provinces(Map),
-    Unit = map:get_units(Map),
-    PUnit = lists:foldl(fun({P1,{U1,C1}}, Acc1)->
-        case C1 of
-            PCountry ->
-                [{atom_to_list(P1),atom_to_list(U1)}|Acc1];
-            _ ->
-                Acc1
-        end end, [], Unit),
-
-    Ulist = [{atom_to_list(P)++"__"++atom_to_list(C), atom_to_list(U)}
-    || {P,{U,C}} <- Unit],
-    Fun = fun(X, Acc) ->
-        case map:get_province_info(Map,X, center) of
-            true ->
-                case map:get_province_info(Map,X,owner) of
-                    undefined ->
-                        Acc;
-                    Owner ->
-                        [{atom_to_list(X), atom_to_list(Owner)}|Acc]
-                end;
-            _ -> Acc
-        end
-    end,
-    Slist = lists:foldl(Fun, [], Prov),
-
-    case data_format:game_overview_to_text(GOv) of
-        {GameId, Status, Data} ->
-            game_overview_ret({PUnit, Ulist, Slist},GameId, Status, Data, Ret);
-        _ -> msg_error(Ret)
-    end.
-
-game_overview_ret({PUnit, Ulist, Slist}, Id, Status, {Info, Country, Game, Provinces, Units, Orders}, Ret=#ret{}) ->
-    OrdersString = lists:flatten(io_lib:format("~p", [Orders])),
-    Data = [{"game_status", atom_to_list(Status)},
-            {"game_id", integer_to_list(Id)},
-            {"country", atom_to_list(Country)},
-            {"game_info", lists:flatten(Info)},
-            {"game", lists:flatten(Game)},
-            {"provinces", lists:flatten(Provinces)},
-            {"units", lists:flatten(Units)},
-            {"owner_list", {struct, Slist}},
-            {"unit_list", {struct, Ulist}},
+game_overview_do_ret(Ret = #ret{}, Gov) ->
+    Game = Gov#game_overview.game_rec,
+    Map = digraph_io:from_erlang_term(Gov#game_overview.map),
+    PlayerCountry = Gov#game_overview.country,
+    {PUnit, Slist, Ulist} = interpret_map(Map, PlayerCountry),
+    {Year, Season} = Gov#game_overview.year_season,
+    Status = Game#game.status,
+    CommonData = [
+        {"game_name", Game#game.name},
+        {"game_status", atom_to_list(Status)},
+        {"game_id", integer_to_list(Game#game.id)},
+        {"year", integer_to_list(Year)},
+        {"season", atom_to_list(Season)},
+        {"phase", atom_to_list(Gov#game_overview.phase)},
+        {"country", atom_to_list(PlayerCountry)},
+        {"press", atom_to_list(Game#game.press)},
+        {"order_phase", integer_to_list(Game#game.order_phase)},
+        {"retreat_phase", integer_to_list(Game#game.retreat_phase)},
+        {"build_phase", integer_to_list(Game#game.build_phase)},
+        {"waiting_time", integer_to_list(Game#game.waiting_time)},
+        {"number_of_players", integer_to_list(Game#game.num_players)},
+        {"description", Game#game.description},
+        {"owner_list", {struct, Slist}},
+        {"unit_list", {struct, Ulist}},
+        {"date_created",
+          lists:flatten(data_format:date_to_str(Game#game.date_created))}],
+    Data = case Status of
+        ongoing ->
+            CommonData ++ [
             {"player_units", {struct, PUnit}},
-            {"orders", OrdersString}],
+            {"orders", interpret_orderlist(Gov#game_overview.order_list)}];
+        finished ->
+            CommonData ++ [
+            {"date_completed",
+              lists:flatten(data_format:date_to_str(Game#game.date_completed))},
+            {"result", atom_to_list(Game#game.result)},
+            {"players", term_to_string(Gov#game_overview.players)}];
+        _ ->
+            CommonData
+    end,
     EventData = json2:obj_from_list(Data),
     io:format(user, "~p~n", [EventData]),
     msg_success(Ret#ret{event_data = EventData}).
@@ -474,10 +466,15 @@ operator_game_overview_ret(Ret, {Gov, Tree}) ->
             _ ->
                 {Gov#game_overview.year_season, tree_to_json_proplist(Tree)}
         end,
+    TimeComplete = case Game#game.date_completed of
+            undefined -> "Not finished yet";
+            {{_,_,_},{_,_,_}} -> lists:flatten(data_format:date_to_str(Game#game.date_created));
+            _ -> "Error"
+        end,
     Data = [{"game_id", integer_to_list(Game#game.id)},
             {"game_status", atom_to_list(Game#game.status)},
             {"year_season", integer_to_list(Year)++"-"++atom_to_list(Season)},
-            {"players", term_to_string(Gov#game_overview.players)},
+            {"players", interpret_players(Gov#game_overview.players)},
             {"game_name", Game#game.name},
             {"creator_id", integer_to_list(Game#game.creator_id)},
             {"press", atom_to_list(Game#game.press)},
@@ -489,8 +486,9 @@ operator_game_overview_ret(Ret, {Gov, Tree}) ->
             {"password", Game#game.password},
             {"result", atom_to_list(Game#game.result)},
             {"waiting_time", integer_to_list(Game#game.waiting_time)},
-            {"date_created", term_to_string(Game#game.date_created)},
-            {"date_completed", term_to_string(Game#game.date_completed)},
+            {"date_created",
+              lists:flatten(data_format:date_to_str(Game#game.date_created))},
+            {"date_completed", TimeComplete},
             {"start_time", term_to_string(Game#game.start_time)},
             {"last_session", Game#game.last_session},
             {"links", {struct, Proplist}}
@@ -605,5 +603,38 @@ interpret_orderlist(OrdList) ->
                 ]}
         end
     end || X <- OrdList].
+
+interpret_map(Map, PCountry) ->
+    Prov = map:get_provinces(Map),
+    Unit = map:get_units(Map),
+    PUnit = lists:foldl(fun({P1,{U1,C1}}, Acc1)->
+        case C1 of
+            PCountry ->
+                [{atom_to_list(P1),atom_to_list(U1)}|Acc1];
+            _ ->
+                Acc1
+        end end, [], Unit),
+
+    Ulist = [{atom_to_list(P)++"__"++atom_to_list(C), atom_to_list(U)}
+    || {P,{U,C}} <- Unit],
+    Fun = fun(X, Acc) ->
+        case map:get_province_info(Map,X, center) of
+            true ->
+                case map:get_province_info(Map,X,owner) of
+                    undefined ->
+                        Acc;
+                    Owner ->
+                        [{atom_to_list(X), atom_to_list(Owner)}|Acc]
+                end;
+            _ -> Acc
+        end
+    end,
+    Slist = lists:foldl(Fun, [], Prov),
+    {PUnit, Slist, Ulist}.
+
+interpret_players(#game_player{players=PlayerList})->
+    {struct, [{atom_to_list(C), integer_to_list(Id)}
+    || #game_user{id=Id, country=C} <- PlayerList]}.
+
 
 </erl>
