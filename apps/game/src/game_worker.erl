@@ -104,10 +104,10 @@ handle_call({stop_game, ID}, _From, State) ->
                     {ok, Game} = get_game(ID),
                         case Game#game.status of
                             ongoing ->
-                                game_timer_sup:create_timer(Game),
+                                game_timer_sup:create_timer(ID),
                                 game_timer:stop(ID, stopped);
                             waiting ->
-                                game_timer_sup:create_timer(Game),
+                                game_timer_sup:create_timer(ID),
                                 game_timer:stop(ID, stopped);
                             _ -> {error, game_not_active}
                         end
