@@ -166,7 +166,7 @@ function draw(units, owners) {
 
   var ctx = document.getElementById('canvas').getContext('2d');
   var map = new Image();
-  map.src = '/image/Components/Map.png';
+  map.src = '/image/Components/map.gif';
   map.onload = function() {
       //Draw Map
       ctx.drawImage(map,0,0);
@@ -239,7 +239,6 @@ function selectChange() {
 function order_generate() {
     var selects = $('.order_select');
     var attr, orders = "";
-    print(selects);
     for(var i=0; i<selects.length; i++) {
         attr = selects[i].options[selects[i].selectedIndex].innerHTML;   //selects[i].getAttribute('name');
         orders += (attr === null || attr === "") ? "" :
@@ -251,20 +250,7 @@ function order_generate() {
 }
 
 var rownum;
-function add_order_row(unit, prov) {
-    if(rownum < 17) {
-        ++rownum;
-        var el = document.getElementById('order_gen');
-        var divi = document.createElement('div');
-
-        /*var sel = document.createElement('select');
-        sel.style.width = "75px";
-        sel.id = "unit"+rownum;
-
-        var opt = createElement('option');
-        opt.innerHTML = &nbsp;
-        sel.appendChild(opt);*/
-        var prov_options = "<option selected=\"selected\"></option>\n"+
+var prov_options = "<option selected=\"selected\"></option>\n"+
                 "<option>Adriatic_Sea</option>\n"+
                 "<option>Aegean_Sea</option>\n"+
                 "<option>Albania</option>\n"+
@@ -346,8 +332,13 @@ function add_order_row(unit, prov) {
                 "<option>Warsaw</option>\n"+
                 "<option>Western_Mediterranean</option>\n"+
                 "<option>Yorkshire</option>\n";
+function add_order_row(unit, prov) {
+    if(rownum < 18) {
+        ++rownum;
+        var el = document.getElementById('order_gen');
+        var divi = document.createElement('div');
+
         var new_row =
-            //"\n<br class=\"spacer\" />\n"+
             "<select class='order_select' id=\"unit"+rownum+"\" style=\"width:55px\">\n"+
                 "<option selected>"+unit+"</option>\n"+
             "</select>\n\n"+
@@ -387,5 +378,143 @@ function add_order_row(unit, prov) {
         primeOnChangeEvents();
     } else {
         alert("You are at max unit control (17).\nIf you had more than that, you'd have won already!");
+    }
+}
+function add_retreat_order_row(unit, prov) {
+    if(rownum < 18) {
+        ++rownum;
+        var el = document.getElementById('order_gen');
+        var divi = document.createElement('div');
+        print(rownum);
+        var new_row =
+            "<select class='order_select' id=\"unit"+rownum+"\" style=\"width:55px\">\n"+
+                "<option selected>"+unit+"</option>\n"+
+            "</select>\n\n"+
+
+            "<select class='order_select' id=\"region"+rownum+"\">\n"+
+                "<option selected>"+prov+"</option>\n"+
+            "</select>\n\n"+
+
+            "<select class='order_select' id=\"order"+rownum+"\" style='width:70px'>\n"+
+                "<option value='d:target"+rownum+"' selected>Hold</option>\n"+
+                "<option value='e:target"+rownum+"'>Move</option>\n"+
+            "</select>\n\n"+
+
+            "<select class='order_select' id=\"target"+rownum+"\" disabled style='display:none'>\n"+
+                prov_options+
+            "</select>\n\n"+
+            "<select class='order_select' disabled style='display:none'><option></option></select>"+
+            "<select class='order_select' disabled style='display:none'><option></option></select>"+
+            "<select class='order_select' disabled style='display:none'><option></option></select>";
+
+        divi.innerHTML = new_row;
+        el.appendChild(divi);
+        el.lastChild.setAttribute('id', 'row'+rownum);
+        primeOnChangeEvents();
+    } else {
+        alert("You are at max unit control (17).\nIf you had more than that, you'd have won already!");
+    }
+}
+
+function add_build_order_row(punits, center_list, my_country) {
+    var spawn_point=
+    {austria:["budapest","trieste","vienna"],
+     england:["edinburgh","liverpool","london"],
+     france:["brest","marseilles","paris"],
+     germany:["berlin","kiel","munich"],
+     russia:["moscow","sevastopol","st_petersburg","warsaw"],
+     turkey:["ankara","constantinople","smyrna"],
+     italy:["naples","rome","venice"]};
+
+    var center_num=0;
+    var sp=spawn_point[my_country];
+    var factories=[];//the supply centers that spawn units
+    for(var i in center_list){
+        if(center_list[i]==my_country){
+            for(var j=0; j<sp.length; j++){
+                if(sp[j]==i)
+                    factories.push(i);
+            }
+            ++center_num;
+        }
+    }
+
+    var unit_num=0;
+    for(var i in punits){
+        ++unit_num;
+    }
+
+    var judge = center_num - unit_num;
+    var act;
+    var loc="";
+    var locf="";
+    var un;
+    print([center_num, unit_num]);
+    if(judge > 0){//build
+        act = "Build";
+        un=function(u){return "<option selected>Army</option>\n<option>Fleet</option>\n"};
+        loc+="<option selected>"+factories[0]+"</option>\n";
+        locf+="<option></option>";
+        for(var i=1;i<factories.length;i++){
+            loc+="<option>"+factories[i]+"</option>\n";
+        }
+    }else if(judge < 0){//disband
+        var hasArmy = false;
+        var hasFleet = false;
+        act = "Disband";
+        judge = -judge;
+
+        for(var i in punits){
+            var unit=punits[i];
+            if(unit=="fleet"){
+                hasFleet = true;
+                locf += "<option>"+i+"</option>\n";
+            }else{
+                hasArmy = true;
+                loc += "<option>"+i+"</option>\n";
+            }
+        }
+        if(!loc){
+            loc="<option></option>";
+        }
+        if(!locf){
+            locf="<option></option>";
+        }
+        un=function(u){
+        return (hasArmy?"<option value=\"d:regionf"+u+"\" \"e:region"+u+"\">Army</option>\n":"")+
+              (hasFleet?"<option value=\"e:regionf"+u+"\" \"d:region"+u+"\">Fleet</option>\n":"")};
+
+    }
+
+
+    while(rownum<judge){
+        var el = document.getElementById('order_gen');
+        var divi = document.createElement('div');
+        ++rownum;
+        var new_row =
+            "<select class='order_select' id=\"order"+rownum+"\" style='width:70px'>\n"+
+                "<option selected>"+act+"</option>\n"+
+            "</select>\n\n"+
+
+            "<select class='order_select' id=\"unit"+rownum+"\" style=\"width:55px\">\n"+
+                un(rownum)+
+            "</select>\n\n"+
+
+            "<select class='order_select' id=\"region"+rownum+"\">\n"+
+                loc+
+            "</select>\n\n"+
+
+            "<select class='order_select' id=\"regionf"+rownum+"\" disabled style='display:none'>"+
+                locf+
+            "</select>"+
+
+            "<select class='order_select' disabled style='display:none'><option></option></select>"+
+            "<select class='order_select' disabled style='display:none'><option></option></select>"+
+            "<select class='order_select' disabled style='display:none'><option></option></select>";
+
+        divi.innerHTML = new_row;
+        el.appendChild(divi);
+        el.lastChild.setAttribute('id', 'row'+rownum);
+        primeOnChangeEvents();
     }
 }

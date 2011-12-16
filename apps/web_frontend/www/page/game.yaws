@@ -1,6 +1,5 @@
 <!-- Game overview page -->
-<div class="page-header">
-  <h1>Game overview<small></small></h1>
+<div id="game_header" class="page-header">
 </div>
 <div class="row">
   <div class="span15">
