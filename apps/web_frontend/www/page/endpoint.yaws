@@ -117,7 +117,7 @@ get_reply({Cmd, Status}, Data, Msg) ->
     Reply = get_ret({Cmd, Status}, #ret{event=Event, message_value=Msg}, Data),
     json_encode(ret_to_proplist(Reply));
 get_reply (CmdWithoutStatus, Data, Msg) ->
-    get_reply ({CmdWithoutStatus, ok}, Data, Msg);
+    get_reply({CmdWithoutStatus, ok}, Data, Msg);
 get_reply(unknown_command, Data, Msg) ->
     io:format("Unknown command ~p~n", [Data]),
     json_encode("").
@@ -233,39 +233,7 @@ get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret#ret{page="dashboard"});
 
 get_ret({game_overview, success}, Ret=#ret{}, GOv) ->
-    Map = digraph_io:from_erlang_term(GOv#game_overview.map),
-    PCountry = GOv#game_overview.country,
-    Prov = map:get_provinces(Map),
-    Unit = map:get_units(Map),
-    PUnit = lists:foldl(fun({P1,{U1,C1}}, Acc1)->
-        case C1 of
-            PCountry ->
-                [{atom_to_list(P1),atom_to_list(U1)}|Acc1];
-            _ ->
-                Acc1
-        end end, [], Unit),
-
-    Ulist = [{atom_to_list(P)++"__"++atom_to_list(C), atom_to_list(U)}
-    || {P,{U,C}} <- Unit],
-    Fun = fun(X, Acc) ->
-        case map:get_province_info(Map,X, center) of
-            true ->
-                case map:get_province_info(Map,X,owner) of
-                    undefined ->
-                        Acc;
-                    Owner ->
-                        [{atom_to_list(X), atom_to_list(Owner)}|Acc]
-                end;
-            _ -> Acc
-        end
-    end,
-    Slist = lists:foldl(Fun, [], Prov),
-
-    case data_format:game_overview_to_text(GOv) of
-        {GameId, Status, Data} ->
-            game_overview_ret({PUnit, Ulist, Slist},GameId, Status, Data, Ret);
-        _ -> msg_error(Ret)
-    end;
+    game_overview_do_ret(Ret#ret{page="game"}, GOv);
 
 get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
@@ -407,6 +375,9 @@ get_ret({logout, success}, Ret=#ret{}, _Data) ->
 get_ret({logout, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 
+get_ret({phase_change, ok}, Ret=#ret{}, Data) ->
+    game_overview_do_ret(Ret, Data);
+
 % General unhandled case
 get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
     Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."
@@ -427,6 +398,41 @@ ret_to_proplist(Ret) ->
     RecordInfo = [atom_to_list(Field) || Field <- record_info(fields, ret)],
     lists:zip(RecordInfo, tl(tuple_to_list(Ret))).
 
+game_overview_do_ret(Ret = #ret{}, GOv) ->
+    Map = digraph_io:from_erlang_term(GOv#game_overview.map),
+    PCountry = GOv#game_overview.country,
+    Prov = map:get_provinces(Map),
+    Unit = map:get_units(Map),
+    PUnit = lists:foldl(fun({P1,{U1,C1}}, Acc1)->
+        case C1 of
+            PCountry ->
+                [{atom_to_list(P1),atom_to_list(U1)}|Acc1];
+            _ ->
+                Acc1
+        end end, [], Unit),
+
+    Ulist = [{atom_to_list(P)++"__"++atom_to_list(C), atom_to_list(U)}
+    || {P,{U,C}} <- Unit],
+    Fun = fun(X, Acc) ->
+        case map:get_province_info(Map,X, center) of
+            true ->
+                case map:get_province_info(Map,X,owner) of
+                    undefined ->
+                        Acc;
+                    Owner ->
+                        [{atom_to_list(X), atom_to_list(Owner)}|Acc]
+                end;
+            _ -> Acc
+        end
+    end,
+    Slist = lists:foldl(Fun, [], Prov),
+
+    case data_format:game_overview_to_text(GOv) of
+        {GameId, Status, Data} ->
+            game_overview_ret({PUnit, Ulist, Slist},GameId, Status, Data, Ret);
+        _ -> msg_error(Ret)
+    end.
+
 game_overview_ret({PUnit, Ulist, Slist}, Id, Status, {Info, Country, Game, Provinces, Units, Orders}, Ret=#ret{}) ->
     OrdersString = lists:flatten(io_lib:format("~p", [Orders])),
     Data = [{"game_status", atom_to_list(Status)},
@@ -442,8 +448,7 @@ game_overview_ret({PUnit, Ulist, Slist}, Id, Status, {Info, Country, Game, Provi
             {"orders", OrdersString}],
     EventData = json2:obj_from_list(Data),
     io:format(user, "~p~n", [EventData]),
-    msg_success(Ret#ret{event_data = EventData,
-                        page="game"}).
+    msg_success(Ret#ret{event_data = EventData}).
 
 all_db_stats_to_proplist(DbStatsList) ->
     all_db_stats_to_proplist(DbStatsList, 0, []).

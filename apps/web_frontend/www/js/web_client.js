@@ -334,6 +334,9 @@ function event_action(data) {
         logout_update_elements();
         clear_message();
         break;
+    case "phase_change_ok":
+        on_phase_change(event_data);
+        break;
     default:
         break;
     }

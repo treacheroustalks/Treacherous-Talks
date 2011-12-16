@@ -32,6 +32,7 @@
 -include_lib ("datatypes/include/game.hrl").
 -include_lib ("datatypes/include/message.hrl").
 -include_lib ("datatypes/include/user.hrl").
+-include_lib ("datatypes/include/push_event.hrl").
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("eunit/include/eunit.hrl").
 
@@ -54,7 +55,8 @@
          search_game_msg/1,
          is_power_user/1,
          get_game_player/1,
-         update_game/2
+         update_game/2,
+         push_phase_change/1
         ]).
 
 -define(COUNTRIES, ["england", "germany", "france", "austria", "italy",
@@ -413,6 +415,28 @@ is_power_user(Role) when Role == moderator ; Role == operator ->
     true;
 is_power_user(_Role) ->
     false.
+
+%% ------------------------------------------------------------------
+%% @doc
+%% This will get the game overview and push it to all users
+%% @spec
+%% push_phase_change(GameID :: integer()) -> ok
+%% @end
+%% ------------------------------------------------------------------
+push_phase_change(Game) ->
+    {ok, #game_player{players = Players}} = get_game_player(Game),
+    lists:foreach(
+      fun(#game_user{id = UserID}) ->
+              case game:get_game_overview(Game#game.id, UserID) of
+                  {ok, Overview} ->
+                      controller:push_event(UserID,
+                                            #push_event{type = {phase_change, ok},
+                                                        data = Overview});
+                  _Error ->
+                      ok
+              end
+      end, Players),
+    ok.
 
 %% ------------------------------------------------------------------
 %% Internal functions

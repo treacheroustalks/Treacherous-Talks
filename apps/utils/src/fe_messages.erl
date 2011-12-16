@@ -330,6 +330,13 @@ get(in_game_msg, GMsg =#game_message{}) ->
                   GMsg#game_message.content])
     end;
 
+get({phase_change, ok}, GO = #game_overview{}) ->
+    GameID = GO#game_overview.game_rec#game.id,
+    Name = GO#game_overview.game_rec#game.name,
+    Phase = GO#game_overview.phase,
+    {Year, Season} = GO#game_overview.year_season,
+    resp("Game ~p: ~p changed to ~p ~p: ~p", [GameID, Name, Year, Season, Phase]);
+
 % User update
 get({get_presence, success}, Val) ->
     case Val of

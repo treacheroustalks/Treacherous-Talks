@@ -144,7 +144,7 @@ init(GameID) ->
 init_ongoing_game(Game) ->
     {ok, CurrentGame} = game_utils:get_current_game(Game#game.id),
     GamePhase = CurrentGame#game_current.current_phase,
-    lager:info("Restarting game ~p timer. Game phase: ~p",
+    lager:debug("Restarting game ~p timer. Game phase: ~p",
                [Game#game.id, GamePhase]),
     NewState = #state{game = Game,
                       phase = GamePhase},
@@ -165,6 +165,7 @@ waiting_phase(timeout, State) ->
                                                        start_time = now()}},
     phase_change(NewState#state.game, started),
     save_corpse(NewState#state.game#game.id),
+    game_utils:push_phase_change(NewState#state.game),
     Timeout = get_timeout(order_phase, Game),
     {next_state, order_phase, NewState, Timeout}.
 
@@ -176,6 +177,7 @@ waiting_phase(_Event, From, State) ->
 order_phase(_Event, State) ->
     process_phase(?ID(State), order_phase),
     phase_change(?ID(State), retreat_phase),
+    game_utils:push_phase_change(State#state.game),
     Timeout = get_timeout(retreat_phase, State#state.game),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}.
 order_phase(_Event, From, State) ->
@@ -187,10 +189,12 @@ retreat_phase(_Event, State) ->
     %% retreat is handled and we enter count phase
     case phase_change(?ID(State), build_phase) of
         {ok, true} ->
+            game_utils:push_phase_change(State#state.game),
             Timeout = get_timeout(build_phase, State#state.game),
             {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {ok, skip} ->
             phase_change(?ID(State), order_phase),
+            game_utils:push_phase_change(State#state.game),
             Timeout = get_timeout(order_phase, State#state.game),
             {next_state, order_phase, State#state{phase = order_phase}, Timeout};
         {stop, Reason, game_over} ->
@@ -203,6 +207,7 @@ retreat_phase(_Event, From, State) ->
 build_phase(_Event, State) ->
     process_phase(?ID(State), build_phase),
     phase_change(?ID(State), order_phase),
+    game_utils:push_phase_change(State#state.game),
     Timeout = get_timeout(order_phase, State#state.game),
     {next_state, order_phase, State#state{phase = order_phase}, Timeout}.
 build_phase(_Event, From, State) ->

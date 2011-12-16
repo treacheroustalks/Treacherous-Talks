@@ -25,6 +25,14 @@ function load_page(callback) {
     });
 }
 
+function on_phase_change(page_data) {
+    print(page);
+    if(page == 'game'){
+        clear_message();
+        load_game_overview_data(page_data);
+    }
+}
+
 /**
  * Load the server management  page
  */
