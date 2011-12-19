@@ -111,7 +111,7 @@ handle_call({game_order, {GameId, GameOrderList}}, _From,
     {reply, Reply, State, ?TIMEOUT};
 %%-------------------------------------------------------------------
 %% @doc
-%% Handles call for off game user messages
+%% Handles call for off-game user messages
 %% @end
 %% [@spec handle_call({user_msg::atom(), #frontend_msg{},
 %%                     From::{pid(), Tag}, #state{}) -> {reply,Reply,#state{}}.]
@@ -437,7 +437,7 @@ handle_call(get_reports, _From, State = #state{user = User}) ->
 %% Handles call for marking an issue as done
 %% @end
 %% @spec
-%% handle_call({mark_report_as_done :: atom(), IssueID :: integer},
+%% handle_call({mark_report_as_done :: atom(), IssueID :: integer()},
 %%             From :: {pid(), Tag}, #state{}) ->
 %%     {reply, Reply, #state{}}
 %% @end
@@ -457,6 +457,58 @@ handle_call({mark_report_as_done, IssueID}, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({set_push_receiver, PushReceiver}, _From, State) ->
     {reply, {ok, success}, State#state{push_receiver = PushReceiver}, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for blacklisting a user
+%%
+%% 1. Updates user role to disabled
+%% 2. Sends a message to the user
+%% 3. Stops the session of the user
+%% @spec
+%% handle_call({blacklist :: atom(), Nick :: string()},
+%%             From :: {pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({blacklist, Nick}, _From, State = #state{user=PowerUser}) ->
+    Reply = blacklist(Nick, PowerUser),
+    {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for whitelisting a user
+%% @end
+%% @spec
+%% handle_call({whitelist :: atom(), Nick :: string()},
+%%             From :: {pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({whitelist, Nick}, _From, State) ->
+    Reply = user_management:whitelist(Nick),
+    {reply, Reply, State, ?TIMEOUT};
+%%-------------------------------------------------------------------
+%% @doc
+%% Handles call for pushing an event
+%% @end
+%% @spec
+%% handle_call({push_event :: atom(), Nick :: string()},
+%%             From :: {pid(), Tag}, #state{}) ->
+%%     {reply, Reply, #state{}}
+%% @end
+%%-------------------------------------------------------------------
+handle_call({push_event, Event}, _From,
+            State = #state{push_receiver = Receiver}) ->
+    Pid = Receiver#push_receiver.pid,
+    Args = Receiver#push_receiver.args,
+    Type = Receiver#push_receiver.type,
+    Reply = case fe_push:send(Type, Args, Pid, Event) of
+                ok ->
+                    {ok, success};
+                Error ->
+                    Error
+            end,
+    {reply, Reply, State, ?TIMEOUT};
+
 %% Unhandled request
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),
@@ -494,6 +546,37 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+% Blacklists the user with given nick with some additional functionalities
+blacklist(Nick, PowerUser) ->
+    case user_management:blacklist(Nick) of
+        {ok, BlacklistUser} ->
+            send_blacklist_message(BlacklistUser, PowerUser),
+            kill_blacklist_session(BlacklistUser#user.id),
+            {ok, BlacklistUser};
+        {error, Error} ->
+            {error, Error}
+    end.
+
+send_blacklist_message(BlacklistUser, PowerUser) ->
+    Message = #message{from_id = PowerUser#user.id,
+                       from_nick = PowerUser#user.nick,
+                       to_nick = BlacklistUser#user.nick,
+                       to_id = BlacklistUser#user.id,
+                       content = "Your account has been blacklisted",
+                       date_created = erlang:universaltime()},
+    Event = #push_event{type = off_game_msg, data = Message},
+    controller:push_event(BlacklistUser#user.id, Event).
+
+kill_blacklist_session(UserId) ->
+    case session_presence:get_session_id(UserId) of
+        {ok, SessionId}->
+            Event = #push_event{type = {logout, ok}, data = ""},
+            controller:sync_push_event(UserId, Event),
+            session:logout(SessionId, no_arg);
+        _ ->
+            ok
+    end.
+
 stop(State) ->
     User = State#state.user,
     UserId = User#user.id,

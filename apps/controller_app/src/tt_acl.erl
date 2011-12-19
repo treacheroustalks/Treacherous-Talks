@@ -33,55 +33,98 @@
 
 
 %% Public API
--export([has_access/2]).
+-export([
+         has_access/2, has_access/3
+        ]).
 
 % include files
 -include_lib("datatypes/include/user.hrl").
 
-%% ------------------------------------------------------------------
-%% External API Function Definitions
-%% ------------------------------------------------------------------
 %%-------------------------------------------------------------------
 %% @doc
-%%   this function get a command and the user role and return ture or false
+%%   Checks if the given user has access to specified command
 %%
 %%   Note: whenever a new command add to controller we need to update
-%%    both tt_acl:moderator_cmd() and tt_acl:user_cmd
+%%   both tt_acl:moderator_cmd() and tt_acl:user_cmd
 %% @end
 %%-------------------------------------------------------------------
--spec has_access(atom(), role()) -> boolean().
-has_access(_Command, operator) ->
-    true;
-has_access(Command, moderator) ->
-    case lists:member(Command, moderator_cmd()) of
+-spec has_access(atom(), string()) -> {Status::atom(), Role::atom()}.
+has_access(Command, SessionId) ->
+    check_access(Command, SessionId).
+
+%%-------------------------------------------------------------------
+%% @doc
+%%   Checks if the given user has access to specified command
+%%
+%% @end
+%%-------------------------------------------------------------------
+-spec has_access(atom(), string(), term()) -> {Status::atom(), Role::atom()}.
+has_access(Command, Role, Data) ->
+    case check_access(Command, Role) of
         true ->
-            true;
+            % Check for special cases
+            case Command of
+                blacklist ->
+                    check_blacklist_access(Role, Data);
+                whitelist ->
+                    check_blacklist_access(Role, Data);
+                _ ->
+                    true
+            end;
         false ->
-            lists:member(Command, user_cmd())
-    end;
-has_access(Command, user) ->
-    lists:member(Command, user_cmd()).
+            false
+    end.
 
 %% ------------------------------------------------------------------
 %% Internal function definitions
 %% ------------------------------------------------------------------
 
-%% ------------------------------------------------------------------
-%% @doc
-%%   return a list of cammands that users with moderator role has access
-%% @end
-%% ------------------------------------------------------------------
+%% Check of the user's role has access to specified command
+check_access(Command, Role) ->
+    case Role of
+        user ->
+            lists:member(Command, user_cmd());
+        moderator ->
+            lists:member(Command, user_cmd()) orelse
+                lists:member(Command, moderator_cmd());
+        disabled ->
+            false;
+        operator ->
+            true;
+        false ->
+            false
+    end.
+
+%% Check if specified role has permission to blacklist given user
+% Operators can blacklist user with any role
+% Moderators can blacklist user with "user" role
+check_blacklist_access(Role, TargetNick) ->
+    case user_management:get(#user.nick, TargetNick) of
+        {ok, #user{role = TargetRole}} ->
+            case {Role, TargetRole} of
+                {operator, _} ->
+                    true;
+                {moderator, user} ->
+                    true;
+                {moderator, disabled} ->
+                    true;
+                _ ->
+                    false
+            end;
+        _Error ->
+            false
+    end.
+
+%% List of commands the moderator has access to
 moderator_cmd() ->
     [power_msg,
      get_reports,
-     mark_report_as_done
+     mark_report_as_done,
+     blacklist,
+     whitelist
     ].
 
-%% ------------------------------------------------------------------
-%% @doc
-%%   return a list of cammands that users with user role has access
-%% @end
-%% ------------------------------------------------------------------
+%% List of commands the user has access to
 user_cmd() ->
     [update_user,
      get_session_user,

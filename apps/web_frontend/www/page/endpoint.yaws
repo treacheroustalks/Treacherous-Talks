@@ -378,6 +378,20 @@ get_ret({logout, invalid_data}, Ret=#ret{}, _Data) ->
 get_ret({phase_change, ok}, Ret=#ret{}, Data) ->
     game_overview_do_ret(Ret, Data);
 
+get_ret({logout, ok}, Ret=#ret{}, Data) ->
+    msg_success(Ret);
+
+get_ret({blacklist, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({blacklist, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+get_ret({whitelist, success}, Ret=#ret{}, _Data) ->
+    msg_success(Ret);
+get_ret({whitelist, invalid_data}, Ret=#ret{}, _Data) ->
+    msg_error(Ret);
+
+
 % General unhandled case
 get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
     Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."

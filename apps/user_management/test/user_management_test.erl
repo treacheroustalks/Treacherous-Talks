@@ -175,6 +175,32 @@ get_dbobj_user_t() ->
             ?assertEqual({error, notfound}, Result)
     end}].
 
+blacklist_test_() ->
+    {"Blacklist a user",
+     {setup,
+      fun() ->
+              app_start(),
+              Result = user_management:create(create_user()),
+              {ok, User} = Result,
+              User
+      end,
+      fun app_stop/1,
+      fun blacklist_instantiator/1
+      }}.
+
+whitelist_test_() ->
+    {"Whitelist a user",
+     {setup,
+      fun() ->
+              app_start(),
+              Result = user_management:create(create_user()),
+              {ok, User} = Result,
+              User
+      end,
+      fun app_stop/1,
+      fun whitelist_instantiator/1
+      }}.
+
 %% tests generators
 create_user_t(#user{} = User) ->
     Result = user_management:create(User),
@@ -257,6 +283,24 @@ remove_moderator_t() ->
             user_management:assign_moderator(Username, add),
             {ok, Result} = user_management:assign_moderator(Username, remove),
             ?assertEqual(ExpectedUser, Result)
+    end.
+
+blacklist_instantiator(#user{} = User) ->
+    fun() ->
+            user_management:blacklist(User#user.nick),
+            {ok, BlacklistUser} = user_management:get(#user.id, User#user.id),
+            ?assertEqual(disabled, BlacklistUser#user.role)
+    end.
+
+whitelist_instantiator(#user{} = User) ->
+    fun() ->
+            % We first blacklist and user and then test if whitelist works
+            user_management:blacklist(User#user.nick),
+            {ok, BlacklistUser} = user_management:get(#user.id, User#user.id),
+            ?assertEqual(disabled, BlacklistUser#user.role),
+            user_management:whitelist(User#user.nick),
+            {ok, Whitelist} = user_management:get(#user.id, User#user.id),
+            ?assertEqual(user, Whitelist#user.role)
     end.
 
 %% helper functions

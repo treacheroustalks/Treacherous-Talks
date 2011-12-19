@@ -26,7 +26,7 @@
 
 -include_lib("datatypes/include/date.hrl").
 
--type role() :: user | moderator | operator.
+-type role() :: disabled | user | moderator | operator.
 
 -define(USER_REC_NAME, user).
 

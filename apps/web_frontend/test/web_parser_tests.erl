@@ -69,7 +69,9 @@ parser_test_() ->
       fun get_reports/0,
       fun send_report/0,
       fun set_push_receiver/0,
-      fun logout/0
+      fun logout/0,
+      fun blacklist/0,
+      fun whitelist/0
      ]}.
 
 get_db_stats() ->
@@ -188,6 +190,14 @@ set_push_receiver() ->
 logout() ->
     ?assertEqual(logout_exp_data(),
                  web_parser:parse(logout_data())).
+
+blacklist() ->
+    ?assertEqual(blacklist_exp_data(),
+                 web_parser:parse(blacklist_data())).
+
+whitelist() ->
+    ?assertEqual(whitelist_exp_data(),
+                 web_parser:parse(whitelist_data())).
 
 %% Expected data
 operator_get_game_msg_exp_data() ->
@@ -360,6 +370,13 @@ logout_exp_data() ->
     {logout, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
                          no_arg}}.
 
+blacklist_exp_data() ->
+    {blacklist, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                         "bad_user_nick"}}.
+
+whitelist_exp_data() ->
+    {whitelist, {ok, "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
+                         "bad_user_nick"}}.
 %% Input data
 
 get_db_stats_data() ->
@@ -646,3 +663,21 @@ logout_data() ->
            {array,
             [{struct,[{"session_id",
                        "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]}]}}]}}.
+
+blacklist_data() ->
+    {ok, {struct,
+          [{"action", "blacklist"},
+           {"data",
+            {array,
+             [{struct, [{"session_id",
+                         "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+              {struct,[{"nick","bad_user_nick"}]}]}}]}}.
+
+whitelist_data() ->
+    {ok, {struct,
+          [{"action", "whitelist"},
+           {"data",
+            {array,
+             [{struct, [{"session_id",
+                         "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
+              {struct,[{"nick","bad_user_nick"}]}]}}]}}.

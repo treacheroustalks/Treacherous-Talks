@@ -6,9 +6,9 @@
   <div class="span15">
   <div id="message"></div>
     <div class="clear"></div>
-    <div id="games_ongoing_data"></div>
-    <div class="actions">
-        <button type="reset" class="btn" onclick="load_operator_page();">Back</button>
+    <div class="well">
+        <button class="btn pull-right" onclick="load_power_page();">Back</button>
     </div>
+    <div id="games_ongoing_data"></div>
   </div>
 </div>
