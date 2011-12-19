@@ -128,7 +128,7 @@ backend_test_instantiator({WebAddr, SessId, GameId, ClustConf}) ->
               wait_seconds(65), % wait for game to start
 
               %% --- INITIAL GAME STATE ---
-              prettyp_game_info(get_game_info(SessId, GameId)),
+              prettyp_game_state(get_game_state(SessId, GameId)),
 
               %% --- BACKEND NODE STUFF ---
               [BackendNodeA, BackendNodeB] =
@@ -144,7 +144,7 @@ backend_test_instantiator({WebAddr, SessId, GameId, ClustConf}) ->
               {ok, _Pid} = test_client:connect(WebAddr, 8000),
               SessId2 = login(),
 
-              prettyp_game_info(get_game_info(SessId2, GameId)),
+              prettyp_game_state(get_game_state(SessId2, GameId)),
 
               %% --- START BACKEND A ---
               StartResult = cluster_utils:do_action_on_releases(StartupOrder, start_release),
@@ -156,7 +156,7 @@ backend_test_instantiator({WebAddr, SessId, GameId, ClustConf}) ->
 
               wait_seconds(65), % give BackendB time to sync with BackendA
 
-              prettyp_game_info(get_game_info(SessId2, GameId)),
+              prettyp_game_state(get_game_state(SessId2, GameId)),
 
               %% --- HALT BACKEND B ---
               halt_node(BackendNodeB),
@@ -169,21 +169,21 @@ backend_test_instantiator({WebAddr, SessId, GameId, ClustConf}) ->
               SessId3 = login(),
 
               %% --- RECOVERY CHECK START ---
-              ?debugMsg("RECOVERY CHECK START - GameInfoStart:"),
-              GameInfoStart = get_game_info(SessId3, GameId),
-              prettyp_game_info(GameInfoStart),
+              ?debugMsg("RECOVERY CHECK START - GameStateStart:"),
+              GameStateStart = get_game_state(SessId3, GameId),
+              prettyp_game_state(GameStateStart),
 
               %% --- WAIT FOR PHASE CHANGE ---
               wait_seconds(90),
 
               %% --- RECOVERY CHECK END ---
-              ?debugMsg("RECOVERY CHECK END - GameInfoEnd"),
-              GameInfoEnd = get_game_info(SessId3, GameId),
-              prettyp_game_info(GameInfoEnd),
+              ?debugMsg("RECOVERY CHECK END - GameStateEnd"),
+              GameStateEnd = get_game_state(SessId3, GameId),
+              prettyp_game_state(GameStateEnd),
 
               %% just for tester
-              ?debugVal((GameInfoStart == GameInfoEnd)),
-              ?assertNot(GameInfoStart == GameInfoEnd)
+              ?debugVal((GameStateStart == GameStateEnd)),
+              ?assertNot(GameStateStart == GameStateEnd)
       end
      ]}.
 
@@ -210,7 +210,6 @@ backend_test_teardown(_) ->
 %% in our top-level test run.
 only_from_escript(Test) ->
     ScriptName = lists:flatten(escript:script_name()),
-    ?debugVal(ScriptName),
     Match = re:run(ScriptName, "fault_tolerance"),
     case Match of
         {match, _} ->
@@ -244,7 +243,13 @@ web_frontend_recv() ->
     {text, Reply} = test_client:recv(),
     ReplyJSON = binary_to_list(Reply),
     ReplyTerm = mochijson2:decode(ReplyJSON),
-    ReplyTerm.
+    case is_push_msg(ReplyTerm) of
+        true ->
+            ?debugMsg("Skipping pushed message."),
+            web_frontend_recv();
+        false ->
+            ReplyTerm
+    end.
 
 login() ->
     web_frontend_send(?JSON_LOGIN),
@@ -253,14 +258,16 @@ login() ->
     ?debugVal(SessId),
     SessId.
 
-get_game_info(SessId, GameId) ->
+get_game_state(SessId, GameId) ->
     web_frontend_send(?JSON_GAME_OVERVIEW(SessId, GameId)),
     GameOverviewReply = web_frontend_recv(),
-    GameInfo = event_gameoverview_get_gameinfo(GameOverviewReply),
-    GameInfo.
+    GameState = event_gameoverview_get_game_state(GameOverviewReply),
+    GameState.
 
-prettyp_game_info(GameInfo) ->
-    ?debugFmt("~n~n= GAME INFO: =====~n~s", [GameInfo]).
+prettyp_game_state({game_state, Year, Season, Phase}) ->
+    ?debugFmt("~n~n= GAME INFO: =====~n"
+              "Year ~s~nSeason ~s~nPhase ~s~n",
+              [Year, Season, Phase]).
 
 wait_seconds(Seconds) ->
     ?debugFmt("Waiting ~p seconds...~n", [Seconds]),
@@ -308,11 +315,25 @@ event_create_get_gameid(JSONTerm) ->
         re:run(SuccessMsg, "\"(.*)\"", [{capture, all_but_first, binary}]),
     GameId.
 
-event_gameoverview_get_gameinfo(JSONTerm) ->
+event_gameoverview_get_game_state(JSONTerm) ->
     {struct,[{<<"event">>,<<"game_overview_success">>},
              {<<"event_data">>, {struct, EventData}},
              _,_,_
             ]} = JSONTerm,
-    {<<"game_info">>, GameInfo} =
-        lists:keyfind(<<"game_info">>, 1, EventData),
-    GameInfo.
+    {<<"year">>, Year} =
+        lists:keyfind(<<"year">>, 1, EventData),
+    {<<"season">>, Season} =
+        lists:keyfind(<<"season">>, 1, EventData),
+    {<<"phase">>, Phase} =
+        lists:keyfind(<<"phase">>, 1, EventData),
+    {game_state, Year, Season, Phase}.
+
+is_push_msg(JSONTerm) ->
+    {struct, KeyPairs} = JSONTerm,
+    case lists:keyfind(<<"event">>, 1, KeyPairs) of
+        %% Could add future push types here
+        {<<"event">>,<<"phase_change_ok">>} ->
+            true;
+        _ ->
+            false
+    end.
