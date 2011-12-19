@@ -1,6 +1,6 @@
 {application, controller_app,
  [
-  {description, ""},
+  {description, "A general dispatcher between TT frontends and backends"},
   {vsn, "1.0.0"},
   {registered, []},
   {applications, [
@@ -8,7 +8,6 @@
                   stdlib,
                   mnesia,
                   service,
-                  datatypes,
                   db
                  ]},
   {mod, { controller_app_app, []}},

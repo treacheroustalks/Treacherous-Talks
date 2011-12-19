@@ -1,11 +1,12 @@
 {application, xmpp_lib,
  [
-  {description, ""},
+  {description, "The XMPP/Jabber frontend for TT"},
   {vsn, "1.0.0"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  lager
                  ]},
   {env, []}
  ]}.

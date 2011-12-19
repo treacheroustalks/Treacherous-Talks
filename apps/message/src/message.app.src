@@ -1,6 +1,6 @@
 {application, message,
  [
-  {description, ""},
+  {description, "Keeps tracks of messaging in TT"},
   {vsn, "1.0.0"},
   {registered, []},
   {applications, [

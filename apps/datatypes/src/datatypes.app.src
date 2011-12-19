@@ -1,6 +1,6 @@
 {application, datatypes,
  [
-  {description, ""},
+  {description, "Keeps the common datatypes for TT"},
   {vsn, "1.0.0"},
   {registered, []},
   {applications, [

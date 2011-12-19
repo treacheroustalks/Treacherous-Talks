@@ -1,14 +1,11 @@
 {application, user_management,
  [
-  {description, "CRU users"},
+  {description, "User management library for TT"},
   {vsn, "1.0.0"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib,
-                  datatypes,
-                  riakc,
-                  protobuffs,
                   db
                  ]},
   {env, []}

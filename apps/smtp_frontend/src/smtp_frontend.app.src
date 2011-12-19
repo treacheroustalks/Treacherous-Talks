@@ -1,6 +1,6 @@
 {application, smtp_frontend,
  [
-  {description, ""},
+  {description, "The mail frontend for TT"},
   {vsn, "1"},
   {modules,
    [
@@ -13,9 +13,9 @@
   {applications, [
                   kernel,
                   stdlib,
+                  lager,
                   iconv,
-                  gen_smtp,
-                  utils
+                  gen_smtp
                  ]},
   {mod, { smtp_frontend_app, []}},
   {env, [

@@ -6,8 +6,7 @@
   {applications, [
                   kernel,
                   stdlib,
-                  datatypes,
-                  utils
+                  lager
                  ]},
   {mod, {web_frontend_app, []}}
  ]}.

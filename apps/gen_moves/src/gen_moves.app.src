@@ -1,6 +1,6 @@
 {application, gen_moves,
  [
-  {description, ""},
+  {description, "A random move generator for TT"},
   {vsn, "1.0.0"},
   {modules, [gen_moves]},
   {registered, []},
