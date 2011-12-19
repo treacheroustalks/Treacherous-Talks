@@ -241,7 +241,7 @@ Supported commands are:").
 -define(GAME_OVERVIEW_RESPONSE_SUCCESS,"Unhandled error.").
 -define(GAME_OVERVIEW_RESPONSE_NOT_PLAY, "Only game players can view the gam").
 
--define(GAME_VIEW_RESPONSE_SUCCESS, "Found 1 games:").
+-define(GAME_VIEW_RESPONSE_SUCCESS, "Found 2 games:").
 -define(GAME_VIEW_RESPONSE_ERROR, "Invalid user session. Please log in to continue.\n").
 
 -define(GAME_SEARCH_RESPONSE_SUCCESS(GameID), "Found 1 games").
