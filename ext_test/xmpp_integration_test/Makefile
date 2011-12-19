@@ -22,9 +22,6 @@ compile:
 
 test:
 	$(REBAR) skip_deps=true eunit
-	rm -rf doc/coverage
-	mkdir doc/coverage
-	cp -r .eunit/*.html doc/coverage
 
 dia:
 	dialyzer -Wno_return -I ../ --src src

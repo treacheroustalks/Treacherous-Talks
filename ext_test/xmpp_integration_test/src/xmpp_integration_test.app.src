@@ -1,0 +1,10 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+
+{application, xmpp_integration_test,
+ [
+  {description, "Libraries for integration tests via the XMPP frontend"},
+  {vsn, "1.0.0"},
+  {modules, [
+             xmpp_client
+            ]}
+ ]}.

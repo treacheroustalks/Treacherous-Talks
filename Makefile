@@ -50,10 +50,7 @@ get_deps:
 
 compile:
 	$(REBAR) compile
-	cd apps/cluster_manager; ../../$(REBAR) skip_deps=true escriptize
-	cd ext_test/fault_tolerance; ../../$(REBAR) skip_deps=true escriptize
-	cd ext_test/ejabberd_echo/; ../../$(REBAR) compile
-	cd ext_test/smtp_integration_test/; ../../$(REBAR) compile
+	$(REBAR) apps=cluster_manager,fault_tolerance escriptize
 
 docs:
 	$(REBAR) doc skip_deps=true

@@ -74,18 +74,17 @@ echo
 # Run unit tests if needed
 if [ $dounit -eq 1 ]; then
     cd $cwd/..
-    run_test "Run unit tests" "$cwd/../rebar eunit skip_deps=true"
+    run_test "Run unit tests" "$cwd/../rebar eunit skip_deps=true skip_apps=fault_tolerance,smtp_integration_test,xmpp_integration_test"
 fi
 
 # Run integration tests if needed
 if [ $dointegration -eq 1 ]; then
+    cd $cwd/..
     # Run XMPP tests
-    cd $cwd/ejabberd_echo
-    run_test "Run XMPP tests" "$cwd/../rebar eunit skip_deps=true"
+    run_test "Run XMPP tests" "$cwd/../rebar eunit apps=xmpp_integration_test"
 
     # Run SMTP tests
-    cd $cwd/smtp_integration_test
-    run_test "Run SMTP tests" "$cwd/../rebar eunit skip_deps=true"
+    run_test "Run SMTP tests" "$cwd/../rebar eunit apps=smtp_integration_test"
 
     # Run Selenium test script
     cd $cwd
