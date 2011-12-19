@@ -32,7 +32,7 @@
 -module(controller).
 
 %% Public API
--export([handle_action/2, push_event/2,
+-export([handle_action/2, push_event/2, sync_push_event/2,
          register_operator/1, register_operator/2]).
 
 %% Internal functions, exported for eUnit, do not use!
@@ -117,6 +117,8 @@
 %% get_reports ->       []
 %% mark_report_as_done -> [notfound]
 %% set_push_receiver -> []
+%% blacklist ->         [user_not_found]
+%% whitelist ->         [user_not_found]
 %%
 %% @end
 %%
@@ -144,6 +146,8 @@
              get_reports |
              mark_report_as_done |
              set_push_receiver |
+             blacklist |
+             whitelist |
              unknown_command.
 -spec handle_action(ParsedData::{command(), {ok, any()}} |
                         {command(), {ok, SessionId::string()}} |
@@ -171,11 +175,11 @@ handle_action({Command, {ok, SessionId}}, {CallbackFun, Args})
         true->
             {ok, #user{role = Role}} = session:get_session_user(SessionId, user),
             case tt_acl:has_access(Command, Role) of
-                false ->
-                    CallbackFun(Args, {Command, access_denied}, Role);
                 true ->
                     {ok, Result} = system_stats(string),
-                    CallbackFun(Args, {Command, success}, Result)
+                    CallbackFun(Args, {Command, success}, Result);
+                false ->
+                    CallbackFun(Args, {Command, access_denied}, Role)
             end
     end;
 handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
@@ -203,13 +207,15 @@ handle_action({Command, {ok, SessionId, Data}}, {CallbackFun, Args})
        Command == operator_get_game_msg;
        Command == operator_game_overview;
        Command == mark_report_as_done;
+       Command == blacklist;
+       Command == whitelist;
        Command == set_push_receiver ->
     case session:alive(SessionId) of
         false ->
             CallbackFun(Args, {Command, invalid_session}, SessionId);
         true->
             {ok, #user{role = Role}} = session:get_session_user(SessionId, user),
-            case tt_acl:has_access(Command, Role) of
+            case tt_acl:has_access(Command, Role, Data) of
                 false ->
                     CallbackFun(Args, {Command, access_denied}, Role);
                 true ->
@@ -237,6 +243,16 @@ handle_action(Cmd, {CallbackFun, Args}) ->
 -spec push_event(UserId::integer(), #push_event{}) -> ok.
 push_event(UserId, Event = #push_event{}) ->
     ?CAST_WORKER({push_event, {UserId, Event}}).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Pushes an event to the user with given id, if online, synchronously.
+%% @end
+%%-------------------------------------------------------------------
+-spec sync_push_event(UserId::integer(), #push_event{}) -> ok.
+sync_push_event(UserId, Event = #push_event{}) ->
+    ?CALL_WORKER({push_event, {UserId, Event}}).
 
 
 %%-------------------------------------------------------------------

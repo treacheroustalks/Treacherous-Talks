@@ -61,8 +61,6 @@ app_start() ->
                                                    App,
                                                    'reason was', Other}})
                            end
-%                           ?debugMsg (
-%                              io_lib:format ("~p is running", [App]))
                    end,
                    apps ()),
     error_logger:tty(false),
@@ -345,7 +343,7 @@ multiple_session_setup() ->
 operator_session_setup() ->
     Mods = [
             stop_game_tests, get_db_stats_tests, get_games_ongoing_tests,
-            get_reports_tests
+            get_reports_tests, tt_acl_tests, blacklist_tests
            ],
     Callback = callback(),
     Reply = {fun(_,_,Data) -> Data end, []},

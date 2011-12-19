@@ -44,7 +44,9 @@
          get_id/2,
          get_db_obj/1,
          get/2,
-         update/1
+         update/1,
+         blacklist/1,
+         whitelist/1
         ]).
 
 %%-------------------------------------------------------------------
@@ -211,9 +213,7 @@ get_db_obj(Id) ->
 %%-------------------------------------------------------------------
 assign_moderator(Username, Action) ->
     case get(#user.nick, Username) of
-        {ok, {index_list, _UserList}} ->
-            {error, user_not_found};
-        {ok, User} ->
+        {ok, #user{} = User} ->
             case Action of
                 add ->
                     ModUser = User#user{role = moderator};
@@ -221,6 +221,40 @@ assign_moderator(Username, Action) ->
                     ModUser = User#user{role = user}
             end,
             update(ModUser);
+        _Error ->
+            {error, user_not_found}
+    end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Blacklists a user.
+%%
+%% @spec blacklist(Nick :: string()) ->
+%%         {ok, #user{}} | {error, user_not_found}
+%% @end
+%%-------------------------------------------------------------------
+blacklist(Nick) ->
+    update_role(Nick, disabled).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Whitelists a user.
+%%
+%% @spec whitelist(Nick :: string()) ->
+%%         {ok, #user{}} | {error, user_not_found}
+%% @end
+%%-------------------------------------------------------------------
+whitelist(Nick) ->
+    update_role(Nick, user).
+
+%%-------------------------------------------------------------------
+%% Internal functions
+%%-------------------------------------------------------------------
+% Sets the role of user with the given nick
+update_role(Nick, Role) ->
+    case get(#user.nick, Nick) of
+        {ok, #user{} = User} ->
+            update(User#user{role = Role});
         _Error ->
             {error, user_not_found}
     end.

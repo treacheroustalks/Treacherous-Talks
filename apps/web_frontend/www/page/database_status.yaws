@@ -5,6 +5,9 @@
 <div class="row">
   <div class="span15">
   <div id="message"></div>
+    <div class="well">
+        <button class="btn pull-right" onclick="load_power_page();">Back</button>
+    </div>
     <div class="clear"></div>
         <div id="database_status_data"></div>
   </div>

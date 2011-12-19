@@ -21,19 +21,16 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @author Andre Hilsendeger <Andre.Hilsendeger@gmail.com>
-%%%
-%%% @doc Tests for the event pushing.
-%%%
-%%% @end
-%%%
-%%% @since : 15 Nov 2011 by Bermuda Triangle
+%%% @doc Test ACLs
+%%
+%%% @author Sukumar Yethadka <sbhat7@gmail.com>
+%%
+%%% @since : 15 Dec 2011 by Bermuda Triangle
 %%% @end
 %%%-------------------------------------------------------------------
--module(push_events_tests).
+-module(tt_acl_tests).
 
 -include_lib("eunit/include/eunit.hrl").
--include_lib("datatypes/include/push_event.hrl").
 -include_lib("datatypes/include/user.hrl").
 
 -export([tests/1, success/2]).
@@ -42,26 +39,39 @@ tests([Callback, SessId]) ->
     [
      ?_test(success(Callback, SessId))
     ].
-
 %%-------------------------------------------------------------------
-%% Push an event
+%% Operator get db status test
 %%-------------------------------------------------------------------
-success(_Callback, SessId) ->
-    ?debugMsg("PUSH_EVENT TEST SUCCESS"),
-    {ok, User} = session:get_session_user(SessId, no_arg),
-    UserId = User#user.id,
-    Event = #push_event{type = test_event,
-                        data = {some, test, data}},
+success(Callback, OperatorSessionId) ->
+    ?debugMsg("TT ACL tests: Start"),
+    % Start with three users - user, moderator and operator
+    Moderator = create_user(moderator),
+    User = create_user(user),
+    {{login, success}, ModSessionId} =
+        controller:handle_action(
+          {login, {ok, {Moderator, controller_tests:get_receiver()}}}, Callback),
+    {{login, success}, UserSessionId} =
+        controller:handle_action(
+          {login, {ok, {User, controller_tests:get_receiver()}}}, Callback),
 
-    % Asynchronous push event
-    controller:push_event(UserId, Event),
-    timer:sleep(1),
-    Events1 = controller_tests:get_event(),
-    ?assertEqual([Event], Events1),
+    % Operator access check
+    SysStatusCmd = {get_system_status, {ok, OperatorSessionId}},
+    {SysStatusResult, _} = controller:handle_action(SysStatusCmd, Callback),
+    ?assertEqual({get_system_status, success}, SysStatusResult),
 
-    % Synchronous push event
-    controller:sync_push_event(UserId, Event),
-    Events2 = controller_tests:get_event(),
-    ?assertEqual([Event], Events2),
+    % Moderator access check
+    ReportsCmd = {get_reports, {ok, ModSessionId, no_arg}},
+    {ReportsResult, _} = controller:handle_action(ReportsCmd, Callback),
+    ?assertEqual({get_reports, success}, ReportsResult),
 
-    ?debugMsg("PUSH_EVENT TEST SUCCESS finished").
+    % User access check
+    SessionUserCmd = {get_session_user, {ok, UserSessionId, no_arg}},
+    {SessionUserResult, _} = controller:handle_action(SessionUserCmd, Callback),
+    ?assertEqual({get_session_user, success}, SessionUserResult),
+    ?debugMsg("TT ACL tests: Completed").
+
+create_user(Role) ->
+    User = controller_tests:create_user(),
+    Register = {register, {ok, User#user{role = Role}}},
+    controller:handle_action(Register,
+                             {fun(_,_,Data) -> Data end, []}).

@@ -119,6 +119,22 @@ handle_call({register, User}, _From, State) ->
     {reply, Result, State};
 %%-------------------------------------------------------------------
 %% @doc
+%% Handles call for pushing an event
+%% @end
+%% [@spec handle_call({push_event::atom(), {UserId::integer(), Event::#event{}}}},
+%%                     From::{pid(), Tag}, #state{}) -> {noreply, #state{}}.]
+%% @end
+%%-------------------------------------------------------------------
+handle_call({push_event, {UserId, Event}}, _From, State) ->
+    Result = case session_presence:get_session_id(UserId) of
+        {ok, SessionId} ->
+            session:sync_push_event(SessionId, Event);
+        {error, not_online} ->
+            {error, not_online}
+    end,
+    {reply, Result, State};
+%%-------------------------------------------------------------------
+%% @doc
 %% Handles call for logging in a user
 %%
 %% The function checks the credentials of the user by making a call to
@@ -132,58 +148,7 @@ handle_call({register, User}, _From, State) ->
 %% @end
 %%-------------------------------------------------------------------
 handle_call({login, {Login, PushInfo}}, _From, State) ->
-    Result =
-        case user_management:get_id(#user.nick, Login#user.nick) of
-            {ok, {index_list, _IdxList}} ->
-                % Multiple nicks in the db, not allowed ...
-                {error, nick_not_unique};
-            {ok, UserId} ->
-                % user with nick exists
-                {ok, DbObj} = user_management:get_db_obj(UserId),
-                Id = id_from_user_siblings(DbObj),
-                {ok, HObj} = session_history:db_get(Id),
-                HistObj = session_history:resolve_history_siblings(HObj),
-                Hist = db_obj:get_value(HistObj),
-                Latest = case session_history:latest(Hist) of
-                             {ok, S} ->
-                                 S;
-                             history_empty ->
-                                 history_empty
-                         end,
-                session:stop(Latest),
-
-                UserObj = session_history:resolve_conflict(
-                            Hist, DbObj, #user.last_session),
-                User = data_format:db_obj_to_rec(UserObj, ?USER_REC_NAME),
-
-                case User#user.password == Login#user.password of
-                    false ->
-                        {error, invalid_login_data};
-                    true ->
-                        SessId = session:start(User, Hist, PushInfo),
-                        NewHist = session_history:add(Hist, SessId),
-                        NewHistObj = db_obj:set_value(HistObj, NewHist),
-                        session_history:db_update(NewHistObj),
-                        {ok, CheckHistObj} = session_history:db_get(Id),
-                        case db_obj:has_siblings(CheckHistObj) of
-                            true ->
-                                stop_sessions(CheckHistObj),
-                                {error, simultaneous_login};
-                            false ->
-                                NewUser = User#user{last_session = SessId},
-                                NewUserPropList =
-                                    data_format:rec_to_plist(NewUser),
-                                NewUserObj =
-                                    db_obj:set_value(UserObj, NewUserPropList),
-                                db:put(NewUserObj, [{w, all}]),
-                                {ok, SessId}
-                        end
-                end;
-            {error, does_not_exist} ->
-                {error, invalid_login_data};
-            {error, Error} ->
-                {error, Error}
-        end,
+    Result = login(Login, PushInfo),
     {reply, Result, State};
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),
@@ -216,6 +181,71 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+%% Login user implementation
+login(Login, PushInfo) ->
+    case user_management:get_id(#user.nick, Login#user.nick) of
+        {ok, {index_list, _IdxList}} ->
+            % Multiple nicks in the db, not allowed
+            {error, nick_not_unique};
+        {ok, UserId} ->
+            login_user(Login, UserId, PushInfo);
+        {error, does_not_exist} ->
+            {error, invalid_login_data};
+        {error, Error} ->
+            {error, Error}
+    end.
+
+%% Login user who has user id
+login_user(Login, UserId, PushInfo) ->
+    % user with nick exists
+    {ok, DbObj} = user_management:get_db_obj(UserId),
+    Id = id_from_user_siblings(DbObj),
+    {ok, HObj} = session_history:db_get(Id),
+    HistObj = session_history:resolve_history_siblings(HObj),
+    Hist = db_obj:get_value(HistObj),
+    Latest = case session_history:latest(Hist) of
+                 {ok, S} ->
+                     S;
+                 history_empty ->
+                     history_empty
+             end,
+    session:stop(Latest),
+
+    UserObj = session_history:resolve_conflict(
+                Hist, DbObj, #user.last_session),
+    User = data_format:db_obj_to_rec(UserObj, ?USER_REC_NAME),
+
+    % Check if the user is blacklisted
+    case User#user.role of
+        disabled ->
+            {error, user_blacklisted};
+        _ ->
+            % Check if the password matches
+            case User#user.password == Login#user.password of
+                false ->
+                    {error, invalid_login_data};
+                true ->
+                    SessId = session:start(User, Hist, PushInfo),
+                    NewHist = session_history:add(Hist, SessId),
+                    NewHistObj = db_obj:set_value(HistObj, NewHist),
+                    session_history:db_update(NewHistObj),
+                    {ok, CheckHistObj} = session_history:db_get(Id),
+                    case db_obj:has_siblings(CheckHistObj) of
+                        true ->
+                            stop_sessions(CheckHistObj),
+                            {error, simultaneous_login};
+                        false ->
+                            NewUser = User#user{last_session = SessId},
+                            NewUserPropList =
+                                data_format:rec_to_plist(NewUser),
+                            NewUserObj =
+                                db_obj:set_value(UserObj, NewUserPropList),
+                            db:put(NewUserObj, [{w, all}]),
+                            {ok, SessId}
+                    end
+            end
+    end.
+
 id_from_user_siblings(DbObj) ->
     Obj = case db_obj:has_siblings(DbObj) of
               false ->

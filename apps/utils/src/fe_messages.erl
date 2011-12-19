@@ -68,6 +68,8 @@ get({login, invalid_data}, Error) ->
             resp("Invalid login data.~n");
         simultaneous_login ->
             resp("Simultaneous login not allowed.~n");
+        user_blacklisted ->
+            resp("Your account has been blacklisted.~n");
         _ ->
             resp_unhandled_error(Error)
     end;
@@ -307,6 +309,17 @@ get({Cmd, parse_error}, Error) ->
             resp("The command [~p] could not be interpreted.~n", [Cmd])
     end;
 
+% Blacklist
+get({blacklist, success}, _Val) ->
+    resp("User blacklisted successfully.~n");
+get({blacklist, invalid_data}, Error) ->
+    resp("Blacklist failed. Error: p.~n", [Error]);
+
+% Whitelist
+get({whitelist, success}, _Val) ->
+    resp("User whitelisted successfully.~n");
+get({whitelist, invalid_data}, Error) ->
+    resp("Whitelist failed. Error: p.~n", [Error]);
 
 % Push events
 % Off game message
@@ -336,6 +349,10 @@ get({phase_change, ok}, GO = #game_overview{}) ->
     Phase = GO#game_overview.phase,
     {Year, Season} = GO#game_overview.year_season,
     resp("Game ~p: ~p changed to ~p ~p: ~p", [GameID, Name, Year, Season, Phase]);
+
+% Logout push
+get({logout, ok}, _Data) ->
+    resp("");
 
 % User update
 get({get_presence, success}, Val) ->

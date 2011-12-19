@@ -1,6 +1,6 @@
 <!-- Add remove moderator page -->
 <div class="page-header">
-  <h1>Assign moderator <small>Add or remove user's moderator privilege</small></h1>
+  <h1>Blacklist/Whitelist <small>Blacklist/Whitelist players</small></h1>
 </div>
 <div class="row">
   <div class="span15">
@@ -10,8 +10,8 @@
         <button class="btn pull-right" onclick="load_power_page();">Back</button>
     </div>
     <fieldset>
-    <legend>Add/Remove Moderator</legend>
-    <form id="add_remove_moderator_form">
+    <legend>User details</legend>
+    <form id="blacklist_whitelist_form">
         <div class="clear"></div>
         <div class="clearfix">
             <label for="nick">Nick</label>
@@ -21,9 +21,10 @@
         </div>
         <div class="clear"></div>
         <div class="clearfix">
-            <label for="is_moderator">Set as moderator</label>
+            <label for="is_blacklisted">Blacklist</label>
             <div class="input">
-                <input id="is_moderator" name="is_moderator" type="checkbox" />
+                <input id="is_blacklisted" name="is_blacklisted" type="checkbox" />
+                <span class="help-inline">Checked implies the user will be blacklisted</span>
             </div>
         </div>
         <div class="actions">

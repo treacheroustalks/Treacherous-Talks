@@ -21,7 +21,7 @@
 %%% THE SOFTWARE.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @author Sukumar Yethadka <Andre.Hilsendeger@gmail.com>
+%%% @author Sukumar Yethadka <sbhat7@gmail.com>
 %%%
 %%% @doc Tests for updating the push receiver of the session
 %%%

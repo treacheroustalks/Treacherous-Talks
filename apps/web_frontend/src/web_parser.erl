@@ -71,7 +71,9 @@
           {get_reports, {ok, string()}} |
           {mark_as_done, {ok, string(), integer()}} |
           {send_report, {ok, string(), #report_message{}}} |
-          {set_push_receiver, {ok, string()}}.
+          {set_push_receiver, {ok, string()}} |
+          {blacklist, {ok, string(), string()}} |
+          {whitelist, {ok, string(), string()}}.
 
 parse(RawData) ->
     {Action, Data} = decode(RawData),
@@ -219,7 +221,13 @@ parse(RawData) ->
         "set_push_receiver" ->
             {set_push_receiver, {ok, get_field ("session_id", Data)}};
         "logout" ->
-            {logout, {ok, get_field ("session_id", Data), no_arg}}
+            {logout, {ok, get_field ("session_id", Data), no_arg}};
+        "blacklist" ->
+            {blacklist, {ok, get_field ("session_id", Data),
+                         get_field ("nick", Data)}};
+        "whitelist" ->
+            {whitelist, {ok, get_field ("session_id", Data),
+                         get_field ("nick", Data)}}
     end.
 
 

@@ -338,6 +338,15 @@ function event_action(data) {
     case "phase_change_ok":
         on_phase_change(event_data);
         break;
+    case "logout_ok":
+        logout_update_elements();
+        break;
+    case "blacklist_success":
+        clear_message();
+        break;
+    case "whitelist_success":
+        clear_message();
+        break;
     default:
         break;
     }

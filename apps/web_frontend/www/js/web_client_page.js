@@ -220,11 +220,25 @@ function load_add_remove_moderator_page() {
     load_page();
 }
 
+function load_blacklist_whitelist_page() {
+    page = 'blacklist_whitelist';
+    load_page();
+}
+
 /**
- * Load the operator control pannel page
+ * Load the operator control panel page
+ * DEPRECATED. Use load_power_page() instead
  */
 function load_operator_page() {
     page = 'operator';
+    load_page();
+}
+
+/**
+ * Load the administration pages for operator/moderator
+ */
+function load_power_page() {
+    page = userObj.role;
     load_page();
 }
 
@@ -742,11 +756,36 @@ function handle_enter() {
     case 'user_help':
         validate_send_report();
         break;
+    case 'blacklist_whitelist':
+        validate_blacklist_whitelist();
+        break;
     default:
         break;
     }
 }
 
+/**
+ * Validate blacklisting and whitelisting users
+ */
+function  validate_blacklist_whitelist() {
+    var form = get_form_data('#blacklist_whitelist_form');
+    var command = $('#is_blacklisted').prop('checked')?"blacklist":"whitelist";
+    if (check_field_empty(form.nick, 'nick'))
+        return false;
+
+    var dataObj = {
+        "content" : [{
+            "session_id" : get_cookie()
+        }, {
+            "nick" : form.nick
+        }]
+    };
+    call_server(command, dataObj);
+}
+
+/**
+ * Validate adding and removing moderator form
+ */
 function  validate_add_remove_moderator() {
     var form = get_form_data('#add_remove_moderator_form');
     var moderator = $('#is_moderator').prop('checked')?"add":"remove";
@@ -764,6 +803,7 @@ function  validate_add_remove_moderator() {
     };
     call_server('assign_moderator', dataObj);
 }
+
 /**
  * Validate user login data and if successful, send it to server
  */

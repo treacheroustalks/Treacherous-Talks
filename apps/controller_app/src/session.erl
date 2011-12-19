@@ -57,6 +57,7 @@
          user_msg/2,
          game_msg/2,
          push_event/2,
+         sync_push_event/2,
          games_current/2,
          get_db_stats/2,
          operator_game_overview/2,
@@ -70,13 +71,9 @@
          send_report/2,
          get_reports/2,
          mark_report_as_done/2,
-         set_push_receiver/2
-        ]).
-
-%% ------------------------------------------------------------------
-%% Internal Function Exports - for eUnit only!
-%% ------------------------------------------------------------------
--export([
+         set_push_receiver/2,
+         blacklist/2,
+         whitelist/2
         ]).
 
 %% ------------------------------------------------------------------
@@ -259,8 +256,7 @@ power_msg(SessionId, FEMsg = #frontend_msg{}) ->
 
 %%-------------------------------------------------------------------
 %% @doc push_event/2
-%% API for pushing event to the user the session with the given id
-%% belongs to.
+%% API for pushing event to the user the session with the given id.
 %%
 %% @spec push_event(string(), #push_event{}) ->
 %%         {ok, integer()} | {error, country_not_available}
@@ -268,6 +264,18 @@ power_msg(SessionId, FEMsg = #frontend_msg{}) ->
 %%-------------------------------------------------------------------
 push_event(SessionId, Event = #push_event{}) ->
     ?SESSION_CAST(SessionId, Event).
+
+%%-------------------------------------------------------------------
+%% @doc sync_push_event/2
+%% API for pushing event to the user the session with the given id,
+%% synchronously
+%%
+%% @spec sync_push_event(string(), #push_event{}) ->
+%%         {ok, integer()} | {error, country_not_available}
+%% @end
+%%-------------------------------------------------------------------
+sync_push_event(SessionId, Event = #push_event{}) ->
+    ?SESSION_CALL(SessionId, push_event, Event).
 
 %%-------------------------------------------------------------------
 %% @doc games_current/2
@@ -428,3 +436,21 @@ mark_report_as_done(SessionId, IssueID) ->
 %%-------------------------------------------------------------------
 set_push_receiver(SessionId, PushReceiver = #push_receiver{}) ->
     ?SESSION_CALL(SessionId, set_push_receiver, PushReceiver).
+
+%%-------------------------------------------------------------------
+%% @doc blacklist/2
+%% Blacklists the given user
+%%
+%% @end
+%%-------------------------------------------------------------------
+blacklist(SessionId, Nick) ->
+    ?SESSION_CALL(SessionId, blacklist, Nick).
+
+%%-------------------------------------------------------------------
+%% @doc blacklist/2
+%% Blacklists the given user
+%%
+%% @end
+%%-------------------------------------------------------------------
+whitelist(SessionId, Nick) ->
+    ?SESSION_CALL(SessionId, whitelist, Nick).
