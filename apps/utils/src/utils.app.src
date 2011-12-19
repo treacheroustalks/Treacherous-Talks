@@ -1,13 +1,12 @@
 {application, utils,
  [
-  {description, ""},
+  {description, "General utility library for TT"},
   {vsn, "1.0.0"},
   {modules, []},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib,
-                  datatypes
+                  stdlib
                  ]},
   {env, []}
  ]}.

@@ -1,12 +1,12 @@
 {application, cluster_manager,
  [
-  {description, ""},
+  {description, "Support tool for configuring and running a TT cluster"},
   {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
-  {mod, { cluster_manager_app, []}},
+  {mod, {cluster_manager_app, []}},
   {env, []}
  ]}.

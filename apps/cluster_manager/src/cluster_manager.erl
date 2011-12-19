@@ -43,14 +43,14 @@
 option_spec_list() ->
     [
      %% {Name, ShortOpt, LongOpt, ArgSpec, HelpMsg}
-     {help, $h, "help", undefined, "Show the program options"},
+     {help, $h, "help", undefined, "Show program options"},
      {setconfig, $c, "setconfig", undefined, "Sets all configurations defined in config file"},
+     {parallel, $f, "parallel", undefined, "Parallelizes if possible"},
      {join, $j, "join", undefined, "Joins all Riak nodes defined in config file"},
      {ping, $p, "ping", undefined, "Pings all releases defined in config file"},
      {start, $s, "start", undefined, "Starts all releases defined in config file"},
      {stop, $t, "stop", undefined, "Stops all releases defined in config file"},
-     {configfile, undefined, undefined, string, "Configuration file (defaults to tt.config if none given)"},
-     {parallel, $f, "parallel", undefined, "Parallelizes if possible"}
+     {configfile, undefined, undefined, string, "Configuration file (defaults to tt.config if none given)"}
     ].
 
 %% -----------------------------------------------------------------------------

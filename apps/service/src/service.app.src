@@ -1,6 +1,6 @@
 {application, service,
  [
-  {description, ""},
+  {description, "A library for handling stuff such as workers"},
   {vsn, "1.0.0"},
   {modules, [service]},
   {registered, []},

@@ -1,6 +1,6 @@
 {application, load_test,
  [
-  {description, ""},
+  {description, "Helper for load testing TT"},
   {vsn, "1"},
   {registered, []},
   {applications, [
