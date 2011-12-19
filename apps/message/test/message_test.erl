@@ -46,7 +46,7 @@ app_started_setup () ->
     ?debugMsg ("starting apps:"),
     Response = [{App, application:start (App)} || App <- apps ()],
     meck:new(controller),
-    meck:expect(controller, push_event, 2, ok),
+    meck:expect(controller, sync_push_event, 2, {error, not_online}),
     ?debugMsg (io_lib:format ("~p", [Response])).
 
 app_started_teardown (_) ->
@@ -67,6 +67,13 @@ test_msg2() ->
              from_id = user_id2(),
              to_nick = "valid_nick",
              to_id = to_user_id(),
+             content = "hello"
+            }.
+test_msg3() ->
+    #message{from_nick = "valid_nick",
+             from_id = user_id2(),
+             to_nick = "valid_nick",
+             to_id = user_id2(),
              content = "hello"
             }.
 test_game_msg(ToUser) ->
@@ -162,15 +169,25 @@ wait_for_change (Fun, Initial, Tries) ->
     end.
 
 message_fail_tst_() ->
-    [fun() ->
+    [{"Send message to invalid nick",
+      fun() ->
              Msg = test_msg(),
              Reply = message:user_msg(Msg#message{to_nick = "invalid nick" ++
                                             integer_to_list(db_c:get_unique_id())}),
              ?assertEqual({error,invalid_nick}, Reply)
-     end].
+     end},
+    {"Send message to yourself",
+      fun() ->
+             % send msg to yourself
+             Reply = message:user_msg(test_msg3()),
+
+             Expected = {error, send_msg_to_yourself},
+             ?assertEqual(Expected,Reply)
+     end}].
 
 message_success_tst_() ->
-    [fun() ->
+    [{"succesfully stor message when user is offline",
+      fun() ->
              % register to_user
              user_management:create(to_user()),
 
@@ -195,7 +212,37 @@ message_success_tst_() ->
              % clean up
              db:delete(?B_USER, db:int_to_bin(to_user_id())),
              db:delete(?B_MESSAGE, db:int_to_bin(Key))
-     end].
+     end},
+     {"succesfully stor message when user is on-line",
+      fun() ->
+             % register to_user
+             user_management:create(to_user()),
+
+             % send msg to "to_user"
+             meck:expect(controller, sync_push_event, 2, {ok, success}),
+             {ok, Key} = message:user_msg(test_msg()),
+             meck:expect(controller, sync_push_event, 2, {error, not_online}),
+
+             GetMsg = fun() ->
+                              message_util:get_message(Key,
+                                                       ?B_MESSAGE,
+                                                       message)
+                      end,
+             % check if the msg has been correctly stored in db
+             {ok, ActualMessage} = wait_for_change(GetMsg,
+                                                   {error,notfound},
+                                                   1000),
+             Expected = (test_msg())#message{id = Key, status= read,
+                                           date_created =
+                                               ActualMessage#message.date_created},
+             ?assertEqual(Expected,
+                          ActualMessage),
+
+             % clean up
+             db:delete(?B_USER, db:int_to_bin(to_user_id())),
+             db:delete(?B_MESSAGE, db:int_to_bin(Key))
+     end}
+     ].
 
 message_to_blacklisted_tst_() ->
     [fun() ->

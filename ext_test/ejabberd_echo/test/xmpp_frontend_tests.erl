@@ -554,8 +554,9 @@ offline_user_message_test_() ->
 
               %% create user #2 and log him out:
               xmpp_client:start_link(Client2, ?XMPP_PASSWORD),
-              login_test_user (Client2, Nick2),
-              xmpp_client:stop (Client2),
+              {Session2, Nick2}=login_test_user (Client2, Nick2),
+              logout(Client2, Session2),
+              xmpp_client:stop(Client2),
               ?debugFmt("offline_message_tst_ Setup 1 done ~p", [?NOW_UNIV]),
               {Client1, Nick1, Client2, Nick2}
       end,
@@ -618,6 +619,8 @@ offline_game_message_test_() ->
               change_game_phase([GameID]),
 
               % log out the second and third client
+              logout(Client2, Session2),
+              logout(Client3, Session3),
               xmpp_client:stop (Client2),
               xmpp_client:stop (Client3),
 
@@ -804,6 +807,14 @@ login_test_user(Client, Nick) ->
                                 ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
                                 [{capture, all_but_first, list}]),
     {Session, Nick}.
+
+
+logout(Client, Session) ->
+    catch xmpp_client:xmpp_call(Client, ?SERVICE_BOT,
+                                     ?LOGOUT_COMMAND(Session)),
+    ok.
+
+
 
 join_game(Client, Session,GameID, Country) ->
     Request = ?JOIN_GAME_COMMAND(Session, GameID, Country),

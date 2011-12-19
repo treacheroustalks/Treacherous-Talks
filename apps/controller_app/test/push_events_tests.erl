@@ -40,7 +40,8 @@
 
 tests([Callback, SessId]) ->
     [
-     ?_test(success(Callback, SessId))
+     ?_test(success(Callback, SessId)),
+     ?_test(invalid(Callback, SessId))
     ].
 
 %%-------------------------------------------------------------------
@@ -54,14 +55,29 @@ success(_Callback, SessId) ->
                         data = {some, test, data}},
 
     % Asynchronous push event
+
     controller:push_event(UserId, Event),
-    timer:sleep(1),
+    timer:sleep(100),
     Events1 = controller_tests:get_event(),
     ?assertEqual([Event], Events1),
 
+
     % Synchronous push event
-    controller:sync_push_event(UserId, Event),
+    Result= controller:sync_push_event(UserId, Event),
     Events2 = controller_tests:get_event(),
     ?assertEqual([Event], Events2),
+
+    ?assertEqual({ok, success}, Result).
+
+invalid(_Callback, _SessId) ->
+    ?debugMsg("PUSH_EVENT TEST INVALID"),
+    UserId = db:get_unique_id(),
+
+    Event = #push_event{type = test_event,
+                        data = {some, test, data}},
+    Result =controller:sync_push_event(UserId, Event),
+
+    % check that user is really online
+    ?assertEqual({error, not_online}, Result),
 
     ?debugMsg("PUSH_EVENT TEST SUCCESS finished").

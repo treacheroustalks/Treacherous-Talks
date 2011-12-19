@@ -40,7 +40,7 @@ app_started_setup () ->
     ?debugMsg ("starting apps:"),
     Response = [{App, application:start (App)} || App <- apps ()],
     meck:new(controller),
-    meck:expect(controller, push_event,
+    meck:expect(controller, sync_push_event,
                 fun(UserID, Event) ->
                         game_msg ! {controller_push_event, {UserID, Event}},
                          ok end),
