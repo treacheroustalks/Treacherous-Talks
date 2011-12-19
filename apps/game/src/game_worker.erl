@@ -541,7 +541,8 @@ get_games_current(UserID) ->
                   " russia=" ++ StrId ++ " OR " ++
                   " turkey=" ++ StrId ++ ") AND ",
 
-    Query = Country ++ "(status=waiting OR status=ongoing)",
+    Query = "creator_id=" ++ StrId ++ " OR " ++
+        Country ++ "(status=waiting OR status=ongoing)",
     db_utils:do_search_values(?B_GAME, Query, ?GAME_REC_NAME).
 
 %%-------------------------------------------------------------------

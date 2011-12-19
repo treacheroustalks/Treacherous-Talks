@@ -396,7 +396,10 @@ function load_game_search_page() {
  */
 function load_games_current(data) {
     var view_link = function(id) {
-        return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">View</a>';
+        if(obj.status == 'waiting')
+            return '<a href="javascript:void(0);" class="btn disabled">View</a>';
+        else
+            return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="get_game_overview(' + id + ')">View</a>';
     }
     var reconfig_link = function(id) {
         return '<a href="javascript:void(0);" class="btn primary" ' + 'onclick="reconfig_game(' + id + ')">Reconfig</a>';
@@ -405,7 +408,9 @@ function load_games_current(data) {
     // Add view link to all the games
     for ( var i = 0; i < data.length; i++) {
         var obj = data[i];
+
         data[i]['View'] = view_link(obj.id);
+
         if(userObj.id == obj.creator_id)
             data[i]['Reconfig'] = reconfig_link(obj.id);
         else
