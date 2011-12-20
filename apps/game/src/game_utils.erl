@@ -215,6 +215,9 @@ userlist(Game) ->
     CreatePairs =
         fun(Player, Acc) ->
                 case user_management:get(Player#game_user.id) of
+                    #user{role= disabled} ->
+                        [{Player#game_user.country,
+                          "black listed user"}] ++ Acc;
                     User = #user{} ->
                         [{Player#game_user.country,
                           User#user.nick}] ++ Acc;

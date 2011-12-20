@@ -464,6 +464,46 @@ get_game_overview_tst_ () ->
              ?debugMsg("Finished game overview: END TEST"),
              sync_delete(Game#game.id)
      end},
+
+     {"Testing game overview for a finished game with blacklisted user",
+      fun() ->
+             ?debugMsg("Testing game overview for a finished game with black listed user"),
+             UserId = db:get_unique_id(),
+             Nick = "Player" ++ integer_to_list(UserId),
+             StoredUser = create_mock_user((create_user(UserId))#user{nick = Nick}),
+             GameRecord = test_game(),
+             Game = sync_get(sync_new(GameRecord)),
+             GID = Game#game.id,
+             % join all players
+             lists:foldl(fun({UID, C}, NewGame)
+                              -> game:join_game(GID, UID, C),
+                                 GetGame= fun() -> sync_get(NewGame#game.id) end,
+                                 test_utils:wait_for_change(GetGame, NewGame, 100)
+                           end,Game,
+                           [{UserId, turkey} | user_list()]),
+
+             {ok, BLUser} = user_management:update(StoredUser#user{role = disabled}),
+
+             ?assertEqual(StoredUser#user{role = disabled}, BLUser),
+
+             game_timer:sync_event(GID, timeout),
+             {ok , NewGame} = game_worker:get_game(GID),
+             game_utils:update_game(GID, NewGame#game{status = finished}),
+
+             GetGame= fun() -> sync_get(NewGame#game.id) end,
+             test_utils:wait_for_change(GetGame, NewGame, 100),
+             % 1112222 is a "random user", anyone can view finished games
+
+             OV = sync_get_game_overview(GID, 1112222),
+
+             ResultPlayers = OV#game_overview.players,
+             delete_mock_user(create_user(UserId)),
+             ?assert(lists:member({turkey, "black listed user"}, ResultPlayers)),
+             ?debugMsg("Finished game overview with black listed user: END TEST"),
+             sync_delete(Game#game.id)
+     end},
+
+
      {"Test joining a game which doesn't exist",
       fun() ->
              ?debugMsg("Test joining a game which doesn't exist"),
