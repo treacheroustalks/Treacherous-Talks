@@ -242,20 +242,27 @@ function checkChatBoxInputKey(event,chatboxtextarea,chatboxtitle) {
 }
 
 function updateOffGameChatBox(title, who, msg){
-    $("#chatbox_"+title+" .chatboxcontent").append('<div class="chatboxmessage"><span class="chatboxmessagefrom">'+who+':&nbsp;&nbsp;</span><span class="chatboxmessagecontent">'+msg+'</span></div>');
+    var msg_div = $('<div/>', {class: "chatboxmessage" });
+    var from_span = $('<span/>', {text: who+":  ", class: "chatboxmessagefrom" });
+    var msg_span = $('<span/>', {text: msg, class: "chatboxmessagecontent" });
+    var msg_format = msg_div.append(from_span, msg_span);
+    $("#chatbox_"+title+" .chatboxcontent").append(msg_format);
     for (var i=0;i<chatBoxes.length;i++) {
             temp = chatBoxes[i];
             $("#chatbox_"+temp+" .chatboxcontent").scrollTop($("#chatbox_"+temp+" .chatboxcontent")[0].scrollHeight);
-            setTimeout('$("#chatbox_"+temp+" .chatboxcontent").scrollTop($("#chatbox_"+temp+" .chatboxcontent")[0].scrollHeight);', 100); // yet another strange ie bug
     }
 }
 
 function updateInGameChatBox(title, game_id, who, msg){
-    $("#chatbox_"+title+" .chatboxcontent").append('<div class="chatboxmessage"><span class="chatboxmessagefrom"><font color="#229922">-----'+game_id+'-----</font><br>'+who+':&nbsp;&nbsp;</span><span class="chatboxmessagecontent">'+msg+'</span></div>');
+    var msg_div = $('<div/>', {class: "chatboxmessage" });
+    game_id = '<a href="javascript:void(0)" onclick="get_game_overview('+game_id+')">'+game_id+'</a>';
+    var from_span = $('<span/>', {html: who+"@"+game_id+":", class: "chatboxmessagefrom" });
+    var msg_span = $('<span/>', {text: msg, class: "chatboxmessagecontent" });
+    var msg_format = msg_div.append(from_span, msg_span);
+    $("#chatbox_"+title+" .chatboxcontent").append(msg_format);
     for (var i=0;i<chatBoxes.length;i++) {
             temp = chatBoxes[i];
             $("#chatbox_"+temp+" .chatboxcontent").scrollTop($("#chatbox_"+temp+" .chatboxcontent")[0].scrollHeight);
-            setTimeout('$("#chatbox_"+temp+" .chatboxcontent").scrollTop($("#chatbox_"+temp+" .chatboxcontent")[0].scrollHeight);', 100); // yet another strange ie bug
     }
 }
 
@@ -269,17 +276,36 @@ function onRecvInGameMsg(game_id, from, msg){
     chatBoxBlink("in_game");
 }
 
-function onSendMsg(inGame, player){
+function onSendMsg(inGame){
     var chatArea;
     var chatBox;
+    var msg_to;
+    var gid = $('#press_game_id').val();
     if(inGame){
+        var arr=$('#press_to').val();
+        if(arr.length == 1){
+            msg_to = arr[0]+"@";
+        }else if(arr && arr.length < 7){
+            for(var i=0; i<arr.length; i++){
+                arr[i]=arr[i].substr(0,2);
+            }
+            msg_to = "["+arr.join()+"]@";
+        }else{
+            msg_to = "all@";
+        }
+        msg_to += '<a href="javascript:void(0)" onclick="get_game_overview('+gid+')">'+gid+'</a>';
         chatArea = $('#press_msg');
         chatBox = "in_game";
     }else{
         chatArea = $('#chat_msg');
         chatBox = "off_game";
+        msg_to = $('#chat_to').val();
     }
-    updateOffGameChatBox(chatBox, player, chatArea.val());
+    var msg_div = $('<div/>', {class: "chatboxmessage" });
+    var to_span = $('<span/>', {html: "<font color='#229922'>To "+msg_to+":</font>  ", class: "chatboxmessagefrom" });
+    var msg_span = $('<span/>', {text: chatArea.val(), class: "chatboxmessagecontent" });
+    var msg_format = msg_div.append(to_span, msg_span);
+    $("#chatbox_"+chatBox+" .chatboxcontent").append(msg_format);
     chatArea.val('');
     chatArea.focus();
     chatArea.css('height','44px');
