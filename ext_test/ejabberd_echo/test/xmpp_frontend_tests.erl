@@ -80,6 +80,13 @@ END").
 NICKNAME: nonexistentuser
 PASSWORD: pass
 END").
+
+-define(LOGIN_COMMAND_OPERATOR(Nick, Pass),
+"LOGIN
+NICKNAME: " ++ Nick ++ "
+PASSWORD: " ++ Pass ++ "
+END").
+
 -define(UPDATE_COMMAND_CORRECT(Session),
 "UPDATE
 SESSION: " ++ Session ++ "
@@ -202,6 +209,18 @@ END").
     2563564565asdfa
 ").
 
+-define(BLACKLIST_COMMAND(OperatorSession, Nick),
+"BLACKLIST
+SESSION: " ++ OperatorSession ++ "
+NICKNAME: " ++ Nick ++ "
+END").
+
+-define(WHITELIST_COMMAND(OperatorSession, Nick),
+"WHITELIST
+SESSION: " ++ OperatorSession ++ "
+NICKNAME: " ++ Nick ++ "
+END").
+
 -define(LOGOUT_COMMAND(Session),
 "LOGOUT
 SESSION: " ++ Session ++ "
@@ -257,8 +276,11 @@ Supported commands are:").
 -define(GET_PROFILE_RESPONSE_SUCCESS, "Your Profile:\nNICKNAME:").
 -define(SEND_GAME_MSG_RESPONSE_NOT_ONGOING, "Error: Cannot send messages to a game that is not ongoing").
 
+-define(BLACKLIST_RESPONSE_SUCCESS, "User blacklisted successfully.").
+-define(WHITELIST_RESPONSE_SUCCESS, "User whitelisted successfully.").
+
 -define(LOGOUT_RESPONSE_SUCCESS, "Logged out successfully.").
--define(LOGOUT_RESPONSE_ERROR, "Invalid input for the given command.\n").
+-define(LOGOUT_RESPONSE_ERROR, "Invalid user session. Please log in to continue.").
 -define(LOGOUT_RESPONSE_INVALID_INPUT, "The command [logout] could not be interpreted correctly:
 Required fields: [\"SESSION\"]").
 %%-------------------------------------------------------------------
@@ -345,8 +367,15 @@ setup_reg_login_instantiator() ->
 setup_session_instantiator() ->
     Client = session_test_client,
     xmpp_client:start_link(Client, ?XMPP_PASSWORD),
-    {Session, _Nick} = login_test_user(Client),
+    {Session, Nick} = login_test_user(Client),
     ?debugVal(Session),
+
+    OpClient = operator_client,
+    xmpp_client:start_link(OpClient, ?XMPP_PASSWORD),
+    OperatorNick = random_nick(),
+    OperatorSession = get_operator_session(OpClient, OperatorNick),
+    ?debugVal(OperatorSession),
+
     InvalidSession = "dGVzdA==",
 
     Game = xmpp_client:xmpp_call(Client, ?SERVICE_BOT,
@@ -484,7 +513,7 @@ setup_session_instantiator() ->
       "successful logout",
       no_wait},
      {Client,
-      ?LOGOUT_COMMAND("234252345234sdgr43534"),
+      ?LOGOUT_COMMAND(InvalidSession),
       ?LOGOUT_RESPONSE_ERROR,
       "invalid input for session id",
       no_wait},
@@ -492,6 +521,18 @@ setup_session_instantiator() ->
       ?LOGOUT_COMMAND_INVALID_INPUT(Session),
       ?LOGOUT_RESPONSE_INVALID_INPUT,
       "logout command could not be interpreted",
+      no_wait},
+
+     {Client,
+      ?BLACKLIST_COMMAND(OperatorSession, Nick),
+      ?BLACKLIST_RESPONSE_SUCCESS,
+      "successful blacklisting",
+      no_wait},
+
+     {Client,
+      ?WHITELIST_COMMAND(OperatorSession, Nick),
+      ?WHITELIST_RESPONSE_SUCCESS,
+      "successful whitelisting",
       no_wait}].
 
 
@@ -834,3 +875,37 @@ change_game_phase(GameIDs) ->
                                  [list_to_integer(GameID), timeout]))
       end,
       GameIDs).
+
+%------------------------------------------------------------------------------
+%    @doc
+%    Creates an operator and logs in,  returns its Session ID
+%    @end
+%------------------------------------------------------------------------------
+get_operator_session(Client, RandomNick) ->
+    net_kernel:start([test]),
+    erlang:set_cookie(node(), ?COOKIE),
+    ?debugVal(net_adm:ping(?BACKEND_NODE)),
+    {ok,{user,
+         _UID,
+         Nick,
+         _Email,
+         Password,
+         _Desc,
+         _Role,
+         _Channel,
+         _Host,
+         _LastLogin,
+         _Score,
+         _Date1,
+         _Date2,
+         _Date3}} = ?debugVal(rpc:call(?BACKEND_NODE,
+                                       controller,
+                                       register_operator,
+                                       [RandomNick,"pass"])),
+    Response =
+        xmpp_client:xmpp_call(
+          Client, ?SERVICE_BOT, ?LOGIN_COMMAND_OPERATOR(Nick, Password)),
+    {match, [Session]} = re:run(Response,
+                                ?LOGIN_RESPONSE_SUCCESS ++ ".*\"\"(.*)\"\"",
+                                [{capture, all_but_first, list}]),
+    Session.

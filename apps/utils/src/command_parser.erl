@@ -87,6 +87,10 @@
           {send_report, {ok, SessionId::string(), #report_message{}}} |
           {send_report, {error, {required_fields, list()}}} |
           {send_report, {error, {invalid_input, list()}}} |
+          {blacklist, {ok, string(), string()}} |
+          {blacklist, Error::term()} |
+          {whitelist, {ok, string(), string()}} |
+          {whitelist, Error::term()} |
           atom().
 parse(BinString, Client) when is_binary(BinString) ->
     Commands =    "("?LOGIN
@@ -106,6 +110,8 @@ parse(BinString, Client) when is_binary(BinString) ->
                   "|"?GETPRESENCE
                   "|"?REPORTPLAYER
                   "|"?REPORTISSUE
+                  "|"?BLACKLIST
+                  "|"?WHITELIST
                   ")(.*)END",
 
     {ok, MP} = re:compile(Commands, [dotall]),
@@ -164,7 +170,11 @@ parse(BinString, Client) when is_binary(BinString) ->
                 <<?REPORTPLAYER>> ->
                     {send_report, user_commands:parse_send_report(Data, report_player)};
                 <<?REPORTISSUE>> ->
-                    {send_report, user_commands:parse_send_report(Data, report_issue)}
+                    {send_report, user_commands:parse_send_report(Data, report_issue)};
+                <<?BLACKLIST>> ->
+                    {blacklist, user_commands:parse_blacklist(Data)};
+                <<?WHITELIST>> ->
+                    {whitelist, user_commands:parse_whitelist(Data)}
             end;
          nomatch ->
                 unknown_command
