@@ -213,6 +213,7 @@ game_timer_end_tst_() ->
 %%--------------------------------------------------------------------
 game_timer_game_over_tst_() ->
     [fun() ->
+             ?debugMsg("game over test--------------"),
              GameRecord = test_game(),
              Game = sync_get(sync_new(GameRecord)),
              ID = Game#game.id,
@@ -225,17 +226,16 @@ game_timer_game_over_tst_() ->
              game_timer:sync_event(ID, timeout),
              % retreat phase
              game_timer:sync_event(ID, timeout),
-
              % manipulate map and fast forward to count phase
              DigraphMap = create_winner_map(),
-             update_state(ID, game_utils:to_mapterm(DigraphMap)),
+             game_timer:update_state(ID, {new_map, game_utils:to_mapterm(DigraphMap)}),
              game_utils:delete_map(DigraphMap),
              % this will process the retreat phase and change to
              % count phase, when we _should_ see that Austria
              % has won the game, and the game timer should terminate
              game_timer:sync_event(ID, timeout),
-
-             {ok, FinishedGame} = game:get_game(ID),
+             timer:sleep(100),
+             ?debugVal({ok, FinishedGame} = game:get_game(ID)),
              ?assertEqual(finished, FinishedGame#game.status),
              ?assertNot(is_process_alive(TimerPid)),
              sync_delete(ID)
@@ -289,11 +289,3 @@ create_winner_map() ->
                  3, % austria starts out with three units
                  map:get_units (Map)),
     Map.
-
-%% Updates the map for the current state of game with id ID
-update_state(ID, Map) ->
-    Key = game_utils:get_keyprefix({id, ID}),
-    {ok, StateObj} = db:get(?B_GAME_STATE, Key),
-    State = db_obj:get_value(StateObj),
-    FakedState = State#game_state{map = Map},
-    game_utils:update_db_obj(StateObj, FakedState, []).
