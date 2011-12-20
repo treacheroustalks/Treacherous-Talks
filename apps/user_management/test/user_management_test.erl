@@ -207,7 +207,9 @@ create_user_t(#user{} = User) ->
     ?debugVal(User),
     ?debugVal(Result),
     {ok, ResUser} = Result,
-    ?_assertEqual(User#user{id = ResUser#user.id}, ResUser),
+    CreateDate = ResUser#user.date_created,
+    UserRec = User#user{id = ResUser#user.id, date_created = CreateDate},
+    ?assertEqual(UserRec, ResUser),
     GetRes = user_management:get(ResUser#user.id),
     ?_assertEqual(ResUser, GetRes).
 

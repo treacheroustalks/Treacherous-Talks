@@ -100,7 +100,7 @@ online_msg_recv_test_() ->
              ?debugFmt("Done setting up online_msg_recv_test ~p", [?NOW_UNIV]),
              {Nick1, Session1, Nick2, Session2}
      end,
-     fun({Nick1, Session1, Nick2, Session2}) -> % instantiator
+     fun({_Nick1, Session1, Nick2, _Session2}) -> % instantiator
                                                 % from nick 1 to nick 2
              fun() ->
                      ?debugFmt("Start online_msg_recv_test ~p", [?NOW_UNIV]),
