@@ -50,6 +50,6 @@ init([]) ->
     {ok, { {one_for_one, 5, 10},
            [
             ?CHILD(release_status_tracker, worker),
-            ?CHILD(system_manager_worker_sup, supervisor),
-            ?CHILD(system_manager_config, worker)
+            ?CHILD(system_manager_config, worker),
+            ?CHILD(system_manager_worker_sup, supervisor)
            ]} }.
