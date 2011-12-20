@@ -47,7 +47,7 @@ body {
 
 /*-----------------------*/
 .spacer {
-	letter-spacing:2px;
+    letter-spacing:2px;
 }
 
 .clear {
@@ -72,7 +72,7 @@ body {
 }
 
 #message {
-    height: 50px;
+    height: 40px;
 }
 
 .chat {
