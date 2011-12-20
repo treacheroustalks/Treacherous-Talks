@@ -151,6 +151,9 @@ msg_invisible (Ret=#ret{}) ->
 
 get_ret ({user_msg, success}, Ret, _Data) ->
     msg_invisible(Ret);
+get_ret ({user_msg, invalid_data}, Ret, _Data) ->
+    msg_error(Ret);
+
 get_ret ({off_game_msg, ok}, Ret, Msg) ->
     Proplist = [{"from_nick", Msg#message.from_nick},
                 {"content", Msg#message.content}],
@@ -161,6 +164,7 @@ get_ret ({game_msg, success}, Ret, _Data) ->
     msg_invisible(Ret);
 get_ret ({game_msg, invalid_data}, Ret, _Data) ->
     msg_error(Ret);
+
 get_ret ({power_msg, success}, Ret, _Data) ->
     msg_invisible(Ret);
 get_ret ({power_msg, invalid_data}, Ret, _Data) ->
@@ -234,7 +238,6 @@ get_ret({join_game, invalid_data}, Ret=#ret{}, _Data) ->
 
 get_ret({game_overview, success}, Ret=#ret{}, Gov) ->
     game_overview_do_ret(Ret#ret{page="game"}, Gov);
-
 get_ret({game_overview, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
 

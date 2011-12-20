@@ -183,7 +183,7 @@ parse(RawData) ->
         "user_msg" ->
             {user_msg, {ok,
                         get_field ("session_id", Data),
-                        #frontend_msg{to = get_field ("to", Data),
+                        #frontend_msg{to = string:to_lower(get_field ("to", Data)),
                                       content = get_field ("content", Data)}}};
         "assign_moderator" ->
             {assign_moderator, {ok,
