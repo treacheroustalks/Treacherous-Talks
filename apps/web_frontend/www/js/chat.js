@@ -19,13 +19,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 var windowFocus = true;
 var username;
-var chatHeartbeatCount = 0;
-var minChatHeartbeat = 1000;
-var maxChatHeartbeat = 33000;
-var chatHeartbeatTime = minChatHeartbeat;
 var originalTitle;
-var blinkOrder = 0;
-
 var chatboxFocus = new Array();
 var newMessages = new Array();
 var newMessagesWin = new Array();
@@ -104,6 +98,12 @@ function drawChatBoxes() {
 }
 
 function cleanChatBoxes(){
+    $('.chatboxcontent').html('');
+    $('#power_msg').prop('checked','');
+    $('#press_to').val('');
+    $('#press_game_id').val('');
+    $('#chat_to').val('');
+    $('.chatboxtextarea').val('');
     closeChatBox('off_game');
     closeChatBox('in_game');
 }

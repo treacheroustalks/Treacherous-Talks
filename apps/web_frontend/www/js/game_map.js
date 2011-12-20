@@ -78,7 +78,7 @@ function draw(units, owners) {
       clyde_fleet:             [290,330],
       edinburgh_fleet:         [340,335],
       liverpool_fleet:         [295,390],
-      york_fleet:              [338,441],
+      yorkshire_fleet:         [338,441],
       wales_fleet:             [250,490],
       london_fleet:            [325,509],
       picardy_fleet:           [328,539],
@@ -129,7 +129,7 @@ function draw(units, owners) {
       clyde_army:              [300,347],
       edinburgh_army:          [328,335],
       liverpool_army:          [310,385],
-      york_army:               [337,441],
+      yorkshire_army:          [337,441],
       wales_army:              [293,475],
       london_army:             [352,470],
       picardy_army:            [355,554],
@@ -191,8 +191,7 @@ function draw(units, owners) {
               var x = coordinates[key][0];
               var y = coordinates[key][1];
               ctx.drawImage(document.getElementById(country+'_army'), x+shift, y);
-          }
-          else if (units[unit] == "fleet") {
+          } else if (units[unit] == "fleet") {
               var key = province + '_fleet';
               var x = coordinates[key][0];
               var y = coordinates[key][1];
@@ -274,7 +273,7 @@ var prov_options = "<option selected=\"selected\"></option>\n"+
                 "<option>Denmark</option>\n"+
                 "<option>Eastern_Mediterranean</option>\n"+
                 "<option>Edinburgh</option>\n"+
-                "<option>English Channel</option>\n"+
+                "<option>English_Channel</option>\n"+
                 "<option>Finland</option>\n"+
                 "<option>Galicia</option>\n"+
                 "<option>Gascony</option>\n"+
@@ -298,7 +297,7 @@ var prov_options = "<option selected=\"selected\"></option>\n"+
                 "<option>North_Africa</option>\n"+
                 "<option>North_Sea</option>\n"+
                 "<option>Norway</option>\n"+
-                "<option>Norwegian Sea</option>\n"+
+                "<option>Norwegian_Sea</option>\n"+
                 "<option>Paris</option>\n"+
                 "<option>Picardy</option>\n"+
                 "<option>Piedmont</option>\n"+
