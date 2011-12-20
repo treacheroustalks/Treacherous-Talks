@@ -229,6 +229,8 @@ get({user_msg, invalid_data}, Error) ->
             resp("Error: Duplicate nick detected!.~n");
         invalid_nick ->
             resp("Error: The user does not exist.~n");
+        black_listed ->
+            resp("Error: The user is black listed.~n");
         _ ->
             resp_unhandled_error(Error)
     end;

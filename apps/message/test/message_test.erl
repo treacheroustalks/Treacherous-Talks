@@ -114,6 +114,7 @@ message_test_ () ->
       message_worker_tst_(),
       message_fail_tst_(),
       message_success_tst_(),
+      message_to_blacklisted_tst_(),
       unread_tst_(),
       report_player_tst_()
      ]}.
@@ -194,6 +195,21 @@ message_success_tst_() ->
              % clean up
              db:delete(?B_USER, db:int_to_bin(to_user_id())),
              db:delete(?B_MESSAGE, db:int_to_bin(Key))
+     end].
+
+message_to_blacklisted_tst_() ->
+    [fun() ->
+             % register to_user
+             {ok, User}=user_management:create(to_user()),
+             {ok, BLUser} = user_management:update(User#user{role= disabled}),
+             ?assertEqual(User#user{role= disabled}, BLUser),
+
+             % send msg to "to_user"
+             Result = message:user_msg(test_msg()),
+
+             ?assertEqual({error, black_listed}, Result),
+             % clean up
+             db:delete(?B_USER, db:int_to_bin(to_user_id()))
      end].
 
 unread_tst_() ->
@@ -360,7 +376,7 @@ unread_tst_() ->
                ?assertEqual(unread, GMsg#game_message.status),
 
                ok = message:mark_game_msg_as_read(GameMsgKey),
-               
+
                {ok, ReadGMsg} = wait_for_change(GetMsg2, {ok,GMsg}, 1000),
                ?assertEqual(read, ReadGMsg#game_message.status)
        end},

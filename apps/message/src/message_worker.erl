@@ -96,6 +96,8 @@ handle_call({user_msg, Msg=#message{}}, _From, State) ->
                  {ok, {index_list, _IdxList}} ->
                      % Multiple nicks in the db, not allowed ...
                      {error, nick_not_unique};
+                 {ok, #user{role = disabled}} ->
+                     {error, black_listed};
                  {ok, User} ->
                      ToID = User#user.id,
                      NewMsg = Msg#message{to_id = ToID,
