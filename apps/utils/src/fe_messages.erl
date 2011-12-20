@@ -468,11 +468,11 @@ get_games_in_textual_form(Games) ->
 %% ------------------------------------------------------------------
 %% @doc
 %% Checks if a user role is a power user (moderator or operator)
-%% @spec
-%% is_power_user(Role :: atom()) -> boolean()
-%% @end
 %% ------------------------------------------------------------------
-is_power_user(Role) when Role == moderator ; Role == operator ->
+-spec is_power_user(atom()) -> boolean().
+is_power_user(moderator) ->
+    true;
+is_power_user(operator) ->
     true;
 is_power_user(_Role) ->
     false.

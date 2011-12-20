@@ -83,7 +83,7 @@ handle_call(worker_count, _From, State) ->
     Count = system_manager_worker_sup:worker_count(),
     {reply, Count, State};
 handle_call({worker_count, Count}, _From, State) ->
-    Response = system_manager_sup:worker_count(Count),
+    Response = system_manager_worker_sup:worker_count(Count),
     {reply, Response, State};
 handle_call(ping, _From, State) ->
     {reply, {pong, self()}, State};

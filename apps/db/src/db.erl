@@ -273,7 +273,7 @@ empty_bucket(Bucket) ->
 %%  Deletes all documents in all buckets.
 %% @end
 %%-------------------------------------------------------------------
--spec empty_db() -> ok | {error, any ()}.
+-spec empty_db() -> ok.
 empty_db() ->
     {ok, Buckets} = list_buckets(),
     lists:foreach (fun empty_bucket/1, Buckets).

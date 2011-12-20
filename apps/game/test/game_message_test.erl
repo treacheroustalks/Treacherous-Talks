@@ -60,7 +60,6 @@ game_messaging_test_ () ->
      fun app_started_setup/0,
      fun app_started_teardown/1,
      [ping_tst_(),
-      get_target_players_tst_(),
       game_msg_send_tst_(),
       mod_msg_success_tst_(),
       user_msg_fail_tst_(),
@@ -142,20 +141,6 @@ user_msg_fail_tst_() ->
             sync_delete(Game#game.id),
             ?assertEqual({error, user_not_playing_this_game}, Res)
     end.
-
-get_target_players_tst_() ->
-    [fun() ->
-    Expected = [{game_user,4444,england},
-                                       {game_user,3333,italy},
-                                       {game_user,1111,austria}],
-    Actual = game_worker:get_target_players([austria,italy,england],[
-                #game_user{id=1111,country = austria},
-                #game_user{id=2222,country = germany},
-                #game_user{id=3333,country = italy},
-                #game_user{id=4444,country = england}
-            ],[]),
-    ?assertEqual(Expected,Actual)
-    end].
 
 game_msg_send_tst_() ->
     [fun() ->

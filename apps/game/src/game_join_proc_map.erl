@@ -141,7 +141,7 @@ deal_with_existing(GameId) ->
                 true ->
                     {error, existing_is_alive};
                 false ->
-                    mnesia:delete(game_join_proc, GameId),
+                    mnesia:delete({game_join_proc, GameId}),
                     ok
             end
     end.

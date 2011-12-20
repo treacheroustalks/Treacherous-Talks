@@ -167,7 +167,7 @@ get_all() ->
 %%
 %% @end
 %% ------------------------------------------------------------------
--spec get_all_and_stop() -> {ok, list()} | {error, term()}.
+-spec get_all_and_stop() -> {ok, list()}.
 get_all_and_stop() ->
     Status = {ok, Releases} = get_all(),
     [ save(Release, stopped) || Release <- Releases ],

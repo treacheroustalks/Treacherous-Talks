@@ -68,10 +68,7 @@ db_obj_to_rec(DbObj, RecordName) ->
 -spec game_overview_to_text(#game_overview{}) -> string().
 game_overview_to_text(#game_overview{} = GOV)->
     GameStatus = GOV#game_overview.game_rec#game.status,
-    case GameStatus of
-        finished -> create_game_info(finished, GOV);
-        Status -> create_game_info(Status, GOV)
-    end.
+    create_game_info(GameStatus, GOV).
 
 
 %%-------------------------------------------------------------------
