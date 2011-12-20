@@ -84,6 +84,7 @@
     id :: integer(),
     year_season :: any(),
     phase :: phase(),
+    order_result :: [tuple()],
     map :: any()}).
 
 -record(game_current, {
@@ -99,7 +100,8 @@
     country :: country(),
     players :: list(),
     map :: any(),
-    order_list :: any()}).
+    order_list :: any(),
+    order_result :: [tuple()]}).
 
 -record(game_order, {
     id :: integer(),

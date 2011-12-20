@@ -440,13 +440,14 @@ game_overview(#game_overview{} = GOV)->
             lists:flatten(io_lib:format("~nCannot interpret data ~n~n~s", [GOV]))
     end.
 
-normal_game_overview({GameInfo, Country, Game, Provinces, Units, Orders}) ->
+normal_game_overview({GameInfo, Country, Game, Provinces, Units, Orders, Result}) ->
     Msg1 = io_lib:format("You are playing as: ~s~n", [Country]),
     Msg2 = io_lib:format("Game Information: ~n~s", [GameInfo]),
     Msg3 = io_lib:format("Game configurations: ~s~n ", [Game]),
     Msg4 = io_lib:format("~nYour provinces:~n~s ~nAll units:~n~s~nYour Orders:~n~p",
                          [Provinces, Units, Orders]),
-    lists:flatten(Msg1 ++ Msg2 ++ Msg3 ++ Msg4).
+    Msg5 = io_lib:format("~nResults from previous phase ~n~p", [Result]),
+    lists:flatten(Msg1 ++ Msg2 ++ Msg3 ++ Msg4 ++ Msg5).
 
 finished_game_overview({GameInfo, PlayerInfo, Game, FinalMap}) ->
     Msg1 = io_lib:format("Game Information: ~n~n~s", [GameInfo]),
