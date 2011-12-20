@@ -30,6 +30,7 @@
 -export([start/2, stop/1, handle_corpse/1]).
 
 -include_lib("utils/include/debug.hrl").
+-include_lib("datatypes/include/bucket.hrl").
 
 %% ===================================================================
 %% Application callbacks
@@ -60,5 +61,5 @@ handle_corpse ({Key, {node, Node}}) ->
                                       [backend_nodes, NewBackendNodes])
                     end,
     lists:foreach (NotifyOfDeath, NewBackendNodes),
-    db:delete (Key).
+    db:delete (?B_CORPSES, Key).
 

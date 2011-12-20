@@ -143,10 +143,12 @@ run_riak_search_command(Args) ->
 run_riak_join_command(Node) ->
     Args = "join "++Node,
     OKResponse = list_to_binary("Sent join request to "++Node++"\n"),
+    AlreadyMember = list_to_binary(
+                      "Failed: This node is already a member of a cluster\n"),
     case run_command_with_cmd("riak", "riak-admin", Args) of
         OKResponse ->
             {ok, OKResponse};
-        "Failed: This node is already a member of a cluster\n" ->
+        AlreadyMember ->
             {error, alreadymember};
         Other ->
             {error, Other}

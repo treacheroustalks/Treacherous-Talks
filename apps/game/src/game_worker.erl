@@ -450,26 +450,35 @@ get_target_players({FromID, Game}, CountryList, Role) ->
                     case get_country_by_id(FromID, Players) of
                         GU = #game_user{} ->
                             FromCountry = GU#game_user.country,
-                            ToGUList = get_target_players(CountryList, Players, []),
+                            ToGUList = get_target_players_helper(CountryList,
+                                                                 Players,
+                                                                 []),
                             {ok, {FromCountry, ToGUList}};
                         Error ->
                             Error
                     end;
                 _PowerUser ->
-                    ToGUList = get_target_players(CountryList, Players, []),
+                    ToGUList = get_target_players_helper(CountryList,
+                                                         Players,
+                                                         []),
                     {ok, {Role, ToGUList}}
             end;
         Other ->
             Other
-    end;
-get_target_players(_, [], AccGUList) ->
+    end.
+
+-spec get_target_players_helper([atom()], [#game_user{}], [#game_user{}]) ->
+          [#game_user{}].
+get_target_players_helper(_, [], AccGUList) ->
     AccGUList;
-get_target_players(CountryList, [GU = #game_user{country=C}|Rest],AccGUList)->
+get_target_players_helper(CountryList,
+                          [GU = #game_user{country=C} | Rest],
+                          AccGUList) ->
     case lists:member(C, CountryList) of
         true ->
-            get_target_players(CountryList, Rest, [GU|AccGUList]);
+            get_target_players_helper(CountryList, Rest, [GU|AccGUList]);
         false ->
-            get_target_players(CountryList, Rest, AccGUList)
+            get_target_players_helper(CountryList, Rest, AccGUList)
     end.
 
 get_country_by_id(UserID, Players) ->
@@ -618,7 +627,7 @@ send_game_msg(GMsg = #game_message{game_id = GameId,
 %% @end
 %%------------------------------------------------------------------------------
 -spec send_msg_to_msgapp([#game_user{}], #game_message{}, atom(), role()) ->
-          ok | {error, not_allowed_send_msg}.
+          {ok, integer()} | {error, not_allowed_send_msg}.
 send_msg_to_msgapp([], #game_message{game_id = GameID}, _, _Role) ->
     {ok, GameID};
 send_msg_to_msgapp([#game_user{id= ID, country = Country}|Rest],
