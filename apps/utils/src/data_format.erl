@@ -97,9 +97,10 @@ create_game_info(Status, GOV) ->
     Orders = GOV#game_overview.order_list,
     Map = digraph_io:from_erlang_term(GOV#game_overview.map),
     Country = GOV#game_overview.country,
+    OrderResults = GOV#game_overview.order_result,
     {Provinces, Units} = map_to_text(Map, Country),
     {GameRec#game.id, Status,
-     {GameInfo, Country, Game, Provinces, Units, Orders}}.
+     {GameInfo, Country, Game, Provinces, Units, Orders, OrderResults}}.
 
 
 %%-------------------------------------------------------------------

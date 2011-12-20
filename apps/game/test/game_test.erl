@@ -495,8 +495,9 @@ operator_game_overview_tst_ () ->
                                           start_time= G#game.start_time}, G),
 
              GOV2 = GOV#game_overview{game_rec = undefined, map = undefined, players=undefined},
-             Expected = {game_overview,undefined,order_phase,
-                   {1901,spring}, undefined, undefined, undefined,undefined},
+             Expected = {game_overview, undefined, order_phase,
+                         {1901,spring},
+                         undefined, undefined, undefined,undefined, undefined},
              ?assertEqual(Expected, GOV2)
      end].
 

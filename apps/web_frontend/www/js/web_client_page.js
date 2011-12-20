@@ -320,15 +320,18 @@ function load_game_overview_data(page_data) {
         var year = page_data.year;
         var season = page_data.season;
         var phase = page_data.phase;
+        var order_result = page_data.order_result;
         delete page_data.orders;
         delete page_data.player_units;
         delete page_data.year;
         delete page_data.season;
         delete page_data.phase;
+        delete page_data.order_result;
         var stat_acc = "<b>"+year+"_"+season+"_"+phase+"</b>";
 
         $('#game_header').html("<h1>Game Overview</h1>");
         $('#game_order_info').html(orders?interpret_orders(orders):"No Orders");
+        $('#order_feedback').html(order_result?interpret_result_orders(order_result):"No resulting orders");
         $('#game_stat_info').html(stat_acc);
         $('#game_stat').show();
 
@@ -1411,6 +1414,22 @@ function interpret_orders(ords){
     }
     return "<a href=\"javascript:void(0)\" onclick=\"$('#game_order')"+
            ".val($('#game_order_info').text())\"><b>"+acc+"</b></a>";
+}
+
+function interpret_result_orders(ords){
+    var acc = "";
+    for(var i=0; i<ords.length; i++){
+        var ord = ords[i];
+        switch(ord.action){
+        case "dislodge":
+            acc += "dislodged " + ord.u1 + " " + ord.c1 + " " + ord.l1 + "\n<br>";
+            break;
+        case "has_builds":
+            acc += ord.country + " can build " + ord.count + " new units\n<br>";
+            break;
+        }
+    }
+    return acc;
 }
 
 /*------------------------------------------------------------------------------

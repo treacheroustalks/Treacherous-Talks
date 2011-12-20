@@ -53,9 +53,9 @@ out(A) ->
 %%-------------------------------------------------------------------
 websocket_owner() ->
     receive
-    {ok, WebSocket, ProtocolVersion} ->
-        socket_server(WebSocket, ProtocolVersion);
-    _ -> ok
+        {ok, WebSocket, ProtocolVersion} ->
+            socket_server(WebSocket, ProtocolVersion);
+        _ -> ok
     end.
 
 
@@ -72,17 +72,17 @@ socket_server(WebSocket, ProtocolVersion) ->
             ParsedCmd = case web_parser:parse(json_decode(Data)) of
                             {login, {ok, User}} ->
                                 {login, {ok, {User,
-                                push_receiver(WebSocket, ProtocolVersion)}}};
+                                              push_receiver(WebSocket, ProtocolVersion)}}};
                             {set_push_receiver, {ok, SessionId}} ->
                                 {set_push_receiver, {ok, SessionId,
-                                    push_receiver(WebSocket, ProtocolVersion)}};
+                                                     push_receiver(WebSocket, ProtocolVersion)}};
                             Other ->
                                 Other
                         end,
             io:format("ParsedCmd: ~p~n", [ParsedCmd]),
             controller:handle_action(ParsedCmd,
                                      {fun reply/3,
-                                     [WebSocket, ProtocolVersion]}),
+                                      [WebSocket, ProtocolVersion]}),
             socket_server(WebSocket, ProtocolVersion);
         {tcp_closed, WebSocket} ->
             io:format("Websocket closed. Terminating socket_server...~n");
@@ -167,8 +167,8 @@ get_ret ({power_msg, invalid_data}, Ret, _Data) ->
     msg_error(Ret);
 get_ret ({in_game_msg, ok}, Ret, GMsg) ->
     PropList = [{"from_country", atom_to_list(GMsg#game_message.from_country)},
-               {"content", GMsg#game_message.content},
-               {"game_id", GMsg#game_message.game_id}],
+                {"content", GMsg#game_message.content},
+                {"game_id", GMsg#game_message.game_id}],
     EventData = json2:obj_from_list(PropList),
     msg_invisible(Ret#ret{event_data = EventData});
 
@@ -247,7 +247,7 @@ get_ret({operator_get_game_msg, success}, Ret=#ret{}, {GMsgList, msg_only}) ->
     SrtMsg = sort_by_date(GMsgList),
     MergedMsg = merge_redundant_msg(SrtMsg),
     Msg = [{struct, [{"from",atom_to_list(F)},{"to", term_to_string(T)}, {"content", M}]}
-    ||#game_message{to_country=T, sender_country=F, content=M} <- MergedMsg],
+           ||#game_message{to_country=T, sender_country=F, content=M} <- MergedMsg],
     Data = [{"msg", Msg}, {"order", ""}],
     EventData = json2:obj_from_list(Data),
     msg_invisible(Ret#ret{event_data = EventData});
@@ -257,7 +257,7 @@ get_ret({operator_get_game_msg, success}, Ret=#ret{}, {GMsgList, OrderList}) ->
     SrtGMsg2 = sort_by_group(SrtGMsg),
 
     Msg = [{struct, [{"from",atom_to_list(F)},{"to", atom_to_list(T)}, {"content", M}]}
-    ||#game_message{to_country=T, sender_country=F, content=M} <- SrtGMsg2],
+           ||#game_message{to_country=T, sender_country=F, content=M} <- SrtGMsg2],
 
     Data = [{"msg", Msg}, {"order", Order}],
     EventData = json2:obj_from_list(Data),
@@ -291,8 +291,8 @@ get_ret({games_current, success}, Ret=#ret{}, Games) ->
                       press, order_phase, retreat_phase, build_phase,
                       waiting_time, num_players, creator_id],
     EventData = lists:map(fun(Game) ->
-                json2:obj_from_list(data_format:rec_to_plist(Game,
-                                    {string, RequiredFields}))
+                                  json2:obj_from_list(data_format:rec_to_plist(Game,
+                                                                               {string, RequiredFields}))
                           end, Games),
     msg_success(Ret#ret{event_data = EventData,
                         page = "games_current"});
@@ -313,16 +313,16 @@ get_ret({get_system_status, success}, Ret=#ret{}, Data) ->
     PropList = [{"system_status", Data}],
     EventData = json2:obj_from_list(PropList),
     msg_invisible(Ret#ret{event_data = EventData,
-                        page="system_status"});
+                          page="system_status"});
 
 get_ret({game_search, success}, Ret=#ret{}, Games) ->
     RequiredFields = [id, name, status, description,
                       press, order_phase, retreat_phase, build_phase,
                       waiting_time, num_players],
     EventData = lists:map(fun(Game) ->
-        json2:obj_from_list(data_format:rec_to_plist(Game,
-                                                     {string, RequiredFields}))
-        end, Games),
+                                  json2:obj_from_list(data_format:rec_to_plist(Game,
+                                                                               {string, RequiredFields}))
+                          end, Games),
     msg_success(Ret#ret{event_data = EventData});
 get_ret({game_search, invalid_data}, Ret=#ret{}, _Data) ->
     msg_error(Ret);
@@ -396,7 +396,7 @@ get_ret({whitelist, invalid_data}, Ret=#ret{}, _Data) ->
 get_ret({Cmd, Status}, Ret=#ret{}, _Data) ->
     Msg = lists:flatten(io_lib:format("Event unhandled in endpoint. {~p, ~p}."
                                       "Message: ~p,",
-                        [Cmd, Status, Ret#ret.message_value])),
+                                      [Cmd, Status, Ret#ret.message_value])),
     msg_warning(Ret#ret{message_value=Msg}).
 
 %% Convert data from websocket (JSON) to erlang terms
@@ -420,38 +420,41 @@ game_overview_do_ret(Ret = #ret{}, Gov) ->
     {Year, Season} = Gov#game_overview.year_season,
     Status = Game#game.status,
     CommonData = [
-        {"game_name", Game#game.name},
-        {"game_status", atom_to_list(Status)},
-        {"game_id", integer_to_list(Game#game.id)},
-        {"year", integer_to_list(Year)},
-        {"season", atom_to_list(Season)},
-        {"phase", atom_to_list(Gov#game_overview.phase)},
-        {"country", atom_to_list(PlayerCountry)},
-        {"press", atom_to_list(Game#game.press)},
-        {"order_phase", integer_to_list(Game#game.order_phase)},
-        {"retreat_phase", integer_to_list(Game#game.retreat_phase)},
-        {"build_phase", integer_to_list(Game#game.build_phase)},
-        {"waiting_time", integer_to_list(Game#game.waiting_time)},
-        {"number_of_players", integer_to_list(Game#game.num_players)},
-        {"description", Game#game.description},
-        {"owner_list", {struct, Slist}},
-        {"unit_list", {struct, Ulist}},
-        {"date_created",
-          lists:flatten(data_format:date_to_str(Game#game.date_created))}],
+                  {"game_name", Game#game.name},
+                  {"game_status", atom_to_list(Status)},
+                  {"game_id", integer_to_list(Game#game.id)},
+                  {"year", integer_to_list(Year)},
+                  {"season", atom_to_list(Season)},
+                  {"phase", atom_to_list(Gov#game_overview.phase)},
+                  {"country", atom_to_list(PlayerCountry)},
+                  {"press", atom_to_list(Game#game.press)},
+                  {"order_phase", integer_to_list(Game#game.order_phase)},
+                  {"retreat_phase", integer_to_list(Game#game.retreat_phase)},
+                  {"build_phase", integer_to_list(Game#game.build_phase)},
+                  {"waiting_time", integer_to_list(Game#game.waiting_time)},
+                  {"number_of_players", integer_to_list(Game#game.num_players)},
+                  {"description", Game#game.description},
+                  {"owner_list", {struct, Slist}},
+                  {"unit_list", {struct, Ulist}},
+                  {"date_created",
+                   lists:flatten(data_format:date_to_str(Game#game.date_created))}],
     Data = case Status of
-        ongoing ->
-            CommonData ++ [
-            {"player_units", {struct, PUnit}},
-            {"orders", interpret_orderlist(Gov#game_overview.order_list)}];
-        finished ->
-            CommonData ++ [
-            {"date_completed",
-              lists:flatten(data_format:date_to_str(Game#game.date_completed))},
-            {"result", atom_to_list(Game#game.result)},
-            {"players", term_to_string(Gov#game_overview.players)}];
-        _ ->
-            CommonData
-    end,
+               ongoing ->
+                   io:format("Order Results: ~p~n", [interpret_orderlist(Gov#game_overview.order_result)]),
+                   CommonData ++ [
+                   {"player_units", {struct, PUnit}},
+                   {"orders", interpret_orderlist(Gov#game_overview.order_list)},
+                   {"order_result", interpret_orderlist(Gov#game_overview.order_result)}];
+               finished ->
+                   CommonData ++ [
+                   {"date_completed", lists:flatten(
+                                        data_format:date_to_str(
+                                          Game#game.date_completed))},
+                   {"result", atom_to_list(Game#game.result)},
+                   {"players", term_to_string(Gov#game_overview.players)}];
+               _ ->
+                   CommonData
+           end,
     EventData = json2:obj_from_list(Data),
     io:format(user, "~p~n", [EventData]),
     msg_success(Ret#ret{event_data = EventData}).
@@ -462,14 +465,14 @@ all_db_stats_to_proplist([], Total, Acc) ->
     [{"db_count", integer_to_list(Total)}| Acc];
 all_db_stats_to_proplist([{ok, Json}| Rest], Num, Acc) ->
     all_db_stats_to_proplist(Rest, Num+1,
-      [{"db_stats" ++ integer_to_list(Num), Json}| Acc]).
+                             [{"db_stats" ++ integer_to_list(Num), Json}| Acc]).
 
 tree_to_json_proplist(Tree) ->
     [{integer_to_list(Year),
       {struct, [{atom_to_list(Season)++"-"++atom_to_list(Phase),
-                       {array, [atom_to_list(Country)||Country<-CountryList]}}
+                 {array, [atom_to_list(Country)||Country<-CountryList]}}
                 || {{Season,Phase},CountryList} <- SPList]}}
-    || {Year, SPList} <- Tree].
+     || {Year, SPList} <- Tree].
 
 operator_game_overview_ret(Ret, {Gov, Tree}) ->
     Game = Gov#game_overview.game_rec,
@@ -481,10 +484,12 @@ operator_game_overview_ret(Ret, {Gov, Tree}) ->
                 {Gov#game_overview.year_season, tree_to_json_proplist(Tree)}
         end,
     TimeComplete = case Game#game.date_completed of
-            undefined -> "Not finished yet";
-            {{_,_,_},{_,_,_}} -> lists:flatten(data_format:date_to_str(Game#game.date_created));
-            _ -> "Error"
-        end,
+                       undefined -> "Not finished yet";
+                       {{_,_,_},{_,_,_}} -> lists:flatten(
+                                              data_format:date_to_str(
+                                                Game#game.date_created));
+                       _ -> "Error"
+                   end,
     Data = [{"game_id", integer_to_list(Game#game.id)},
             {"game_status", atom_to_list(Game#game.status)},
             {"year_season", integer_to_list(Year)++"-"++atom_to_list(Season)},
@@ -501,7 +506,7 @@ operator_game_overview_ret(Ret, {Gov, Tree}) ->
             {"result", atom_to_list(Game#game.result)},
             {"waiting_time", integer_to_list(Game#game.waiting_time)},
             {"date_created",
-              lists:flatten(data_format:date_to_str(Game#game.date_created))},
+             lists:flatten(data_format:date_to_str(Game#game.date_created))},
             {"date_completed", TimeComplete},
             {"start_time", term_to_string(Game#game.start_time)},
             {"last_session", Game#game.last_session},
@@ -516,42 +521,46 @@ term_to_string(Term) ->
 
 sort_by_date(GMsgList) ->
     SortByDate = fun(X, Y)->
-                     X#game_message.date_created > Y#game_message.date_created
-                  end,
+                         X#game_message.date_created > Y#game_message.date_created
+                 end,
     lists:sort(SortByDate ,GMsgList).
 
 sort_by_group(SrtGMsg) ->
     SortByGroup = fun(X, Y)->
-                     X#game_message.status < Y#game_message.status
+                          X#game_message.status < Y#game_message.status
                   end,
     Grouping = fun(X, Y)->
-        case X > Y of
-          true -> {X, Y};
-          false -> {Y, X}
-        end
-    end,
-    GroupedMsg = [Msg1#game_message{status=Grouping(Msg1#game_message.sender_country,
-      Msg1#game_message.to_country)} || Msg1 <- SrtGMsg],
+                       case X > Y of
+                           true -> {X, Y};
+                           false -> {Y, X}
+                       end
+               end,
+    GroupedMsg = [Msg1#game_message{status=
+                                    Grouping(Msg1#game_message.sender_country,
+                                             Msg1#game_message.to_country)}
+                  || Msg1 <- SrtGMsg],
     lists:sort(SortByGroup ,GroupedMsg).
 
 merge_redundant_msg(SrtMsg) ->
     Fun = fun(M, {Acc, LastGroup}) ->
-        CurrentGroup = M#game_message.group_id,
-        case LastGroup == CurrentGroup of
-            true ->
-                [H|Rest] = Acc,
-                LastTo = H#game_message.to_country,
-                CurrentTo = M#game_message.to_country,
-                case is_list(LastTo) of
-                    true -> {[M#game_message{to_country=
-                      [CurrentTo|LastTo]}|Rest], CurrentGroup};
-                    false -> {[M#game_message{to_country=
-                      [CurrentTo, LastTo]}|Rest], CurrentGroup}
-                end;
-            false ->
-                {[M|Acc], CurrentGroup}
-        end
-    end,
+                  CurrentGroup = M#game_message.group_id,
+                  case LastGroup == CurrentGroup of
+                      true ->
+                          [H|Rest] = Acc,
+                          LastTo = H#game_message.to_country,
+                          CurrentTo = M#game_message.to_country,
+                          case is_list(LastTo) of
+                              true -> {[M#game_message{to_country=
+                                                       [CurrentTo|LastTo]}
+                                        |Rest], CurrentGroup};
+                              false -> {[M#game_message{to_country=
+                                                        [CurrentTo, LastTo]}
+                                         |Rest], CurrentGroup}
+                          end;
+                      false ->
+                          {[M|Acc], CurrentGroup}
+                  end
+          end,
     {MergedMsg, _} = lists:foldl(Fun, {[], undefined}, SrtMsg),
     MergedMsg.
 
@@ -563,92 +572,106 @@ push_receiver(WebSocket, ProtocolVersion) ->
 
 interpret_orderlist(OrdList) ->
     [begin
-        case X of
-            {hold, {U1, _}, L1} ->
-                {struct, [
-                    {"u1", atom_to_list(U1)},
-                    {"l1", atom_to_list(L1)},
-                    {"action", "hold"}
-                ]};
-            {move, {U1, _}, L1, L2} ->
-                {struct, [
-                    {"u1", atom_to_list(U1)},
-                    {"l1", atom_to_list(L1)},
-                    {"action", "move"},
-                    {"l2", atom_to_list(L2)}
-                ]};
-            {support, {U1, _}, L1, {move, {U2, _}, L2, L3}} ->
-                {struct, [
-                    {"u1", atom_to_list(U1)},
-                    {"l1", atom_to_list(L1)},
-                    {"action", "support_move"},
-                    {"u2", atom_to_list(U2)},
-                    {"l2", atom_to_list(L2)},
-                    {"l3", atom_to_list(L3)}
-                ]};
-            {support, {U1, _}, L1, {hold, {U2, _}, L2}} ->
-                {struct, [
-                    {"action", "support_hold"},
-                    {"u1", atom_to_list(U1)},
-                    {"u2", atom_to_list(U2)},
-                    {"l1", atom_to_list(L1)},
-                    {"l2", atom_to_list(L2)}
-                ]};
-            {disband,{U1,_}, L1} ->
-                {struct, [
-                    {"action", "disband"},
-                    {"u1", atom_to_list(U1)},
-                    {"l1", atom_to_list(L1)}
-                ]};
-            {build,{U1,_}, L1} ->
-                {struct, [
-                    {"action", "build"},
-                    {"u1", atom_to_list(U1)},
-                    {"l1", atom_to_list(L1)}
-                ]};
-            {convoy, {fleet,_},L1,{army,_}, L2, L3} ->
-                {struct, [
-                    {"u1", "fleet"},
-                    {"l1", atom_to_list(L1)},
-                    {"action", "convoy"},
-                    {"u2", "army"},
-                    {"l2", atom_to_list(L2)},
-                    {"l3", atom_to_list(L3)}
-                ]}
-        end
-    end || X <- OrdList].
+         case X of
+             {hold, {U1, _}, L1} ->
+                 {struct, [
+                           {"u1", atom_to_list(U1)},
+                           {"l1", atom_to_list(L1)},
+                           {"action", "hold"}
+                          ]};
+             {move, {U1, _}, L1, L2} ->
+                 {struct, [
+                           {"u1", atom_to_list(U1)},
+                           {"l1", atom_to_list(L1)},
+                           {"action", "move"},
+                           {"l2", atom_to_list(L2)}
+                          ]};
+             {support, {U1, _}, L1, {move, {U2, _}, L2, L3}} ->
+                 {struct, [
+                           {"u1", atom_to_list(U1)},
+                           {"l1", atom_to_list(L1)},
+                           {"action", "support_move"},
+                           {"u2", atom_to_list(U2)},
+                           {"l2", atom_to_list(L2)},
+                           {"l3", atom_to_list(L3)}
+                          ]};
+             {support, {U1, _}, L1, {hold, {U2, _}, L2}} ->
+                 {struct, [
+                           {"action", "support_hold"},
+                           {"u1", atom_to_list(U1)},
+                           {"u2", atom_to_list(U2)},
+                           {"l1", atom_to_list(L1)},
+                           {"l2", atom_to_list(L2)}
+                          ]};
+             {disband,{U1,_}, L1} ->
+                 {struct, [
+                           {"action", "disband"},
+                           {"u1", atom_to_list(U1)},
+                           {"l1", atom_to_list(L1)}
+                          ]};
+             {build,{U1,_}, L1} ->
+                 {struct, [
+                           {"action", "build"},
+                           {"u1", atom_to_list(U1)},
+                           {"l1", atom_to_list(L1)}
+                          ]};
+             {convoy, {fleet,_},L1,{army,_}, L2, L3} ->
+                 {struct, [
+                           {"u1", "fleet"},
+                           {"l1", atom_to_list(L1)},
+                           {"action", "convoy"},
+                           {"u2", "army"},
+                           {"l2", atom_to_list(L2)},
+                           {"l3", atom_to_list(L3)}
+                          ]};
+             {has_builds, Country, Builds} ->
+                 {struct, [
+                           {"action", "has_builds"},
+                           {"country", atom_to_list(Country)},
+                           {"count", integer_to_list(Builds)}
+                          ]};
+             {dislodge, {U1, C1}, L1} ->
+                 {struct, [
+                           {"action", "dislodge"},
+                           {"u1", atom_to_list(U1)},
+                           {"c1", atom_to_list(C1)},
+                           {"l1", atom_to_list(L1)}
+                          ]}
+         end
+     end || X <- OrdList].
 
 interpret_map(Map, PCountry) ->
     Prov = map:get_provinces(Map),
     Unit = map:get_units(Map),
     PUnit = lists:foldl(fun({P1,{U1,C1}}, Acc1)->
-        case C1 of
-            PCountry ->
-                [{atom_to_list(P1),atom_to_list(U1)}|Acc1];
-            _ ->
-                Acc1
-        end end, [], Unit),
+                                case C1 of
+                                    PCountry ->
+                                        [{atom_to_list(P1),atom_to_list(U1)}
+                                         |Acc1];
+                                    _ ->
+                                        Acc1
+                                end end, [], Unit),
 
     Ulist = [{atom_to_list(P)++"__"++atom_to_list(C), atom_to_list(U)}
-    || {P,{U,C}} <- Unit],
+             || {P,{U,C}} <- Unit],
     Fun = fun(X, Acc) ->
-        case map:get_province_info(Map,X, center) of
-            true ->
-                case map:get_province_info(Map,X,owner) of
-                    undefined ->
-                        Acc;
-                    Owner ->
-                        [{atom_to_list(X), atom_to_list(Owner)}|Acc]
-                end;
-            _ -> Acc
-        end
-    end,
+                  case map:get_province_info(Map,X, center) of
+                      true ->
+                          case map:get_province_info(Map,X,owner) of
+                              undefined ->
+                                  Acc;
+                              Owner ->
+                                  [{atom_to_list(X), atom_to_list(Owner)}|Acc]
+                          end;
+                      _ -> Acc
+                  end
+          end,
     Slist = lists:foldl(Fun, [], Prov),
     {PUnit, Slist, Ulist}.
 
 interpret_players(#game_player{players=PlayerList})->
     {struct, [{atom_to_list(C), integer_to_list(Id)}
-    || #game_user{id=Id, country=C} <- PlayerList]}.
+              || #game_user{id=Id, country=C} <- PlayerList]}.
 
 
 </erl>

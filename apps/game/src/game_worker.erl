@@ -265,7 +265,8 @@ basic_game_overview(GameID, Game) ->
     #game_overview{game_rec = Game,
                    map = GameState#game_state.map,
                    phase = GameState#game_state.phase,
-                   year_season = GameState#game_state.year_season}.
+                   year_season = GameState#game_state.year_season,
+                   order_result = GameState#game_state.order_result}.
 
 %%-------------------------------------------------------------------
 %% @doc

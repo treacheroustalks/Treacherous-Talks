@@ -175,8 +175,8 @@ waiting_phase(_Event, From, State) ->
 
 
 order_phase(_Event, State) ->
-    process_phase(?ID(State), order_phase),
-    phase_change(?ID(State), retreat_phase),
+    {ok, Result} = process_phase(?ID(State), order_phase),
+    phase_change(?ID(State), retreat_phase, Result),
     game_utils:push_phase_change(State#state.game),
     Timeout = get_timeout(retreat_phase, State#state.game),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout}.
@@ -188,15 +188,15 @@ retreat_phase(_Event, State) ->
     process_phase(?ID(State), retreat_phase),
     %% retreat is handled and we enter count phase
     case phase_change(?ID(State), build_phase) of
-        {ok, true} ->
-            game_utils:push_phase_change(State#state.game),
-            Timeout = get_timeout(build_phase, State#state.game),
-            {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {ok, skip} ->
             phase_change(?ID(State), order_phase),
             game_utils:push_phase_change(State#state.game),
             Timeout = get_timeout(order_phase, State#state.game),
             {next_state, order_phase, State#state{phase = order_phase}, Timeout};
+        {ok, _Result} ->
+            game_utils:push_phase_change(State#state.game),
+            Timeout = get_timeout(build_phase, State#state.game),
+            {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {stop, Reason, game_over} ->
             {stop, Reason, State}
     end.
@@ -275,8 +275,8 @@ phase_change(ID, build_phase) ->
                 false ->
                     % inform players of their possible builds?
                     NewCurrentGame = update_current_game(ID, build_phase),
-                    new_state(NewCurrentGame, GameState#game_state.map),
-                    {ok, true};
+                    new_state(NewCurrentGame, GameState#game_state.map, Results),
+                    {ok, Results};
                 true ->
                     % game over!
                     lager:debug("Game over ~p", [ID]),
@@ -285,10 +285,13 @@ phase_change(ID, build_phase) ->
             end
     end;
 phase_change(ID, Phase) ->
+    phase_change(ID, Phase, []).
+phase_change(ID, Phase, Results) ->
     lager:debug("Game ~p entered ~p", [ID, Phase]),
     {ok, OldState} = game_utils:get_game_state(ID),
     NewCurrentGame = update_current_game(ID, Phase),
-    new_state(NewCurrentGame, OldState#game_state.map).
+    new_state(NewCurrentGame, OldState#game_state.map, Results).
+
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -371,6 +374,7 @@ setup_game(ID) ->
     GameState = #game_state{id = ID,
                             phase = order_phase,
                             year_season = {?START_YEAR, spring},
+                            order_result = [],
                             map = game_utils:to_mapterm(Map)},
     StateKey = list_to_binary(integer_to_list(ID) ++
                               "-" ++ integer_to_list(?START_YEAR) ++
@@ -417,15 +421,18 @@ end_game(GameID, NewStatus) ->
 %% Creates a new game state record, with data from the current game
 %% record and a map.
 %% @spec
-%% new_state(CurrentGame :: #game_current{}, Map :: map()) ->
+%% new_state(CurrentGame :: #game_current{}, Map :: map(),
+%%           OrderResult :: [tuple()]) ->
 %%    Result :: any()
 %% @end
 %%-------------------------------------------------------------------
-new_state(CurrentGame, Map) ->
+new_state(CurrentGame, Map, OrderResult) ->
+    FilteredResult = filter_orders(OrderResult),
     Key = game_utils:get_keyprefix({game_current, CurrentGame}),
     GameState = #game_state{id = CurrentGame#game_current.id,
                             year_season = CurrentGame#game_current.year_season,
                             phase = CurrentGame#game_current.current_phase,
+                            order_result = FilteredResult,
                             map = Map},
     DBGameState = db_obj:create(?B_GAME_STATE, Key, GameState),
     %% Link the game state to its game
@@ -458,6 +465,18 @@ get_timeout(Phase, Game) ->
         build_phase ->
             timer:minutes(Game#game.build_phase)
     end.
+%%-------------------------------------------------------------------
+%% @doc
+%% This is used to filter output orders from the rule engine
+%% @end
+%%-------------------------------------------------------------------
+filter_orders(Orders) ->
+    lists:filter(fun(Order) ->
+                         case Order of
+                             {added, _} -> false;
+                             _ -> true
+                         end
+                 end, Orders).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -478,30 +497,30 @@ syncevent(waiting_phase, From, State) ->
     gen_fsm:reply(From, {ok, order_phase}),
     {next_state, order_phase, NewState, Timeout};
 syncevent(order_phase, From, State) ->
-    process_phase(?ID(State), order_phase),
-    phase_change(?ID(State), retreat_phase),
+    {ok, Results} = process_phase(?ID(State), order_phase),
+    phase_change(?ID(State), retreat_phase, Results),
     Timeout = timer:minutes((State#state.game)#game.retreat_phase),
-    gen_fsm:reply(From, {ok, retreat_phase}),
+    gen_fsm:reply(From, {ok, {retreat_phase, Results}}),
     {next_state, retreat_phase, State#state{phase = retreat_phase}, Timeout};
 syncevent(retreat_phase, From, State) ->
-    process_phase(?ID(State), retreat_phase),
+    {ok, _Result} = process_phase(?ID(State), retreat_phase),
     % retreat is handled and we enter count phase
     case phase_change(?ID(State), build_phase) of
-        {ok, true} ->
-            Timeout = timer:minutes((State#state.game)#game.build_phase),
-            gen_fsm:reply(From, {ok, build_phase}),
-            {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {ok, skip} ->
             phase_change(?ID(State), order_phase),
             Timeout = timer:minutes((State#state.game)#game.order_phase),
             gen_fsm:reply(From, {ok, order_phase}),
             {next_state, order_phase, State#state{phase = order_phase}, Timeout};
+        {ok, Builds} ->
+            Timeout = timer:minutes((State#state.game)#game.build_phase),
+            gen_fsm:reply(From, {ok, {build_phase, Builds}}),
+            {next_state, build_phase, State#state{phase = build_phase}, Timeout};
         {stop, Reason, game_over} ->
             gen_fsm:reply(From, {ok, game_over}),
             {stop, Reason, State}
     end;
 syncevent(build_phase, From, State) ->
-    process_phase(?ID(State), build_phase),
+    {ok, _Result} = process_phase(?ID(State), build_phase),
     phase_change(?ID(State), order_phase),
     Timeout = timer:minutes((State#state.game)#game.order_phase),
     gen_fsm:reply(From, {ok, order_phase}),
