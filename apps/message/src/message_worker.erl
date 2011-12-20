@@ -90,7 +90,9 @@ handle_call({mark_as_read, MessageId, Bucket}, _From, State) ->
 handle_call({mark_as_done, ReportId}, _From, State) ->
     Result = do_mark_as_done(ReportId),
     {reply, Result, State};
-
+% user not allowed to send message to himself
+handle_call({user_msg, #message{from_nick= Nick, to_nick= Nick}}, _From, State) ->
+    {reply, {error, send_msg_to_yourself}, State};
 handle_call({user_msg, Msg=#message{}}, _From, State) ->
     Result = case user_management:get(#user.nick, Msg#message.to_nick) of
                  {ok, {index_list, _IdxList}} ->
@@ -102,10 +104,15 @@ handle_call({user_msg, Msg=#message{}}, _From, State) ->
                      ToID = User#user.id,
                      NewMsg = Msg#message{to_id = ToID,
                                           date_created = erlang:universaltime()},
-                     LogResult = log_user_msg(undefined, NewMsg),
                      Event = #push_event{type = off_game_msg, data = NewMsg},
-                     controller:push_event(ToID, Event),
-                     LogResult;
+                     case controller:sync_push_event(ToID, Event) of
+                         {ok, success} ->
+                             log_user_msg(undefined,
+                                          NewMsg#message{status= read});
+                         {error, _} ->
+                             log_user_msg(undefined,
+                                          NewMsg#message{status= unread})
+                     end;
                  {error, does_not_exist} ->
                      {error, invalid_nick};
                  {error, Error} ->
@@ -123,10 +130,16 @@ handle_call(_Request, _From, State) ->
     {noreply, ok, State}.
 
 handle_cast({game_msg, GMsg = #game_message{}}, State) ->
-    {ok, _ID} = log_game_msg(undefined, GMsg),
     Event = #push_event{type = in_game_msg, data = GMsg},
-    controller:push_event(GMsg#game_message.to_id, Event),
-    {noreply, State};
+    case controller:sync_push_event(GMsg#game_message.to_id, Event) of
+        {ok, success} ->
+            {ok, _ID} = log_game_msg(undefined,
+                                     GMsg#game_message{status = read});
+        {error, _} ->
+            {ok, _ID} = log_game_msg(undefined,
+                                     GMsg#game_message{status = unread})
+        end,
+{noreply, State};
 
 
 handle_cast(_Msg, State) ->

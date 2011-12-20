@@ -94,9 +94,10 @@
 %%                       user_already_joined]
 %% game_overview ->     [user_not_playing_this_game]
 %% logout ->            []
-%% user_msg ->          [nick_not_unique,
-%%                       invalid_nick,
-%%                       black_listed]
+%% user_msg ->          [send_msg_to_yourself,
+%%                       nick_not_unique,
+%%                       black_listed,
+%%                       invalid_nick]
 %% games_current ->     []
 %% game_search ->       []
 %% game_msg ->          [not_allowed_send_msg,

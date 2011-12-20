@@ -150,6 +150,7 @@ handle_call({push_event, {UserId, Event}}, _From, State) ->
 handle_call({login, {Login, PushInfo}}, _From, State) ->
     Result = login(Login, PushInfo),
     {reply, Result, State};
+
 handle_call(_Request, _From, State) ->
     ?DEBUG("Received unhandled call: ~p~n", [{_Request, _From, State}]),
     {noreply, ok, State}.
@@ -163,6 +164,7 @@ handle_cast({push_event, {UserId, Event}}, State) ->
             ok
     end,
     {noreply, State};
+
 handle_cast(_Msg, State) ->
     ?DEBUG("received unhandled cast: ~p~n",[{_Msg, State}]),
     {noreply, State}.

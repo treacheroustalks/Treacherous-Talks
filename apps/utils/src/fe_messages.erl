@@ -231,6 +231,8 @@ get({user_msg, invalid_data}, Error) ->
             resp("Error: The user does not exist.~n");
         black_listed ->
             resp("Error: The user is black listed.~n");
+        send_msg_to_yourself ->
+            resp("Error: You are not allowed to send mesage to yourself.~n");
         _ ->
             resp_unhandled_error(Error)
     end;

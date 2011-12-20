@@ -70,6 +70,7 @@
 -spec user_msg(#message{}) ->
           {ok, MessageId :: integer()} |
           {error, nick_not_unique} |
+          {error, send_msg_to_yourself} |
           {error, invalid_nick}|
           {error, black_listed}|
           {error, Error :: any()}.
