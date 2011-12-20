@@ -58,14 +58,18 @@ parse_test_() ->
                         })),
      ?_test(check_parse(?SAMPLE_LOGIN,
                         {login, {ok, #user{nick = "Lin", password = "QWER"}}})),
-     ?_test(check_parse(?SAMPLE_LOGOUT,
-                        {logout, {ok, ?SESSION_ID, no_arg}})),
      ?_test(check_parse(?SAMPLE_GAME_OVERVIEW,
                         {game_overview, {ok, ?SESSION_ID, 111222}})),
      ?_test(check_parse(?SAMPLE_JOIN_GAME,
                         {join_game, {ok, ?SESSION_ID, {111222, england}}})),
      ?_test(check_parse(?SAMPLE_GET_PROFILE(?SESSION_ID),
-                        {get_session_user, {ok, ?SESSION_ID, no_arg}}))
+                        {get_session_user, {ok, ?SESSION_ID, no_arg}})),
+     ?_test(check_parse(?SAMPLE_BLACKLIST,
+                        {blacklist, {ok, ?SESSION_ID, "Lin"}})),
+     ?_test(check_parse(?SAMPLE_WHITELIST,
+                        {whitelist, {ok, ?SESSION_ID, "Lin"}})),
+     ?_test(check_parse(?SAMPLE_LOGOUT,
+                        {logout, {ok, ?SESSION_ID, no_arg}}))
     ].
 
 check_parse(Sample, Expected) ->

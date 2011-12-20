@@ -539,6 +539,24 @@ adfadfasdfaldfad">>
     2563564565asdfa
 ">>
 ).
+
+-define(SAMPLE_BLACKLIST,
+<<"
+BLACKLIST\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
+NICKNAME: Lin\r
+END\r
+">>
+).
+
+-define(SAMPLE_WHITELIST,
+<<"
+WHITELIST\r
+SESSION: g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA+QAAAAAAQ==\r
+NICKNAME: Lin\r
+END\r
+">>
+).
 %%--------------------------------------------------------------------
 %% test utilities
 %%--------------------------------------------------------------------

@@ -45,7 +45,9 @@
          parse_join/1,
          parse_get_session_user/1,
          parse_get_presence/1,
-         parse_send_report/2]).
+         parse_send_report/2,
+         parse_blacklist/1,
+         parse_whitelist/1]).
 
 % Export for eunit
 -export([parse_time_format/1, is_valid_value/2, get_error_list/3, get_check_type/1]).
@@ -579,6 +581,63 @@ parse_send_report(Data, ReportType) ->
             end
     end.
 
+%%------------------------------------------------------------------------------
+%% @doc parse_blacklist/1
+%%
+%% Parses a blacklist request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_blacklist(Data :: binary() ) ->
+          {ok, SessionId::string(), Nickname::string()} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_blacklist(Data) ->
+    RequiredFields = [?SESSION, ?NICKNAME],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId, Nick] = ReqValues,
+
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    {ok, SessionId, Nick};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
+
+%%------------------------------------------------------------------------------
+%% @doc parse_whitelist/1
+%%
+%% Parses a whitelist request
+%%
+%% @end
+%%------------------------------------------------------------------------------
+-spec parse_whitelist(Data :: binary() ) ->
+          {ok, SessionId::string(), Nickname::string()} |
+          {error, {required_fields, list()}} |
+          {error, {invalid_input, list()}}.
+parse_whitelist(Data) ->
+    RequiredFields = [?SESSION, ?NICKNAME],
+    ReqValues = get_required_fields(RequiredFields, Data),
+    case lists:member(field_missing, ReqValues) of
+        true ->
+            {error, {required_fields, RequiredFields}};
+        false ->
+            [SessionId, Nick] = ReqValues,
+
+            case get_error_list(ReqValues,  get_check_type(RequiredFields),
+                                RequiredFields) of
+                [] ->
+                    {ok, SessionId, Nick};
+                ErrorList ->
+                    {error, {invalid_input, ErrorList}}
+            end
+    end.
 
 
 %% Internal functions

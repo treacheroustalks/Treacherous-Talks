@@ -36,7 +36,9 @@
             ?GETPROFILE ++ "," ++
             ?GETPRESENCE ++ "," ++
             ?REPORTPLAYER ++ "," ++
-            ?REPORTISSUE
+            ?REPORTISSUE ++ "," ++
+            ?BLACKLIST ++ "," ++
+            ?WHITELIST
             ).
 -define(REGISTER, "REGISTER").
 -define(UPDATE, "UPDATE").
@@ -53,6 +55,8 @@
 -define(GETPRESENCE, "GETPRESENCE").
 -define(REPORTPLAYER, "REPORTPLAYER").
 -define(REPORTISSUE, "REPORTISSUE").
+-define(BLACKLIST, "BLACKLIST").
+-define(WHITELIST, "WHITELIST").
 -define(END, "END").
 
 

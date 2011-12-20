@@ -153,6 +153,20 @@ parse_send_report_test_() ->
      ?_assertEqual(Expected, ActualOutput)
     ].
 
+parse_blacklist_test_() ->
+    ActualOutput = user_commands:parse_blacklist(?SAMPLE_BLACKLIST),
+    Expected = {ok, ?SESSION_ID, "Lin"},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
+parse_whitelist_test_() ->
+    ActualOutput = user_commands:parse_whitelist(?SAMPLE_WHITELIST),
+    Expected = {ok, ?SESSION_ID, "Lin"},
+    [
+        ?_assertEqual(Expected, ActualOutput)
+    ].
+
 is_valid_value_test_() ->
     [
         ?_assertEqual(
