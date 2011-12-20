@@ -9,6 +9,11 @@
  *
  */
 
+/**
+ * General variables
+ */
+var clear_msg_handle = undefined;
+
 /*------------------------------------------------------------------------------
  Page functions
  -----------------------------------------------------------------------------*/
@@ -1333,12 +1338,11 @@ function set_message(type, message) {
 
 /**
  * Clear message div after "delay" time
- *
- * @return
  */
 function clear_message() {
+    window.clearTimeout(clear_msg_handle);
     var msgDiv = $('#message');
-    setTimeout(function() {
+    clear_msg_handle = window.setTimeout(function() {
         msgDiv.html('');
     }, delay);
 }
