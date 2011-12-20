@@ -71,6 +71,7 @@
           {ok, MessageId :: integer()} |
           {error, nick_not_unique} |
           {error, invalid_nick}|
+          {error, black_listed}|
           {error, Error :: any()}.
 user_msg(Msg=#message{}) ->
     ?CALL_WORKER({user_msg, Msg}).

@@ -95,7 +95,8 @@
 %% game_overview ->     [user_not_playing_this_game]
 %% logout ->            []
 %% user_msg ->          [nick_not_unique,
-%%                       invalid_nick]
+%%                       invalid_nick,
+%%                       black_listed]
 %% games_current ->     []
 %% game_search ->       []
 %% game_msg ->          [not_allowed_send_msg,
