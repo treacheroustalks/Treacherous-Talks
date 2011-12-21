@@ -370,7 +370,15 @@ function load_game_overview_data(page_data) {
     acc += "<br>";
     $('#gov_info').html(acc);
     $('#game_id').val(page_data.game_id);
-    $('#mid_area').html('<div id="canvas_div"><canvas id="canvas" width="1200" height="1000"></canvas></div>');
+    $('#mid_area').html('<div id="canvas_div"><canvas id="canvas" width="1154" height="996"></canvas></div>');
+    $('#canvas_div').css('left', ((window.innerWidth-1154)*0.5-7)+'px');
+
+    //Keep the map always in the middle
+    window.onresize = function(){
+        $('#canvas_div').css('left', ((window.innerWidth-1154)*0.5-7)+'px');
+        if(page!=="game")
+            window.onresize = null;
+    }
 
     //after page contents are loaded, draw the map and units
     $('#world').ready(function(){

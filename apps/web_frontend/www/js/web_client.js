@@ -209,12 +209,12 @@ function event_action(data) {
         clear_message();
         break;
     case "user_msg_success":
-        onSendMsg(false, "["+userObj.nick+"]");
+        onSendMsg(false);
         clear_message();
         break;
     case "power_msg_success":
     case "game_msg_success":
-        onSendMsg(true, "["+userObj.nick+"]");
+        onSendMsg(true);
         clear_message();
         break;
     case "login_success":
