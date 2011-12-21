@@ -40,25 +40,26 @@
 %% -----------------------------------------------------------------
 %% Public interface
 %% -----------------------------------------------------------------
--export([empty_bucket/1,
-         empty_db/0,
-         ping_riak/0,
-         get/2, get/3,
-         get_resolve/4, get_resolve/5,
-         get_values/2, get_values/3,
-         get_index/2,
-         put/1, put/2,
+-export([
          delete/2, delete/3,
+         empty_bucket/1,
+         empty_db/0,
+         get/2, get/3,
+         get_bucket/1,
+         get_db_stats/0,
+         get_key_filter/2,
+         get_resolve/4, get_resolve/5,
+         get_unique_id/0,
+         get_values/2, get_values/3,
+         int_to_bin/1, int_to_bin/2,
          list_buckets/0,
          list_keys/1,
-         get_bucket/1,
-         set_bucket/2,
          mapred/2, mapred/3,
          mapred_bucket/2, mapred_bucket/3,
-         get_unique_id/0,
-         int_to_bin/1, int_to_bin/2,
-         get_db_stats/0,
-         search/2, search_values/2
+         ping_riak/0,
+         put/1, put/2,
+         search/2, search_values/2,
+         set_bucket/2
         ]).
 
 %% -----------------------------------------------------------------
@@ -175,16 +176,20 @@ get_values(Bucket, Keys, Timeout) ->
 
 %%-------------------------------------------------------------------
 %% @doc
-%% Returns a bucket/key pair list for a given index.
-%% An index needs to be a binary and end with _bin
+%% Returns a list of values according to a key filter, example:
+%% get_key_filter( `<<"message_unread">>',
+%%                [[`<< "ends_with" >>', db:int_to_bin(UserId)]]).
+%% This would return all object values in the bucket "message_unread",
+%% where the key ends with the UserId.
+%% More information: http://wiki.basho.com/Key-Filters.html
 %%
 %% @spec
-%%  get_index(Bucket::binary(), {Index::binary, IndexKey::binary()}) ->
+%%  get_key_filter(Bucket::binary(), Query) ->
 %%     {ok, [list()]} | {error, term()}
 %% @end
 %%-------------------------------------------------------------------
-get_index(Bucket, IdxTup={_Index, _IndexKey}) ->
-    ?CALL_WORKER({get_index, Bucket, IdxTup}).
+get_key_filter(Bucket, KeyFilter) ->
+    ?CALL_WORKER({get_key_filter, Bucket, KeyFilter}).
 
 
 %%-------------------------------------------------------------------

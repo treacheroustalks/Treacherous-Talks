@@ -30,14 +30,16 @@
 -type report_type() :: report_player | report_problem.
 -type power_user() :: moderator | operator.
 
+-record(unread, {id :: integer()
+                       }).
+
 -record (message, {id :: integer(),
                    from_id :: integer(),
                    from_nick :: string (),
                    to_id :: integer(),
                    to_nick :: string(),
                    content :: nonempty_string(),
-                   date_created :: date (),
-                   status = unread :: read | unread
+                   date_created :: date ()
                   }).
 
 -record (game_message, {id :: integer(),
@@ -50,7 +52,6 @@
                         to_country :: country(),
                         content :: nonempty_string(),
                         date_created :: date (),
-                        status = unread :: read | unread,
                         year :: integer(),
                         season :: spring | fall,
                         phase :: phase()
@@ -62,8 +63,7 @@
                           to :: power_user(),
                           type :: report_type(),
                           content :: nonempty_string(),
-                          date_created :: date(),
-                          status = notdone :: done | notdone
+                          date_created :: date()
                          }).
 
 %% The "to" field in record frontend_msg:

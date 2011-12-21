@@ -88,9 +88,9 @@ handle_call({get, Bucket, Key, Options},
     NewCount = ?DO_GC(Count),
     {reply, Result, State#state{gc_count=NewCount}};
 
-handle_call({get_index, Bucket, IdxTup},
+handle_call({get_key_filter, Bucket, KeyFilter},
             _From, #state{db_conn=Conn, gc_count=Count} = State) ->
-    Result = db_c:get_index(Conn, Bucket, IdxTup),
+    Result = db_c:get_key_filter(Conn, Bucket, KeyFilter),
     NewCount = ?DO_GC(Count),
     {reply, Result, State#state{gc_count=NewCount}};
 
@@ -129,14 +129,7 @@ handle_call({delete, Bucket, Key, Options},
 
 handle_call({empty_bucket, Bucket},
             _From, #state{db_conn=Conn, gc_count=Count} = State) ->
-    Result = case db_c:list_keys(Conn, Bucket) of
-                 {ok, Keys} ->
-                     lists:map(fun(Key) -> db_c:delete(Conn, Bucket, Key) end,
-                               Keys),
-                 ok;
-                 Error ->
-                     Error
-             end,
+    Result = db_c:empty_bucket(Conn, Bucket),
     NewCount = ?DO_GC(Count),
     {reply, Result, State#state{gc_count=NewCount}};
 

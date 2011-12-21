@@ -203,7 +203,7 @@ whitelist() ->
 operator_get_game_msg_exp_data() ->
     {operator_get_game_msg,
      {ok,"g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg==",
-      {"order_key","query"}}}.
+      {"order_key", 1234, 1234, spring, order_phase}}}.
 
 operator_game_overview_exp_data() ->
     {operator_game_overview,
@@ -617,7 +617,10 @@ operator_get_game_msg_data() ->
        {array,
            [{struct,[{"session_id",
                       "g2dkABFiYWNrZW5kQDEyNy4wLjAuMQAAA4gAAAAAAg=="}]},
-            {struct,[{"query","query"}]},
+            {struct,[{"game_id","1234"}]},
+            {struct,[{"year","1234"}]},
+            {struct,[{"season","spring"}]},
+            {struct,[{"phase","order_phase"}]},
             {struct,[{"order_key","order_key"}]}]}}]}}.
 
 mark_as_done_data() ->

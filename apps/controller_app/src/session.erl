@@ -371,7 +371,7 @@ operator_get_game_msg(SessionId, KeyQuery) ->
 -spec deliver_offline_messages (NewSessionId :: list (), User :: #user{}) ->
                                        {[#message{}], [#game_message{}]}.
 deliver_offline_messages (NewSessionId, User) ->
-    {ok, {UserMsges, GameMsges}} = message:unread (User#user.id),
+    {ok, {UserMsges, GameMsges}} = message:unread(User#user.id),
     lists:foreach (fun (Msg) ->
                            session:push_event(
                              NewSessionId,

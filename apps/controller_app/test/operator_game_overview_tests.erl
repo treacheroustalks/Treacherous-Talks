@@ -34,12 +34,11 @@
 -include_lib("datatypes/include/bucket.hrl").
 -include_lib("datatypes/include/message.hrl").
 
--export([tests/1, success/3, invalid/3]).
+-export([tests/1, success/3]).
 
 tests([Callback, SessId, GameId]) ->
     [
-     ?_test(success(Callback, SessId, GameId)),
-     ?_test(invalid(Callback, SessId, GameId))
+     ?_test(success(Callback, SessId, GameId))
     ].
 %%-------------------------------------------------------------------
 %% game overview tests
@@ -58,39 +57,18 @@ success(Callback, SessId, GameId) ->
     ?assertEqual({operator_game_overview, success}, CmdRes),
     ?assertEqual(true, is_record(GOV, game_overview)),
 
-    Msg1 = #game_message{game_id=7777, content="msg1", year = 1902,season=fall,phase=order,date_created=1,sender_country=england},
-    put_game_msg(99991, Msg1),
     Key = "7777-1902-fall-order_phase-england",
     BinID = list_to_binary(Key),
     OrderList = [move,support,convoy,hold],
     DBGameOrderObj = db_obj:create (?B_GAME_ORDER, BinID, #game_order{order_list=OrderList}),
     db:put (DBGameOrderObj),
 
-    Query = "game_id=7777 AND year=1902 AND season=fall AND phase=order AND sender_country=england",
-
-    Cmd2 = {operator_get_game_msg, {ok, SessId, {Key, Query}}},
+    Cmd2 = {operator_get_game_msg,
+            {ok, SessId, {Key, 7777, 1902, fall, order_phase}}},
     Result2 = controller:handle_action(Cmd2, Callback),
     {CmdRes2, ResultData2} = Result2,
     %{GMsg, Order} = ResultData2,
 
     db:delete (?B_GAME_ORDER, BinID),
-    del_game_msg(99991),
     ?assertEqual({operator_get_game_msg, success}, CmdRes2),
-    ?assertEqual({[Msg1], OrderList}, ResultData2).
-
-invalid(_Callback, _SessId, _GameId) ->
-    ok.
-
-%%-------------------------------------------------------------------
-%% Help Functions
-%%-------------------------------------------------------------------
-put_game_msg(Key, Msg) ->
-    BinID = db:int_to_bin(Key),
-    % convert record to proplist to be able to do search
-    MsgPropList = data_format:rec_to_plist(Msg),
-    DbObj = db_obj:create(?B_GAME_MESSAGE, BinID, MsgPropList),
-    db:put(DbObj).
-
-del_game_msg(Key) ->
-    BinKey = db:int_to_bin(Key),
-    db:delete(?B_GAME_MESSAGE, BinKey).
+    ?assertEqual({[], OrderList}, ResultData2).

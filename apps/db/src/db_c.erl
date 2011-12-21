@@ -23,12 +23,13 @@
 
 -export([connect/0, connect/1, connect/2,
          disconnect/1,
+         empty_bucket/2,
          ping/1,
          get_client_id/1, set_client_id/2,
          get_server_info/1,
          get/3, get/4,
+         get_key_filter/3,
          get_values/3, get_values/4,
-         get_index/3,
          get_unique_id/0,
          put/2, put/3,
          delete/3, delete/4,
@@ -61,6 +62,11 @@
 -define(PASS4(RC, Command, P1, P2, P3, P4),
         (RC#db_c.module):Command(RC#db_c.client,
                                       P1, P2, P3, P4)).
+
+
+-define(MAP_RED_OBJ_VAL, [{map, {modfun, riak_kv_mapreduce, map_object_value},
+                           none, true}]).
+
 
 connect() ->
     case application:get_env (riak) of
@@ -100,6 +106,18 @@ disconnect(_DB_C) ->
 ping(RC) ->
     ?PASS0(RC, ping).
 
+
+empty_bucket(RC, Bucket) ->
+    case db_c:list_keys(RC, Bucket) of
+        {ok, Keys} ->
+            lists:map(fun(Key) ->
+                              db_c:delete(RC, Bucket, Key)
+                      end, Keys),
+            ok;
+        Error ->
+            Error
+    end.
+
 get_client_id(RC) ->
     ?PASS0(RC, get_client_id).
 
@@ -120,36 +138,39 @@ get(RC, Bucket, Key, Options) ->
 
 get_values(RC, Bucket, Keys) ->
     MapRed = fun(Inputs) ->
-                     mapred(RC, Inputs,
-                            [{map, {modfun, riak_kv_mapreduce, map_object_value},
-                              none, true}])
+                     mapred(RC, Inputs, ?MAP_RED_OBJ_VAL)
              end,
-    get_values_helper(Bucket, Keys, MapRed).
+    mapred_helper(Bucket, Keys, MapRed).
 get_values(RC, Bucket, Keys, Timeout) ->
     MapRed = fun(Inputs) ->
-                     mapred(RC, Inputs,
-                            [{map, {modfun, riak_kv_mapreduce, map_object_value},
-                              none, true}],
-                            Timeout)
+                     mapred(RC, Inputs, ?MAP_RED_OBJ_VAL, Timeout)
              end,
-    get_values_helper(Bucket, Keys, MapRed).
+    mapred_helper(Bucket, Keys, MapRed).
 
-get_values_helper(Bucket, Keys, MapRed) ->
+
+get_key_filter(RC, Bucket, KeyFilter) ->
+    Inputs = {Bucket, KeyFilter},
+    mapred_to_erlang(mapred(RC, Inputs, ?MAP_RED_OBJ_VAL)).
+
+
+mapred_helper(Bucket, Keys, MapRed) ->
     Inputs = lists:map(fun(Key) ->
                                {Bucket, Key}
                        end, Keys),
-    case MapRed(Inputs)
-    of
+    mapred_to_erlang(MapRed(Inputs)).
+
+mapred_to_erlang(Result) ->
+    case Result of
         {ok, []} ->
             {ok, []};
         {ok, [{_, List}]} ->
-            {ok, lists:map(fun db_obj:binary_to_erlang/1, List)};
+            Filtered = lists:filter(fun(<<>>) -> false;
+                                       (_) -> true
+                                    end, List),
+            {ok, lists:map(fun db_obj:binary_to_erlang/1, Filtered)};
         Other ->
             {error, Other}
     end.
-
-get_index(RC, Bucket, {Index, IndexKey}) ->
-    ?PASS3(RC, get_index, Bucket, Index, IndexKey).
 
 to_db_obj({ok, RCObj}) ->
     {ok, db_obj:from_riakc_obj(RCObj)};

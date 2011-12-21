@@ -194,10 +194,14 @@ parse(RawData) ->
             GameId = get_integer("game_id", Data),
             {operator_game_overview, {ok, get_field("session_id", Data), GameId}};
         "operator_get_game_msg" ->
+            SessId = get_field("session_id", Data),
             Key = get_field("order_key", Data),
-            Query = get_field("query", Data),
-            {operator_get_game_msg, {ok, get_field("session_id", Data),
-                                     {Key, Query}}};
+            GameId = get_integer("game_id", Data),
+            Year = parse_year_str(get_field("year", Data)),
+            Season = parse_season_str(get_field("season", Data)),
+            Phase = parse_phase_str(get_field("phase", Data)),
+            {operator_get_game_msg, {ok, SessId,
+                                     {Key, GameId, Year, Season, Phase}}};
         "get_system_status" ->
             {get_system_status, {ok, get_field ("session_id", Data)}};
         "get_presence" ->
@@ -313,4 +317,34 @@ parse_moderator_str(PressStr) ->
     case PressStr of
         "add" -> add;
         "remove" -> remove
+    end.
+
+parse_year_str(Str) ->
+    case Str of
+        "undefined" ->
+            undefined;
+        _ ->
+            list_to_integer(Str)
+    end.
+
+parse_season_str(Str) ->
+    case Str of
+        "undefined" ->
+            undefined;
+        "fall" ->
+            fall;
+        "spring" ->
+            spring
+    end.
+
+parse_phase_str(Str) ->
+    case Str of
+        "undefined" ->
+            undefined;
+        "order_phase" ->
+            order_phase;
+        "retreat_phase" ->
+            retreat_phase;
+        "build_phase" ->
+            build_phase
     end.

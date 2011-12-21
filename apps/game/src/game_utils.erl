@@ -36,26 +36,25 @@
 -include_lib ("datatypes/include/bucket.hrl").
 -include_lib ("eunit/include/eunit.hrl").
 
--export([get_all_orders/1,
-         get_game_order/1,
-         get_keyprefix/1,
+-export([delete_map/1,
+         get_all_orders/1,
          get_current_game/1,
-         get_game_state/1,
-         get_default_map/0,
-         delete_map/1,
-         to_mapterm/1,
-         to_rule_map/1,
-         get_keys/2,
-         update_db_obj/3,
-         userlist/1,
          get_db_obj/3,
-         translate_game_order/3,
+         get_default_map/0,
          get_game_current_key/1,
          get_game_msg_tree/1,
-         search_game_msg/1,
-         is_power_user/1,
+         get_game_order/1,
          get_game_player/1,
-         update_game/2
+         get_game_state/1,
+         get_keyprefix/1,
+         get_keys/2,
+         is_power_user/1,
+         to_mapterm/1,
+         to_rule_map/1,
+         translate_game_order/3,
+         update_db_obj/3,
+         update_game/2,
+         userlist/1
         ]).
 
 -define(COUNTRIES, ["england", "germany", "france", "austria", "italy",
@@ -456,33 +455,16 @@ get_game_map(GameID) ->
 %% @end
 %%-------------------------------------------------------------------
 get_game_msg_tree(GameId) ->
-    case search_game_msg("game_id="++integer_to_list(GameId)) of
+    case message:get_all_game_msg(GameId) of
         {ok, GMsgList} ->
             Fun = fun(X, Y)->
-                     X#game_message.date_created > Y#game_message.date_created
+                     X#game_message.date_created < Y#game_message.date_created
                   end,
             SortedList = lists:usort(Fun, GMsgList),
             {ok, game_msg_tree(SortedList)};
         Error -> Error
     end.
 
-%%-------------------------------------------------------------------
-%% @doc
-%% Performs a search on the game_message bucket
-%% @end
-%%-------------------------------------------------------------------
--spec search_game_msg(string()) -> {ok, [integer()]} | {error, term()}.
-search_game_msg(Query) ->
-    case db:search_values(?B_GAME_MESSAGE, Query) of
-        {ok, Msgs} ->
-            % Convert game proplists to game records
-            {ok, lists:map(fun(MsgPropList) ->
-                                   data_format:plist_to_rec(?GAME_MSG_REC_NAME,
-                                                            MsgPropList)
-                           end, Msgs)};
-        Error ->
-            Error
-    end.
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -504,35 +486,24 @@ search_game_msg(Query) ->
 %%-------------------------------------------------------------------
 -spec game_msg_tree([#game_message{}]) -> [term()].
 game_msg_tree(GMsgList) ->
-    game_msg_tree(GMsgList, []).
-game_msg_tree([], Acc) -> Acc;
-game_msg_tree([#game_message{year=Year, season=Season,
-                             phase=Phase, sender_country=Country}|Rest], Acc) ->
-    Tuple = {Year, {Season,Phase}, Country},
-    NewAcc = game_msg_tree_year(Tuple, Acc, Acc),
-    game_msg_tree(Rest, NewAcc);
-game_msg_tree([[]|Rest], Acc) ->
-    game_msg_tree(Rest, Acc).
-
-game_msg_tree_year({Year, SeasonPhase, Country}, [], YearList) ->
-    [{Year, [{SeasonPhase, [Country]}]}|YearList];
-game_msg_tree_year({Year, SeasonPhase, Country}, [{Year, SPList}|_], YearList) ->
-    lists:keyreplace(Year,1,YearList,{Year,
-      game_msg_tree_seasonphase({SeasonPhase, Country}, SPList, SPList)});
-game_msg_tree_year({Year, SeasonPhase, Country}, [_|Rest], YearList) ->
-    game_msg_tree_year({Year, SeasonPhase, Country}, Rest, YearList).
-
-game_msg_tree_seasonphase({SeasonPhase, Country}, [], SPList) ->
-    [{SeasonPhase, [Country]}|SPList];
-game_msg_tree_seasonphase({SeasonPhase, Country}, [{SeasonPhase, CountryList}|_], SPList) ->
-    lists:keyreplace(SeasonPhase,1,SPList,{SeasonPhase,
-      game_msg_tree_country(Country, CountryList, CountryList)});
-game_msg_tree_seasonphase({SeasonPhase, Country}, [_|Rest], SPList) ->
-    game_msg_tree_seasonphase({SeasonPhase, Country}, Rest, SPList).
-
-game_msg_tree_country(Country, [], CountryList) ->
-    [Country|CountryList];
-game_msg_tree_country(Country, [Country|_], CountryList) ->
-    CountryList;
-game_msg_tree_country(Country, [_|Rest], CountryList) ->
-    game_msg_tree_country(Country, Rest, CountryList).
+    lists:foldl(fun(#game_message{year=Year, season=Season,
+                                  phase=Phase, sender_country=Country},
+                    Acc) ->
+                        YList = case lists:keyfind(Year, 1, Acc) of
+                                    false -> [];
+                                    {Year, Val} -> Val
+                                end,
+                        SList = case lists:keyfind({Season, Phase}, 1,
+                                                   YList) of
+                                    false -> [];
+                                    {_, SVal} -> SVal
+                                end,
+                        NewSList = case lists:member(Country, SList) of
+                                       true -> SList;
+                                       false -> [Country|SList]
+                                   end,
+                        NewYList = lists:keystore(
+                                     {Season, Phase}, 1, YList,
+                                     {{Season, Phase}, NewSList}),
+                        lists:keystore(Year, 1, Acc, {Year, NewYList})
+                end, [], GMsgList).

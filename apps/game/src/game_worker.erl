@@ -137,8 +137,8 @@ handle_call({get_game_overview, GameID, UserID}, _From, State) ->
 handle_call({operator_game_overview, GameID}, _From, State) ->
     Reply = operator_game_overview(GameID),
     {reply, Reply, State};
-handle_call({operator_get_game_msg, Key, Query}, _From, State) ->
-    Reply = operator_get_game_msg(Key, Query),
+handle_call({operator_get_game_msg, Key, GameId, Year, Season, Phase}, _From, State) ->
+    Reply = operator_get_game_msg(Key, GameId, Year, Season, Phase),
     {reply, Reply, State};
 handle_call({delete_game, Key}, _From, State) ->
     BinKey = db:int_to_bin(Key),
@@ -303,20 +303,17 @@ operator_game_overview(GameID) ->
 %% @doc
 %% Allow operator to inspect all game_message and game_order of a player
 %% @spec
-%% operator_get_game_msg(Key :: string(), Query :: string()) ->
+%% operator_get_game_msg(OrderKey :: string(), GameId :: integer(), Year :: integer(),
+%%                       Season :: atom(), Phase :: atom()) ->
 %%     {ok, {GameMessage :: list(), Order :: list()|msg_only}}
 %% @end
 %%-------------------------------------------------------------------
-operator_get_game_msg("", Query) ->% query for game_message only
-    case game_utils:search_game_msg(Query) of
-        {ok, GameMsg} ->
-            {ok, {GameMsg, msg_only}};
-        Error ->
-            Error
-    end;
-operator_get_game_msg(Key, Query) ->% query for both game_order & game_message
-    Order = game_utils:get_game_order (Key),
-    case game_utils:search_game_msg(Query) of
+operator_get_game_msg(OrderKey, GameId, Year, Season, Phase) ->
+    Order = case OrderKey of
+                "" -> msg_only;
+                _ -> game_utils:get_game_order(OrderKey)
+            end,
+    case message:get_game_msg_by_phase(GameId, Year, Season, Phase) of
         {ok, GameMsg} ->
             {ok, {GameMsg, Order}};
         Error ->
