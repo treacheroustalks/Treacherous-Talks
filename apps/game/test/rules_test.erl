@@ -91,10 +91,10 @@ support_added_test () ->
 % move A war gal
 support_stronger_unit_moves_test () ->
     Map = map_data:create (standard_game),
-    ?assert (map:unit_exists (Map, budapest, {army, austria})),
-    ?assert (map:unit_exists (Map, vienna, {army, austria})),
-    ?assert (map:unit_exists (Map, warsaw, {army, russia})),
-    rules:process (order_phase, Map, diplomacy_rules,
+    ?assert(map:unit_exists (Map, budapest, {army, austria})),
+    ?assert(map:unit_exists (Map, vienna, {army, austria})),
+    ?assert(map:unit_exists (Map, warsaw, {army, russia})),
+    rules:process(order_phase, Map, diplomacy_rules,
                    [{support,
                      {army, austria}, budapest,
                      {move, {army, austria}, vienna, galicia}},
@@ -108,6 +108,48 @@ support_stronger_unit_moves_test () ->
                   map:get_unit_info (Map, {army, italy}, venice,
                                      strength)),
     map_data:delete (Map).
+
+
+retreating_unit_not_disbanded_test() ->
+    Map = map_data:create(standard_game),
+    ?assert(map:unit_exists(Map, trieste, {fleet, austria})),
+    ?assert(map:unit_exists(Map, vienna, {army, austria})),
+    ?assert(map:unit_exists(Map, venice, {army, italy})),
+
+    rules:process(order_phase, Map, diplomacy_rules,
+                  [{move, {army, austria}, vienna, tyrolia}]),
+    ?assert(not map:unit_exists(Map, vienna, {army, austria})),
+    ?assert(map:unit_exists (Map, tyrolia, {army, austria})),
+
+    rules:process(order_phase, Map, diplomacy_rules,
+                  [{support,
+                    {fleet, austria}, trieste,
+                    {move, {army, austria}, tyrolia, venice}},
+                   {move, {army, austria}, tyrolia, venice}]),
+    ?assert(map:unit_exists(Map, venice, {army, austria})),
+    ?assert(map:unit_exists(Map, venice, {army, italy})),
+
+    rules:process(retreat_phase, Map, diplomacy_rules,
+                  [{move, {army, italy}, venice, piedmont}]),
+    ?assert(map:unit_exists(Map, piedmont, {army, italy})),
+    map_data:delete (Map).
+
+
+remove_invalid_moves_in_retreat_phase_test() ->
+    Map = map_data:create(standard_game),
+    ?assert(map:unit_exists(Map, trieste, {fleet, austria})),
+    ?assert(map:unit_exists(Map, vienna, {army, austria})),
+
+    rules:process(retreat_phase, Map, diplomacy_rules,
+                  [{move, {army, austria}, vienna, tyrolia},
+                   {move, {fleet, austria}, trieste, adriatic_sea}]),
+    % check that they did not move!
+    ?assert(map:unit_exists(Map, trieste, {fleet, austria})),
+    ?assert(not map:unit_exists(Map, tyrolia, {fleet, austria})),
+    ?assert(map:unit_exists(Map, vienna, {army, austria})),
+    ?assert(not map:unit_exists(Map, adriatic_sea, {army, austria})),
+    map_data:delete (Map).
+
 
 remove_invalid_order_phase_orders_test() ->
     Map = map_data:create(standard_game),

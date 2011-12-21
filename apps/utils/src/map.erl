@@ -218,8 +218,8 @@ add_stored_unit (Map, Unit=#stored_unit{}, To) ->
       Id :: prov_id (),
       Unit :: unit ().
 unit_exists (Map, Id, Unit) ->
-    Units = get_province_info (Map, Id, units),
-    lists:keymember (Unit, #stored_unit.unit, Units).
+    Units = get_units(Map, Id),
+    lists:any(fun(U) when U == Unit -> true; (_) -> false end, Units).
 
 %% -----------------------------------------------------------------------------
 %% @doc

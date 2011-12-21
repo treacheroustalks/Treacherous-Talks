@@ -136,12 +136,12 @@ create (standard_game, retreat_phase) ->
     [filter_retreat_phase_rule(),
      unit_exists_rule (),
      unit_can_go_there_rule (),
+     unit_can_retreat_rule(),
      implicit_hold_rule (),
      trade_places_rule (),
      bounce2_rule (),
      hold_vs_move2_rule (),
-     remove_undislodged_units_rule (),
-     remove_dislodge_state_rule ()];
+     remove_undislodged_units_rule ()];
 create (standard_game, count_phase) ->
     [no_orders_accepted_rule (),
      count_units_rule (),
@@ -153,8 +153,13 @@ create (standard_game, build_phase) ->
      civil_disorder_rule ()].
 
 -spec do_process (phase (), map (), order ()) -> any ().
-do_process (_, Map, {move, Unit, From, To}) ->
-%    ?debugMsg (io_lib:format ("processing ~p~n", [Order])),
+do_process (Phase, Map, {move, Unit, From, To}) ->
+    case Phase of
+        retreat_phase ->
+            map:remove_unit_info(Map, Unit, From, dislodge);
+        _ ->
+            ok
+    end,
     map:move_unit (Map, Unit, From, To),
     [];
 do_process (_, _Map, {hold, _, _}) ->
@@ -273,7 +278,7 @@ civil_disorder_rule () ->
 %% remove units that where not dislodged yet
 remove_undislodged_units_rule () ->
     #rule{name = remove_undislodged_units,
-          arity = 0,
+          arity = all_orders,
           actor = fun remove_undislodged_units_actor/2}.
 
 %% go through all units and check if there is an order for them. if not: add a
@@ -282,22 +287,6 @@ implicit_hold_rule () ->
     #rule{name = implicit_hold_rule,
           arity = all_orders,
           actor = fun implicit_hold_rule_actor/2}.
-
-%% removes the 'dislodge' k/v pair from the unit dicts in
-%% case it contains 'true'
-remove_dislodge_state_rule () ->
-    #rule{name = remove_retreat_state,
-          arity = 1,
-          detector = fun (Map, {Order}) ->
-                             Unit = get_first_unit (Order),
-                             Where = get_first_from (Order),
-                             map:get_unit_info (Map, Unit, Where, false)
-                     end,
-          actor = fun (Map, {Order}) ->
-                          Unit = get_first_unit (Order),
-                          Where = get_first_from (Order),
-                          map:remove_unit_info (Map, Unit, Where, dislodge)
-                  end}.
 
 %% units can not exchange places without a convoy
 trade_places_rule () ->
@@ -313,6 +302,14 @@ unit_can_go_there_rule () ->
           detector = fun unit_can_go_there_detector/2,
           actor = fun replace_by_hold_actor/2}.
 
+%% remove orders, where a unit wants to move during the retreat phase,
+%% but does not have to retreat 
+unit_can_retreat_rule () ->
+    #rule{name = unit_can_retreat,
+          arity = 1,
+          detector = fun unit_can_retreat_detector/2,
+          actor = fun delete_orders_actor/2}.
+
 %% remove orders where two equally strong units want to enter the same province
 bounce2_rule () ->
     #rule{name = bounce2,
@@ -326,6 +323,7 @@ hold_vs_move2_rule () ->
           arity = 2,
           detector = fun hold_vs_move2_detector/2,
           actor = fun hold_vs_move2_actor/2}.
+
 
 %% remove support orders when they are broken by a move:
 break_support_rule () ->
@@ -440,25 +438,26 @@ simple_convoy_actor (Map, {{move, _, _, _},
     do_add_convoy (Map, C),
     [].
 
-remove_undislodged_units_actor (Map, {}) ->
+remove_undislodged_units_actor (Map, Orders) ->
     AllUnits = map:get_units (Map),
+    Moves = lists:filter(fun({move,_,_,_}) -> true; (_) -> false end, Orders),
     lists:foreach (
       fun ({Province, Unit}) ->
-              case
-                  map:get_unit_info (Map,
-                                     Unit,
-                                     Province,
-                                     dislodge, false) of
+              case map:get_unit_info(Map, Unit, Province, dislodge, false) of
                   true ->
-                      map:remove_unit (Map,
-                                       Unit,
-                                       Province);
+                      case lists:keyfind(Unit, 2, Moves) of
+                          {move, Unit, Province, _To} ->
+                              ok;
+                          _ ->
+                              map:remove_unit (Map, Unit, Province)
+                      end;
                   _ ->
                       ok
               end
       end,
       AllUnits),
-      [].
+      [],
+    [].
 
 break_support_detector (Map, {{move, {UType, _Nation}, From, SupPlace},
                               {support, _Unit2, SupPlace, _Order}}) ->
@@ -520,6 +519,7 @@ hold_vs_move2_actor (Map, {HoldOrder = {hold, HoldUnit, HoldPlace},
             [{remove, HoldOrder}, {reply, {dislodge, HoldUnit, HoldPlace}}]
     end.
 
+
 bounce2_detector (_Map, {{move, _Unit1, _From1, _To},
                          {move, _Unit2, _From2, _To}}) ->
     true;
@@ -570,6 +570,14 @@ unit_can_go_there_detector (Map, {M = {move, {Type, _Owner}, From, To}}) ->
                       map:get_reachable (Map, From, Type)) and
         not is_covered_by_convoy (Map, M);
 unit_can_go_there_detector (_Map, _) ->
+    false.
+
+unit_can_retreat_detector(Map, {{move, Unit, From, _To}}) ->
+    case map:get_unit_info(Map, Unit, From, dislodge, false) of
+        true -> false;
+        _ -> true
+    end;
+unit_can_retreat_detector(_Map, _Other) ->
     false.
 
 unit_does_not_exist (Map, {Order}) ->
