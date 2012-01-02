@@ -239,7 +239,7 @@ create (standard_game) ->
                           {finland, st_petersburg, [army, fleet]},
                           {finland, sweden, [army, fleet]},
                           {livonia, baltic_sea, [fleet]},
-                          {livonia, gulf_of_bothnia, [baltic_sea]},
+                          {livonia, gulf_of_bothnia, [fleet]},
                           {livonia, moscow, [army]},
                           {livonia, st_petersburg, [army, fleet]},
                           {livonia, warsaw, [army]},

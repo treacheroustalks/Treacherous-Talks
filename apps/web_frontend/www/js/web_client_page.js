@@ -58,14 +58,37 @@ function load_get_system_status(event_data) {
     $('#system_status_data').html('<p>' + nl2br(event_data.system_status) + '</p>');
 }
 
+function toggle_nonmsg_item(){
+    if($('#hide_non_msg').prop('checked')){
+        $('.b_hide').hide();
+    }else{
+        $('.b_hide').show();
+    }
+}
+
 function load_operator_game_overview(event_data) {
     var acc = "";
     var id = event_data.game_id;
     var links = event_data.links;
     var players = event_data.players;
+    var year_dict = new Object();
+    var phase_dict = {'spring-order_phase':true,
+                      'spring-retreat_phase':true,
+                      'fall-order_phase':true,
+                      'fall-retreat_phase':true,
+                      'fall-build_phase':true};
+    var country_arr=['austria', 'england', 'france', 'germany',
+                     'italy', 'russia', 'turkey'];
+
+    print(country_arr);
+    var year = parseInt(event_data.year_season.split('-')[0]);
+    for(var i=1901; i < year; i++){
+        year_dict[i.toString()] = true;
+    }
 
     delete event_data.players;
     delete event_data.links;
+
     for(var i in event_data){
         acc += i + ":&nbsp&nbsp" + "<b>" + event_data[i] + "</b><br>";
     }
@@ -78,39 +101,83 @@ function load_operator_game_overview(event_data) {
     acc += "</b></ul>";
 
     acc += "<br><table><tr><td>";
+    acc += "<b>Hide non-message branch</b><input id='hide_non_msg' type='checkbox' onchange='toggle_nonmsg_item()'></input><br>";
     if(links)
         acc += '<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
                 '\',\'\',\'\',\'\');op_inspect_country=false;">(Game context)</a><br>';
-    for(var i in links){//year
-        var season_phase = links[i];
-        acc += '<a id="ys'+ i +'" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').show();\
-        $(\'#ys'+i+'\').hide();$(\'#yh'+i+'\').show();">[+] ' + i + '</a>\
-        <a id="yh'+ i +'" class="hide" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').hide();\
-        $(\'#ys'+i+'\').show();$(\'#yh'+i+'\').hide();">[-] ' + i + '</a>\
-        &nbsp&nbsp<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
-                '\',\''+i+'\',\'\',\'\');op_inspect_country=false;">(context)</a><br>\
-        <ul id="sp'+ i +'" class="hide">';
-
-        for(var j in season_phase){
-            var countries = season_phase[j];
-            acc += '<a id="ys'+ i+j +'" href="javascript:void(0);" onclick="$(\'#sp'+ i+j +'\').show();\
-            $(\'#ys'+ i+j +'\').hide();$(\'#yh'+i+j+'\').show();">[+] ' + j + '</a>\
-            <a id="yh'+ i+j +'" class="hide" href="javascript:void(0);" onclick="$(\'#sp'+i+j+'\').hide();\
-            $(\'#ys'+i+j+'\').show();$(\'#yh'+i+j+'\').hide();">[-] ' + j + '</a>\
+    for(var i in year_dict){//year
+        if(links[i]){
+            var season_phase = links[i];
+            acc += '<a id="ys'+ i +'" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').show();\
+            $(\'#ys'+i+'\').hide();$(\'#yh'+i+'\').show();">[+] ' + i + '</a>\
+            <a id="yh'+ i +'" class="hide" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').hide();\
+            $(\'#ys'+i+'\').show();$(\'#yh'+i+'\').hide();">[-] ' + i + '</a>\
             &nbsp&nbsp<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
-                '\',\''+i+'\',\''+j+'\',\'\');op_inspect_country=false;">(context)</a><br>\
-            <ul id="sp'+ i+j +'" class="hide">';
+                    '\',\''+i+'\',\'\',\'\');op_inspect_country=false;">(context)</a><br>\
+            <ul id="sp'+ i +'" class="hide">';
 
-            for(var k=0; k < countries.length; k++){
-                acc += '<li><a href="javascript:void(0);" onclick="operator_get_game_msg(false,\''+id+
-                '\',\''+i+'\',\''+j+'\',\''+countries[k]+'\');op_inspect_country=\''+countries[k]+'\'">' + countries[k] + '</a></li>';
+            for(var j in phase_dict){
+                if(season_phase[j]){
+                    var countries = season_phase[j];
+                    acc += '<a id="ys'+ i+j +'" href="javascript:void(0);" onclick="$(\'#sp'+ i+j +'\').show();\
+                    $(\'#ys'+ i+j +'\').hide();$(\'#yh'+i+j+'\').show();">[+] ' + j + '</a>\
+                    <a id="yh'+ i+j +'" class="hide" href="javascript:void(0);" onclick="$(\'#sp'+i+j+'\').hide();\
+                    $(\'#ys'+i+j+'\').show();$(\'#yh'+i+j+'\').hide();">[-] ' + j + '</a>\
+                    &nbsp&nbsp<a href="javascript:void(0);" onclick="operator_get_game_msg(true,\''+id+
+                        '\',\''+i+'\',\''+j+'\',\'\');op_inspect_country=false;">(context)</a><br>\
+                    <ul id="sp'+ i+j +'" class="hide">';
+
+                    for(var k=0; k < 7; k++){
+                        if(countries[k]){
+                            acc += '<li><a href="javascript:void(0);" onclick="operator_get_game_msg(false,\''+id+
+                            '\',\''+i+'\',\''+j+'\',\''+countries[k]+'\');op_inspect_country=\''+countries[k]+'\'">' + countries[k] + '</a></li>';
+                        }else{
+                            acc += '<li class="b_hide"><a class="order_only" href="javascript:void(0);" onclick="operator_get_game_msg(false,\''+id+
+                            '\',\''+i+'\',\''+j+'\',\''+country_arr[k]+'\');op_inspect_country=\''+country_arr[k]+'\'">' + country_arr[k] + '</a></li>';
+                        }
+                    }
+                    acc += "</ul>";
+                }else{
+                    acc += '<span class="b_hide"><a id="ys'+ i+j +'" class="order_only_init order_only" href="javascript:void(0);" onclick="$(\'#sp'+ i+j +'\').show();\
+                    $(\'#ys'+ i+j +'\').hide();$(\'#yh'+i+j+'\').show();">[+] ' + j + '</a>\
+                    <a id="yh'+ i+j +'" class="hide order_only" href="javascript:void(0);" onclick="$(\'#sp'+i+j+'\').hide();\
+                    $(\'#ys'+i+j+'\').show();$(\'#yh'+i+j+'\').hide();">[-] ' + j + '</a>\
+                    &nbsp<br><ul id="sp'+ i+j +'" class="hide">';
+
+                    for(var k=0; k < 7; k++){
+                        acc += '<li><a class="order_only" href="javascript:void(0);" onclick="operator_get_game_msg(false,\''+id+
+                        '\',\''+i+'\',\''+j+'\',\''+country_arr[k]+'\');op_inspect_country=\''+country_arr[k]+'\'">' + country_arr[k] + '</a></li>';
+                    }
+                    acc += "</ul></span>";
+                }
             }
             acc += "</ul>";
+        }else{
+            acc += '<span class="b_hide"><a id="ys'+ i +'" class="order_only_init order_only" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').show();\
+            $(\'#ys'+i+'\').hide();$(\'#yh'+i+'\').show();">[+] ' + i + '</a>\
+            <a id="yh'+ i +'" class="hide order_only" href="javascript:void(0);" onclick="$(\'#sp'+i+'\').hide();\
+            $(\'#ys'+i+'\').show();$(\'#yh'+i+'\').hide();">[-] ' + i + '</a>\
+            &nbsp<br><ul id="sp'+ i +'" class="hide">';
+
+            for(var j in phase_dict){
+                acc += '<a id="ys'+ i+j +'" class="order_only" href="javascript:void(0);" onclick="$(\'#sp'+ i+j +'\').show();\
+                $(\'#ys'+ i+j +'\').hide();$(\'#yh'+i+j+'\').show();">[+] ' + j + '</a>\
+                <a id="yh'+ i+j +'" class="hide order_only" href="javascript:void(0);" onclick="$(\'#sp'+i+j+'\').hide();\
+                $(\'#ys'+i+j+'\').show();$(\'#yh'+i+j+'\').hide();">[-] ' + j + '</a>\
+                &nbsp<br><ul id="sp'+ i+j +'" class="hide">';
+
+                for(var k=0; k < 7; k++){
+                    acc += '<li><a class="order_only" href="javascript:void(0);" onclick="operator_get_game_msg(false,\''+id+
+                    '\',\''+i+'\',\''+j+'\',\''+country_arr[k]+'\');op_inspect_country=\''+country_arr[k]+'\'">' + country_arr[k] + '</a></li>';
+                }
+                acc += "</ul>";
+            }
+            acc += "</ul></span>";
         }
-        acc += "</ul>";
     }
     acc += "</td><td><div id='operator_msg_screen'></div></td></tr></table>";
     $('#operator_game_overview').html(acc);
+    view_game_id = id;
 }
 
 function load_operator_get_game_msg(event_data){
@@ -339,6 +406,7 @@ function load_game_overview_data(page_data) {
         $('#order_feedback').html(order_result?interpret_result_orders(order_result):"No resulting orders");
         $('#game_stat_info').html(stat_acc);
         $('#game_stat').show();
+        $('#press_game_id').val(page_data.game_id);
 
         rownum = 0;
         $('#order_gen').html("");
@@ -546,6 +614,9 @@ function refresh_game() {
     get_game_overview(form.game_id);
 }
 
+function refresh_operator_gov() {
+    operator_game_overview(view_game_id);
+}
 
 /**
  * Call server to get game overview of specified game
