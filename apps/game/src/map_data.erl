@@ -269,6 +269,7 @@ create (standard_game) ->
                           {smyrna, aegean_sea, [fleet]},
                           {smyrna, eastern_mediterranean, [fleet]},
                           {smyrna, syria, [army, fleet]},
+                          {syria, eastern_mediterranean, [fleet]},
                           {albania, adriatic_sea, [fleet]},               % Neutrals
                           {albania, greece, [army, fleet]},
                           {albania, ionian_sea, [fleet]},
