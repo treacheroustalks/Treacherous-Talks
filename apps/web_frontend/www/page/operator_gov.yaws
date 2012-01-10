@@ -1,6 +1,7 @@
 <!-- operator game overview page -->
 <h1>Admin Game Overview</h1>
 <a href="javascript:void(0);" class="btn primary" onclick="get_games_ongoing();">Ongoing games</a>&nbsp;
+<a href="javascript:void(0);" class="btn primary" onclick="refresh_operator_gov();">Refresh</a>&nbsp;
 <p>
     <div id="operator_game_overview"></div>
 </p>

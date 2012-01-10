@@ -256,7 +256,7 @@ function updateOffGameChatBox(title, who, msg){
 function updateInGameChatBox(title, game_id, who, msg){
     var msg_div = $('<div/>', {class: "chatboxmessage" });
     game_id = '<a href="javascript:void(0)" onclick="get_game_overview('+game_id+')">'+game_id+'</a>';
-    var from_span = $('<span/>', {html: who+"@"+game_id+":", class: "chatboxmessagefrom" });
+    var from_span = $('<span/>', {html: who+"@"+game_id+": ", class: "chatboxmessagefrom" });
     var msg_span = $('<span/>', {text: msg, class: "chatboxmessagecontent" });
     var msg_format = msg_div.append(from_span, msg_span);
     $("#chatbox_"+title+" .chatboxcontent").append(msg_format);
@@ -283,13 +283,17 @@ function onSendMsg(inGame){
     var gid = $('#press_game_id').val();
     if(inGame){
         var arr=$('#press_to').val();
-        if(arr.length == 1){
-            msg_to = arr[0]+"@";
-        }else if(arr && arr.length < 7){
-            for(var i=0; i<arr.length; i++){
-                arr[i]=arr[i].substr(0,2);
+        if(arr){
+            if(arr.length == 1){
+                msg_to = arr[0]+"@";
+            }else if(arr.length < 7){
+                for(var i=0; i<arr.length; i++){
+                    arr[i]=arr[i].substr(0,2);
+                }
+                msg_to = "["+arr.join()+"]@";
+            }else if(arr.length >= 7){
+                msg_to = "all@";
             }
-            msg_to = "["+arr.join()+"]@";
         }else{
             msg_to = "all@";
         }

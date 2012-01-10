@@ -317,6 +317,7 @@ function load_reconfig_game_page(page_data) {
  */
 function load_game_overview_data(page_data) {
     var status = page_data.game_status;
+    var map_data;
     delete page_data.game_status;
 
     if(status == "ongoing"){
@@ -342,17 +343,13 @@ function load_game_overview_data(page_data) {
 
         rownum = 0;
         $('#order_gen').html("");
-        if(phase=="order_phase")
-            for(var prov in punits){
-                add_order_row(punits[prov],prov);
-            }
-        else if(phase=="retreat_phase")
-            for(var prov in punits){
-                add_retreat_order_row(punits[prov],prov);
-            }
-        else if(phase=="build_phase")
-            add_build_order_row(punits, page_data.owner_list ,page_data.country);
 
+        map_data = {
+            punits: punits,
+            country: page_data.country,
+            phase: phase,
+            resOrd: order_result
+        };
     }else if(page_data.status == "finished"){
         $('#game_header').html("<h1>Finished Game Overview</h1>");
         $('#game_stat').hide();
@@ -382,7 +379,7 @@ function load_game_overview_data(page_data) {
 
     //after page contents are loaded, draw the map and units
     $('#world').ready(function(){
-        draw(units, owners);
+        prepareCanvas(units, owners, map_data);
     });
 }
 
