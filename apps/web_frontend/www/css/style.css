@@ -132,3 +132,11 @@ img.preloader {
 .long_txt {
     width: 450px;
 }
+
+.order_only {
+    color: #c60;
+}
+
+.order_only:hover {
+    color: #d60;
+}

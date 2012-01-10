@@ -69,12 +69,6 @@
                     </tr>
                 </table>
             </div>
-            <br>
-            <label for="select_game_order">Select orders</label>
-            <div class="input" name="select_game_order">
-                <div id="order_gen"></div>
-                <a href="javascript:void(0);" class="btn" onclick="order_generate();">Generate orders</a>
-            </div>
         </div>
         <div>
           <b>Feedback from previous phase</b><br>
